@@ -79,140 +79,226 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Tableau de bord</h1>
-            <p className="text-muted-foreground mt-1">Bienvenue sur AutoDocs Pro</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {garage && <NotificationBell garageId={garage.id} />}
-            <Button variant="outline" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Déconnexion
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      {/* Header */}
+      <div className="bg-card border-b sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                AutoDocs Pro
+              </h1>
+              <nav className="hidden md:flex items-center gap-2">
+                <Button variant="default" size="sm">
+                  Tableau de bord
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/mes-demarches")}>
+                  Mes démarches
+                </Button>
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              {garage && <NotificationBell garageId={garage.id} />}
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
+              </Button>
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Garage Info */}
-        {garage && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UserCircle className="h-5 w-5" />
-                Informations de l'entreprise
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Raison sociale</p>
-                  <p className="font-medium">{garage.raison_sociale}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">SIRET</p>
-                  <p className="font-medium">{garage.siret}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Email</p>
-                  <p className="font-medium">{garage.email}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Téléphone</p>
-                  <p className="font-medium">{garage.telephone}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <p className="text-muted-foreground">Adresse</p>
-                  <p className="font-medium">{garage.adresse}, {garage.code_postal} {garage.ville}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+      <div className="container mx-auto px-4 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold mb-2">Tableau de bord</h2>
+          <p className="text-muted-foreground">Bienvenue sur votre espace professionnel</p>
+        </div>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
+          <Card className="border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
             <CardHeader>
-              <CardDescription>Total des démarches</CardDescription>
-              <CardTitle className="text-4xl">{stats.totalDemarches}</CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Total des démarches
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold">{stats.totalDemarches}</CardTitle>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="border-l-4 border-l-warning bg-gradient-to-br from-warning/5 to-transparent">
             <CardHeader>
-              <CardDescription>En attente</CardDescription>
-              <CardTitle className="text-4xl text-orange-600">{stats.enAttente}</CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                En attente
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold text-warning">{stats.enAttente}</CardTitle>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="border-l-4 border-l-success bg-gradient-to-br from-success/5 to-transparent">
             <CardHeader>
-              <CardDescription>Validées</CardDescription>
-              <CardTitle className="text-4xl text-green-600">{stats.validees}</CardTitle>
+              <CardDescription className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Validées
+              </CardDescription>
+              <CardTitle className="text-4xl font-bold text-success">{stats.validees}</CardTitle>
             </CardHeader>
           </Card>
         </div>
 
         {/* Quick Actions */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Actions rapides</h2>
+          <h2 className="text-2xl font-bold mb-4">Actions rapides</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary" onClick={() => navigate("/nouvelle-demarche")}>
+            <Card 
+              className="cursor-pointer hover:shadow-xl transition-all border-2 hover:border-primary hover:scale-105 bg-gradient-to-br from-primary/10 to-primary/5" 
+              onClick={() => navigate("/nouvelle-demarche?type=DA")}
+            >
               <CardHeader>
-                <CardTitle className="text-lg">Déclaration d'achat</CardTitle>
-                <CardDescription className="text-2xl font-bold text-primary">10€</CardDescription>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-primary" />
+                  </div>
+                  Déclaration d'achat
+                </CardTitle>
+                <CardDescription className="text-3xl font-bold text-primary mt-2">10€</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">Certificat de cession, déclaration d'achat</p>
+                <Button className="w-full mt-4" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Créer
+                </Button>
               </CardContent>
             </Card>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary" onClick={() => navigate("/nouvelle-demarche")}>
+            
+            <Card 
+              className="cursor-pointer hover:shadow-xl transition-all border-2 hover:border-accent hover:scale-105 bg-gradient-to-br from-accent/10 to-accent/5" 
+              onClick={() => navigate("/nouvelle-demarche?type=DC")}
+            >
               <CardHeader>
-                <CardTitle className="text-lg">Déclaration de cession</CardTitle>
-                <CardDescription className="text-2xl font-bold text-primary">10€</CardDescription>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-accent" />
+                  </div>
+                  Déclaration de cession
+                </CardTitle>
+                <CardDescription className="text-3xl font-bold text-accent mt-2">10€</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">Certificat de cession, carte grise</p>
+                <Button className="w-full mt-4 bg-accent hover:bg-accent/90" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Créer
+                </Button>
               </CardContent>
             </Card>
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow border-2 hover:border-primary" onClick={() => navigate("/nouvelle-demarche")}>
+            
+            <Card 
+              className="cursor-pointer hover:shadow-xl transition-all border-2 hover:border-success hover:scale-105 bg-gradient-to-br from-success/10 to-success/5" 
+              onClick={() => navigate("/nouvelle-demarche?type=CG")}
+            >
               <CardHeader>
-                <CardTitle className="text-lg">Carte Grise</CardTitle>
-                <CardDescription className="text-2xl font-bold text-primary">30€ + CG</CardDescription>
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <div className="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center">
+                    <FileText className="h-5 w-5 text-success" />
+                  </div>
+                  Carte Grise
+                </CardTitle>
+                <CardDescription className="text-3xl font-bold text-success mt-2">30€ + CG</CardDescription>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground">Documents complets requis</p>
+                <Button className="w-full mt-4 bg-success hover:bg-success/90" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Créer
+                </Button>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Recent Demarches */}
-        {recentDemarches.length > 0 && (
+        {/* Bottom Section: Garage Info + Recent Demarches */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Garage Info */}
+          {garage && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCircle className="h-5 w-5 text-primary" />
+                  Informations de l'entreprise
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Raison sociale</p>
+                    <p className="font-medium">{garage.raison_sociale}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">SIRET</p>
+                    <p className="font-medium">{garage.siret}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Email</p>
+                    <p className="font-medium">{garage.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Téléphone</p>
+                    <p className="font-medium">{garage.telephone}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Adresse</p>
+                    <p className="font-medium">{garage.adresse}, {garage.code_postal} {garage.ville}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Recent Demarches */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Dernières démarches</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-primary" />
+                  Dernières démarches
+                </CardTitle>
                 <Button variant="outline" size="sm" onClick={() => navigate("/mes-demarches")}>
                   Voir tout
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {recentDemarches.map((d) => (
-                  <div key={d.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <p className="font-medium">{d.immatriculation}</p>
-                      <p className="text-sm text-muted-foreground">{d.type}</p>
+              {recentDemarches.length > 0 ? (
+                <div className="space-y-3">
+                  {recentDemarches.map((d) => (
+                    <div key={d.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                      <div>
+                        <p className="font-medium">{d.immatriculation}</p>
+                        <p className="text-sm text-muted-foreground">{d.type}</p>
+                      </div>
+                      <Badge 
+                        variant={d.status === 'valide' || d.status === 'finalise' ? 'default' : 'secondary'}
+                        className={
+                          d.status === 'valide' || d.status === 'finalise' 
+                            ? 'bg-success text-success-foreground' 
+                            : d.status === 'en_attente' 
+                            ? 'bg-warning text-warning-foreground'
+                            : ''
+                        }
+                      >
+                        {d.status}
+                      </Badge>
                     </div>
-                    <Badge>{d.status}</Badge>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">Aucune démarche pour le moment</p>
+              )}
             </CardContent>
           </Card>
-        )}
+        </div>
       </div>
     </div>
   );

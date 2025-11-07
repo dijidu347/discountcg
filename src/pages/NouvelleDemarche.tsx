@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileCheck, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -17,12 +17,14 @@ export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [garage, setGarage] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [demarcheId, setDemarcheId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [uploadedDocuments, setUploadedDocuments] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
-    type: "",
+    type: searchParams.get('type') || "",
     immatriculation: "",
     commentaire: ""
   });
@@ -68,6 +70,13 @@ export default function NouvelleDemarche() {
     }
   }, [user]);
 
+  useEffect(() => {
+    // Auto-create draft when type is selected
+    if (formData.type && !demarcheId && garage) {
+      handleAutoCreateDraft();
+    }
+  }, [formData.type, garage]);
+
   const loadGarage = async () => {
     if (!user) return;
 
@@ -82,10 +91,8 @@ export default function NouvelleDemarche() {
     }
   };
 
-  const handleSaveDraft = async () => {
-    if (!garage) return;
-
-    setLoading(true);
+  const handleAutoCreateDraft = async () => {
+    if (!garage || demarcheId) return;
 
     const frais_dossier = getFraisDossier(formData.type);
 
@@ -94,7 +101,7 @@ export default function NouvelleDemarche() {
       .insert({
         garage_id: garage.id,
         type: formData.type,
-        immatriculation: formData.immatriculation,
+        immatriculation: formData.immatriculation || 'TEMP',
         commentaire: formData.commentaire,
         frais_dossier: frais_dossier,
         montant_ttc: frais_dossier,
@@ -105,6 +112,24 @@ export default function NouvelleDemarche() {
       .select()
       .single();
 
+    if (!error && data) {
+      setDemarcheId(data.id);
+    }
+  };
+
+  const handleSaveDraft = async () => {
+    if (!garage || !demarcheId) return;
+
+    setLoading(true);
+
+    const { error } = await supabase
+      .from('demarches')
+      .update({
+        immatriculation: formData.immatriculation,
+        commentaire: formData.commentaire
+      })
+      .eq('id', demarcheId);
+
     setLoading(false);
 
     if (error) {
@@ -114,10 +139,9 @@ export default function NouvelleDemarche() {
         variant: "destructive"
       });
     } else {
-      setDemarcheId(data.id);
       toast({
         title: "Brouillon enregistré",
-        description: "Vous pouvez maintenant ajouter vos documents"
+        description: "Vos modifications ont été sauvegardées"
       });
     }
   };
@@ -127,19 +151,42 @@ export default function NouvelleDemarche() {
       case 'DA': return 10;
       case 'DC': return 10;
       case 'CG': return 30;
-      case 'CG_DA': return 35;
-      case 'DA_DC': return 15;
-      case 'CG_IMPORT': return 50;
       default: return 0;
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!demarcheId) {
-      await handleSaveDraft();
+    if (!formData.immatriculation.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez renseigner l'immatriculation",
+        variant: "destructive"
+      });
       return;
+    }
+
+    // Check if all documents are uploaded
+    const requiredDocs = documentsRequis[formData.type] || [];
+    if (uploadedDocuments.size < requiredDocs.length) {
+      toast({
+        title: "Documents manquants",
+        description: `Veuillez télécharger tous les documents requis (${uploadedDocuments.size}/${requiredDocs.length})`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Update immatriculation before payment
+    if (demarcheId) {
+      await supabase
+        .from('demarches')
+        .update({
+          immatriculation: formData.immatriculation,
+          commentaire: formData.commentaire
+        })
+        .eq('id', demarcheId);
     }
 
     setShowPaymentDialog(true);
@@ -156,6 +203,7 @@ export default function NouvelleDemarche() {
       .update({
         is_draft: false,
         paye: true,
+        documents_complets: true,
         status: 'en_attente'
       })
       .eq('id', demarcheId);
@@ -207,6 +255,10 @@ export default function NouvelleDemarche() {
     navigate("/mes-demarches");
   };
 
+  const handleDocumentUploadComplete = (documentType: string) => {
+    setUploadedDocuments(prev => new Set(prev).add(documentType));
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -218,8 +270,11 @@ export default function NouvelleDemarche() {
     );
   }
 
+  const requiredDocs = documentsRequis[formData.type] || [];
+  const allDocsUploaded = uploadedDocuments.size >= requiredDocs.length;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -230,7 +285,7 @@ export default function NouvelleDemarche() {
           Retour au tableau de bord
         </Button>
 
-        <Card className="max-w-3xl mx-auto">
+        <Card className="max-w-4xl mx-auto">
           <CardHeader>
             <CardTitle className="text-2xl">Nouvelle démarche</CardTitle>
             <CardDescription>
@@ -238,7 +293,7 @@ export default function NouvelleDemarche() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmitPayment} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="type">Type de démarche *</Label>
                 <Select
@@ -253,9 +308,6 @@ export default function NouvelleDemarche() {
                     <SelectItem value="DA">Déclaration d'achat (10€)</SelectItem>
                     <SelectItem value="DC">Déclaration de cession (10€)</SelectItem>
                     <SelectItem value="CG">Carte grise (30€ + coût CG)</SelectItem>
-                    <SelectItem value="CG_DA">Carte grise + DA (35€ + coût CG)</SelectItem>
-                    <SelectItem value="DA_DC">DA + DC (15€)</SelectItem>
-                    <SelectItem value="CG_IMPORT">Import véhicule étranger (50€ + coût CG)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -282,55 +334,49 @@ export default function NouvelleDemarche() {
                 />
               </div>
 
-              {formData.type && (
-                <div className="bg-muted/50 p-4 rounded-lg space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Documents requis pour {formData.type}</h3>
-                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                      {documentsRequis[formData.type]?.map((doc, idx) => (
-                        <li key={idx}>{doc}</li>
-                      ))}
-                    </ul>
+              {formData.type && demarcheId && (
+                <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-lg">Documents requis ({uploadedDocuments.size}/{requiredDocs.length})</h3>
+                    {allDocsUploaded && (
+                      <FileCheck className="h-5 w-5 text-success" />
+                    )}
                   </div>
-
-                  {demarcheId && (
-                    <div className="space-y-4 pt-4 border-t">
-                      <h3 className="font-semibold">Télécharger les documents</h3>
-                      {documentsRequis[formData.type]?.map((doc, idx) => (
-                        <DocumentUpload
-                          key={idx}
-                          demarcheId={demarcheId}
-                          documentType={`doc_${idx + 1}`}
-                          label={doc}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  
+                  <div className="space-y-4">
+                    {requiredDocs.map((doc, idx) => (
+                      <DocumentUpload
+                        key={idx}
+                        demarcheId={demarcheId}
+                        documentType={`doc_${idx + 1}`}
+                        label={doc}
+                        onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
 
               <div className="flex gap-4">
-                {!demarcheId ? (
-                  <>
-                    <Button type="submit" size="lg" disabled={loading} className="flex-1">
-                      {loading ? "Enregistrement..." : "Enregistrer le brouillon"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="lg"
-                      onClick={() => navigate("/dashboard")}
-                    >
-                      Annuler
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button type="submit" size="lg" disabled={loading} className="flex-1">
-                      Procéder au paiement
-                    </Button>
-                  </>
-                )}
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="lg" 
+                  onClick={handleSaveDraft}
+                  disabled={loading || !demarcheId}
+                  className="flex-1"
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Enregistrer le brouillon
+                </Button>
+                <Button 
+                  type="submit"
+                  size="lg" 
+                  disabled={loading || !allDocsUploaded || !formData.immatriculation.trim()}
+                  className="flex-1 bg-success hover:bg-success/90"
+                >
+                  Payer {getFraisDossier(formData.type)}€
+                </Button>
               </div>
             </form>
 

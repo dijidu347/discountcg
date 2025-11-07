@@ -8,9 +8,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function DemarcheDetail() {
   const { id } = useParams();
@@ -25,6 +34,11 @@ export default function DemarcheDetail() {
   const [loading, setLoading] = useState(true);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationType, setNotificationType] = useState("info");
+  const [invalidDocDialog, setInvalidDocDialog] = useState<{
+    open: boolean;
+    docId: string | null;
+    comment: string;
+  }>({ open: false, docId: null, comment: "" });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -82,7 +96,8 @@ export default function DemarcheDetail() {
       const { data: documentsData } = await supabase
         .from('documents')
         .select('*')
-        .eq('demarche_id', id);
+        .eq('demarche_id', id)
+        .order('created_at', { ascending: false });
 
       if (documentsData) {
         setDocuments(documentsData);
@@ -125,6 +140,66 @@ export default function DemarcheDetail() {
     }
   };
 
+  const validateDocument = async (docId: string, status: 'valid' | 'invalid', comment?: string) => {
+    const { error } = await supabase
+      .from('documents')
+      .update({
+        validation_status: status,
+        validation_comment: comment || null,
+        validated_at: new Date().toISOString(),
+        validated_by: user?.id
+      })
+      .eq('id', docId);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de valider le document",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: status === 'valid' ? "Document validé" : "Document invalidé",
+        description: status === 'valid' 
+          ? "Le document a été marqué comme valide" 
+          : "Le garage sera notifié du problème"
+      });
+
+      // If invalid, send notification to garage
+      if (status === 'invalid' && garage && comment) {
+        await supabase
+          .from('notifications')
+          .insert({
+            garage_id: garage.id,
+            demarche_id: id,
+            type: 'document_invalid',
+            message: `Un document a été refusé pour la démarche ${demarche.immatriculation}. Raison: ${comment}`,
+            created_by: user?.id
+          });
+      }
+
+      loadDemarcheData();
+    }
+  };
+
+  const handleInvalidateDocument = (docId: string) => {
+    setInvalidDocDialog({ open: true, docId, comment: "" });
+  };
+
+  const confirmInvalidateDocument = async () => {
+    if (!invalidDocDialog.docId || !invalidDocDialog.comment) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez indiquer la raison du refus",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    await validateDocument(invalidDocDialog.docId, 'invalid', invalidDocDialog.comment);
+    setInvalidDocDialog({ open: false, docId: null, comment: "" });
+  };
+
   const sendNotification = async () => {
     if (!notificationMessage || !garage || !id) return;
 
@@ -153,6 +228,17 @@ export default function DemarcheDetail() {
     }
   };
 
+  const getValidationBadge = (status: string) => {
+    switch (status) {
+      case 'valid':
+        return <Badge className="bg-success text-success-foreground"><CheckCircle className="h-3 w-3 mr-1" /> Validé</Badge>;
+      case 'invalid':
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" /> Refusé</Badge>;
+      default:
+        return <Badge variant="secondary"><Clock className="h-3 w-3 mr-1" /> En attente</Badge>;
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -169,7 +255,7 @@ export default function DemarcheDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"
@@ -247,20 +333,52 @@ export default function DemarcheDetail() {
                 {documents.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Aucun document téléchargé</p>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {documents.map((doc) => (
-                      <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="text-sm font-medium">{doc.nom_fichier}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {doc.type_document} • {(doc.taille_octets / 1024).toFixed(2)} KB
-                          </p>
+                      <div key={doc.id} className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="text-sm font-medium">{doc.nom_fichier}</p>
+                              {getValidationBadge(doc.validation_status || 'pending')}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {doc.type_document} • {(doc.taille_octets / 1024).toFixed(2)} KB
+                            </p>
+                            {doc.validation_comment && (
+                              <p className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded">
+                                Motif du refus: {doc.validation_comment}
+                              </p>
+                            )}
+                          </div>
+                          <Button size="sm" variant="outline" asChild>
+                            <a href={doc.url} target="_blank" rel="noopener noreferrer">
+                              <Download className="h-4 w-4" />
+                            </a>
+                          </Button>
                         </div>
-                        <Button size="sm" variant="outline" asChild>
-                          <a href={doc.url} target="_blank" rel="noopener noreferrer">
-                            <Download className="h-4 w-4" />
-                          </a>
-                        </Button>
+                        
+                        {doc.validation_status !== 'valid' && doc.validation_status !== 'invalid' && (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              className="flex-1 bg-success hover:bg-success/90"
+                              onClick={() => validateDocument(doc.id, 'valid')}
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Valider
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="destructive" 
+                              className="flex-1"
+                              onClick={() => handleInvalidateDocument(doc.id)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Refuser
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -271,10 +389,13 @@ export default function DemarcheDetail() {
                   <DocumentUpload
                     demarcheId={demarche.id}
                     documentType="admin_document"
-                    label="Document final"
+                    label="Document final (carte grise, etc.)"
                     onUploadComplete={() => {
                       loadDemarcheData();
-                      sendNotification();
+                      toast({
+                        title: "Document envoyé",
+                        description: "Le document a été mis à disposition du client"
+                      });
                     }}
                   />
                 </div>
@@ -382,6 +503,43 @@ export default function DemarcheDetail() {
           </div>
         </div>
       </div>
+
+      {/* Invalid Document Dialog */}
+      <Dialog open={invalidDocDialog.open} onOpenChange={(open) => setInvalidDocDialog({ ...invalidDocDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Refuser le document</DialogTitle>
+            <DialogDescription>
+              Indiquez la raison du refus. Le garage sera notifié et devra soumettre un nouveau document.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label>Motif du refus *</Label>
+            <Textarea
+              value={invalidDocDialog.comment}
+              onChange={(e) => setInvalidDocDialog({ ...invalidDocDialog, comment: e.target.value })}
+              placeholder="Ex: Document illisible, signature manquante, date périmée..."
+              rows={4}
+              className="mt-2"
+            />
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setInvalidDocDialog({ open: false, docId: null, comment: "" })}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={confirmInvalidateDocument}
+              disabled={!invalidDocDialog.comment}
+            >
+              Confirmer le refus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

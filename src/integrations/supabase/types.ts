@@ -99,6 +99,10 @@ export type Database = {
           taille_octets: number | null
           type_document: string
           url: string
+          validated_at: string | null
+          validated_by: string | null
+          validation_comment: string | null
+          validation_status: string | null
         }
         Insert: {
           created_at?: string
@@ -109,6 +113,10 @@ export type Database = {
           taille_octets?: number | null
           type_document: string
           url: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_comment?: string | null
+          validation_status?: string | null
         }
         Update: {
           created_at?: string
@@ -119,6 +127,10 @@ export type Database = {
           taille_octets?: number | null
           type_document?: string
           url?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_comment?: string | null
+          validation_status?: string | null
         }
         Relationships: [
           {
