@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Upload, X, FileText } from "lucide-react";
+import { FileText, CheckCircle, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DocumentUploadProps {
@@ -15,16 +14,19 @@ interface DocumentUploadProps {
 
 export function DocumentUpload({ demarcheId, documentType, label, onUploadComplete }: DocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
+  const [uploaded, setUploaded] = useState(false);
+  const [fileName, setFileName] = useState<string>("");
   const { toast } = useToast();
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    setFileName(selectedFile.name);
+    await handleUpload(selectedFile);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (file: File) => {
     if (!file) return;
 
     setUploading(true);
@@ -64,7 +66,7 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
         description: "Le document a été téléchargé avec succès"
       });
 
-      setFile(null);
+      setUploaded(true);
       if (onUploadComplete) onUploadComplete();
     } catch (error: any) {
       toast({
@@ -80,42 +82,30 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <Input
-            type="file"
-            onChange={handleFileChange}
-            accept=".pdf,.jpg,.jpeg,.png"
-            disabled={uploading}
-          />
-        </div>
-        {file && (
-          <>
-            <Button
-              type="button"
-              onClick={handleUpload}
-              disabled={uploading}
-              size="sm"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {uploading ? "Upload..." : "Télécharger"}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setFile(null)}
-              disabled={uploading}
-              size="sm"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </>
+      <div className="relative">
+        <Input
+          type="file"
+          onChange={handleFileChange}
+          accept=".pdf,.jpg,.jpeg,.png"
+          disabled={uploading || uploaded}
+          className={uploaded ? "border-success" : ""}
+        />
+        {uploading && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          </div>
+        )}
+        {uploaded && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <CheckCircle className="h-4 w-4 text-success" />
+          </div>
         )}
       </div>
-      {file && (
+      {fileName && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <FileText className="h-4 w-4" />
-          <span>{file.name} ({(file.size / 1024).toFixed(2)} KB)</span>
+          <span>{fileName}</span>
+          {uploaded && <span className="text-success font-medium">✓ Téléchargé</span>}
         </div>
       )}
     </div>
