@@ -106,6 +106,9 @@ export default function Dashboard() {
                 <Button variant="ghost" size="sm" onClick={() => navigate("/mes-demarches")}>
                   Mes démarches
                 </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/support")}>
+                  Support
+                </Button>
                 {isAdmin && (
                   <Button variant="ghost" size="sm" onClick={() => navigate("/admin")}>
                     <Settings className="mr-2 h-4 w-4" />
@@ -130,37 +133,6 @@ export default function Dashboard() {
         <div className="mb-8">
           <h2 className="text-3xl font-bold mb-2">Tableau de bord</h2>
           <p className="text-muted-foreground">Bienvenue sur votre espace professionnel</p>
-        </div>
-
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-l-4 border-l-primary bg-gradient-to-br from-primary/5 to-transparent">
-            <CardHeader>
-              <CardDescription className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                Total des démarches
-              </CardDescription>
-              <CardTitle className="text-4xl font-bold">{stats.totalDemarches}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="border-l-4 border-l-warning bg-gradient-to-br from-warning/5 to-transparent">
-            <CardHeader>
-              <CardDescription className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                En attente
-              </CardDescription>
-              <CardTitle className="text-4xl font-bold text-warning">{stats.enAttente}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="border-l-4 border-l-success bg-gradient-to-br from-success/5 to-transparent">
-            <CardHeader>
-              <CardDescription className="flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Validées
-              </CardDescription>
-              <CardTitle className="text-4xl font-bold text-success">{stats.validees}</CardTitle>
-            </CardHeader>
-          </Card>
         </div>
 
         {/* Quick Actions */}
@@ -235,16 +207,53 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Statistics */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <Card className="border-l-4 border-l-primary">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-xs">
+                <FileText className="h-3 w-3" />
+                Total des démarches
+              </CardDescription>
+              <CardTitle className="text-2xl font-bold">{stats.totalDemarches}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-l-4 border-l-warning">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-xs">
+                <Clock className="h-3 w-3" />
+                En attente
+              </CardDescription>
+              <CardTitle className="text-2xl font-bold text-warning">{stats.enAttente}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-l-4 border-l-success">
+            <CardHeader className="pb-3">
+              <CardDescription className="flex items-center gap-2 text-xs">
+                <CheckCircle className="h-3 w-3" />
+                Validées
+              </CardDescription>
+              <CardTitle className="text-2xl font-bold text-success">{stats.validees}</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
         {/* Bottom Section: Garage Info + Recent Demarches */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Garage Info */}
           {garage && (
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <UserCircle className="h-5 w-5 text-primary" />
-                  Informations de l'entreprise
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCircle className="h-5 w-5 text-primary" />
+                    Informations de l'entreprise
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => navigate("/garage-settings")}>
+                    <Settings className="h-4 w-4 mr-2" />
+                    Modifier
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
@@ -290,7 +299,11 @@ export default function Dashboard() {
               {recentDemarches.length > 0 ? (
                 <div className="space-y-3">
                   {recentDemarches.map((d) => (
-                    <div key={d.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                    <div 
+                      key={d.id} 
+                      className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => navigate(`/demarche/${d.id}`)}
+                    >
                       <div>
                         <p className="font-medium">{d.immatriculation}</p>
                         <p className="text-sm text-muted-foreground">{d.type}</p>

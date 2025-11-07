@@ -150,7 +150,11 @@ export default function MesDemarches() {
                 </TableHeader>
                 <TableBody>
                   {demarches.map((demarche) => (
-                    <TableRow key={demarche.id}>
+                    <TableRow 
+                      key={demarche.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => navigate(`/demarche/${demarche.id}`)}
+                    >
                       <TableCell className="font-medium">
                         {typeLabels[demarche.type]}
                       </TableCell>

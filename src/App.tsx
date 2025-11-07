@@ -11,9 +11,12 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NouvelleDemarche from "./pages/NouvelleDemarche";
 import MesDemarches from "./pages/MesDemarches";
+import DemarcheDetail from "./pages/DemarcheDetail";
+import GarageSettings from "./pages/GarageSettings";
+import Support from "./pages/Support";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AllDemarches from "./pages/admin/AllDemarches";
-import DemarcheDetail from "./pages/admin/DemarcheDetail";
+import AdminDemarcheDetail from "./pages/admin/DemarcheDetail";
 import ManageUsers from "./pages/admin/ManageUsers";
 import NotFound from "./pages/NotFound";
 
@@ -33,9 +36,12 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/nouvelle-demarche" element={<NouvelleDemarche />} />
             <Route path="/mes-demarches" element={<MesDemarches />} />
+            <Route path="/demarche/:id" element={<DemarcheDetail />} />
+            <Route path="/garage-settings" element={<GarageSettings />} />
+            <Route path="/support" element={<Support />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />
-          <Route path="/admin/demarche/:id" element={<DemarcheDetail />} />
+          <Route path="/admin/demarche/:id" element={<AdminDemarcheDetail />} />
           <Route path="/admin/users" element={<ManageUsers />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

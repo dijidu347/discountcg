@@ -1,0 +1,305 @@
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { DocumentUpload } from "@/components/DocumentUpload";
+import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+const statusLabels: Record<string, string> = {
+  en_saisie: "En saisie",
+  en_attente: "En attente",
+  paye: "Payé",
+  valide: "Validé",
+  finalise: "Finalisé",
+  refuse: "Refusé"
+};
+
+const typeLabels: Record<string, string> = {
+  DA: "Déclaration d'achat",
+  DC: "Déclaration de cession",
+  CG: "Carte grise",
+  CG_DA: "CG + DA",
+  DA_DC: "DA + DC",
+  CG_IMPORT: "Import étranger"
+};
+
+export default function DemarcheDetail() {
+  const { id } = useParams();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [demarche, setDemarche] = useState<any>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/login");
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => {
+    if (user && id) {
+      loadData();
+    }
+  }, [user, id]);
+
+  const loadData = async () => {
+    if (!user || !id) return;
+
+    // Load garage
+    const { data: garageData } = await supabase
+      .from('garages')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (!garageData) {
+      toast({
+        title: "Erreur",
+        description: "Garage non trouvé",
+        variant: "destructive"
+      });
+      navigate("/dashboard");
+      return;
+    }
+
+    // Load demarche
+    const { data: demarcheData } = await supabase
+      .from('demarches')
+      .select('*')
+      .eq('id', id)
+      .eq('garage_id', garageData.id)
+      .single();
+
+    if (!demarcheData) {
+      toast({
+        title: "Erreur",
+        description: "Démarche non trouvée",
+        variant: "destructive"
+      });
+      navigate("/mes-demarches");
+      return;
+    }
+
+    setDemarche(demarcheData);
+
+    // Load documents
+    const { data: documentsData } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('demarche_id', id)
+      .order('created_at', { ascending: false });
+
+    setDocuments(documentsData || []);
+    setLoading(false);
+  };
+
+  const getValidationBadge = (status: string) => {
+    switch (status) {
+      case 'validated':
+        return <Badge className="bg-success"><CheckCircle className="h-3 w-3 mr-1" />Validé</Badge>;
+      case 'rejected':
+        return <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Refusé</Badge>;
+      default:
+        return <Badge variant="secondary"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>;
+    }
+  };
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!demarche) {
+    return null;
+  }
+
+  const rejectedDocuments = documents.filter(d => d.validation_status === 'rejected');
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+      <div className="container mx-auto px-4 py-8">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/mes-demarches")}
+          className="mb-6"
+        >
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Retour à mes démarches
+        </Button>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Demarche Info */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-2xl">{typeLabels[demarche.type]}</CardTitle>
+                    <CardDescription>Immatriculation: {demarche.immatriculation}</CardDescription>
+                  </div>
+                  <Badge 
+                    className={
+                      demarche.status === 'valide' || demarche.status === 'finalise' 
+                        ? 'bg-success' 
+                        : demarche.status === 'refuse'
+                        ? 'bg-destructive'
+                        : 'bg-warning'
+                    }
+                  >
+                    {statusLabels[demarche.status]}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Montant TTC</p>
+                    <p className="text-xl font-bold">{demarche.montant_ttc?.toFixed(2)} €</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Date de création</p>
+                    <p className="font-medium">{new Date(demarche.created_at).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Paiement</p>
+                    <Badge variant={demarche.paye ? "default" : "secondary"}>
+                      {demarche.paye ? "Payé" : "Non payé"}
+                    </Badge>
+                  </div>
+                  {demarche.commentaire && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">Commentaire</p>
+                      <p className="font-medium">{demarche.commentaire}</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Documents */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {documents.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-4">Aucun document</p>
+                ) : (
+                  documents.map((doc) => (
+                    <div key={doc.id} className="border rounded-lg p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <p className="font-medium">{doc.nom_fichier}</p>
+                          <p className="text-sm text-muted-foreground">
+                            Type: {doc.type_document} • {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                        {getValidationBadge(doc.validation_status)}
+                      </div>
+                      
+                      {doc.validation_status === 'rejected' && doc.validation_comment && (
+                        <div className="mt-3 p-3 bg-destructive/10 border border-destructive/20 rounded-md">
+                          <p className="text-sm font-medium text-destructive mb-1">Raison du refus:</p>
+                          <p className="text-sm">{doc.validation_comment}</p>
+                        </div>
+                      )}
+
+                      <div className="mt-3 flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => window.open(doc.url, '_blank')}
+                        >
+                          Télécharger
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Upload new document if rejected */}
+            {rejectedDocuments.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-warning">
+                    <Upload className="h-5 w-5" />
+                    Remplacer les documents refusés
+                  </CardTitle>
+                  <CardDescription>
+                    Certains documents ont été refusés. Veuillez uploader de nouveaux documents.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <DocumentUpload
+                    demarcheId={demarche.id}
+                    documentType="correction"
+                    label="Nouveau document"
+                    onUploadComplete={loadData}
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Informations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Statut</p>
+                  <p className="font-medium">{statusLabels[demarche.status]}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Documents complets</p>
+                  <Badge variant={demarche.documents_complets ? "default" : "secondary"}>
+                    {demarche.documents_complets ? "Oui" : "Non"}
+                  </Badge>
+                </div>
+                {demarche.validated_at && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Validé le</p>
+                    <p className="font-medium">{new Date(demarche.validated_at).toLocaleDateString('fr-FR')}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {demarche.status === 'en_attente' && (
+              <Card className="border-warning bg-warning/5">
+                <CardHeader>
+                  <CardTitle className="text-lg text-warning">En cours de traitement</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm">
+                    Votre démarche est en cours de vérification par notre équipe. Vous serez notifié dès que le traitement sera terminé.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
