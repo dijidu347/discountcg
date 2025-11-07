@@ -14,6 +14,7 @@ import MesDemarches from "./pages/MesDemarches";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AllDemarches from "./pages/admin/AllDemarches";
 import DemarcheDetail from "./pages/admin/DemarcheDetail";
+import ManageUsers from "./pages/admin/ManageUsers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />
           <Route path="/admin/demarche/:id" element={<DemarcheDetail />} />
+          <Route path="/admin/users" element={<ManageUsers />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

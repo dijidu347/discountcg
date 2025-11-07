@@ -168,12 +168,15 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle>Gestion</CardTitle>
             <CardDescription>
-              Gérer les démarches en attente
+              Gérer les démarches et les utilisateurs
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button onClick={() => navigate("/admin/demarches")} className="w-full">
               Voir toutes les démarches
+            </Button>
+            <Button onClick={() => navigate("/admin/users")} variant="outline" className="w-full">
+              Gérer les administrateurs
             </Button>
           </CardContent>
         </Card>

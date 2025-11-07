@@ -19,6 +19,7 @@ export default function Dashboard() {
   });
   const [recentDemarches, setRecentDemarches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -34,6 +35,16 @@ export default function Dashboard() {
 
   const loadData = async () => {
     if (!user) return;
+
+    // Check if user is admin
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    
+    setIsAdmin(!!roleData);
 
     const { data: garageData } = await supabase
       .from('garages')
@@ -95,6 +106,12 @@ export default function Dashboard() {
                 <Button variant="ghost" size="sm" onClick={() => navigate("/mes-demarches")}>
                   Mes démarches
                 </Button>
+                {isAdmin && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/admin")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Administration
+                  </Button>
+                )}
               </nav>
             </div>
             <div className="flex items-center gap-2">
