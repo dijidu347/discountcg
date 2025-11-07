@@ -106,6 +106,29 @@ export default function DemarcheDetail() {
     setLoading(false);
   };
 
+  // Realtime: refresh when documents or demarche change
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`demarche-detail-${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'documents', filter: `demarche_id=eq.${id}` },
+        () => loadData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'demarches', filter: `id=eq.${id}` },
+        () => loadData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
   const getValidationBadge = (status: string) => {
     switch (status) {
       case 'validated':

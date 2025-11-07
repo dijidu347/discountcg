@@ -124,6 +124,29 @@ export default function DemarcheDetail() {
     setLoading(false);
   };
 
+  // Realtime: auto-refresh when documents or demarche update
+  useEffect(() => {
+    if (!id) return;
+
+    const channel = supabase
+      .channel(`admin-demarche-detail-${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'documents', filter: `demarche_id=eq.${id}` },
+        () => loadDemarcheData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'demarches', filter: `id=eq.${id}` },
+        () => loadDemarcheData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
   const updateStatus = async (newStatus: any) => {
     if (!id) return;
 
