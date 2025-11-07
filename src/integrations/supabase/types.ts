@@ -18,12 +18,15 @@ export type Database = {
         Row: {
           commentaire: string | null
           created_at: string
+          documents_complets: boolean | null
           frais_dossier: number | null
           garage_id: string
           id: string
           immatriculation: string
+          is_draft: boolean | null
           montant_ht: number | null
           montant_ttc: number | null
+          paye: boolean | null
           status: Database["public"]["Enums"]["demarche_status"]
           type: Database["public"]["Enums"]["demarche_type"]
           updated_at: string
@@ -34,12 +37,15 @@ export type Database = {
         Insert: {
           commentaire?: string | null
           created_at?: string
+          documents_complets?: boolean | null
           frais_dossier?: number | null
           garage_id: string
           id?: string
           immatriculation: string
+          is_draft?: boolean | null
           montant_ht?: number | null
           montant_ttc?: number | null
+          paye?: boolean | null
           status?: Database["public"]["Enums"]["demarche_status"]
           type: Database["public"]["Enums"]["demarche_type"]
           updated_at?: string
@@ -50,12 +56,15 @@ export type Database = {
         Update: {
           commentaire?: string | null
           created_at?: string
+          documents_complets?: boolean | null
           frais_dossier?: number | null
           garage_id?: string
           id?: string
           immatriculation?: string
+          is_draft?: boolean | null
           montant_ht?: number | null
           montant_ttc?: number | null
+          paye?: boolean | null
           status?: Database["public"]["Enums"]["demarche_status"]
           type?: Database["public"]["Enums"]["demarche_type"]
           updated_at?: string
@@ -84,6 +93,7 @@ export type Database = {
         Row: {
           created_at: string
           demarche_id: string
+          document_type: string | null
           id: string
           nom_fichier: string
           taille_octets: number | null
@@ -93,6 +103,7 @@ export type Database = {
         Insert: {
           created_at?: string
           demarche_id: string
+          document_type?: string | null
           id?: string
           nom_fichier: string
           taille_octets?: number | null
@@ -102,6 +113,7 @@ export type Database = {
         Update: {
           created_at?: string
           demarche_id?: string
+          document_type?: string | null
           id?: string
           nom_fichier?: string
           taille_octets?: number | null
@@ -162,6 +174,54 @@ export type Database = {
           ville?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          demarche_id: string | null
+          garage_id: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          type: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          demarche_id?: string | null
+          garage_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          type: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          demarche_id?: string | null
+          garage_id?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       paiements: {
         Row: {

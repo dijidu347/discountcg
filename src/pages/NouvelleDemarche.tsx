@@ -10,6 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DocumentUpload } from "@/components/DocumentUpload";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
@@ -17,11 +19,42 @@ export default function NouvelleDemarche() {
   const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [demarcheId, setDemarcheId] = useState<string | null>(null);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [formData, setFormData] = useState({
     type: "",
     immatriculation: "",
     commentaire: ""
   });
+
+  const documentsRequis: Record<string, string[]> = {
+    DA: [
+      "Certificat de cession (cerfa 15776*01)",
+      "Certificat déclaration d'achat (cerfa 13751*02)",
+      "Carte grise barrée tamponnée recto/verso",
+      "Dernière DA enregistrée (si achat à un pro)",
+      "Accusé d'enregistrement déclaration de cession"
+    ],
+    DC: [
+      "Certificat de cession (cerfa 15776*01)",
+      "Certificat déclaration d'achat (si achat à un pro)",
+      "Carte grise barrée tamponnée recto/verso",
+      "Carte d'identité du nouveau propriétaire",
+      "Dernière DA enregistrée (si achat à un pro)"
+    ],
+    CG: [
+      "Carte d'identité",
+      "Permis de conduire",
+      "Carte grise barrée et tamponnée recto/verso",
+      "Certificat de cession (cerfa 15776*01)",
+      "Contrôle technique -6 mois",
+      "Justificatif de domicile -3 mois",
+      "Attestation d'assurance",
+      "Mandat (cerfa 13757*03)",
+      "Demande de certificat d'immatriculation (cerfa 13750*05)",
+      "Dernière DA (si ancien propriétaire est un pro)"
+    ]
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -49,35 +82,12 @@ export default function NouvelleDemarche() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSaveDraft = async () => {
     if (!garage) return;
 
     setLoading(true);
 
-    // Calculate fees based on type
-    let frais_dossier = 0;
-    switch (formData.type) {
-      case 'DA':
-        frais_dossier = 10;
-        break;
-      case 'DC':
-        frais_dossier = 10;
-        break;
-      case 'CG':
-        frais_dossier = 30;
-        break;
-      case 'CG_DA':
-        frais_dossier = 35;
-        break;
-      case 'DA_DC':
-        frais_dossier = 15;
-        break;
-      case 'CG_IMPORT':
-        frais_dossier = 50;
-        break;
-    }
+    const frais_dossier = getFraisDossier(formData.type);
 
     const { data, error } = await supabase
       .from('demarches')
@@ -88,7 +98,9 @@ export default function NouvelleDemarche() {
         commentaire: formData.commentaire,
         frais_dossier: frais_dossier,
         montant_ttc: frais_dossier,
-        status: 'en_saisie'
+        status: 'en_saisie',
+        is_draft: true,
+        paye: false
       } as any)
       .select()
       .single();
@@ -98,16 +110,101 @@ export default function NouvelleDemarche() {
     if (error) {
       toast({
         title: "Erreur",
-        description: "Impossible de créer la démarche",
+        description: "Impossible d'enregistrer le brouillon",
         variant: "destructive"
       });
     } else {
+      setDemarcheId(data.id);
       toast({
-        title: "Démarche créée",
-        description: "Votre démarche a été créée avec succès"
+        title: "Brouillon enregistré",
+        description: "Vous pouvez maintenant ajouter vos documents"
       });
-      navigate("/mes-demarches");
     }
+  };
+
+  const getFraisDossier = (type: string) => {
+    switch (type) {
+      case 'DA': return 10;
+      case 'DC': return 10;
+      case 'CG': return 30;
+      case 'CG_DA': return 35;
+      case 'DA_DC': return 15;
+      case 'CG_IMPORT': return 50;
+      default: return 0;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!demarcheId) {
+      await handleSaveDraft();
+      return;
+    }
+
+    setShowPaymentDialog(true);
+  };
+
+  const handlePayment = async () => {
+    if (!demarcheId) return;
+
+    setLoading(true);
+
+    // Simulate payment
+    const { error: demarcheError } = await supabase
+      .from('demarches')
+      .update({
+        is_draft: false,
+        paye: true,
+        status: 'en_attente'
+      })
+      .eq('id', demarcheId);
+
+    if (demarcheError) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de valider le paiement",
+        variant: "destructive"
+      });
+      setLoading(false);
+      return;
+    }
+
+    // Create payment record
+    const frais_dossier = getFraisDossier(formData.type);
+    
+    const { error: paymentError } = await supabase
+      .from('paiements')
+      .insert({
+        garage_id: garage.id,
+        demarche_id: demarcheId,
+        montant: frais_dossier,
+        status: 'valide'
+      });
+
+    if (paymentError) {
+      console.error(paymentError);
+    }
+
+    // Create notification
+    await supabase
+      .from('notifications')
+      .insert({
+        garage_id: garage.id,
+        demarche_id: demarcheId,
+        type: 'payment_confirmed',
+        message: `Votre paiement de ${frais_dossier}€ a été validé. Votre démarche est en cours de traitement.`
+      });
+
+    setLoading(false);
+    setShowPaymentDialog(false);
+
+    toast({
+      title: "Paiement validé",
+      description: "Votre démarche a été soumise avec succès"
+    });
+
+    navigate("/mes-demarches");
   };
 
   if (authLoading) {
@@ -185,34 +282,81 @@ export default function NouvelleDemarche() {
                 />
               </div>
 
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Documents requis</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Vous pourrez ajouter les documents nécessaires après la création de la démarche.
-                </p>
-                <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>Carte grise du véhicule (recto/verso)</li>
-                  <li>Certificat de cession ou déclaration d'achat</li>
-                  <li>Justificatif d'identité</li>
-                  <li>Justificatif de domicile</li>
-                  <li>Contrôle technique (si applicable)</li>
-                </ul>
-              </div>
+              {formData.type && (
+                <div className="bg-muted/50 p-4 rounded-lg space-y-4">
+                  <div>
+                    <h3 className="font-semibold mb-2">Documents requis pour {formData.type}</h3>
+                    <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                      {documentsRequis[formData.type]?.map((doc, idx) => (
+                        <li key={idx}>{doc}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {demarcheId && (
+                    <div className="space-y-4 pt-4 border-t">
+                      <h3 className="font-semibold">Télécharger les documents</h3>
+                      {documentsRequis[formData.type]?.map((doc, idx) => (
+                        <DocumentUpload
+                          key={idx}
+                          demarcheId={demarcheId}
+                          documentType={`doc_${idx + 1}`}
+                          label={doc}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div className="flex gap-4">
-                <Button type="submit" size="lg" disabled={loading} className="flex-1">
-                  {loading ? "Création..." : "Créer la démarche"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="lg"
-                  onClick={() => navigate("/dashboard")}
-                >
-                  Annuler
-                </Button>
+                {!demarcheId ? (
+                  <>
+                    <Button type="submit" size="lg" disabled={loading} className="flex-1">
+                      {loading ? "Enregistrement..." : "Enregistrer le brouillon"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="lg"
+                      onClick={() => navigate("/dashboard")}
+                    >
+                      Annuler
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button type="submit" size="lg" disabled={loading} className="flex-1">
+                      Procéder au paiement
+                    </Button>
+                  </>
+                )}
               </div>
             </form>
+
+            <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirmer le paiement</DialogTitle>
+                  <DialogDescription>
+                    Montant à payer : {getFraisDossier(formData.type)}€
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Ceci est une simulation de paiement. En production, l'intégration Stripe sera mise en place.
+                  </p>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+                    Annuler
+                  </Button>
+                  <Button onClick={handlePayment} disabled={loading}>
+                    {loading ? "Traitement..." : "Confirmer le paiement"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>

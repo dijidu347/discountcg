@@ -168,19 +168,13 @@ export default function AdminDashboard() {
           <CardHeader>
             <CardTitle>Gestion</CardTitle>
             <CardDescription>
-              Fonctionnalités d'administration (à implémenter)
+              Gérer les démarches en attente
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Les fonctionnalités suivantes seront bientôt disponibles :
-            </p>
-            <ul className="list-disc list-inside space-y-2 text-sm text-muted-foreground">
-              <li>Validation des démarches en attente</li>
-              <li>Gestion des garages et utilisateurs</li>
-              <li>Export des données et rapports</li>
-              <li>Configuration des tarifs</li>
-            </ul>
+            <Button onClick={() => navigate("/admin/demarches")} className="w-full">
+              Voir toutes les démarches
+            </Button>
           </CardContent>
         </Card>
       </div>
