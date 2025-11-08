@@ -53,10 +53,10 @@ export default function NouvelleDemarche() {
 
   useEffect(() => {
     // Auto-create draft when type is selected
-    if (formData.type && !demarcheId && garage) {
+    if (formData.type && !demarcheId && garage && actionDetails) {
       handleAutoCreateDraft();
     }
-  }, [formData.type, garage]);
+  }, [formData.type, garage, actionDetails]);
 
   useEffect(() => {
     // Load existing documents when demarcheId changes
