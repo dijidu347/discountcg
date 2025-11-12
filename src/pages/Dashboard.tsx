@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 export default function Dashboard() {
@@ -94,6 +94,10 @@ export default function Dashboard() {
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/mes-demarches")}>
                   Mes démarches
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/mes-factures")}>
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Mes factures
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/support")}>
                   Support
