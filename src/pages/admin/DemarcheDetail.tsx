@@ -367,6 +367,18 @@ export default function DemarcheDetail() {
                         <p className="font-medium">{vehicule.modele}</p>
                       </div>
                     )}
+                    {vehicule.version && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Version</p>
+                        <p className="font-medium">{vehicule.version}</p>
+                      </div>
+                    )}
+                    {vehicule.couleur && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Couleur</p>
+                        <p className="font-medium">{vehicule.couleur}</p>
+                      </div>
+                    )}
                     {vehicule.vin && (
                       <div>
                         <p className="text-sm text-muted-foreground">VIN</p>
@@ -379,10 +391,22 @@ export default function DemarcheDetail() {
                         <p className="font-medium">{vehicule.numero_formule}</p>
                       </div>
                     )}
-                    {vehicule.date_mec && (
+                    {vehicule.carrosserie && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Date de MEC</p>
-                        <p className="font-medium">{new Date(vehicule.date_mec).toLocaleDateString('fr-FR')}</p>
+                        <p className="text-sm text-muted-foreground">Carrosserie</p>
+                        <p className="font-medium">{vehicule.carrosserie}</p>
+                      </div>
+                    )}
+                    {vehicule.genre && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Genre</p>
+                        <p className="font-medium">{vehicule.genre}</p>
+                      </div>
+                    )}
+                    {vehicule.type && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Type</p>
+                        <p className="font-medium">{vehicule.type}</p>
                       </div>
                     )}
                     {vehicule.energie && (
@@ -397,10 +421,40 @@ export default function DemarcheDetail() {
                         <p className="font-medium">{vehicule.puiss_fisc} CV</p>
                       </div>
                     )}
-                    {vehicule.carrosserie && (
+                    {vehicule.puiss_ch && (
                       <div>
-                        <p className="text-sm text-muted-foreground">Carrosserie</p>
-                        <p className="font-medium">{vehicule.carrosserie}</p>
+                        <p className="text-sm text-muted-foreground">Puissance DIN</p>
+                        <p className="font-medium">{vehicule.puiss_ch} ch</p>
+                      </div>
+                    )}
+                    {vehicule.cylindree && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Cylindrée</p>
+                        <p className="font-medium">{vehicule.cylindree} cm³</p>
+                      </div>
+                    )}
+                    {vehicule.co2 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">CO2</p>
+                        <p className="font-medium">{vehicule.co2} g/km</p>
+                      </div>
+                    )}
+                    {vehicule.ptr && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">PTAC</p>
+                        <p className="font-medium">{vehicule.ptr} kg</p>
+                      </div>
+                    )}
+                    {vehicule.date_mec && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Date de MEC</p>
+                        <p className="font-medium">{new Date(vehicule.date_mec).toLocaleDateString('fr-FR')}</p>
+                      </div>
+                    )}
+                    {vehicule.date_cg && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Date CG</p>
+                        <p className="font-medium">{new Date(vehicule.date_cg).toLocaleDateString('fr-FR')}</p>
                       </div>
                     )}
                   </div>
