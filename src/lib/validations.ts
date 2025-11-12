@@ -56,5 +56,22 @@ export const contactSchema = z.object({
     .optional(),
 });
 
+// Password change validation schema
+export const passwordChangeSchema = z.object({
+  currentPassword: z.string()
+    .min(1, { message: "Le mot de passe actuel est obligatoire" }),
+  newPassword: z.string()
+    .min(8, { message: "Le mot de passe doit contenir au moins 8 caractères" })
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, { 
+      message: "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre" 
+    }),
+  confirmPassword: z.string()
+    .min(1, { message: "Veuillez confirmer le mot de passe" })
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  message: "Les mots de passe ne correspondent pas",
+  path: ["confirmPassword"],
+});
+
 export type VehicleFormData = z.infer<typeof vehicleSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
+export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
