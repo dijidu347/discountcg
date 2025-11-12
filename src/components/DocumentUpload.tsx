@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, Loader2, X } from "lucide-react";
+import { FileText, CheckCircle, Loader2, X, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DocumentUploadProps {
@@ -19,6 +19,8 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   const [fileName, setFileName] = useState<string>("");
   const [storagePath, setStoragePath] = useState<string>("");
   const [documentId, setDocumentId] = useState<string>("");
+  const [isDragOver, setIsDragOver] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,6 +120,11 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
       setStoragePath("");
       setDocumentId("");
       
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      
       if (onUploadComplete) onUploadComplete();
     } catch (error: any) {
       toast({
@@ -128,35 +135,98 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
     }
   };
 
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading && !uploaded) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    if (uploading || uploaded) return;
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      setFileName(file.name);
+      await handleUpload(file);
+    }
+  };
+
+  const handleClick = () => {
+    if (!uploading && !uploaded) {
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <div className="space-y-2">
       <Label>{label}</Label>
-      <div className="relative">
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={handleClick}
+        className={`
+          relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer
+          ${isDragOver ? "border-primary bg-primary/5 scale-[1.02]" : "border-border hover:border-primary/50"}
+          ${uploaded ? "border-success bg-success/5" : ""}
+          ${uploading || uploaded ? "cursor-not-allowed opacity-75" : "hover:bg-accent/50"}
+        `}
+      >
         <Input
+          ref={fileInputRef}
           type="file"
           onChange={handleFileChange}
           accept=".pdf,.jpg,.jpeg,.png,image/*"
           capture="environment"
           disabled={uploading || uploaded}
-          className={uploaded ? "border-success" : ""}
+          className="hidden"
         />
-        {uploading && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          </div>
-        )}
-        {uploaded && (
-          <div className="absolute right-3 top-1/2 -translate-y-1/2">
-            <CheckCircle className="h-4 w-4 text-success" />
-          </div>
-        )}
+        
+        <div className="flex flex-col items-center justify-center gap-2 text-center">
+          {uploading ? (
+            <>
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Upload en cours...</p>
+            </>
+          ) : uploaded ? (
+            <>
+              <CheckCircle className="h-8 w-8 text-success" />
+              <p className="text-sm font-medium text-success">Document téléchargé</p>
+            </>
+          ) : (
+            <>
+              <Upload className="h-8 w-8 text-muted-foreground" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">
+                  {isDragOver ? "Déposez le fichier ici" : "Glissez-déposez votre fichier"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ou cliquez pour sélectionner (PDF, JPG, PNG)
+                </p>
+              </div>
+            </>
+          )}
+        </div>
       </div>
+      
       {fileName && (
         <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4" />
-            <span>{fileName}</span>
-            {uploaded && <span className="text-success font-medium">✓ Téléchargé</span>}
+            <span className="truncate">{fileName}</span>
           </div>
           {uploaded && (
             <Button
@@ -164,7 +234,7 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
               variant="ghost"
               size="sm"
               onClick={handleRemove}
-              className="h-8 text-destructive hover:text-destructive"
+              className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <X className="h-4 w-4 mr-1" />
               Supprimer
