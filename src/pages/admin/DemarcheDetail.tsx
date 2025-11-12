@@ -34,6 +34,7 @@ export default function DemarcheDetail() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [paiement, setPaiement] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationType, setNotificationType] = useState("info");
   const [invalidDocDialog, setInvalidDocDialog] = useState<{
@@ -120,6 +121,29 @@ export default function DemarcheDetail() {
 
       if (paiementData) {
         setPaiement(paiementData);
+      }
+
+      // Load document labels from action_documents
+      const { data: actionData } = await supabase
+        .from('actions_rapides')
+        .select('id')
+        .eq('code', demarcheData.type)
+        .single();
+
+      if (actionData) {
+        const { data: actionDocs } = await supabase
+          .from('action_documents')
+          .select('*')
+          .eq('action_id', actionData.id)
+          .order('ordre');
+
+        if (actionDocs) {
+          const labels: Record<string, string> = {};
+          actionDocs.forEach((doc, idx) => {
+            labels[`doc_${idx + 1}`] = doc.nom_document;
+          });
+          setDocumentLabels(labels);
+        }
       }
     }
 
@@ -383,12 +407,17 @@ export default function DemarcheDetail() {
                       <div key={doc.id} className="border rounded-lg p-4 space-y-3">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
+                            {documentLabels[doc.type_document] && (
+                              <p className="text-xs font-semibold text-primary uppercase mb-2">
+                                {documentLabels[doc.type_document]}
+                              </p>
+                            )}
                             <div className="flex items-center gap-2 mb-1">
                               <p className="text-sm font-medium">{doc.nom_fichier}</p>
                               {getValidationBadge(doc.validation_status || 'pending')}
                             </div>
                             <p className="text-xs text-muted-foreground">
-                              {doc.type_document} • {(doc.taille_octets / 1024).toFixed(2)} KB
+                              {(doc.taille_octets / 1024).toFixed(2)} KB
                             </p>
                             {doc.validation_comment && (
                               <p className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded">
