@@ -141,6 +141,7 @@ export default function MesDemarches() {
               <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>N° Démarche</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Immatriculation</TableHead>
                 <TableHead>Statut</TableHead>
@@ -156,6 +157,9 @@ export default function MesDemarches() {
                       key={demarche.id} 
                       className="hover:bg-muted/50 transition-colors"
                     >
+                      <TableCell className="font-mono text-xs font-semibold text-primary">
+                        {demarche.numero_demarche}
+                      </TableCell>
                       <TableCell className="font-medium">
                         {typeLabels[demarche.type]}
                       </TableCell>

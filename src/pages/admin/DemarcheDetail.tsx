@@ -467,9 +467,14 @@ export default function DemarcheDetail() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Démarche #{demarche.immatriculation}</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                      <span>Démarche</span>
+                      <span className="font-mono text-sm font-semibold text-primary px-2 py-1 bg-primary/10 rounded">
+                        {demarche.numero_demarche}
+                      </span>
+                    </CardTitle>
                     <CardDescription>
-                      Créée le {new Date(demarche.created_at).toLocaleDateString('fr-FR')}
+                      Créée le {new Date(demarche.created_at).toLocaleDateString('fr-FR')} • {demarche.immatriculation}
                     </CardDescription>
                   </div>
                   <FactureButton 

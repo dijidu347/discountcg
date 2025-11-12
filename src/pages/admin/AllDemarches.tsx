@@ -77,6 +77,7 @@ export default function AllDemarches() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>N° Démarche</TableHead>
                 <TableHead>Immatriculation</TableHead>
                 <TableHead>Garage</TableHead>
                 <TableHead>Type</TableHead>
@@ -89,6 +90,7 @@ export default function AllDemarches() {
             <TableBody>
               {demarches.map((d: any) => (
                 <TableRow key={d.id}>
+                  <TableCell className="font-mono text-xs font-semibold text-primary">{d.numero_demarche}</TableCell>
                   <TableCell className="font-medium">{d.immatriculation}</TableCell>
                   <TableCell>{d.garages?.raison_sociale}</TableCell>
                   <TableCell>{d.type}</TableCell>
