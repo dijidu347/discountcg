@@ -2,7 +2,8 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FileText, CheckCircle, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, CheckCircle, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface DocumentUploadProps {
@@ -16,6 +17,8 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [fileName, setFileName] = useState<string>("");
+  const [storagePath, setStoragePath] = useState<string>("");
+  const [documentId, setDocumentId] = useState<string>("");
   const { toast } = useToast();
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +51,7 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
         .getPublicUrl(fileName);
 
       // Save document reference in database
-      const { error: dbError } = await supabase
+      const { data: docData, error: dbError } = await supabase
         .from('documents')
         .insert({
           demarche_id: demarcheId,
@@ -57,7 +60,9 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
           nom_fichier: file.name,
           url: publicUrl,
           taille_octets: file.size
-        });
+        })
+        .select()
+        .single();
 
       if (dbError) throw dbError;
 
@@ -67,6 +72,8 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
       });
 
       setUploaded(true);
+      setStoragePath(fileName);
+      if (docData) setDocumentId(docData.id);
       if (onUploadComplete) onUploadComplete();
     } catch (error: any) {
       toast({
@@ -76,6 +83,48 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
       });
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    try {
+      // Delete from storage
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage
+          .from('demarche-documents')
+          .remove([storagePath]);
+
+        if (storageError) throw storageError;
+      }
+
+      // Delete from database
+      if (documentId) {
+        const { error: dbError } = await supabase
+          .from('documents')
+          .delete()
+          .eq('id', documentId);
+
+        if (dbError) throw dbError;
+      }
+
+      toast({
+        title: "Document supprimé",
+        description: "Vous pouvez maintenant uploader un nouveau document"
+      });
+
+      // Reset state
+      setUploaded(false);
+      setFileName("");
+      setStoragePath("");
+      setDocumentId("");
+      
+      if (onUploadComplete) onUploadComplete();
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message,
+        variant: "destructive"
+      });
     }
   };
 
@@ -103,10 +152,24 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
         )}
       </div>
       {fileName && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileText className="h-4 w-4" />
-          <span>{fileName}</span>
-          {uploaded && <span className="text-success font-medium">✓ Téléchargé</span>}
+        <div className="flex items-center justify-between gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            <span>{fileName}</span>
+            {uploaded && <span className="text-success font-medium">✓ Téléchargé</span>}
+          </div>
+          {uploaded && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleRemove}
+              className="h-8 text-destructive hover:text-destructive"
+            >
+              <X className="h-4 w-4 mr-1" />
+              Supprimer
+            </Button>
+          )}
         </div>
       )}
     </div>
