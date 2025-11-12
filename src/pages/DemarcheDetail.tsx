@@ -9,6 +9,7 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FactureButton } from "@/components/FactureButton";
 
 const statusLabels: Record<string, string> = {
   en_saisie: "En saisie",
@@ -175,22 +176,31 @@ export default function DemarcheDetail() {
             {/* Demarche Info */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-2xl">{typeLabels[demarche.type]}</CardTitle>
-                    <CardDescription>Immatriculation: {demarche.immatriculation}</CardDescription>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <CardTitle className="text-2xl">{typeLabels[demarche.type]}</CardTitle>
+                      <CardDescription>Immatriculation: {demarche.immatriculation}</CardDescription>
+                    </div>
+                    <Badge 
+                      className={
+                        demarche.status === 'valide' || demarche.status === 'finalise' 
+                          ? 'bg-success' 
+                          : demarche.status === 'refuse'
+                          ? 'bg-destructive'
+                          : 'bg-warning'
+                      }
+                    >
+                      {statusLabels[demarche.status]}
+                    </Badge>
                   </div>
-                  <Badge 
-                    className={
-                      demarche.status === 'valide' || demarche.status === 'finalise' 
-                        ? 'bg-success' 
-                        : demarche.status === 'refuse'
-                        ? 'bg-destructive'
-                        : 'bg-warning'
-                    }
-                  >
-                    {statusLabels[demarche.status]}
-                  </Badge>
+                  {demarche.facture_id && (
+                    <FactureButton 
+                      demarcheId={demarche.id}
+                      existingFactureId={demarche.facture_id}
+                      onFactureGenerated={loadData}
+                    />
+                  )}
                 </div>
               </CardHeader>
               <CardContent>

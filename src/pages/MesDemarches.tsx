@@ -145,6 +145,7 @@ export default function MesDemarches() {
                 <TableHead>Immatriculation</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Montant</TableHead>
+                <TableHead>Facture</TableHead>
                 <TableHead>Date de création</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -165,6 +166,16 @@ export default function MesDemarches() {
                         </Badge>
                       </TableCell>
                       <TableCell>{demarche.montant_ttc.toFixed(2)} €</TableCell>
+                      <TableCell>
+                        {demarche.facture_id ? (
+                          <Badge variant="outline" className="gap-1">
+                            <FileText className="h-3 w-3" />
+                            Disponible
+                          </Badge>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {new Date(demarche.created_at).toLocaleDateString('fr-FR')}
                       </TableCell>

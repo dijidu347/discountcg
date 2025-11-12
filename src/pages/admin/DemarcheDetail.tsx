@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { Badge } from "@/components/ui/badge";
+import { FactureButton } from "@/components/FactureButton";
 import {
   Dialog,
   DialogContent,
@@ -307,10 +308,19 @@ export default function DemarcheDetail() {
             {/* Demarche Info */}
             <Card>
               <CardHeader>
-                <CardTitle>Démarche #{demarche.immatriculation}</CardTitle>
-                <CardDescription>
-                  Créée le {new Date(demarche.created_at).toLocaleDateString('fr-FR')}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Démarche #{demarche.immatriculation}</CardTitle>
+                    <CardDescription>
+                      Créée le {new Date(demarche.created_at).toLocaleDateString('fr-FR')}
+                    </CardDescription>
+                  </div>
+                  <FactureButton 
+                    demarcheId={demarche.id}
+                    existingFactureId={demarche.facture_id}
+                    onFactureGenerated={loadDemarcheData}
+                  />
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">

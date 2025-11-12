@@ -93,6 +93,7 @@ export type Database = {
           commentaire: string | null
           created_at: string
           documents_complets: boolean | null
+          facture_id: string | null
           frais_dossier: number | null
           garage_id: string
           id: string
@@ -112,6 +113,7 @@ export type Database = {
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
+          facture_id?: string | null
           frais_dossier?: number | null
           garage_id: string
           id?: string
@@ -131,6 +133,7 @@ export type Database = {
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
+          facture_id?: string | null
           frais_dossier?: number | null
           garage_id?: string
           id?: string
@@ -147,6 +150,13 @@ export type Database = {
           vehicule_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "demarches_facture_id_fkey"
+            columns: ["facture_id"]
+            isOneToOne: false
+            referencedRelation: "factures"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "demarches_garage_id_fkey"
             columns: ["garage_id"]
@@ -212,6 +222,60 @@ export type Database = {
             columns: ["demarche_id"]
             isOneToOne: false
             referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      factures: {
+        Row: {
+          created_at: string
+          demarche_id: string
+          garage_id: string
+          id: string
+          montant_ht: number
+          montant_ttc: number
+          numero: string
+          pdf_url: string | null
+          tva: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          demarche_id: string
+          garage_id: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          numero: string
+          pdf_url?: string | null
+          tva?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          demarche_id?: string
+          garage_id?: string
+          id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          numero?: string
+          pdf_url?: string | null
+          tva?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "factures_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "factures_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
             referencedColumns: ["id"]
           },
         ]
@@ -463,6 +527,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_facture_numero: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
