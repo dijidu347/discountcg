@@ -57,9 +57,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmit = async () => {
     setLoading(true);
 
     try {
@@ -213,7 +211,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
         )}
 
         {showForm && (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="immatriculation">
@@ -397,10 +395,10 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
               </div>
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="button" onClick={handleSubmit} disabled={loading} className="w-full">
               {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
             </Button>
-          </form>
+          </div>
         )}
       </CardContent>
     </Card>
