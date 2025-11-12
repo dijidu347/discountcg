@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import NouvelleDemarche from "./pages/NouvelleDemarche";
 import MesDemarches from "./pages/MesDemarches";
+import MesFactures from "./pages/MesFactures";
 import DemarcheDetail from "./pages/DemarcheDetail";
 import GarageSettings from "./pages/GarageSettings";
 import Support from "./pages/Support";
@@ -37,6 +38,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/nouvelle-demarche" element={<NouvelleDemarche />} />
             <Route path="/mes-demarches" element={<MesDemarches />} />
+            <Route path="/mes-factures" element={<MesFactures />} />
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
             <Route path="/support" element={<Support />} />
