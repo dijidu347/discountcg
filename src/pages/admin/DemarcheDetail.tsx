@@ -731,7 +731,42 @@ export default function DemarcheDetail() {
 
       {/* Invalid Document Dialog */}
       <Dialog open={invalidDocDialog.open} onOpenChange={(open) => setInvalidDocDialog({ ...invalidDocDialog, open })}>
-...
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Refuser le document</DialogTitle>
+            <DialogDescription>
+              Indiquez la raison du refus de ce document
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="refusal-comment">Raison du refus *</Label>
+              <Textarea
+                id="refusal-comment"
+                value={invalidDocDialog.comment}
+                onChange={(e) => setInvalidDocDialog({ ...invalidDocDialog, comment: e.target.value })}
+                placeholder="Ex: Document illisible, mauvais format, information manquante..."
+                rows={4}
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => setInvalidDocDialog({ open: false, docId: null, comment: "" })}
+            >
+              Annuler
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={confirmInvalidateDocument}
+              disabled={!invalidDocDialog.comment}
+            >
+              Confirmer le refus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
 
       <DocumentViewer
