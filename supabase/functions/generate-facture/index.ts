@@ -242,6 +242,7 @@ function generateFactureHTML(facture: any, demarche: any, garage: any): string {
   <table>
     <thead>
       <tr>
+        <th>N° Démarche</th>
         <th>Description</th>
         <th>Immatriculation</th>
         <th>Type</th>
@@ -250,6 +251,7 @@ function generateFactureHTML(facture: any, demarche: any, garage: any): string {
     </thead>
     <tbody>
       <tr>
+        <td style="font-family: monospace; font-weight: bold;">${demarche.numero_demarche}</td>
         <td>Démarche administrative</td>
         <td>${demarche.immatriculation}</td>
         <td>${demarche.type}</td>
@@ -258,15 +260,15 @@ function generateFactureHTML(facture: any, demarche: any, garage: any): string {
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="3" style="text-align: right;"><strong>Total HT</strong></td>
+        <td colspan="4" style="text-align: right;"><strong>Total HT</strong></td>
         <td style="text-align: right;"><strong>${Number(facture.montant_ht).toFixed(2)} €</strong></td>
       </tr>
       <tr>
-        <td colspan="3" style="text-align: right;">TVA (${facture.tva}%)</td>
+        <td colspan="4" style="text-align: right;">TVA (${facture.tva}%)</td>
         <td style="text-align: right;">${(Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2)} €</td>
       </tr>
       <tr class="total-row">
-        <td colspan="3" style="text-align: right;">Total TTC</td>
+        <td colspan="4" style="text-align: right;">Total TTC</td>
         <td style="text-align: right;">${Number(facture.montant_ttc).toFixed(2)} €</td>
       </tr>
     </tfoot>
