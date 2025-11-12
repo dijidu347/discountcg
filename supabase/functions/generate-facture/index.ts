@@ -10,6 +10,13 @@ interface GenerateFactureRequest {
   demarcheId: string;
 }
 
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function isValidUUID(uuid: string): boolean {
+  return UUID_REGEX.test(uuid);
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,6 +41,8 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error('Unauthorized');
     }
 
+    console.log('User authenticated:', user.id);
+
     // Check if user is admin
     const { data: roles } = await supabase
       .from('user_roles')
@@ -42,10 +51,19 @@ serve(async (req: Request): Promise<Response> => {
       .single();
 
     if (!roles || roles.role !== 'admin') {
+      console.log('User is not admin');
       throw new Error('Only admins can generate invoices');
     }
 
+    console.log('Admin access confirmed');
+
     const { demarcheId }: GenerateFactureRequest = await req.json();
+
+    // Validate demarcheId format
+    if (!demarcheId || typeof demarcheId !== 'string' || !isValidUUID(demarcheId)) {
+      console.error('Invalid demarcheId format:', demarcheId);
+      throw new Error('Invalid demarcheId format - must be a valid UUID');
+    }
 
     console.log('Generating facture for demarche:', demarcheId);
 

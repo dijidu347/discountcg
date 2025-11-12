@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Car, Plus } from "lucide-react";
+import { vehicleSchema } from "@/lib/validations";
 
 interface VehicleFormProps {
   garageId: string;
@@ -58,88 +59,111 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.immatriculation.trim()) {
-      toast({
-        title: "Erreur",
-        description: "L'immatriculation est obligatoire",
-        variant: "destructive"
-      });
-      return;
-    }
 
     setLoading(true);
 
-    const vehicleData = {
-      garage_id: garageId,
-      immatriculation: formData.immatriculation.toUpperCase(),
-      numero_formule: formData.numero_formule || null,
-      marque: formData.marque || null,
-      modele: formData.modele || null,
-      carrosserie: formData.carrosserie || null,
-      co2: formData.co2 ? parseFloat(formData.co2) : null,
-      couleur: formData.couleur || null,
-      cylindree: formData.cylindree ? parseFloat(formData.cylindree) : null,
-      date_cg: formData.date_cg || null,
-      date_mec: formData.date_mec || null,
-      energie: formData.energie || null,
-      genre: formData.genre || null,
-      puiss_ch: formData.puiss_ch ? parseFloat(formData.puiss_ch) : null,
-      puiss_fisc: formData.puiss_fisc ? parseFloat(formData.puiss_fisc) : null,
-      type: formData.type || null,
-      version: formData.version || null,
-      vin: formData.vin || null,
-      ptr: formData.ptr ? parseFloat(formData.ptr) : null
-    };
+    try {
+      // Prepare data for validation
+      const validationData = {
+        immatriculation: formData.immatriculation.toUpperCase(),
+        numero_formule: formData.numero_formule || undefined,
+        marque: formData.marque || undefined,
+        modele: formData.modele || undefined,
+        carrosserie: formData.carrosserie || undefined,
+        co2: formData.co2 ? parseFloat(formData.co2) : null,
+        couleur: formData.couleur || undefined,
+        cylindree: formData.cylindree ? parseFloat(formData.cylindree) : null,
+        date_cg: formData.date_cg || null,
+        date_mec: formData.date_mec || null,
+        energie: formData.energie || undefined,
+        genre: formData.genre || undefined,
+        puiss_ch: formData.puiss_ch ? parseFloat(formData.puiss_ch) : null,
+        puiss_fisc: formData.puiss_fisc ? parseFloat(formData.puiss_fisc) : null,
+        type: formData.type || undefined,
+        version: formData.version || undefined,
+        vin: formData.vin || undefined,
+        ptr: formData.ptr ? parseFloat(formData.ptr) : null
+      };
 
-    const { data, error } = await supabase
-      .from('vehicules')
-      .insert(vehicleData)
-      .select()
-      .single();
+      // Validate with Zod
+      const validatedData = vehicleSchema.parse(validationData);
 
-    setLoading(false);
+      const { data, error } = await supabase
+        .from('vehicules')
+        .insert({
+          garage_id: garageId,
+          immatriculation: validatedData.immatriculation,
+          numero_formule: validatedData.numero_formule || null,
+          marque: validatedData.marque || null,
+          modele: validatedData.modele || null,
+          carrosserie: validatedData.carrosserie || null,
+          co2: validatedData.co2,
+          couleur: validatedData.couleur || null,
+          cylindree: validatedData.cylindree,
+          date_cg: validatedData.date_cg,
+          date_mec: validatedData.date_mec,
+          energie: validatedData.energie || null,
+          genre: validatedData.genre || null,
+          puiss_ch: validatedData.puiss_ch,
+          puiss_fisc: validatedData.puiss_fisc,
+          type: validatedData.type || null,
+          version: validatedData.version || null,
+          vin: validatedData.vin || null,
+          ptr: validatedData.ptr
+        })
+        .select()
+        .single();
 
-    if (error) {
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'enregistrer le véhicule",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
       toast({
-        title: "Erreur",
-        description: "Impossible d'enregistrer le véhicule",
+        title: "Véhicule enregistré",
+        description: "Le véhicule a été ajouté à votre historique"
+      });
+
+      setFormData({
+        immatriculation: "",
+        numero_formule: "",
+        marque: "",
+        modele: "",
+        carrosserie: "",
+        co2: "",
+        couleur: "",
+        cylindree: "",
+        date_cg: "",
+        date_mec: "",
+        energie: "",
+        genre: "",
+        puiss_ch: "",
+        puiss_fisc: "",
+        type: "",
+        version: "",
+        vin: "",
+        ptr: ""
+      });
+      
+      setShowForm(false);
+      loadVehicles();
+      
+      if (data) {
+        onVehicleSelect(data.id, data.immatriculation);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur de validation",
+        description: error.message || "Données invalides",
         variant: "destructive"
       });
-      return;
-    }
-
-    toast({
-      title: "Véhicule enregistré",
-      description: "Le véhicule a été ajouté à votre historique"
-    });
-
-    setFormData({
-      immatriculation: "",
-      numero_formule: "",
-      marque: "",
-      modele: "",
-      carrosserie: "",
-      co2: "",
-      couleur: "",
-      cylindree: "",
-      date_cg: "",
-      date_mec: "",
-      energie: "",
-      genre: "",
-      puiss_ch: "",
-      puiss_fisc: "",
-      type: "",
-      version: "",
-      vin: "",
-      ptr: ""
-    });
-    
-    setShowForm(false);
-    loadVehicles();
-    
-    if (data) {
-      onVehicleSelect(data.id, data.immatriculation);
+    } finally {
+      setLoading(false);
     }
   };
 

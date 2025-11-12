@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Mail, Phone, MapPin } from "lucide-react";
+import { contactSchema } from "@/lib/validations";
 
 const ContactForm = () => {
   const { toast } = useToast();
@@ -21,15 +22,37 @@ const ContactForm = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate form submission
-    setTimeout(() => {
+    try {
+      const formElement = e.target as HTMLFormElement;
+      const formData = new FormData(formElement);
+      
+      // Validate form data with Zod
+      const validatedData = contactSchema.parse({
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        email: formData.get('email'),
+        service: formData.get('service'),
+        plate: formData.get('plate') || undefined,
+        message: formData.get('message') || undefined,
+      });
+
+      // Simulate form submission (in production, send to backend)
+      setTimeout(() => {
+        toast({
+          title: "Message envoyé avec succès !",
+          description: "Nous vous répondrons dans les plus brefs délais.",
+        });
+        setIsSubmitting(false);
+        formElement.reset();
+      }, 1500);
+    } catch (error: any) {
       toast({
-        title: "Message envoyé avec succès !",
-        description: "Nous vous répondrons dans les plus brefs délais.",
+        title: "Erreur de validation",
+        description: error.errors?.[0]?.message || "Données invalides",
+        variant: "destructive"
       });
       setIsSubmitting(false);
-      (e.target as HTMLFormElement).reset();
-    }, 1500);
+    }
   };
 
   return (
