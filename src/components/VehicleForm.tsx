@@ -377,7 +377,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_cg">Date CG (dd/MM/yyyy)</Label>
+                <Label htmlFor="date_cg">Date CG</Label>
                 <Input
                   id="date_cg"
                   type="date"
@@ -387,7 +387,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_mec">Date MEC (dd/MM/yyyy)</Label>
+                <Label htmlFor="date_mec">Date MEC</Label>
                 <Input
                   id="date_mec"
                   type="date"
