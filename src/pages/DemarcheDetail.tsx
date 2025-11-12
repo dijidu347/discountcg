@@ -35,7 +35,9 @@ export default function DemarcheDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [demarche, setDemarche] = useState<any>(null);
+  const [vehicule, setVehicule] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [viewerState, setViewerState] = useState<{
     isOpen: boolean;
@@ -96,6 +98,19 @@ export default function DemarcheDetail() {
 
     setDemarche(demarcheData);
 
+    // Load vehicule data
+    if (demarcheData.vehicule_id) {
+      const { data: vehiculeData } = await supabase
+        .from('vehicules')
+        .select('*')
+        .eq('id', demarcheData.vehicule_id)
+        .single();
+
+      if (vehiculeData) {
+        setVehicule(vehiculeData);
+      }
+    }
+
     // Load documents
     const { data: documentsData } = await supabase
       .from('documents')
@@ -104,6 +119,30 @@ export default function DemarcheDetail() {
       .order('created_at', { ascending: false });
 
     setDocuments(documentsData || []);
+
+    // Load document labels from action_documents
+    const { data: actionData } = await supabase
+      .from('actions_rapides')
+      .select('id')
+      .eq('code', demarcheData.type)
+      .single();
+
+    if (actionData) {
+      const { data: actionDocs } = await supabase
+        .from('action_documents')
+        .select('*')
+        .eq('action_id', actionData.id)
+        .order('ordre');
+
+      if (actionDocs) {
+        const labels: Record<string, string> = {};
+        actionDocs.forEach((doc, idx) => {
+          labels[`doc_${idx + 1}`] = doc.nom_document;
+        });
+        setDocumentLabels(labels);
+      }
+    }
+
     setLoading(false);
   };
 
@@ -173,6 +212,71 @@ export default function DemarcheDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Vehicule Info */}
+            {vehicule && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Informations du véhicule</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Immatriculation</p>
+                      <p className="font-medium">{vehicule.immatriculation}</p>
+                    </div>
+                    {vehicule.marque && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Marque</p>
+                        <p className="font-medium">{vehicule.marque}</p>
+                      </div>
+                    )}
+                    {vehicule.modele && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Modèle</p>
+                        <p className="font-medium">{vehicule.modele}</p>
+                      </div>
+                    )}
+                    {vehicule.vin && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">VIN</p>
+                        <p className="font-medium">{vehicule.vin}</p>
+                      </div>
+                    )}
+                    {vehicule.numero_formule && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">N° de formule</p>
+                        <p className="font-medium">{vehicule.numero_formule}</p>
+                      </div>
+                    )}
+                    {vehicule.date_mec && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Date de MEC</p>
+                        <p className="font-medium">{new Date(vehicule.date_mec).toLocaleDateString('fr-FR')}</p>
+                      </div>
+                    )}
+                    {vehicule.energie && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Énergie</p>
+                        <p className="font-medium">{vehicule.energie}</p>
+                      </div>
+                    )}
+                    {vehicule.puiss_fisc && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Puissance fiscale</p>
+                        <p className="font-medium">{vehicule.puiss_fisc} CV</p>
+                      </div>
+                    )}
+                    {vehicule.carrosserie && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Carrosserie</p>
+                        <p className="font-medium">{vehicule.carrosserie}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Demarche Info */}
             <Card>
               <CardHeader>
@@ -288,9 +392,14 @@ export default function DemarcheDetail() {
                     <div key={doc.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
+                          {documentLabels[doc.type_document] && (
+                            <p className="text-xs font-semibold text-primary uppercase mb-1">
+                              {documentLabels[doc.type_document]}
+                            </p>
+                          )}
                           <p className="font-medium">{doc.nom_fichier}</p>
                           <p className="text-sm text-muted-foreground">
-                            Type: {doc.type_document} • {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                            {new Date(doc.created_at).toLocaleDateString('fr-FR')}
                           </p>
                         </div>
                         {getValidationBadge(doc.validation_status)}
