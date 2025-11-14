@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, Loader2, X, Upload } from "lucide-react";
+import { FileText, CheckCircle, Loader2, X, Upload, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 
 interface UploadedFile {
   id: string;
@@ -172,9 +173,47 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
     }
   };
 
+  // Check if this document is a Cerfa
+  const cerfaNumber = extractCerfaNumber(label);
+  const hasCerfa = cerfaNumber && cerfaExists(cerfaNumber);
+
+  // Render label with Cerfa link if applicable
+  const renderLabel = () => {
+    if (!hasCerfa || !cerfaNumber) {
+      return <Label>{label}</Label>;
+    }
+
+    // Split the label to highlight the Cerfa part
+    const cerfaRegex = /(\(cerfa\s+\d+\*\d+\))/i;
+    const parts = label.split(cerfaRegex);
+    
+    return (
+      <Label className="flex items-center gap-2 flex-wrap">
+        {parts.map((part, index) => {
+          if (cerfaRegex.test(part)) {
+            return (
+              <a
+                key={index}
+                href={getCerfaUrl(cerfaNumber)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {part}
+                <Download className="h-3 w-3" />
+              </a>
+            );
+          }
+          return <span key={index}>{part}</span>;
+        })}
+      </Label>
+    );
+  };
+
   return (
     <div className="space-y-3">
-      <Label>{label}</Label>
+      {renderLabel()}
       
       {/* List of uploaded files */}
       {uploadedFiles.length > 0 && (
