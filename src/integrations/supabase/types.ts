@@ -291,11 +291,13 @@ export type Database = {
           email: string
           id: string
           is_gold: boolean | null
+          is_verified: boolean | null
           raison_sociale: string
           siret: string
           telephone: string
           updated_at: string
           user_id: string
+          verification_requested_at: string | null
           ville: string
         }
         Insert: {
@@ -305,11 +307,13 @@ export type Database = {
           email: string
           id?: string
           is_gold?: boolean | null
+          is_verified?: boolean | null
           raison_sociale: string
           siret: string
           telephone: string
           updated_at?: string
           user_id: string
+          verification_requested_at?: string | null
           ville: string
         }
         Update: {
@@ -319,11 +323,13 @@ export type Database = {
           email?: string
           id?: string
           is_gold?: boolean | null
+          is_verified?: boolean | null
           raison_sociale?: string
           siret?: string
           telephone?: string
           updated_at?: string
           user_id?: string
+          verification_requested_at?: string | null
           ville?: string
         }
         Relationships: []
@@ -424,6 +430,97 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          created_at: string | null
+          end_date: string | null
+          garage_id: string
+          id: string
+          margin_percentage: number | null
+          plan_type: string
+          price_per_demarche: number
+          start_date: string | null
+          status: string
+          stripe_subscription_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          end_date?: string | null
+          garage_id: string
+          id?: string
+          margin_percentage?: number | null
+          plan_type: string
+          price_per_demarche: number
+          start_date?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          end_date?: string | null
+          garage_id?: string
+          id?: string
+          margin_percentage?: number | null
+          plan_type?: string
+          price_per_demarche?: number
+          start_date?: string | null
+          status?: string
+          stripe_subscription_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tracking_services: {
+        Row: {
+          created_at: string | null
+          demarche_id: string
+          id: string
+          notes: string | null
+          price: number
+          service_type: string
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          demarche_id: string
+          id?: string
+          notes?: string | null
+          price: number
+          service_type: string
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          demarche_id?: string
+          id?: string
+          notes?: string | null
+          price?: number
+          service_type?: string
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_services_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: true
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -518,6 +615,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "vehicules_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_documents: {
+        Row: {
+          created_at: string | null
+          document_type: string
+          garage_id: string
+          id: string
+          nom_fichier: string
+          rejection_reason: string | null
+          status: string
+          url: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          document_type: string
+          garage_id: string
+          id?: string
+          nom_fichier: string
+          rejection_reason?: string | null
+          status?: string
+          url: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          document_type?: string
+          garage_id?: string
+          id?: string
+          nom_fichier?: string
+          rejection_reason?: string | null
+          status?: string
+          url?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_documents_garage_id_fkey"
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
