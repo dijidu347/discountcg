@@ -17,7 +17,8 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 20%;
 
-    --primary: 190 100% 42%;
+    /* Couleurs officielles françaises */
+    --primary: 225 100% 39%; /* Bleu France */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 0 0% 20%;
@@ -26,8 +27,12 @@ All colors MUST be HSL.
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 33 100% 50%;
+    --accent: 0 100% 50%; /* Rouge France */
     --accent-foreground: 0 0% 100%;
+
+    --france-blue: 225 100% 39%;
+    --france-white: 0 0% 100%;
+    --france-red: 0 100% 50%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;
@@ -40,17 +45,18 @@ All colors MUST be HSL.
 
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 190 100% 42%;
+    --ring: 225 100% 39%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    /* Custom design tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(190, 100%, 42%) 0%, hsl(190, 100%, 35%) 100%);
-    --gradient-accent: linear-gradient(135deg, hsl(33, 100%, 50%) 0%, hsl(33, 100%, 45%) 100%);
-    --gradient-hero: linear-gradient(135deg, hsl(190, 100%, 42%) 0%, hsl(190, 80%, 30%) 100%);
+    /* Custom design tokens - Style officiel français */
+    --gradient-primary: linear-gradient(135deg, hsl(225, 100%, 39%) 0%, hsl(225, 90%, 30%) 100%);
+    --gradient-france: linear-gradient(90deg, hsl(225, 100%, 39%) 0%, hsl(0, 0%, 100%) 50%, hsl(0, 100%, 50%) 100%);
+    --gradient-hero: linear-gradient(135deg, hsl(225, 100%, 39%) 0%, hsl(225, 80%, 50%) 100%);
     --shadow-soft: 0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1);
     --shadow-medium: 0 10px 15px -3px hsl(0 0% 0% / 0.1), 0 4px 6px -4px hsl(0 0% 0% / 0.1);
     --shadow-large: 0 20px 25px -5px hsl(0 0% 0% / 0.1), 0 8px 10px -6px hsl(0 0% 0% / 0.1);
+    --shadow-france: 0 4px 6px -1px hsl(225 100% 39% / 0.2), 0 2px 4px -2px hsl(0 100% 50% / 0.1);
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
 

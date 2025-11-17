@@ -101,6 +101,7 @@ export type Database = {
           is_draft: boolean | null
           montant_ht: number | null
           montant_ttc: number | null
+          numero_demarche: string | null
           paye: boolean | null
           status: Database["public"]["Enums"]["demarche_status"]
           type: Database["public"]["Enums"]["demarche_type"]
@@ -121,6 +122,7 @@ export type Database = {
           is_draft?: boolean | null
           montant_ht?: number | null
           montant_ttc?: number | null
+          numero_demarche?: string | null
           paye?: boolean | null
           status?: Database["public"]["Enums"]["demarche_status"]
           type: Database["public"]["Enums"]["demarche_type"]
@@ -141,6 +143,7 @@ export type Database = {
           is_draft?: boolean | null
           montant_ht?: number | null
           montant_ttc?: number | null
+          numero_demarche?: string | null
           paye?: boolean | null
           status?: Database["public"]["Enums"]["demarche_status"]
           type?: Database["public"]["Enums"]["demarche_type"]
@@ -527,6 +530,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_demarche_numero: { Args: never; Returns: string }
       generate_facture_numero: { Args: never; Returns: string }
       has_role: {
         Args: {

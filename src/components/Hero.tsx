@@ -1,68 +1,117 @@
-import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
-import heroImage from "@/assets/hero-image.jpg";
+import { Shield, Award, Clock } from "lucide-react";
+import { PriceSimulator } from "@/components/PriceSimulator";
+import { StatsCounter } from "@/components/StatsCounter";
 
 const Hero = () => {
-  const scrollToContact = () => {
-    const element = document.getElementById("contact");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
-    }
-  };
-
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-16">
-      {/* Background Image with Overlay */}
-      <div className="absolute inset-0 z-0">
-        <img
-          src={heroImage}
-          alt="Service professionnel de carte grise"
-          className="w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-secondary/95 via-secondary/90 to-primary/70"></div>
+    <section className="relative min-h-screen pt-20 pb-16 overflow-hidden">
+      {/* Bande tricolore en haut */}
+      <div className="absolute top-16 left-0 right-0 h-2 bg-gradient-to-r from-primary via-background to-accent z-20" />
+      
+      {/* Background avec motif subtil */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/5">
+        <div className="absolute inset-0" style={{
+          backgroundImage: 'radial-gradient(circle at 2px 2px, hsl(var(--primary) / 0.05) 1px, transparent 0)',
+          backgroundSize: '32px 32px'
+        }} />
       </div>
 
-      {/* Content */}
       <div className="container mx-auto px-4 relative z-10">
-        <div className="max-w-3xl">
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-white mb-6 leading-tight">
-            Vos formalités <span className="text-accent">carte grise</span> simplifiées
-          </h1>
-          <p className="text-xl md:text-2xl text-white/90 mb-8">
-            Service professionnel, rapide et 100% en ligne. Déclarations et cartes grises traitées en moins de 24h.
+        {/* En-tête avec drapeaux */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <span className="text-4xl">🇫🇷</span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-primary">
+              Garage Jimmy 2x
+            </h1>
+            <span className="text-4xl">🇫🇷</span>
+          </div>
+          <p className="text-xl text-muted-foreground font-medium">
+            Service Agréé & Certifié par l'État Français
           </p>
-
-          {/* Price Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all duration-300">
-              <CheckCircle2 className="w-6 h-6 text-accent mb-2" />
-              <h3 className="text-white font-semibold mb-1">Déclaration d'achat</h3>
-              <p className="text-3xl font-bold text-white">10€</p>
+          <div className="flex items-center justify-center gap-6 mt-4 flex-wrap">
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Shield className="w-5 h-5" />
+              <span>100% Légal</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all duration-300">
-              <CheckCircle2 className="w-6 h-6 text-accent mb-2" />
-              <h3 className="text-white font-semibold mb-1">Déclaration de cession</h3>
-              <p className="text-3xl font-bold text-white">10€</p>
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Award className="w-5 h-5" />
+              <span>Depuis 2017</span>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm border-2 border-white/20 rounded-xl p-4 hover:bg-white/20 transition-all duration-300">
-              <CheckCircle2 className="w-6 h-6 text-accent mb-2" />
-              <h3 className="text-white font-semibold mb-1">Carte grise</h3>
-              <p className="text-3xl font-bold text-white">30€ <span className="text-lg font-normal">+ prix CG</span></p>
+            <div className="flex items-center gap-2 text-sm font-medium text-primary">
+              <Clock className="w-5 h-5" />
+              <span>Traitement 24h</span>
             </div>
           </div>
-
-          <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={scrollToContact}>
-            Commencer maintenant
-            <ArrowRight className="ml-2" />
-          </Button>
         </div>
-      </div>
 
-      {/* Decorative Wave */}
-      <div className="absolute bottom-0 left-0 right-0 z-10">
-        <svg className="w-full h-16 md:h-24" viewBox="0 0 1440 74" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M0 74L60 68.3C120 62.7 240 51.3 360 45.7C480 40 600 40 720 45.7C840 51.3 960 62.7 1080 62.7C1200 62.7 1320 51.3 1380 45.7L1440 40V74H1380C1320 74 1200 74 1080 74C960 74 840 74 720 74C600 74 480 74 360 74C240 74 120 74 60 74H0Z" fill="hsl(var(--background))"/>
-        </svg>
+        {/* Grille principale */}
+        <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
+          {/* Simulateur (2 colonnes) */}
+          <div className="lg:col-span-2">
+            <PriceSimulator />
+          </div>
+
+          {/* Stats et infos (1 colonne) */}
+          <div className="space-y-6">
+            <StatsCounter />
+            
+            {/* Badge de confiance */}
+            <div className="bg-card rounded-lg p-6 shadow-lg border-2 border-primary/20">
+              <h3 className="font-bold text-lg mb-4 text-center text-primary">
+                Pourquoi nous choisir ?
+              </h3>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-start gap-2">
+                  <span className="text-accent text-lg">✓</span>
+                  <span>Service 100% en ligne, rapide et sécurisé</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent text-lg">✓</span>
+                  <span>Équipe expérimentée depuis 2017</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent text-lg">✓</span>
+                  <span>Prix transparents, sans frais cachés</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent text-lg">✓</span>
+                  <span>Accompagnement personnalisé</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-accent text-lg">✓</span>
+                  <span>Paiement sécurisé</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Google My Business */}
+            <a
+              href="https://www.google.fr/search?sca_esv=a73f109bbcae9216&sxsrf=AE3TifMH8hCDAbm_y2mEw-YvpIEG7jzcdg:1763372759531&kgmid=/g/11w9zk40cx&q=Garage+Jimmy+2x"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block bg-card hover:bg-card/80 transition-colors rounded-lg p-4 shadow-lg border border-border"
+            >
+              <div className="flex items-center gap-3">
+                <div className="text-3xl">⭐</div>
+                <div>
+                  <p className="font-semibold text-sm">Voir nos avis Google</p>
+                  <p className="text-xs text-muted-foreground">Garage Jimmy 2x - Avis clients</p>
+                </div>
+              </div>
+            </a>
+          </div>
+        </div>
+
+        {/* Bande de confiance officielle */}
+        <div className="mt-16 text-center">
+          <div className="inline-flex items-center gap-4 bg-primary/10 px-8 py-4 rounded-full border-2 border-primary/20">
+            <span className="text-2xl">🏛️</span>
+            <p className="text-sm font-semibold text-primary">
+              Habilité par le Ministère de l'Intérieur
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

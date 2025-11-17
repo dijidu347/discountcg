@@ -39,6 +39,9 @@ export default {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
+        "france-blue": "hsl(var(--france-blue))",
+        "france-white": "hsl(var(--france-white))",
+        "france-red": "hsl(var(--france-red))",
         success: {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
