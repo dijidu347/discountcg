@@ -19,20 +19,22 @@ const Index = () => {
   return (
     <div className="min-h-screen">
       {/* Toggle buttons */}
-      <div className="fixed top-4 right-4 z-50 flex gap-2">
+      <div className="fixed top-20 right-6 z-[100] flex gap-2 bg-white p-2 rounded-lg shadow-lg border-2 border-primary">
         <Button
           variant={version === "v1" ? "default" : "outline"}
           onClick={() => setVersion("v1")}
-          size="sm"
+          size="lg"
+          className="font-bold"
         >
-          V1
+          Version 1
         </Button>
         <Button
           variant={version === "v2" ? "default" : "outline"}
           onClick={() => setVersion("v2")}
-          size="sm"
+          size="lg"
+          className="font-bold"
         >
-          V2
+          Version 2
         </Button>
       </div>
 
