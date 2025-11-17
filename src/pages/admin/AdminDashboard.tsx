@@ -171,31 +171,73 @@ export default function AdminDashboard() {
               Gérer les démarches et les utilisateurs
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button onClick={() => navigate("/admin/demarches")} className="w-full">
-              Voir toutes les démarches
-            </Button>
-            <Button onClick={() => navigate("/admin/manage-garages")} variant="outline" className="w-full">
-              Gérer les garages
-            </Button>
-            <Button onClick={() => navigate("/admin/manage-accounts")} variant="outline" className="w-full">
-              Gestion des comptes
-            </Button>
-            <Button onClick={() => navigate("/admin/manage-subscriptions")} variant="outline" className="w-full">
-              Gérer les abonnements
-            </Button>
-            <Button onClick={() => navigate("/admin/notifications")} variant="outline" className="w-full">
-              Notifications
-            </Button>
-            <Button onClick={() => navigate("/admin/historique-paiements")} variant="outline" className="w-full">
-              Historique des paiements
-            </Button>
-            <Button onClick={() => navigate("/admin/actions")} variant="outline" className="w-full">
-              Gérer les actions rapides
-            </Button>
-            <Button onClick={() => navigate("/admin/users")} variant="outline" className="w-full">
-              Gérer les administrateurs
-            </Button>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/demarches")}
+              >
+                <FileText className="h-6 w-6" />
+                <span className="text-sm font-medium">Toutes les démarches</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/garages")}
+              >
+                <Building2 className="h-6 w-6" />
+                <span className="text-sm font-medium">Gérer les garages</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/accounts")}
+              >
+                <Building2 className="h-6 w-6" />
+                <span className="text-sm font-medium">Gestion des comptes</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/subscriptions")}
+              >
+                <DollarSign className="h-6 w-6" />
+                <span className="text-sm font-medium">Gérer les abonnements</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/notifications")}
+              >
+                <FileText className="h-6 w-6" />
+                <span className="text-sm font-medium">Notifications</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/paiements")}
+              >
+                <DollarSign className="h-6 w-6" />
+                <span className="text-sm font-medium">Historique paiements</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/actions")}
+              >
+                <FileText className="h-6 w-6" />
+                <span className="text-sm font-medium">Actions rapides</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/users")}
+              >
+                <Building2 className="h-6 w-6" />
+                <span className="text-sm font-medium">Administrateurs</span>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

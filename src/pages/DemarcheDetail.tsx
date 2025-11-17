@@ -38,6 +38,7 @@ export default function DemarcheDetail() {
   const [vehicule, setVehicule] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
+  const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerState, setViewerState] = useState<{
     isOpen: boolean;
@@ -123,6 +124,15 @@ export default function DemarcheDetail() {
       Array.from(new Map(documentsData.map(doc => [doc.id, doc])).values()) : [];
     
     setDocuments(uniqueDocs);
+
+    // Load notifications for this demarche
+    const { data: notifData } = await supabase
+      .from('notifications')
+      .select('*')
+      .eq('demarche_id', id)
+      .order('created_at', { ascending: false });
+
+    setNotifications(notifData || []);
 
     // Load document labels from action_documents
     const { data: actionData } = await supabase
@@ -551,16 +561,47 @@ export default function DemarcheDetail() {
             </Card>
 
             {demarche.status === 'en_attente' && (
-              <Card className="border-warning bg-warning/5">
-                <CardHeader>
-                  <CardTitle className="text-lg text-warning">En cours de traitement</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm">
-                    Votre démarche est en cours de vérification par notre équipe. Vous serez notifié dès que le traitement sera terminé.
-                  </p>
-                </CardContent>
-              </Card>
+              <>
+                <Card className="border-warning bg-warning/5">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-warning">En cours de traitement</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm">
+                      Votre démarche est en cours de vérification par notre équipe. Vous serez notifié dès que le traitement sera terminé.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {notifications.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Messages de l'administration</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        {notifications.map((notif) => (
+                          <div key={notif.id} className="border-l-4 border-primary pl-4 py-2">
+                            <div className="flex items-center justify-between mb-1">
+                              <Badge variant="outline">{notif.type}</Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(notif.created_at).toLocaleDateString('fr-FR', {
+                                  day: '2-digit',
+                                  month: '2-digit',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-sm">{notif.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </div>
         </div>
