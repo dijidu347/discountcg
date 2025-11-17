@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Services from "@/components/Services";
@@ -9,21 +11,48 @@ import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import { GoogleReviewsCarousel } from "@/components/GoogleReviewsCarousel";
 import { PriceComparator } from "@/components/PriceComparator";
+import IndexV2 from "./IndexV2";
 
 const Index = () => {
+  const [version, setVersion] = useState<"v1" | "v2">("v1");
+
   return (
     <div className="min-h-screen">
-      <Navbar />
-      <Hero />
-      <GoogleReviewsCarousel />
-      <PriceComparator />
-      <Services />
-      <Process />
-      <WhyUs />
-      <Pricing />
-      <FAQ />
-      <ContactForm />
-      <Footer />
+      {/* Toggle buttons */}
+      <div className="fixed top-4 right-4 z-50 flex gap-2">
+        <Button
+          variant={version === "v1" ? "default" : "outline"}
+          onClick={() => setVersion("v1")}
+          size="sm"
+        >
+          V1
+        </Button>
+        <Button
+          variant={version === "v2" ? "default" : "outline"}
+          onClick={() => setVersion("v2")}
+          size="sm"
+        >
+          V2
+        </Button>
+      </div>
+
+      {version === "v1" ? (
+        <>
+          <Navbar />
+          <Hero />
+          <GoogleReviewsCarousel />
+          <PriceComparator />
+          <Services />
+          <Process />
+          <WhyUs />
+          <Pricing />
+          <FAQ />
+          <ContactForm />
+          <Footer />
+        </>
+      ) : (
+        <IndexV2 />
+      )}
     </div>
   );
 };

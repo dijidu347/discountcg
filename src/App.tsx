@@ -24,9 +24,7 @@ import ManageGarages from "./pages/admin/ManageGarages";
 import ManageAccounts from "./pages/admin/ManageAccounts";
 import ManageSubscriptions from "./pages/admin/ManageSubscriptions";
 import AdminNotifications from "./pages/admin/AdminNotifications";
-import Subscription from "./pages/Subscription";
 import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
-import AccountVerification from "./pages/AccountVerification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,9 +47,7 @@ const App = () => (
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
             <Route path="/support" element={<Support />} />
-            <Route path="/subscription" element={<Subscription />} />
-            <Route path="/account-verification" element={<AccountVerification />} />
-          <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />
           <Route path="/admin/demarche/:id" element={<AdminDemarcheDetail />} />
           <Route path="/admin/users" element={<ManageUsers />} />
