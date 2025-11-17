@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VehicleForm } from "@/components/VehicleForm";
+import { TrackingServiceOption } from "@/components/TrackingServiceOption";
 
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
@@ -370,6 +371,10 @@ export default function NouvelleDemarche() {
                 />
               </div>
 
+              {demarcheId && garage && (
+                <TrackingServiceOption demarcheId={demarcheId} garageId={garage.id} />
+              )}
+
               {formData.type && demarcheId && documentsRequis.length > 0 && (
                 <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
                   <div className="flex items-center justify-between">
@@ -379,7 +384,7 @@ export default function NouvelleDemarche() {
                     )}
                   </div>
                   
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {documentsRequis.map((doc, idx) => (
                       <DocumentUpload
                         key={doc.id}
@@ -416,29 +421,55 @@ export default function NouvelleDemarche() {
               </div>
             </form>
 
-            <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Confirmer le paiement</DialogTitle>
-                  <DialogDescription>
-                    Montant à payer : {getFraisDossier()}€
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="py-4">
-                  <p className="text-sm text-muted-foreground">
-                    Ceci est une simulation de paiement. En production, l'intégration Stripe sera mise en place.
-                  </p>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
-                    Annuler
-                  </Button>
-                  <Button onClick={handlePayment} disabled={loading}>
-                    {loading ? "Traitement..." : "Confirmer le paiement"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirmer le paiement</DialogTitle>
+                    <DialogDescription>
+                      Montant à payer : {getFraisDossier()}€
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <div className="space-y-4">
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="stripe"
+                          name="payment"
+                          value="stripe"
+                          className="h-4 w-4"
+                          defaultChecked
+                        />
+                        <Label htmlFor="stripe" className="cursor-pointer">
+                          <p className="font-medium">Paiement par carte bancaire</p>
+                          <p className="text-sm text-muted-foreground">Via Stripe sécurisé</p>
+                        </Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          id="paypal"
+                          name="payment"
+                          value="paypal"
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="paypal" className="cursor-pointer">
+                          <p className="font-medium">Paiement en 4x sans frais</p>
+                          <p className="text-sm text-muted-foreground">Via PayPal (4 x {(getFraisDossier() / 4).toFixed(2)}€)</p>
+                        </Label>
+                      </div>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+                      Annuler
+                    </Button>
+                    <Button onClick={handlePayment} disabled={loading}>
+                      {loading ? "Traitement..." : "Confirmer le paiement"}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
           </CardContent>
         </Card>
       </div>

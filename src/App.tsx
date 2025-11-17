@@ -20,6 +20,9 @@ import AllDemarches from "./pages/admin/AllDemarches";
 import AdminDemarcheDetail from "./pages/admin/DemarcheDetail";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ManageActions from "./pages/admin/ManageActions";
+import ManageGarages from "./pages/admin/ManageGarages";
+import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
+import AccountVerification from "./pages/AccountVerification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,11 +45,15 @@ const App = () => (
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/account-verification" element={<AccountVerification />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />
           <Route path="/admin/demarche/:id" element={<AdminDemarcheDetail />} />
           <Route path="/admin/users" element={<ManageUsers />} />
           <Route path="/admin/actions" element={<ManageActions />} />
+          <Route path="/admin/manage-users" element={<ManageUsers />} />
+          <Route path="/admin/manage-garages" element={<ManageGarages />} />
+          <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

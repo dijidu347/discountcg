@@ -111,14 +111,18 @@ export default function DemarcheDetail() {
       }
     }
 
-    // Load documents
+    // Load documents and remove duplicates by id
     const { data: documentsData } = await supabase
       .from('documents')
       .select('*')
       .eq('demarche_id', id)
       .order('created_at', { ascending: false });
 
-    setDocuments(documentsData || []);
+    // Remove duplicates based on document id
+    const uniqueDocs = documentsData ? 
+      Array.from(new Map(documentsData.map(doc => [doc.id, doc])).values()) : [];
+    
+    setDocuments(uniqueDocs);
 
     // Load document labels from action_documents
     const { data: actionData } = await supabase
