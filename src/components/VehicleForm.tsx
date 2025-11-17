@@ -18,32 +18,35 @@ interface VehicleFormProps {
 export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: VehicleFormProps) {
   const { toast } = useToast();
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     immatriculation: "",
-    numero_formule: "",
     marque: "",
     modele: "",
-    carrosserie: "",
-    co2: "",
-    couleur: "",
-    cylindree: "",
-    date_cg: "",
-    date_mec: "",
-    energie: "",
-    genre: "",
-    puiss_ch: "",
-    puiss_fisc: "",
-    type: "",
-    version: "",
-    vin: "",
-    ptr: ""
+    vin: ""
   });
 
   useEffect(() => {
     loadVehicles();
   }, [garageId]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredVehicles(vehicles);
+    } else {
+      const query = searchQuery.toLowerCase();
+      setFilteredVehicles(
+        vehicles.filter(v => 
+          v.immatriculation?.toLowerCase().includes(query) ||
+          v.marque?.toLowerCase().includes(query) ||
+          v.modele?.toLowerCase().includes(query)
+        )
+      );
+    }
+  }, [searchQuery, vehicles]);
 
   const loadVehicles = async () => {
     const { data } = await supabase
@@ -54,6 +57,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
 
     if (data) {
       setVehicles(data);
+      setFilteredVehicles(data);
     }
   };
 
@@ -64,23 +68,9 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
       // Prepare data for validation
       const validationData = {
         immatriculation: formData.immatriculation.toUpperCase(),
-        numero_formule: formData.numero_formule || undefined,
         marque: formData.marque || undefined,
         modele: formData.modele || undefined,
-        carrosserie: formData.carrosserie || undefined,
-        co2: formData.co2 ? parseFloat(formData.co2) : null,
-        couleur: formData.couleur || undefined,
-        cylindree: formData.cylindree ? parseFloat(formData.cylindree) : null,
-        date_cg: formData.date_cg || null,
-        date_mec: formData.date_mec || null,
-        energie: formData.energie || undefined,
-        genre: formData.genre || undefined,
-        puiss_ch: formData.puiss_ch ? parseFloat(formData.puiss_ch) : null,
-        puiss_fisc: formData.puiss_fisc ? parseFloat(formData.puiss_fisc) : null,
-        type: formData.type || undefined,
-        version: formData.version || undefined,
-        vin: formData.vin || undefined,
-        ptr: formData.ptr ? parseFloat(formData.ptr) : null
+        vin: formData.vin?.toUpperCase() || null
       };
 
       // Validate with Zod
@@ -91,23 +81,9 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
         .insert({
           garage_id: garageId,
           immatriculation: validatedData.immatriculation,
-          numero_formule: validatedData.numero_formule || null,
           marque: validatedData.marque || null,
           modele: validatedData.modele || null,
-          carrosserie: validatedData.carrosserie || null,
-          co2: validatedData.co2,
-          couleur: validatedData.couleur || null,
-          cylindree: validatedData.cylindree,
-          date_cg: validatedData.date_cg,
-          date_mec: validatedData.date_mec,
-          energie: validatedData.energie || null,
-          genre: validatedData.genre || null,
-          puiss_ch: validatedData.puiss_ch,
-          puiss_fisc: validatedData.puiss_fisc,
-          type: validatedData.type || null,
-          version: validatedData.version || null,
-          vin: validatedData.vin || null,
-          ptr: validatedData.ptr
+          vin: validatedData.vin
         })
         .select()
         .single();
@@ -129,23 +105,9 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
 
       setFormData({
         immatriculation: "",
-        numero_formule: "",
         marque: "",
         modele: "",
-        carrosserie: "",
-        co2: "",
-        couleur: "",
-        cylindree: "",
-        date_cg: "",
-        date_mec: "",
-        energie: "",
-        genre: "",
-        puiss_ch: "",
-        puiss_fisc: "",
-        type: "",
-        version: "",
-        vin: "",
-        ptr: ""
+        vin: ""
       });
       
       setShowForm(false);
@@ -195,12 +157,18 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
         {!showForm && (
           <div className="space-y-2">
             <Label>Sélectionner un véhicule existant</Label>
+            <Input
+              placeholder="Rechercher par immat, marque ou modèle..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="mb-2"
+            />
             <Select value={selectedVehicleId || ""} onValueChange={handleVehicleSelect}>
               <SelectTrigger>
                 <SelectValue placeholder="Choisir dans l'historique" />
               </SelectTrigger>
               <SelectContent>
-                {vehicles.map((vehicle) => (
+                {filteredVehicles.map((vehicle) => (
                   <SelectItem key={vehicle.id} value={vehicle.id}>
                     {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
                   </SelectItem>
@@ -212,40 +180,25 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
 
         {showForm && (
           <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
+              <p className="font-medium mb-1">Formats d'immatriculation acceptés :</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>Nouveau format (SIV)</strong> : AA-123-AA</li>
+                <li><strong>Ancien format (FNI)</strong> : 1234 ABC 45</li>
+              </ul>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="immatriculation">
-                  Immatriculation *
-                  <span className="text-xs text-muted-foreground block mt-1">
-                    Format: "AA-123-CD" (SIV), "1234-ABC-34" (FNI), ou VIN 17 caractères (Import)
-                  </span>
+                  Immatriculation * 
                 </Label>
                 <Input
                   id="immatriculation"
-                  placeholder="AA-123-CD"
+                  placeholder="AA-123-AA ou 1234 ABC 45"
                   value={formData.immatriculation}
                   onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
                   required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="numero_formule">Numéro de formule</Label>
-                <Input
-                  id="numero_formule"
-                  value={formData.numero_formule}
-                  onChange={(e) => setFormData({ ...formData, numero_formule: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="vin">VIN</Label>
-                <Input
-                  id="vin"
-                  placeholder="17 caractères"
-                  maxLength={17}
-                  value={formData.vin}
-                  onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
                 />
               </div>
 
@@ -267,135 +220,23 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="carrosserie">Carrosserie</Label>
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="vin">VIN (optionnel)</Label>
                 <Input
-                  id="carrosserie"
-                  value={formData.carrosserie}
-                  onChange={(e) => setFormData({ ...formData, carrosserie: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="couleur">Couleur</Label>
-                <Input
-                  id="couleur"
-                  value={formData.couleur}
-                  onChange={(e) => setFormData({ ...formData, couleur: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="energie">Énergie</Label>
-                <Input
-                  id="energie"
-                  placeholder="Essence, Diesel, Électrique..."
-                  value={formData.energie}
-                  onChange={(e) => setFormData({ ...formData, energie: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="genre">Genre</Label>
-                <Input
-                  id="genre"
-                  placeholder="VP, CTTE, MTL..."
-                  value={formData.genre}
-                  onChange={(e) => setFormData({ ...formData, genre: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="type">Type</Label>
-                <Input
-                  id="type"
-                  value={formData.type}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="version">Version</Label>
-                <Input
-                  id="version"
-                  value={formData.version}
-                  onChange={(e) => setFormData({ ...formData, version: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cylindree">Cylindrée (cm³)</Label>
-                <Input
-                  id="cylindree"
-                  type="number"
-                  value={formData.cylindree}
-                  onChange={(e) => setFormData({ ...formData, cylindree: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="puiss_ch">Puissance (ch)</Label>
-                <Input
-                  id="puiss_ch"
-                  type="number"
-                  value={formData.puiss_ch}
-                  onChange={(e) => setFormData({ ...formData, puiss_ch: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="puiss_fisc">Puissance fiscale (CV)</Label>
-                <Input
-                  id="puiss_fisc"
-                  type="number"
-                  value={formData.puiss_fisc}
-                  onChange={(e) => setFormData({ ...formData, puiss_fisc: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="co2">CO2 (g/km)</Label>
-                <Input
-                  id="co2"
-                  type="number"
-                  value={formData.co2}
-                  onChange={(e) => setFormData({ ...formData, co2: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ptr">PTR (kg)</Label>
-                <Input
-                  id="ptr"
-                  type="number"
-                  placeholder="Poids Total Roulant"
-                  value={formData.ptr}
-                  onChange={(e) => setFormData({ ...formData, ptr: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="date_cg">Date CG</Label>
-                <Input
-                  id="date_cg"
-                  type="date"
-                  value={formData.date_cg}
-                  onChange={(e) => setFormData({ ...formData, date_cg: e.target.value })}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="date_mec">Date MEC</Label>
-                <Input
-                  id="date_mec"
-                  type="date"
-                  value={formData.date_mec}
-                  onChange={(e) => setFormData({ ...formData, date_mec: e.target.value })}
+                  id="vin"
+                  placeholder="17 caractères"
+                  maxLength={17}
+                  value={formData.vin}
+                  onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
                 />
               </div>
             </div>
 
-            <Button type="button" onClick={handleSubmit} disabled={loading} className="w-full">
+            <Button
+              onClick={handleSubmit}
+              disabled={loading || !formData.immatriculation.trim()}
+              className="w-full"
+            >
               {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
             </Button>
           </div>

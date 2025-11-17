@@ -1,12 +1,17 @@
 import { z } from 'zod';
 
 // Vehicle form validation schema
+// Validation for French license plates (old and new format)
+const immatriculationRegex = /^([A-Z]{2}-[0-9]{3}-[A-Z]{2})|([0-9]{1,4}\s?[A-Z]{1,3}\s?[0-9]{1,2})$/;
+
 export const vehicleSchema = z.object({
   immatriculation: z.string()
     .trim()
     .min(1, { message: "L'immatriculation est obligatoire" })
-    .max(17, { message: "L'immatriculation ne peut pas dépasser 17 caractères" })
-    .regex(/^[A-Z0-9-]+$/, { message: "Format d'immatriculation invalide" }),
+    .transform(val => val.toUpperCase())
+    .refine(val => immatriculationRegex.test(val), { 
+      message: "Format invalide. Nouveau: AA-123-AA | Ancien: 123 ABC 45" 
+    }),
   numero_formule: z.string().max(100).optional(),
   marque: z.string().max(100).optional(),
   modele: z.string().max(100).optional(),
@@ -25,7 +30,8 @@ export const vehicleSchema = z.object({
   vin: z.string()
     .max(17, { message: "Le VIN ne peut pas dépasser 17 caractères" })
     .regex(/^[A-Z0-9]*$/, { message: "Format VIN invalide" })
-    .optional(),
+    .optional()
+    .nullable(),
   ptr: z.number().min(0).max(99999).optional().nullable(),
 });
 

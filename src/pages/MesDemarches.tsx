@@ -13,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, FileText } from "lucide-react";
 
 const statusLabels: Record<string, string> = {
@@ -47,6 +49,9 @@ export default function MesDemarches() {
   const navigate = useNavigate();
   const [garage, setGarage] = useState<any>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
+  const [filteredDemarches, setFilteredDemarches] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -60,6 +65,27 @@ export default function MesDemarches() {
       loadData();
     }
   }, [user]);
+
+  useEffect(() => {
+    let filtered = demarches;
+    
+    // Apply search filter
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(d =>
+        d.numero_demarche?.toLowerCase().includes(query) ||
+        d.immatriculation?.toLowerCase().includes(query) ||
+        typeLabels[d.type]?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(d => d.status === statusFilter);
+    }
+    
+    setFilteredDemarches(filtered);
+  }, [demarches, searchQuery, statusFilter]);
 
   const loadData = async () => {
     if (!user) return;
@@ -83,6 +109,7 @@ export default function MesDemarches() {
 
       if (demarchesData) {
         setDemarches(demarchesData);
+        setFilteredDemarches(demarchesData);
       }
     }
 
@@ -137,22 +164,46 @@ export default function MesDemarches() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>N° Démarche</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Immatriculation</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Montant</TableHead>
-                <TableHead>Facture</TableHead>
-                <TableHead>Date de création</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
-                <TableBody>
-                  {demarches.map((demarche) => (
+            <>
+              <div className="flex flex-col md:flex-row gap-4 mb-6">
+                <Input
+                  placeholder="Rechercher par n°, immat ou type..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="flex-1"
+                />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-[200px]">
+                    <SelectValue placeholder="Filtrer par statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="en_saisie">En saisie</SelectItem>
+                    <SelectItem value="en_attente">En attente</SelectItem>
+                    <SelectItem value="paye">Payé</SelectItem>
+                    <SelectItem value="valide">Validé</SelectItem>
+                    <SelectItem value="finalise">Finalisé</SelectItem>
+                    <SelectItem value="refuse">Refusé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>N° Démarche</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Immatriculation</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Montant</TableHead>
+                      <TableHead>Facture</TableHead>
+                      <TableHead>Date de création</TableHead>
+                      <TableHead></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredDemarches.map((demarche) => (
                     <TableRow 
                       key={demarche.id} 
                       className="hover:bg-muted/50 transition-colors"
@@ -193,6 +244,7 @@ export default function MesDemarches() {
                 </TableBody>
               </Table>
             </div>
+            </>
           )}
         </Card>
       </div>
