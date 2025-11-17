@@ -178,6 +178,15 @@ export default function AdminDashboard() {
             <Button onClick={() => navigate("/admin/manage-garages")} variant="outline" className="w-full">
               Gérer les garages
             </Button>
+            <Button onClick={() => navigate("/admin/manage-accounts")} variant="outline" className="w-full">
+              Gestion des comptes
+            </Button>
+            <Button onClick={() => navigate("/admin/manage-subscriptions")} variant="outline" className="w-full">
+              Gérer les abonnements
+            </Button>
+            <Button onClick={() => navigate("/admin/notifications")} variant="outline" className="w-full">
+              Notifications
+            </Button>
             <Button onClick={() => navigate("/admin/historique-paiements")} variant="outline" className="w-full">
               Historique des paiements
             </Button>

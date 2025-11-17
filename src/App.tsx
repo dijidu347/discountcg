@@ -21,6 +21,10 @@ import AdminDemarcheDetail from "./pages/admin/DemarcheDetail";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ManageActions from "./pages/admin/ManageActions";
 import ManageGarages from "./pages/admin/ManageGarages";
+import ManageAccounts from "./pages/admin/ManageAccounts";
+import ManageSubscriptions from "./pages/admin/ManageSubscriptions";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import Subscription from "./pages/Subscription";
 import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
 import AccountVerification from "./pages/AccountVerification";
 import NotFound from "./pages/NotFound";
@@ -45,6 +49,7 @@ const App = () => (
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
             <Route path="/support" element={<Support />} />
+            <Route path="/subscription" element={<Subscription />} />
             <Route path="/account-verification" element={<AccountVerification />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />
@@ -53,6 +58,9 @@ const App = () => (
           <Route path="/admin/actions" element={<ManageActions />} />
           <Route path="/admin/manage-users" element={<ManageUsers />} />
           <Route path="/admin/manage-garages" element={<ManageGarages />} />
+          <Route path="/admin/manage-accounts" element={<ManageAccounts />} />
+          <Route path="/admin/manage-subscriptions" element={<ManageSubscriptions />} />
+          <Route path="/admin/notifications" element={<AdminNotifications />} />
           <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

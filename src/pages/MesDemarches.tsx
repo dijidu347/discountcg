@@ -52,6 +52,9 @@ export default function MesDemarches() {
   const [filteredDemarches, setFilteredDemarches] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
+  const [sortField, setSortField] = useState<string>("created_at");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -83,9 +86,34 @@ export default function MesDemarches() {
     if (statusFilter !== "all") {
       filtered = filtered.filter(d => d.status === statusFilter);
     }
+
+    // Apply type filter
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(d => d.type === typeFilter);
+    }
+    
+    // Apply sorting
+    filtered.sort((a, b) => {
+      let aVal = a[sortField];
+      let bVal = b[sortField];
+
+      if (sortField === "created_at") {
+        aVal = new Date(aVal).getTime();
+        bVal = new Date(bVal).getTime();
+      } else if (sortField === "montant_ttc") {
+        aVal = aVal || 0;
+        bVal = bVal || 0;
+      }
+
+      if (sortDirection === "asc") {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
     
     setFilteredDemarches(filtered);
-  }, [demarches, searchQuery, statusFilter]);
+  }, [demarches, searchQuery, statusFilter, typeFilter, sortField, sortDirection]);
 
   const loadData = async () => {
     if (!user) return;
@@ -150,6 +178,65 @@ export default function MesDemarches() {
             <p className="text-muted-foreground">
               Suivez l'état de toutes vos démarches administratives
             </p>
+          </div>
+
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <Input
+              placeholder="Rechercher par numéro, immatriculation..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="flex-1"
+            />
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrer par statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="en_saisie">En saisie</SelectItem>
+                <SelectItem value="en_attente">En attente</SelectItem>
+                <SelectItem value="paye">Payé</SelectItem>
+                <SelectItem value="valide">Validé</SelectItem>
+                <SelectItem value="finalise">Finalisé</SelectItem>
+                <SelectItem value="refuse">Refusé</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Filtrer par type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les types</SelectItem>
+                <SelectItem value="DA">Déclaration d'achat</SelectItem>
+                <SelectItem value="DC">Déclaration de cession</SelectItem>
+                <SelectItem value="CG">Carte grise</SelectItem>
+                <SelectItem value="CG_DA">CG + DA</SelectItem>
+                <SelectItem value="DA_DC">DA + DC</SelectItem>
+                <SelectItem value="CG_IMPORT">Import étranger</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={sortField} onValueChange={setSortField}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Trier par" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_at">Date de création</SelectItem>
+                <SelectItem value="numero_demarche">N° Démarche</SelectItem>
+                <SelectItem value="immatriculation">Immatriculation</SelectItem>
+                <SelectItem value="montant_ttc">Montant</SelectItem>
+                <SelectItem value="status">Statut</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              onClick={() => setSortDirection(sortDirection === "asc" ? "desc" : "asc")}
+            >
+              {sortDirection === "asc" ? "↑" : "↓"}
+            </Button>
           </div>
 
           {demarches.length === 0 ? (
