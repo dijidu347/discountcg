@@ -7,12 +7,16 @@ import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
+import { GoogleReviewsCarousel } from "@/components/GoogleReviewsCarousel";
+import { PriceComparator } from "@/components/PriceComparator";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
       <Hero />
+      <GoogleReviewsCarousel />
+      <PriceComparator />
       <Services />
       <Process />
       <WhyUs />

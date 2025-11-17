@@ -1,4 +1,17 @@
 interface VehicleData {
+  AWN_marque?: string;
+  AWN_modele?: string;
+  AWN_couleur?: string;
+  AWN_puissance_fiscale?: number;
+  AWN_energie?: string;
+  AWN_date_mise_en_circulation?: string;
+  AWN_emission_co_2?: number;
+  AWN_immat?: string;
+  [key: string]: any;
+}
+
+// Interface normalisée pour l'utilisation dans l'app
+export interface NormalizedVehicleData {
   marque?: string;
   modele?: string;
   couleur?: string;
@@ -6,12 +19,12 @@ interface VehicleData {
   energie?: string;
   date_mec?: string;
   co2?: number;
-  [key: string]: any;
+  immatriculation?: string;
 }
 
 interface VehicleApiResponse {
   success: boolean;
-  data?: VehicleData;
+  data?: NormalizedVehicleData;
   error?: string;
 }
 
@@ -39,11 +52,24 @@ export async function getVehicleByPlate(plate: string): Promise<VehicleApiRespon
       throw new Error(`Erreur API: ${response.status}`);
     }
 
-    const data = await response.json();
+    const apiResponse = await response.json();
+    
+    // Normaliser les données de l'API
+    const vehicleData = apiResponse.data;
+    const normalizedData: NormalizedVehicleData = {
+      marque: vehicleData?.AWN_marque,
+      modele: vehicleData?.AWN_modele,
+      couleur: vehicleData?.AWN_couleur,
+      puissance_fiscale: vehicleData?.AWN_puissance_fiscale,
+      energie: vehicleData?.AWN_energie,
+      date_mec: vehicleData?.AWN_date_mise_en_circulation,
+      co2: vehicleData?.AWN_emission_co_2,
+      immatriculation: vehicleData?.AWN_immat,
+    };
     
     return {
       success: true,
-      data: data,
+      data: normalizedData,
     };
   } catch (error) {
     console.error('Erreur lors de la récupération des données:', error);
@@ -55,7 +81,7 @@ export async function getVehicleByPlate(plate: string): Promise<VehicleApiRespon
 }
 
 // Calcul du prix de la carte grise
-export function calculateCarteGrisePrice(vehicleData: VehicleData, region: string = 'Île-de-France'): number {
+export function calculateCarteGrisePrice(vehicleData: NormalizedVehicleData, region: string = 'Île-de-France'): number {
   const puissanceFiscale = vehicleData.puissance_fiscale || 5;
   
   // Prix moyen par CV fiscal (varie selon les régions, ici moyenne nationale)
