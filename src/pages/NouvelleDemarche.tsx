@@ -389,16 +389,51 @@ export default function NouvelleDemarche() {
                     
                     <div className="space-y-3">
                       {documentsRequis.map((doc, idx) => {
-                        const isCarteGriseRecto = doc.nom_document.toLowerCase().includes('carte grise') && 
-                                                  (doc.nom_document.toLowerCase().includes('recto') || idx === 0);
-                        const isCarteGriseVerso = doc.nom_document.toLowerCase().includes('carte grise') && 
-                                                  doc.nom_document.toLowerCase().includes('verso');
+                        const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
+                        
+                        // Si c'est une carte grise, afficher recto et verso séparément
+                        if (isCarteGrise) {
+                          return (
+                            <div key={doc.id} className="space-y-3">
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                  <Label className="text-sm font-medium">
+                                    Carte grise recto (ou recto/verso)
+                                  </Label>
+                                </div>
+                                <div className="w-[400px]">
+                                  <DocumentUpload
+                                    demarcheId={demarcheId}
+                                    documentType={`doc_${idx + 1}_recto`}
+                                    label=""
+                                    onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}_recto`)}
+                                  />
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <div className="flex-1">
+                                  <Label className="text-sm font-medium">
+                                    Carte grise verso
+                                  </Label>
+                                </div>
+                                <div className="w-[400px]">
+                                  <DocumentUpload
+                                    demarcheId={demarcheId}
+                                    documentType={`doc_${idx + 1}_verso`}
+                                    label=""
+                                    onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}_verso`)}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
                         
                         return (
                           <div key={doc.id} className="flex items-center gap-4">
                             <div className="flex-1">
                               <Label className="text-sm font-medium">
-                                {isCarteGriseRecto ? 'Carte grise recto (ou recto/verso)' : doc.nom_document}
+                                {doc.nom_document}
                               </Label>
                             </div>
                             <div className="w-[400px]">
