@@ -1,10 +1,8 @@
 import { Shield, Award, Clock, Star } from "lucide-react";
 import { PriceSimulator } from "@/components/PriceSimulator";
 import { StatsCounter } from "@/components/StatsCounter";
-
 const Hero = () => {
-  return (
-    <section className="relative min-h-screen pt-16 pb-16 overflow-hidden bg-gradient-to-b from-background via-primary/5 to-background">
+  return <section className="relative min-h-screen pt-16 pb-16 overflow-hidden bg-gradient-to-b from-background via-primary/5 to-background">
       {/* Bande tricolore française */}
       <div className="absolute top-16 left-0 right-0 h-1.5 flex z-20">
         <div className="flex-1 bg-gradient-to-r from-france-blue to-france-blue" />
@@ -18,9 +16,10 @@ const Hero = () => {
           <div className="inline-flex items-center gap-3 mb-2">
             <span className="text-5xl drop-shadow-lg">🇫🇷</span>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-              Garage Jimmy 2x
+              Nom à trouver    
             </h1>
-            <span className="text-5xl drop-shadow-lg">🇫🇷</span>
+            <span className="text-5xl drop-shadow-lg">
+          </span>
           </div>
           
           <p className="text-2xl md:text-3xl font-bold text-primary">
@@ -55,12 +54,7 @@ const Hero = () => {
             <StatsCounter />
             
             {/* Carte Google My Business mise en avant */}
-            <a
-              href="https://www.google.fr/search?sca_esv=a73f109bbcae9216&sxsrf=AE3TifMH8hCDAbm_y2mEw-YvpIEG7jzcdg:1763372759531&kgmid=/g/11w9zk40cx&q=Garage+Jimmy+2x"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group relative bg-gradient-to-br from-card to-card/80 hover:from-primary/5 hover:to-primary/10 transition-all duration-300 rounded-2xl p-8 shadow-2xl border-2 border-primary/30 hover:border-primary hover:scale-[1.02] overflow-hidden"
-            >
+            <a href="https://www.google.fr/search?sca_esv=a73f109bbcae9216&sxsrf=AE3TifMH8hCDAbm_y2mEw-YvpIEG7jzcdg:1763372759531&kgmid=/g/11w9zk40cx&q=Garage+Jimmy+2x" target="_blank" rel="noopener noreferrer" className="group relative bg-gradient-to-br from-card to-card/80 hover:from-primary/5 hover:to-primary/10 transition-all duration-300 rounded-2xl p-8 shadow-2xl border-2 border-primary/30 hover:border-primary hover:scale-[1.02] overflow-hidden">
               {/* Effet de brillance au survol */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               
@@ -76,9 +70,7 @@ const Hero = () => {
                 </div>
                 
                 <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-6 h-6 fill-accent text-accent" />
-                  ))}
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 fill-accent text-accent" />)}
                   <span className="text-xl font-bold text-foreground ml-2">5.0</span>
                 </div>
                 
@@ -124,8 +116,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
