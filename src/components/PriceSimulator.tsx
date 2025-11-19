@@ -280,12 +280,17 @@ export const PriceSimulator = () => {
                   size="lg"
                   variant="secondary"
                   className="mt-6 px-12 py-6 text-xl font-bold shadow-xl hover:scale-105 transition-transform"
-                  onClick={() => {
-                    const element = document.getElementById("contact");
-                    if (element) element.scrollIntoView({ behavior: "smooth" });
-                  }}
+                  onClick={handleOrderNow}
+                  disabled={isLoading}
                 >
-                  Commander maintenant
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Préparation...
+                    </>
+                  ) : (
+                    "Commander maintenant"
+                  )}
                 </Button>
               </div>
             </div>
