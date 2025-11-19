@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Search, Car, Calendar, Palette, Zap, Gauge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getVehicleByPlate, calculateCarteGrisePrice } from "@/lib/vehicle-api";
+import { supabase } from "@/integrations/supabase/client";
 
 export const PriceSimulator = () => {
   const [plate, setPlate] = useState("");
@@ -13,6 +15,7 @@ export const PriceSimulator = () => {
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [price, setPrice] = useState<number | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSearch = async () => {
     if (!plate || plate.length < 6) {
@@ -51,6 +54,63 @@ export const PriceSimulator = () => {
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de la recherche",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOrderNow = async () => {
+    if (!vehicleData || !price) {
+      toast({
+        title: "Aucune estimation",
+        description: "Veuillez d'abord rechercher votre véhicule",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Create guest order
+      const { data: orderData, error: orderError } = await supabase
+        .from("guest_orders")
+        .insert([{
+          immatriculation: plate,
+          marque: vehicleData.marque || "",
+          modele: vehicleData.modele || "",
+          date_mec: vehicleData.date_mec || "",
+          puiss_fisc: vehicleData.puiss_fisc || 0,
+          energie: vehicleData.energie || "",
+          montant_ht: price,
+          montant_ttc: price + 30,
+          frais_dossier: 30,
+          email: "",
+          telephone: "",
+          nom: "",
+          prenom: "",
+          adresse: "",
+          code_postal: "",
+          ville: "",
+        }])
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      toast({
+        title: "Commande créée",
+        description: "Vous allez être redirigé vers le formulaire",
+      });
+
+      navigate(`/commander/${orderData.id}`);
+    } catch (error: any) {
+      console.error("Error creating order:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer la commande",
         variant: "destructive",
       });
     } finally {

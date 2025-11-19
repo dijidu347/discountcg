@@ -334,6 +334,143 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_order_documents: {
+        Row: {
+          created_at: string
+          id: string
+          nom_fichier: string
+          order_id: string
+          taille_octets: number | null
+          type_document: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom_fichier: string
+          order_id: string
+          taille_octets?: number | null
+          type_document: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom_fichier?: string
+          order_id?: string
+          taille_octets?: number | null
+          type_document?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_guest_order"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "guest_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guest_orders: {
+        Row: {
+          adresse: string
+          code_postal: string
+          commentaire: string | null
+          created_at: string
+          date_mec: string | null
+          documents_complets: boolean
+          email: string
+          email_notifications: boolean
+          energie: string | null
+          frais_dossier: number
+          id: string
+          immatriculation: string
+          marque: string | null
+          modele: string | null
+          montant_ht: number
+          montant_ttc: number
+          nom: string
+          paid_at: string | null
+          paye: boolean
+          payment_intent_id: string | null
+          prenom: string
+          puiss_fisc: number | null
+          sms_notifications: boolean
+          status: string
+          telephone: string
+          tracking_number: string
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          ville: string
+        }
+        Insert: {
+          adresse: string
+          code_postal: string
+          commentaire?: string | null
+          created_at?: string
+          date_mec?: string | null
+          documents_complets?: boolean
+          email: string
+          email_notifications?: boolean
+          energie?: string | null
+          frais_dossier?: number
+          id?: string
+          immatriculation: string
+          marque?: string | null
+          modele?: string | null
+          montant_ht?: number
+          montant_ttc?: number
+          nom: string
+          paid_at?: string | null
+          paye?: boolean
+          payment_intent_id?: string | null
+          prenom: string
+          puiss_fisc?: number | null
+          sms_notifications?: boolean
+          status?: string
+          telephone: string
+          tracking_number: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          ville: string
+        }
+        Update: {
+          adresse?: string
+          code_postal?: string
+          commentaire?: string | null
+          created_at?: string
+          date_mec?: string | null
+          documents_complets?: boolean
+          email?: string
+          email_notifications?: boolean
+          energie?: string | null
+          frais_dossier?: number
+          id?: string
+          immatriculation?: string
+          marque?: string | null
+          modele?: string | null
+          montant_ht?: number
+          montant_ttc?: number
+          nom?: string
+          paid_at?: string | null
+          paye?: boolean
+          payment_intent_id?: string | null
+          prenom?: string
+          puiss_fisc?: number | null
+          sms_notifications?: boolean
+          status?: string
+          telephone?: string
+          tracking_number?: string
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          ville?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string | null
@@ -676,6 +813,7 @@ export type Database = {
     Functions: {
       generate_demarche_numero: { Args: never; Returns: string }
       generate_facture_numero: { Args: never; Returns: string }
+      generate_tracking_number: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -22,6 +22,7 @@ import ManageUsers from "./pages/admin/ManageUsers";
 import ManageActions from "./pages/admin/ManageActions";
 import ManageGarages from "./pages/admin/ManageGarages";
 import ManageAccounts from "./pages/admin/ManageAccounts";
+import GuestOrders from "./pages/admin/GuestOrders";
 import ManageSubscriptions from "./pages/admin/ManageSubscriptions";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
@@ -37,9 +38,12 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+        <Route path="/" element={<Index />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
+        <Route path="/paiement/:orderId" element={<PaiementGuestOrder />} />
+        <Route path="/suivi/:trackingNumber" element={<SuiviCommande />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/nouvelle-demarche" element={<NouvelleDemarche />} />
             <Route path="/mes-demarches" element={<MesDemarches />} />

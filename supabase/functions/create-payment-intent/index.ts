@@ -20,15 +20,75 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    );
+
+    const body = await req.json();
+    const { demarcheId, amount, metadata } = body;
+
+    // Handle guest orders (no auth required)
+    if (metadata?.type === 'guest_order') {
+      if (!amount) {
+        return new Response(JSON.stringify({ error: 'Amount required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Create Stripe payment intent
+      const response = await fetch('https://api.stripe.com/v1/payment_intents', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${stripeKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          amount: amount.toString(),
+          currency: 'eur',
+          'metadata[order_id]': metadata.order_id || '',
+          'metadata[tracking_number]': metadata.tracking_number || '',
+          'metadata[type]': 'guest_order',
+        }),
+      });
+
+      const paymentIntent = await response.json();
+
+      if (!response.ok) {
+        console.error('Stripe error:', paymentIntent);
+        throw new Error(paymentIntent.error?.message || 'Payment intent creation failed');
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    // Handle authenticated demarche payments
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseAuthClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: authHeader },
         },
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const { data: { user } } = await supabaseAuthClient.auth.getUser();
     if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
@@ -36,7 +96,7 @@ serve(async (req) => {
       });
     }
 
-    const { demarcheId, paymentType } = await req.json();
+    const { paymentType } = body;
 
     // Get demarche details
     const { data: demarche, error: demarcheError } = await supabaseClient
@@ -61,7 +121,7 @@ serve(async (req) => {
       });
     }
 
-    const amount = Math.round(demarche.montant_ttc * 100); // Convert to cents
+    const paymentAmount = Math.round(demarche.montant_ttc * 100);
 
     // Create Stripe payment intent
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
@@ -71,7 +131,7 @@ serve(async (req) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        amount: amount.toString(),
+        amount: paymentAmount.toString(),
         currency: 'eur',
         'metadata[demarche_id]': demarcheId,
         'metadata[garage_id]': demarche.garage_id,
