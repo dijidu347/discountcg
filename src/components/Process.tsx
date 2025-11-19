@@ -48,8 +48,8 @@ const Process = () => {
                   )}
 
                   <div className="text-center">
-                    <div className="relative inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-full mb-6 shadow-lg z-10">
-                      <step.icon className="w-8 h-8 text-white" />
+                    <div className="relative inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6 shadow-lg z-10">
+                      <step.icon className="w-8 h-8 text-primary-foreground" />
                     </div>
                     <h3 className="text-xl font-bold mb-3">{step.title}</h3>
                     <p className="text-muted-foreground">{step.description}</p>

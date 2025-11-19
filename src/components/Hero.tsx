@@ -1,4 +1,4 @@
-import { Shield, Award, Clock, Star } from "lucide-react";
+import { Shield, Award, Clock, Star, Flag, CheckCircle, Lock, Zap } from "lucide-react";
 import { PriceSimulator } from "@/components/PriceSimulator";
 import { StatsCounter } from "@/components/StatsCounter";
 const Hero = () => {
@@ -14,12 +14,10 @@ const Hero = () => {
         {/* En-tête principale */}
         <div className="text-center mb-12 space-y-4">
           <div className="inline-flex items-center gap-3 mb-2">
-            <span className="text-5xl drop-shadow-lg">🇫🇷</span>
+            <Flag className="w-12 h-12 text-primary" />
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-              Nom à trouver    
+              Nom à trouver    
             </h1>
-            <span className="text-5xl drop-shadow-lg">
-          </span>
           </div>
           
           <p className="text-2xl md:text-3xl font-bold text-primary">
@@ -91,7 +89,9 @@ const Hero = () => {
           {/* Badges de confiance */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-all duration-300">
-              <div className="text-4xl mb-3 text-center">💯</div>
+              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="font-bold text-lg mb-2 text-center text-primary">100% Légal</h3>
               <p className="text-sm text-muted-foreground text-center">
                 Service habilité par le Ministère de l'Intérieur
@@ -99,7 +99,9 @@ const Hero = () => {
             </div>
             
             <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-all duration-300">
-              <div className="text-4xl mb-3 text-center">🔒</div>
+              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Lock className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="font-bold text-lg mb-2 text-center text-primary">Paiement Sécurisé</h3>
               <p className="text-sm text-muted-foreground text-center">
                 Transaction cryptée et 100% sécurisée
@@ -107,7 +109,9 @@ const Hero = () => {
             </div>
             
             <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-all duration-300">
-              <div className="text-4xl mb-3 text-center">⚡</div>
+              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
+                <Zap className="w-6 h-6 text-primary" />
+              </div>
               <h3 className="font-bold text-lg mb-2 text-center text-primary">Service Rapide</h3>
               <p className="text-sm text-muted-foreground text-center">
                 Traitement de votre dossier en moins de 24h

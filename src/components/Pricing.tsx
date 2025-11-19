@@ -1,5 +1,5 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileCheck } from "lucide-react";
+import { FileCheck, Lightbulb } from "lucide-react";
 
 const Pricing = () => {
   const pricingData = [
@@ -92,9 +92,10 @@ const Pricing = () => {
         </div>
 
         <div className="mt-12 text-center">
-          <p className="text-muted-foreground">
-            💡 Le prix de la carte grise varie selon le véhicule et votre région. Nous calculons le montant exact pour vous.
-          </p>
+          <div className="flex items-center justify-center gap-2 text-muted-foreground">
+            <Lightbulb className="w-5 h-5 text-primary" />
+            <p>Le prix de la carte grise varie selon le véhicule et votre région. Nous calculons le montant exact pour vous.</p>
+          </div>
         </div>
       </div>
     </section>

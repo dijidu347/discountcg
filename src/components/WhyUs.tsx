@@ -40,8 +40,8 @@ const WhyUs = () => {
               key={index}
               className="bg-card rounded-xl p-6 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center mb-4">
-                <reason.icon className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center mb-4">
+                <reason.icon className="w-6 h-6 text-primary-foreground" />
               </div>
               <h3 className="text-xl font-bold mb-2">{reason.title}</h3>
               <p className="text-muted-foreground">{reason.description}</p>

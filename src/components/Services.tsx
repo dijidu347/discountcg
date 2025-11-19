@@ -63,8 +63,8 @@ const Services = () => {
               className="hover:shadow-xl transition-all duration-300 hover:-translate-y-2 border-2 hover:border-primary"
             >
               <CardHeader>
-                <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center mb-4">
-                  <service.icon className="w-8 h-8 text-white" />
+                <div className="w-16 h-16 bg-primary rounded-xl flex items-center justify-center mb-4">
+                  <service.icon className="w-8 h-8 text-primary-foreground" />
                 </div>
                 <CardTitle className="text-2xl mb-2">{service.title}</CardTitle>
                 <CardDescription className="text-base">{service.description}</CardDescription>
