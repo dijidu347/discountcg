@@ -1,11 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { FileText, CheckCircle, Loader2, X, Upload, Download } from "lucide-react";
+import { FileText, CheckCircle, Loader2, X, Upload, Download, FileCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
+import { cn } from "@/lib/utils";
 
 interface UploadedFile {
   id: string;
@@ -27,6 +28,31 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Load existing documents on mount
+  useEffect(() => {
+    const loadExistingDocuments = async () => {
+      const { data, error } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('demarche_id', demarcheId)
+        .eq('type_document', documentType);
+
+      if (data && !error) {
+        const files = data.map(doc => ({
+          id: doc.id,
+          fileName: doc.nom_fichier,
+          storagePath: doc.url.split('/').pop() || '',
+          url: doc.url
+        }));
+        setUploadedFiles(files);
+      }
+    };
+
+    if (demarcheId && documentType) {
+      loadExistingDocuments();
+    }
+  }, [demarcheId, documentType]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -179,6 +205,8 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
 
   // Render label with Cerfa link if applicable
   const renderLabel = () => {
+    if (!label) return null;
+    
     if (!hasCerfa || !cerfaNumber) {
       return <Label>{label}</Label>;
     }
@@ -212,27 +240,26 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   };
 
   return (
-    <div className="space-y-3">
-      {renderLabel()}
+    <div className="space-y-2">
+      {label && renderLabel()}
       
       {/* List of uploaded files */}
       {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1">
           {uploadedFiles.map((file) => (
-            <div key={file.id} className="flex items-center justify-between gap-2 p-3 rounded-lg border bg-success/5 border-success/20">
+            <div key={file.id} className="flex items-center justify-between gap-2 p-2 rounded-md border bg-success/5 border-success/20">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <CheckCircle className="h-4 w-4 text-success flex-shrink-0" />
-                <FileText className="h-4 w-4 flex-shrink-0" />
-                <span className="text-sm truncate">{file.fileName}</span>
+                <FileCheck className="h-3.5 w-3.5 text-success flex-shrink-0" />
+                <span className="text-xs truncate">{file.fileName}</span>
               </div>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => handleRemove(file)}
-                className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
+                className="h-6 w-6 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 flex-shrink-0"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3 w-3" />
               </Button>
             </div>
           ))}
@@ -245,11 +272,11 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={handleClick}
-        className={`
-          relative border-2 border-dashed rounded-lg p-6 transition-all cursor-pointer
-          ${isDragOver ? "border-primary bg-primary/5 scale-[1.02]" : "border-border hover:border-primary/50"}
-          ${uploading ? "cursor-not-allowed opacity-75" : "hover:bg-accent/50"}
-        `}
+        className={cn(
+          "relative border-2 border-dashed rounded-md p-3 transition-all cursor-pointer flex items-center justify-between gap-2",
+          isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
+          uploading && "cursor-not-allowed opacity-75"
+        )}
       >
         <Input
           ref={fileInputRef}
@@ -261,26 +288,19 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
           className="hidden"
         />
         
-        <div className="flex flex-col items-center justify-center gap-2 text-center">
-          {uploading ? (
-            <>
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Upload en cours...</p>
-            </>
-          ) : (
-            <>
-              <Upload className="h-8 w-8 text-muted-foreground" />
-              <div className="space-y-1">
-                <p className="text-sm font-medium">
-                  {isDragOver ? "Déposez le fichier ici" : uploadedFiles.length > 0 ? "Ajouter un autre fichier (recto/verso)" : "Glissez-déposez votre fichier"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  ou cliquez pour sélectionner (PDF, JPG, PNG)
-                </p>
-              </div>
-            </>
-          )}
-        </div>
+        {uploading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground flex-1">Upload en cours...</span>
+          </>
+        ) : (
+          <>
+            <span className="text-sm text-muted-foreground flex-1">
+              {isDragOver ? "Déposez le fichier ici" : uploadedFiles.length > 0 ? "Sélectionner un fichier" : "Sélectionner un fichier"}
+            </span>
+            <Upload className="h-4 w-4 text-muted-foreground" />
+          </>
+        )}
       </div>
     </div>
   );

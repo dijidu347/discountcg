@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileCheck, Save } from "lucide-react";
+import { ArrowLeft, FileCheck, Save, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +29,7 @@ export default function NouvelleDemarche() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [selectedImmatriculation, setSelectedImmatriculation] = useState<string>("");
+  const [additionalDocs, setAdditionalDocs] = useState<number[]>([1, 2, 3, 4, 5]);
   const [formData, setFormData] = useState({
     type: searchParams.get('type') || "",
     commentaire: ""
@@ -376,24 +377,75 @@ export default function NouvelleDemarche() {
               )}
 
               {formData.type && demarcheId && documentsRequis.length > 0 && (
-                <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">Documents requis ({uploadedDocuments.size}/{documentsRequis.length})</h3>
-                    {allDocsUploaded && (
-                      <FileCheck className="h-5 w-5 text-success" />
-                    )}
+                <div className="space-y-6">
+                  {/* Pièces justificatives obligatoires */}
+                  <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">Pièces justificatives</h3>
+                      {allDocsUploaded && (
+                        <FileCheck className="h-5 w-5 text-success" />
+                      )}
+                    </div>
+                    
+                    <div className="space-y-3">
+                      {documentsRequis.map((doc, idx) => {
+                        const isCarteGriseRecto = doc.nom_document.toLowerCase().includes('carte grise') && 
+                                                  (doc.nom_document.toLowerCase().includes('recto') || idx === 0);
+                        const isCarteGriseVerso = doc.nom_document.toLowerCase().includes('carte grise') && 
+                                                  doc.nom_document.toLowerCase().includes('verso');
+                        
+                        return (
+                          <div key={doc.id} className="flex items-center gap-4">
+                            <div className="flex-1">
+                              <Label className="text-sm font-medium">
+                                {isCarteGriseRecto ? 'Carte grise recto (ou recto/verso)' : doc.nom_document}
+                              </Label>
+                            </div>
+                            <div className="w-[400px]">
+                              <DocumentUpload
+                                demarcheId={demarcheId}
+                                documentType={`doc_${idx + 1}`}
+                                label=""
+                                onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {documentsRequis.map((doc, idx) => (
-                      <DocumentUpload
-                        key={doc.id}
-                        demarcheId={demarcheId}
-                        documentType={`doc_${idx + 1}`}
-                        label={doc.nom_document}
-                        onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
-                      />
-                    ))}
+
+                  {/* Autres pièces justificatives */}
+                  <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
+                    <h3 className="font-semibold text-lg">Autres pièces justificatives</h3>
+                    
+                    <div className="space-y-3">
+                      {additionalDocs.map((docNum) => (
+                        <div key={docNum} className="flex items-center gap-4">
+                          <div className="flex-1">
+                            <Label className="text-sm font-medium">Autre pièce {docNum}</Label>
+                          </div>
+                          <div className="w-[400px]">
+                            <DocumentUpload
+                              demarcheId={demarcheId}
+                              documentType={`autre_piece_${docNum}`}
+                              label=""
+                              onUploadComplete={() => handleDocumentUploadComplete(`autre_piece_${docNum}`)}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setAdditionalDocs([...additionalDocs, additionalDocs.length + 1])}
+                      className="w-full"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Ajouter une pièce supplémentaire
+                    </Button>
                   </div>
                 </div>
               )}
