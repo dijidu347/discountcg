@@ -165,6 +165,23 @@ const CommanderSansCompte = () => {
         });
       }
 
+      // Send confirmation email if notifications enabled
+      if (formData.email_notifications) {
+        await supabase.functions.invoke('send-guest-order-email', {
+          body: {
+            type: 'order_confirmation',
+            orderData: {
+              tracking_number: order.tracking_number,
+              email: formData.email,
+              nom: formData.nom,
+              prenom: formData.prenom,
+              immatriculation: order.immatriculation,
+              montant_ttc: order.montant_ttc + (formData.sms_notifications ? 5 : 0)
+            }
+          }
+        });
+      }
+
       toast({
         title: "Documents envoyés",
         description: "Passons maintenant au paiement",

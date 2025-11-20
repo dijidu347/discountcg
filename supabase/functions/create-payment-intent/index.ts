@@ -46,6 +46,7 @@ serve(async (req) => {
           amount: amount.toString(),
           currency: 'eur',
           'metadata[order_id]': metadata.order_id || '',
+          'metadata[guest_order_id]': metadata.order_id || '',
           'metadata[tracking_number]': metadata.tracking_number || '',
           'metadata[type]': 'guest_order',
         }),
