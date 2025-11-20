@@ -142,7 +142,22 @@ const CommanderSansCompte = () => {
 
       if (updateError) throw updateError;
 
-      // Upload documents
+      // Upload documents - supprimer les anciens d'abord
+      const { data: existingDocs } = await supabase
+        .from("guest_order_documents")
+        .select("id, url")
+        .eq("order_id", orderId);
+
+      if (existingDocs && existingDocs.length > 0) {
+        // Supprimer les anciens documents du storage et de la DB
+        for (const doc of existingDocs) {
+          const path = doc.url.split('/').slice(-2).join('/');
+          await supabase.storage.from("guest-order-documents").remove([path]);
+          await supabase.from("guest_order_documents").delete().eq("id", doc.id);
+        }
+      }
+
+      // Upload des nouveaux documents
       for (const [key, file] of Object.entries(uploadedDocs)) {
         const cleanedKey = cleanFileName(key);
         const cleanedFileName = cleanFileName(file.name);

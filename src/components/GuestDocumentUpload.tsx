@@ -53,6 +53,12 @@ export function GuestDocumentUpload({
     setUploading(true);
 
     try {
+      // Supprimer l'ancien document s'il existe
+      const existingFile = existingFiles.find(f => f.side === side);
+      if (existingFile) {
+        await handleRemove(existingFile);
+      }
+
       const fileExt = file.name.split('.').pop();
       const cleanDocType = cleanFileName(documentType);
       const fileName = `${orderId}/${cleanDocType}_${side}_${Date.now()}.${fileExt}`;
