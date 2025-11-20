@@ -644,6 +644,7 @@ function DocumentValidationCard({
   onView: () => void;
 }) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
@@ -656,6 +657,7 @@ function DocumentValidationCard({
         .update({
           validation_status: "approved",
           validated_at: new Date().toISOString(),
+          validated_by: user?.id,
           rejection_reason: null,
         })
         .eq("id", doc.id);
@@ -728,6 +730,7 @@ function DocumentValidationCard({
         .update({
           validation_status: "rejected",
           validated_at: new Date().toISOString(),
+          validated_by: user?.id,
           rejection_reason: rejectionReason,
         })
         .eq("id", doc.id);
