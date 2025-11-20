@@ -36,37 +36,80 @@ serve(async (req) => {
         const paymentIntent = event.data.object;
         const demarcheId = paymentIntent.metadata.demarche_id;
         const garageId = paymentIntent.metadata.garage_id;
+        const guestOrderId = paymentIntent.metadata.guest_order_id;
 
-        // Update payment status
-        await supabaseClient
-          .from('paiements')
-          .update({ 
-            status: 'valide',
-            validated_at: new Date().toISOString()
-          })
-          .eq('stripe_payment_id', paymentIntent.id);
+        // Handle guest order payment
+        if (guestOrderId) {
+          // Update guest order
+          await supabaseClient
+            .from('guest_orders')
+            .update({ 
+              paye: true,
+              paid_at: new Date().toISOString(),
+              status: 'en_traitement',
+              payment_intent_id: paymentIntent.id
+            })
+            .eq('id', guestOrderId);
 
-        // Update demarche status
-        await supabaseClient
-          .from('demarches')
-          .update({ 
-            paye: true,
-            status: 'en_attente',
-            is_draft: false
-          })
-          .eq('id', demarcheId);
+          // Get order details for email
+          const { data: order } = await supabaseClient
+            .from('guest_orders')
+            .select('*')
+            .eq('id', guestOrderId)
+            .single();
 
-        // Create notification
-        await supabaseClient
-          .from('notifications')
-          .insert({
-            garage_id: garageId,
-            demarche_id: demarcheId,
-            type: 'payment_confirmed',
-            message: `Votre paiement de ${(paymentIntent.amount / 100).toFixed(2)}€ a été validé. Votre démarche est en cours de traitement.`
-          });
+          if (order && order.email_notifications) {
+            // Send payment confirmation email
+            await supabaseClient.functions.invoke('send-guest-order-email', {
+              body: {
+                type: 'payment_confirmed',
+                orderData: {
+                  tracking_number: order.tracking_number,
+                  email: order.email,
+                  nom: order.nom,
+                  prenom: order.prenom,
+                  immatriculation: order.immatriculation,
+                  montant_ttc: order.montant_ttc
+                }
+              }
+            });
+          }
 
-        console.log('Payment processed successfully for demarche:', demarcheId);
+          console.log('Guest order payment processed:', guestOrderId);
+        } 
+        // Handle regular demarche payment
+        else if (demarcheId) {
+          // Update payment status
+          await supabaseClient
+            .from('paiements')
+            .update({ 
+              status: 'valide',
+              validated_at: new Date().toISOString()
+            })
+            .eq('stripe_payment_id', paymentIntent.id);
+
+          // Update demarche status
+          await supabaseClient
+            .from('demarches')
+            .update({ 
+              paye: true,
+              status: 'en_attente',
+              is_draft: false
+            })
+            .eq('id', demarcheId);
+
+          // Create notification
+          await supabaseClient
+            .from('notifications')
+            .insert({
+              garage_id: garageId,
+              demarche_id: demarcheId,
+              type: 'payment_confirmed',
+              message: `Votre paiement de ${(paymentIntent.amount / 100).toFixed(2)}€ a été validé. Votre démarche est en cours de traitement.`
+            });
+
+          console.log('Payment processed successfully for demarche:', demarcheId);
+        }
         break;
       }
 
