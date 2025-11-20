@@ -4,7 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -164,9 +165,48 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Section Particuliers */}
         <Card>
           <CardHeader>
-            <CardTitle>Gestion</CardTitle>
+            <div className="flex items-center gap-2">
+              <UserCog className="h-5 w-5 text-primary" />
+              <CardTitle>Espace Particuliers</CardTitle>
+            </div>
+            <CardDescription>
+              Gérer les commandes et la configuration pour les particuliers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/pricing-config")}
+              >
+                <Calculator className="h-6 w-6" />
+                <span className="text-sm font-medium">Simulateur Particulier</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/guest-orders")}
+              >
+                <ShoppingCart className="h-6 w-6" />
+                <span className="text-sm font-medium">Commandes Particuliers</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Separator className="my-8" />
+
+        {/* Section Garages */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Wrench className="h-5 w-5 text-primary" />
+              <CardTitle>Espace Garages</CardTitle>
+            </div>
             <CardDescription>
               Gérer les démarches et les utilisateurs
             </CardDescription>
@@ -180,14 +220,6 @@ export default function AdminDashboard() {
               >
                 <FileText className="h-6 w-6" />
                 <span className="text-sm font-medium">Toutes les démarches</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/guest-orders")}
-              >
-                <FileText className="h-6 w-6 text-primary" />
-                <span className="text-sm font-medium">Commandes Particuliers</span>
               </Button>
               <Button
                 variant="outline"
@@ -252,14 +284,6 @@ export default function AdminDashboard() {
               >
                 <Mail className="h-6 w-6" />
                 <span className="text-sm font-medium">Templates Email</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/pricing-config")}
-              >
-                <Calculator className="h-6 w-6" />
-                <span className="text-sm font-medium">Simulateur Particulier</span>
               </Button>
             </div>
           </CardContent>
