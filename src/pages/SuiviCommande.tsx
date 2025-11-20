@@ -72,18 +72,16 @@ const SuiviCommande = () => {
     setOrder(data);
     setIsLoading(false);
 
-    // Check for carte grise finale
-    if (data.status === 'finalise') {
-      const { data: carteGriseDoc } = await supabase
-        .from('guest_order_documents')
-        .select('url')
-        .eq('order_id', data.id)
-        .eq('type_document', 'carte_grise_finale')
-        .single();
-      
-      if (carteGriseDoc) {
-        setCarteGriseUrl(carteGriseDoc.url);
-      }
+    // Check for carte grise finale (même si pas encore finalisé)
+    const { data: carteGriseDoc } = await supabase
+      .from('guest_order_documents')
+      .select('url')
+      .eq('order_id', data.id)
+      .eq('type_document', 'carte_grise_finale')
+      .single();
+    
+    if (carteGriseDoc) {
+      setCarteGriseUrl(carteGriseDoc.url);
     }
 
     // Get Stripe invoice URL if payment was made
@@ -433,28 +431,33 @@ const SuiviCommande = () => {
             </Card>
           )}
 
-          {/* Carte Grise Finale */}
+          {/* Carte Grise Finale - MISE EN AVANT */}
           {carteGriseUrl && (
-            <Card className="border-green-500 bg-green-50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-green-700">
-                  <FileCheck className="w-6 h-6" />
-                  Votre carte grise est disponible !
+            <Card className="border-2 border-green-500 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
+                  <FileCheck className="w-8 h-8 text-white" />
+                </div>
+                <CardTitle className="text-2xl text-green-700 dark:text-green-300">
+                  🎉 Votre carte grise est disponible !
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-muted-foreground">
-                  Votre carte grise a été traitée et est maintenant disponible au téléchargement.
+              <CardContent className="space-y-4 text-center">
+                <p className="text-muted-foreground text-lg">
+                  Félicitations ! Votre carte grise a été traitée et est maintenant disponible au téléchargement.
                 </p>
                 <a
                   href={carteGriseUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                  className="inline-flex items-center gap-3 px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 font-semibold text-lg shadow-lg"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-6 h-6" />
                   Télécharger ma carte grise
                 </a>
+                <p className="text-sm text-muted-foreground mt-4">
+                  Conservez précieusement ce document. Il vous sera demandé en cas de contrôle.
+                </p>
               </CardContent>
             </Card>
           )}
@@ -471,13 +474,10 @@ const SuiviCommande = () => {
               <div className="space-y-4">
                  {documents.length > 0 ? (
                   documents.map((doc) => {
-                    // Trouver le nom lisible du document
-                    const docName = requiredDocuments.find(rd => rd.nom_document === doc.type_document)?.nom_document || doc.type_document;
-                    
                     return (
                       <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex-1">
-                          <p className="font-medium">{docName}</p>
+                          <p className="font-medium">{doc.type_document}</p>
                           {doc.side && (
                             <p className="text-sm text-muted-foreground capitalize">{doc.side}</p>
                           )}
@@ -567,7 +567,10 @@ const SuiviCommande = () => {
                               documentType={doc.type_document}
                               label={doc.type_document}
                               existingFiles={existingFiles}
-                              onUploadComplete={loadDocuments}
+                              onUploadComplete={() => {
+                                loadDocuments();
+                                loadOrder();
+                              }}
                             />
                           </div>
                         );

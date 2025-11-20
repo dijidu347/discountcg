@@ -84,12 +84,12 @@ const CommanderSansCompte = () => {
     setDocuments(docsData || []);
   };
 
-  const handleFileChange = (docIndex: number, file: File | null) => {
+  const handleFileChange = (documentName: string, file: File | null) => {
     if (file) {
-      setUploadedDocs({ ...uploadedDocs, [`doc_${docIndex}`]: file });
+      setUploadedDocs({ ...uploadedDocs, [documentName]: file });
     } else {
       const newDocs = { ...uploadedDocs };
-      delete newDocs[`doc_${docIndex}`];
+      delete newDocs[documentName];
       setUploadedDocs(newDocs);
     }
   };
@@ -378,22 +378,22 @@ const CommanderSansCompte = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {documents.map((doc, index) => (
+              {documents.map((doc) => (
                 <div key={doc.id} className="space-y-2">
-                  <Label htmlFor={`doc_${index}`}>
+                  <Label htmlFor={doc.nom_document}>
                     {doc.nom_document} *
                   </Label>
                   <Input
-                    id={`doc_${index}`}
+                    id={doc.nom_document}
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={(e) => handleFileChange(index, e.target.files?.[0] || null)}
+                    onChange={(e) => handleFileChange(doc.nom_document, e.target.files?.[0] || null)}
                     required
                   />
-                  {uploadedDocs[`doc_${index}`] && (
+                  {uploadedDocs[doc.nom_document] && (
                     <p className="text-sm text-green-600 flex items-center gap-1">
                       <FileCheck className="w-4 h-4" />
-                      {uploadedDocs[`doc_${index}`].name}
+                      {uploadedDocs[doc.nom_document].name}
                     </p>
                   )}
                 </div>

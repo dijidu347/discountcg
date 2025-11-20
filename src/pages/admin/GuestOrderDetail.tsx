@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck } from "lucide-react";
 import { Textarea as TextareaInput } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -205,7 +205,7 @@ export default function GuestOrderDetail() {
     if (!order || !carteGriseUrl.trim()) {
       toast({
         title: "Erreur",
-        description: "Veuillez entrer l'URL de la carte grise",
+        description: "Veuillez uploader la carte grise",
         variant: "destructive",
       });
       return;
@@ -213,6 +213,16 @@ export default function GuestOrderDetail() {
 
     setIsSendingCarteGrise(true);
     try {
+      // Save carte grise document in database
+      await supabase.from('guest_order_documents').insert({
+        order_id: order.id,
+        type_document: 'carte_grise_finale',
+        nom_fichier: 'carte_grise_finale.pdf',
+        url: carteGriseUrl,
+        validation_status: 'approved',
+      });
+
+      // Send email with carte grise
       const { error } = await supabase.functions.invoke('send-carte-grise', {
         body: {
           orderId: order.id,
@@ -230,7 +240,7 @@ export default function GuestOrderDetail() {
 
       toast({
         title: "Carte grise envoyée",
-        description: "La carte grise a été envoyée au client par email",
+        description: "La carte grise a été envoyée au client par email et la commande est finalisée",
       });
 
       await loadOrderData();
@@ -542,20 +552,57 @@ export default function GuestOrderDetail() {
         {(order.status === "valide" || order.status === "finalise") && (
           <Card>
             <CardHeader>
-              <CardTitle>Envoyer la carte grise</CardTitle>
+              <CardTitle>Envoyer la carte grise finale</CardTitle>
               <CardDescription>
-                Envoyez la carte grise au client par email
+                Uploadez la carte grise finale et envoyez-la au client par email
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="carte-grise-url">URL de la carte grise (PDF)</Label>
+                <Label htmlFor="carte-grise-file">Carte grise finale (PDF)</Label>
                 <Input
-                  id="carte-grise-url"
-                  value={carteGriseUrl}
-                  onChange={(e) => setCarteGriseUrl(e.target.value)}
-                  placeholder="https://..."
+                  id="carte-grise-file"
+                  type="file"
+                  accept=".pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !order) return;
+
+                    try {
+                      // Upload to storage
+                      const fileName = `${order.id}/carte_grise_finale_${Date.now()}.pdf`;
+                      const { error: uploadError } = await supabase.storage
+                        .from('guest-order-documents')
+                        .upload(fileName, file);
+
+                      if (uploadError) throw uploadError;
+
+                      const { data: { publicUrl } } = supabase.storage
+                        .from('guest-order-documents')
+                        .getPublicUrl(fileName);
+
+                      setCarteGriseUrl(publicUrl);
+
+                      toast({
+                        title: "Fichier uploadé",
+                        description: "Le fichier est prêt à être envoyé",
+                      });
+                    } catch (error) {
+                      console.error("Error:", error);
+                      toast({
+                        title: "Erreur",
+                        description: "Impossible d'uploader le fichier",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
                 />
+                {carteGriseUrl && (
+                  <p className="text-sm text-green-600 flex items-center gap-1">
+                    <FileCheck className="h-4 w-4" />
+                    Fichier prêt à envoyer
+                  </p>
+                )}
               </div>
               <Button
                 onClick={handleSendCarteGrise}
@@ -570,7 +617,7 @@ export default function GuestOrderDetail() {
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Envoyer la carte grise par email
+                    Envoyer la carte grise et finaliser la commande
                   </>
                 )}
               </Button>
