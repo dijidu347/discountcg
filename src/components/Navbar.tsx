@@ -29,6 +29,9 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
+            <button onClick={() => navigate("/")} className="text-foreground hover:text-primary transition-colors">
+              Accueil
+            </button>
             <button onClick={() => scrollToSection("services")} className="text-foreground hover:text-primary transition-colors">
               Services
             </button>
@@ -70,6 +73,12 @@ const Navbar = () => {
         {/* Mobile Navigation */}
         {isOpen && (
           <div className="md:hidden py-4 space-y-4">
+            <button onClick={() => {
+              setIsOpen(false);
+              navigate("/");
+            }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
+              Accueil
+            </button>
             <button onClick={() => scrollToSection("services")} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Services
             </button>
