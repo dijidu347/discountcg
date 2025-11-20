@@ -184,7 +184,7 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/garages")}
+                onClick={() => navigate("/admin/manage-garages")}
               >
                 <Building2 className="h-6 w-6" />
                 <span className="text-sm font-medium">Gérer les garages</span>
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/accounts")}
+                onClick={() => navigate("/admin/manage-accounts")}
               >
                 <Building2 className="h-6 w-6" />
                 <span className="text-sm font-medium">Gestion des comptes</span>
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/subscriptions")}
+                onClick={() => navigate("/admin/manage-subscriptions")}
               >
                 <DollarSign className="h-6 w-6" />
                 <span className="text-sm font-medium">Gérer les abonnements</span>
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/paiements")}
+                onClick={() => navigate("/admin/historique-paiements")}
               >
                 <DollarSign className="h-6 w-6" />
                 <span className="text-sm font-medium">Historique paiements</span>
