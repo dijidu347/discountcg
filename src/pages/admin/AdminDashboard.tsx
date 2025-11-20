@@ -184,6 +184,14 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/guest-orders")}
+              >
+                <FileText className="h-6 w-6 text-primary" />
+                <span className="text-sm font-medium">Commandes Particuliers</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
                 onClick={() => navigate("/admin/manage-garages")}
               >
                 <Building2 className="h-6 w-6" />
