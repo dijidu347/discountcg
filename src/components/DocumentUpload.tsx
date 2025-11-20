@@ -28,6 +28,10 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  
+  // Check if this is a recto/verso document (can have 2 files)
+  const isRectoVerso = label.toLowerCase().includes('recto') && label.toLowerCase().includes('verso');
+  const maxFiles = isRectoVerso ? 2 : 1;
 
   // Load existing documents on mount
   useEffect(() => {
@@ -57,6 +61,19 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
+
+    // Check if max files reached
+    if (uploadedFiles.length >= maxFiles) {
+      toast({
+        title: "Limite atteinte",
+        description: `Vous ne pouvez télécharger que ${maxFiles} fichier${maxFiles > 1 ? 's' : ''} pour ce document`,
+        variant: "destructive"
+      });
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
 
     await handleUpload(selectedFile);
     
@@ -266,18 +283,19 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
         </div>
       )}
       
-      {/* Upload zone */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleClick}
-        className={cn(
-          "relative border-2 border-dashed rounded-md p-3 transition-all cursor-pointer flex items-center justify-between gap-2",
-          isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
-          uploading && "cursor-not-allowed opacity-75"
-        )}
-      >
+      {/* Upload zone - only show if not at max files */}
+      {uploadedFiles.length < maxFiles && (
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={handleClick}
+          className={cn(
+            "relative border-2 border-dashed rounded-md p-3 transition-all cursor-pointer flex items-center justify-between gap-2",
+            isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
+            uploading && "cursor-not-allowed opacity-75"
+          )}
+        >
         <Input
           ref={fileInputRef}
           type="file"
@@ -302,6 +320,7 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
           </>
         )}
       </div>
+      )}
     </div>
   );
 }

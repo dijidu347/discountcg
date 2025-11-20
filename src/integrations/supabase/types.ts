@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           id: string
           nom_document: string
+          obligatoire: boolean
           ordre: number
         }
         Insert: {
@@ -27,6 +28,7 @@ export type Database = {
           created_at?: string
           id?: string
           nom_document: string
+          obligatoire?: boolean
           ordre?: number
         }
         Update: {
@@ -34,6 +36,7 @@ export type Database = {
           created_at?: string
           id?: string
           nom_document?: string
+          obligatoire?: boolean
           ordre?: number
         }
         Relationships: [

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,25 @@ export function TrackingServiceOption({ demarcheId, garageId }: TrackingServiceO
   const [loading, setLoading] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Load existing service on mount
+  useEffect(() => {
+    const loadExistingService = async () => {
+      const { data } = await supabase
+        .from('tracking_services')
+        .select('service_type')
+        .eq('demarche_id', demarcheId)
+        .maybeSingle();
+
+      if (data) {
+        setSelectedService(data.service_type);
+      }
+    };
+
+    if (demarcheId) {
+      loadExistingService();
+    }
+  }, [demarcheId]);
 
   const services = [
     { 
@@ -44,21 +63,43 @@ export function TrackingServiceOption({ demarcheId, garageId }: TrackingServiceO
     setLoading(true);
 
     try {
-      const { error } = await supabase
+      // Check if a service already exists for this demarche
+      const { data: existingService } = await supabase
         .from('tracking_services')
-        .insert({
-          demarche_id: demarcheId,
-          service_type: serviceType,
-          price: price,
-          status: 'pending'
-        });
+        .select('id')
+        .eq('demarche_id', demarcheId)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingService) {
+        // Update existing service
+        const { error } = await supabase
+          .from('tracking_services')
+          .update({
+            service_type: serviceType,
+            price: price,
+            status: 'pending'
+          })
+          .eq('id', existingService.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new service
+        const { error } = await supabase
+          .from('tracking_services')
+          .insert({
+            demarche_id: demarcheId,
+            service_type: serviceType,
+            price: price,
+            status: 'pending'
+          });
+
+        if (error) throw error;
+      }
 
       setSelectedService(serviceType);
       toast({
-        title: "Service ajouté",
-        description: "Le service de suivi a été ajouté à votre démarche"
+        title: "Service mis à jour",
+        description: "Le service de suivi a été mis à jour pour votre démarche"
       });
     } catch (error: any) {
       console.error('Error:', error);

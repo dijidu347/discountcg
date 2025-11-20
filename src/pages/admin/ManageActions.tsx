@@ -31,6 +31,12 @@ type ActionDocument = {
   action_id: string;
   nom_document: string;
   ordre: number;
+  obligatoire: boolean;
+};
+
+type NewDocument = {
+  nom: string;
+  obligatoire: boolean;
 };
 
 export default function ManageActions() {
@@ -43,7 +49,7 @@ export default function ManageActions() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingAction, setEditingAction] = useState<ActionRapide | null>(null);
   const [showDialog, setShowDialog] = useState(false);
-  const [newDocuments, setNewDocuments] = useState<string[]>([]);
+  const [newDocuments, setNewDocuments] = useState<NewDocument[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -119,13 +125,14 @@ export default function ManageActions() {
       actif: true,
       require_immatriculation: true
     });
-    setNewDocuments(['']);
+    setNewDocuments([{ nom: '', obligatoire: true }]);
     setShowDialog(true);
   };
 
   const handleEditAction = (action: ActionRapide) => {
     setEditingAction(action);
-    setNewDocuments(documents[action.id]?.map(d => d.nom_document) || ['']);
+    const docs = documents[action.id]?.map(d => ({ nom: d.nom_document, obligatoire: d.obligatoire })) || [{ nom: '', obligatoire: true }];
+    setNewDocuments(docs);
     setShowDialog(true);
   };
 
@@ -170,11 +177,12 @@ export default function ManageActions() {
 
         // Insert new documents
         const docsToInsert = newDocuments
-          .filter(d => d.trim())
+          .filter(d => d.nom.trim())
           .map((doc, idx) => ({
             action_id: editingAction.id,
-            nom_document: doc,
-            ordre: idx + 1
+            nom_document: doc.nom,
+            ordre: idx + 1,
+            obligatoire: doc.obligatoire
           }));
 
         if (docsToInsert.length > 0) {
@@ -208,11 +216,12 @@ export default function ManageActions() {
 
         // Insert documents
         const docsToInsert = newDocuments
-          .filter(d => d.trim())
+          .filter(d => d.nom.trim())
           .map((doc, idx) => ({
             action_id: newAction.id,
-            nom_document: doc,
-            ordre: idx + 1
+            nom_document: doc.nom,
+            ordre: idx + 1,
+            obligatoire: doc.obligatoire
           }));
 
         if (docsToInsert.length > 0) {
@@ -270,16 +279,30 @@ export default function ManageActions() {
   };
 
   const addNewDocument = () => {
-    setNewDocuments([...newDocuments, '']);
+    setNewDocuments([...newDocuments, { nom: '', obligatoire: false }]);
   };
 
   const removeDocument = (index: number) => {
+    if (index === 0) {
+      toast({
+        title: "Impossible de supprimer",
+        description: "Le premier document est obligatoire",
+        variant: "destructive"
+      });
+      return;
+    }
     setNewDocuments(newDocuments.filter((_, i) => i !== index));
   };
 
-  const updateDocument = (index: number, value: string) => {
+  const updateDocument = (index: number, field: 'nom' | 'obligatoire', value: string | boolean) => {
     const updated = [...newDocuments];
-    updated[index] = value;
+    if (field === 'nom') {
+      updated[index].nom = value as string;
+    } else {
+      // First document is always required
+      if (index === 0) return;
+      updated[index].obligatoire = value as boolean;
+    }
     setNewDocuments(updated);
   };
 
@@ -508,17 +531,31 @@ export default function ManageActions() {
 
                   <div className="space-y-2">
                     {newDocuments.map((doc, idx) => (
-                      <div key={idx} className="flex gap-2">
-                        <Input
-                          value={doc}
-                          onChange={(e) => updateDocument(idx, e.target.value)}
-                          placeholder="Nom du document"
-                        />
+                      <div key={idx} className="flex gap-2 items-start">
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            value={doc.nom}
+                            onChange={(e) => updateDocument(idx, 'nom', e.target.value)}
+                            placeholder="Nom du document"
+                          />
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id={`obligatoire-${idx}`}
+                              checked={doc.obligatoire}
+                              onCheckedChange={(checked) => updateDocument(idx, 'obligatoire', checked)}
+                              disabled={idx === 0}
+                            />
+                            <Label htmlFor={`obligatoire-${idx}`} className="text-sm text-muted-foreground">
+                              {idx === 0 ? 'Obligatoire (toujours)' : 'Obligatoire'}
+                            </Label>
+                          </div>
+                        </div>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeDocument(idx)}
+                          disabled={idx === 0}
                         >
                           <X className="h-4 w-4" />
                         </Button>

@@ -136,10 +136,19 @@ export const PriceSimulator = () => {
       <CardContent className="p-8 space-y-8">
         {/* Champ de recherche */}
         <div className="space-y-4">
-          <Label htmlFor="plate" className="text-xl font-bold text-foreground flex items-center gap-2">
-            <Car className="w-5 h-5 text-primary" />
-            Plaque d'immatriculation
-          </Label>
+          <div>
+            <Label htmlFor="plate" className="text-xl font-bold text-foreground flex items-center gap-2">
+              <Car className="w-5 h-5 text-primary" />
+              Plaque d'immatriculation
+            </Label>
+            <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-border">
+              <p className="text-sm text-muted-foreground font-medium mb-1">Formats d'immatriculation acceptés :</p>
+              <ul className="text-sm text-muted-foreground space-y-1">
+                <li>• <span className="font-mono">Nouveau format (SIV) : AA-123-AA</span></li>
+                <li>• <span className="font-mono">Ancien format (FNI) : 1234 ABC 45</span></li>
+              </ul>
+            </div>
+          </div>
           <div className="flex gap-3">
             <Input
               id="plate"
