@@ -7,7 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle } from "lucide-react";
+import { Textarea as TextareaInput } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DocumentViewer } from "@/components/DocumentViewer";
 
 interface GuestOrder {
@@ -44,6 +55,10 @@ interface Document {
   nom_fichier: string;
   url: string;
   created_at: string;
+  validation_status: string;
+  validated_at: string | null;
+  rejection_reason: string | null;
+  side: string | null;
 }
 
 export default function GuestOrderDetail() {
@@ -404,31 +419,13 @@ export default function GuestOrderDetail() {
             ) : (
               <div className="grid gap-3">
                 {documents.map((doc) => (
-                  <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{doc.nom_fichier}</p>
-                        <p className="text-sm text-muted-foreground">{doc.type_document}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedDoc(doc)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.open(doc.url, '_blank')}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  <DocumentValidationCard 
+                    key={doc.id} 
+                    doc={doc} 
+                    order={order}
+                    onValidationChange={loadOrderData}
+                    onView={() => setSelectedDoc(doc)}
+                  />
                 ))}
               </div>
             )}
@@ -492,6 +489,216 @@ export default function GuestOrderDetail() {
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+// Document Validation Card Component
+function DocumentValidationCard({ 
+  doc, 
+  order, 
+  onValidationChange,
+  onView 
+}: { 
+  doc: Document; 
+  order: GuestOrder;
+  onValidationChange: () => void;
+  onView: () => void;
+}) {
+  const { toast } = useToast();
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleApprove = async () => {
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("guest_order_documents")
+        .update({
+          validation_status: "approved",
+          validated_at: new Date().toISOString(),
+        })
+        .eq("id", doc.id);
+
+      if (error) throw error;
+
+      // Send email notification
+      await supabase.functions.invoke('send-document-notification', {
+        body: {
+          type: 'validation_approved',
+          orderData: {
+            tracking_number: order.tracking_number,
+            email: order.email,
+            nom: order.nom,
+            prenom: order.prenom,
+            documentName: doc.type_document,
+          }
+        }
+      });
+
+      toast({
+        title: "Document validé",
+        description: "Le client a été notifié par email",
+      });
+
+      onValidationChange();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de valider le document",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectionReason.trim()) {
+      toast({
+        title: "Raison requise",
+        description: "Veuillez indiquer la raison du rejet",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const { error } = await supabase
+        .from("guest_order_documents")
+        .update({
+          validation_status: "rejected",
+          validated_at: new Date().toISOString(),
+          rejection_reason: rejectionReason,
+        })
+        .eq("id", doc.id);
+
+      if (error) throw error;
+
+      // Send email notification
+      await supabase.functions.invoke('send-document-notification', {
+        body: {
+          type: 'validation_rejected',
+          orderData: {
+            tracking_number: order.tracking_number,
+            email: order.email,
+            nom: order.nom,
+            prenom: order.prenom,
+            documentName: doc.type_document,
+            rejectionReason: rejectionReason,
+          }
+        }
+      });
+
+      toast({
+        title: "Document refusé",
+        description: "Le client a été notifié par email et peut uploader un nouveau document",
+      });
+
+      setShowRejectDialog(false);
+      setRejectionReason("");
+      onValidationChange();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de refuser le document",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const getStatusBadge = () => {
+    if (doc.validation_status === 'approved') {
+      return <Badge className="bg-green-500">Validé</Badge>;
+    } else if (doc.validation_status === 'rejected') {
+      return <Badge variant="destructive">Refusé</Badge>;
+    }
+    return <Badge variant="secondary">En attente</Badge>;
+  };
+
+  return (
+    <div>
+      <div className="p-3 border rounded-lg space-y-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3 flex-1">
+            <FileText className="h-5 w-5 text-muted-foreground mt-1" />
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <p className="font-medium">{doc.nom_fichier}</p>
+                {getStatusBadge()}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {doc.type_document} {doc.side && `(${doc.side})`}
+              </p>
+              {doc.rejection_reason && (
+                <div className="mt-2 flex items-start gap-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
+                  <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-xs font-medium text-destructive">Raison du rejet :</p>
+                    <p className="text-xs text-destructive/80">{doc.rejection_reason}</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" size="sm" onClick={onView}>
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => window.open(doc.url, '_blank')}>
+              <Download className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {doc.validation_status === 'pending' && (
+          <div className="flex gap-2 pt-2 border-t">
+            <Button onClick={handleApprove} disabled={isProcessing} size="sm" className="flex-1">
+              <CheckCircle2 className="h-4 w-4 mr-1" />
+              Valider
+            </Button>
+            <Button variant="destructive" onClick={() => setShowRejectDialog(true)} disabled={isProcessing} size="sm" className="flex-1">
+              <XCircle className="h-4 w-4 mr-1" />
+              Refuser
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Refuser le document</AlertDialogTitle>
+            <AlertDialogDescription>
+              Indiquez la raison du rejet. Le client recevra un email et pourra uploader un nouveau document.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="my-4">
+            <TextareaInput
+              placeholder="Ex: Document illisible, flou, incomplet..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={4}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isProcessing}>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleReject} 
+              disabled={isProcessing || !rejectionReason.trim()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isProcessing ? "Envoi..." : "Confirmer le rejet"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

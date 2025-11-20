@@ -373,27 +373,42 @@ export type Database = {
           id: string
           nom_fichier: string
           order_id: string
+          rejection_reason: string | null
+          side: string | null
           taille_octets: number | null
           type_document: string
           url: string
+          validated_at: string | null
+          validated_by: string | null
+          validation_status: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           nom_fichier: string
           order_id: string
+          rejection_reason?: string | null
+          side?: string | null
           taille_octets?: number | null
           type_document: string
           url: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_status?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           nom_fichier?: string
           order_id?: string
+          rejection_reason?: string | null
+          side?: string | null
           taille_octets?: number | null
           type_document?: string
           url?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_status?: string | null
         }
         Relationships: [
           {

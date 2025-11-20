@@ -146,13 +146,13 @@ const CommanderSansCompte = () => {
         const fileName = `${orderId}/${key}_${Date.now()}_${file.name}`;
         
         const { error: uploadError } = await supabase.storage
-          .from("demarche-documents")
+          .from("guest-order-documents")
           .upload(fileName, file);
 
         if (uploadError) throw uploadError;
 
         const { data: urlData } = supabase.storage
-          .from("demarche-documents")
+          .from("guest-order-documents")
           .getPublicUrl(fileName);
 
         // Save document reference
@@ -162,6 +162,7 @@ const CommanderSansCompte = () => {
           nom_fichier: file.name,
           url: urlData.publicUrl,
           taille_octets: file.size,
+          validation_status: 'pending',
         });
       }
 
