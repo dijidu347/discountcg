@@ -14,7 +14,7 @@ const Hero = () => {
         {/* En-tête principale */}
         <div className="text-center mb-12 space-y-4">
           <div className="inline-flex items-center gap-3 mb-2">
-            <Flag className="w-12 h-12 text-primary" />
+            <span className="text-6xl">🇫🇷</span>
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
               Nom à trouver    
             </h1>
