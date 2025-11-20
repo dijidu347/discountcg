@@ -47,9 +47,6 @@ const Navbar = () => {
             <button onClick={() => navigate("/recherche-suivi")} className="text-foreground hover:text-primary transition-colors">
               Suivi
             </button>
-            <Button variant="hero" size="lg" onClick={() => scrollToSection("contact")}>
-              Commencer
-            </Button>
             <Button 
               onClick={() => navigate("/login")} 
               variant="default"
@@ -57,7 +54,7 @@ const Navbar = () => {
               className="flex items-center gap-2"
             >
               <LogIn className="h-4 w-4" />
-              Connexion
+              Professionnel
             </Button>
           </div>
 
@@ -97,9 +94,6 @@ const Navbar = () => {
             }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Suivi
             </button>
-            <Button variant="hero" size="lg" className="w-full" onClick={() => scrollToSection("contact")}>
-              Commencer
-            </Button>
             <Button 
               onClick={() => {
                 setIsOpen(false);
@@ -110,7 +104,7 @@ const Navbar = () => {
               className="w-full flex items-center justify-center gap-2"
             >
               <LogIn className="h-4 w-4" />
-              Connexion
+              Professionnel
             </Button>
           </div>
         )}
