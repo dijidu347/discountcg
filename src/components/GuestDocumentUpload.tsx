@@ -40,12 +40,22 @@ export function GuestDocumentUpload({
   const rectoFile = existingFiles.find(f => f.side === 'recto');
   const versoFile = existingFiles.find(f => f.side === 'verso');
   
+  const cleanFileName = (name: string) => {
+    return name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-zA-Z0-9]/g, '_') // Replace special chars with underscore
+      .replace(/_+/g, '_') // Remove duplicate underscores
+      .toLowerCase();
+  };
+
   const handleUpload = async (file: File, side: 'recto' | 'verso') => {
     setUploading(true);
 
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${orderId}/${documentType}_${side}_${Date.now()}.${fileExt}`;
+      const cleanDocType = cleanFileName(documentType);
+      const fileName = `${orderId}/${cleanDocType}_${side}_${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
         .from('guest-order-documents')

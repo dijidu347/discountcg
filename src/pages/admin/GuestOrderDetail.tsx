@@ -111,10 +111,12 @@ export default function GuestOrderDetail() {
       setOrder(orderData);
       setCommentaire(orderData.commentaire || "");
 
+      // Load documents - exclude carte_grise_finale from list
       const { data: docsData, error: docsError } = await supabase
         .from("guest_order_documents")
         .select("*")
         .eq("order_id", id)
+        .neq("type_document", "carte_grise_finale")
         .order("created_at", { ascending: false });
 
       if (docsError) throw docsError;
@@ -660,11 +662,12 @@ function DocumentValidationCard({
 
       if (error) throw error;
 
-      // Check if all documents are approved
+      // Check if all documents (excluding carte_grise_finale) are approved
       const { data: allDocs } = await supabase
         .from("guest_order_documents")
         .select("validation_status")
-        .eq("order_id", order.id);
+        .eq("order_id", order.id)
+        .neq("type_document", "carte_grise_finale");
 
       const allApproved = allDocs?.every(d => d.validation_status === 'approved');
 

@@ -94,6 +94,15 @@ const CommanderSansCompte = () => {
     }
   };
 
+  const cleanFileName = (name: string) => {
+    return name
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-zA-Z0-9.]/g, '_') // Replace special chars with underscore (keep dots for extensions)
+      .replace(/_+/g, '_') // Remove duplicate underscores
+      .toLowerCase();
+  };
+
   const handleSubmit = async () => {
     if (!order) return;
 
@@ -135,7 +144,9 @@ const CommanderSansCompte = () => {
 
       // Upload documents
       for (const [key, file] of Object.entries(uploadedDocs)) {
-        const fileName = `${orderId}/${key}_${Date.now()}_${file.name}`;
+        const cleanedKey = cleanFileName(key);
+        const cleanedFileName = cleanFileName(file.name);
+        const fileName = `${orderId}/${cleanedKey}_${Date.now()}_${cleanedFileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from("guest-order-documents")
@@ -147,10 +158,10 @@ const CommanderSansCompte = () => {
           .from("guest-order-documents")
           .getPublicUrl(fileName);
 
-        // Save document reference
+        // Save document reference with original document name
         await supabase.from("guest_order_documents").insert({
           order_id: orderId,
-          type_document: key,
+          type_document: key, // Keep original name for display
           nom_fichier: file.name,
           url: urlData.publicUrl,
           taille_octets: file.size,
