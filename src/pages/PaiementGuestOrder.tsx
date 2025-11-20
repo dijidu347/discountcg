@@ -10,7 +10,9 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY 
+  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) 
+  : null;
 
 const CheckoutForm = ({ order }: { order: any }) => {
   const stripe = useStripe();

@@ -98,6 +98,8 @@ const CommanderSansCompte = () => {
     return name
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[()\/\\]/g, '_') // Remove parentheses and slashes
+      .replace(/\s+/g, '_') // Replace spaces with underscores
       .replace(/[^a-zA-Z0-9.]/g, '_') // Replace special chars with underscore (keep dots for extensions)
       .replace(/_+/g, '_') // Remove duplicate underscores
       .toLowerCase();
@@ -117,11 +119,18 @@ const CommanderSansCompte = () => {
       return;
     }
 
-    // Validate documents
-    if (Object.keys(uploadedDocs).length !== documents.length) {
+    // Validate required documents only
+    const requiredDocs = documents.filter(d => d.obligatoire);
+    const uploadedDocKeys = Object.keys(uploadedDocs);
+    
+    const missingDocs = requiredDocs.filter(
+      doc => !uploadedDocKeys.includes(doc.nom_document)
+    );
+    
+    if (missingDocs.length > 0) {
       toast({
-        title: "Documents manquants",
-        description: "Veuillez télécharger tous les documents requis",
+        title: "Documents obligatoires manquants",
+        description: `Veuillez télécharger : ${missingDocs.map(d => d.nom_document).join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -185,7 +194,7 @@ const CommanderSansCompte = () => {
       }
 
       // Check if Stripe is configured
-      const hasStripe = false; // TODO: Check if STRIPE_SECRET_KEY is configured
+      const hasStripe = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
       
       if (!hasStripe) {
         // Auto-validate payment if no Stripe

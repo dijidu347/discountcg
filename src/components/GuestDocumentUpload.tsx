@@ -44,7 +44,9 @@ export function GuestDocumentUpload({
     return name
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '') // Remove accents
-      .replace(/[^a-zA-Z0-9]/g, '_') // Replace special chars with underscore
+      .replace(/[()\/\\]/g, '_') // Remove parentheses and slashes
+      .replace(/\s+/g, '_') // Replace spaces with underscores
+      .replace(/[^a-zA-Z0-9.]/g, '_') // Replace special chars with underscore (keep dots for extensions)
       .replace(/_+/g, '_') // Remove duplicate underscores
       .toLowerCase();
   };
