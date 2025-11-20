@@ -40,7 +40,7 @@ const getEmailContent = async (type: string, orderData: any) => {
     throw new Error(`Template not found for type: ${type}`);
   }
 
-  const baseUrl = "https://6e193db8-c6ad-48c6-854a-2294576c28c2.lovableproject.com";
+  const baseUrl = "https://discountcg.fr";
   const trackingUrl = `${baseUrl}/suivi/${orderData.tracking_number}`;
 
   // Replace variables in subject and content

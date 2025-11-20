@@ -29,11 +29,26 @@ const SuiviCommande = () => {
   const [documents, setDocuments] = useState<any[]>([]);
   const [carteGriseUrl, setCarteGriseUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [requiredDocuments, setRequiredDocuments] = useState<any[]>([]);
+  const [stripeInvoiceUrl, setStripeInvoiceUrl] = useState<string | null>(null);
 
   useEffect(() => {
+    loadRequiredDocuments();
     loadOrder();
     loadDocuments();
   }, [trackingNumber]);
+
+  const loadRequiredDocuments = async () => {
+    const { data } = await supabase
+      .from("guest_order_required_documents")
+      .select("*")
+      .eq("actif", true)
+      .order("ordre");
+    
+    if (data) {
+      setRequiredDocuments(data);
+    }
+  };
 
   const loadOrder = async () => {
     if (!trackingNumber) return;
@@ -69,6 +84,14 @@ const SuiviCommande = () => {
       if (carteGriseDoc) {
         setCarteGriseUrl(carteGriseDoc.url);
       }
+    }
+
+    // Get Stripe invoice URL if payment was made
+    if (data.payment_intent_id && data.paye) {
+      // The invoice URL can be constructed from the payment intent or stored separately
+      // For now, we'll set it based on payment_intent_id
+      // In production, you'd fetch this from Stripe or store it in the database
+      setStripeInvoiceUrl(`https://invoice.stripe.com/i/${data.payment_intent_id}`);
     }
   };
 
@@ -387,6 +410,29 @@ const SuiviCommande = () => {
             </Card>
           )}
 
+          {/* Facture Stripe */}
+          {stripeInvoiceUrl && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Facture
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <a
+                  href={stripeInvoiceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Télécharger ma facture
+                </a>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Carte Grise Finale */}
           {carteGriseUrl && (
             <Card className="border-green-500 bg-green-50">
@@ -423,40 +469,59 @@ const SuiviCommande = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {documents.length > 0 ? (
-                  documents.map((doc) => (
-                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex-1">
-                        <p className="font-medium">{doc.type_document}</p>
-                        {doc.side && (
-                          <p className="text-sm text-muted-foreground">{doc.side}</p>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          Envoyé le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
-                        </p>
+                 {documents.length > 0 ? (
+                  documents.map((doc) => {
+                    // Trouver le nom lisible du document
+                    const docName = requiredDocuments.find(rd => rd.nom_document === doc.type_document)?.nom_document || doc.type_document;
+                    
+                    return (
+                      <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{docName}</p>
+                          {doc.side && (
+                            <p className="text-sm text-muted-foreground capitalize">{doc.side}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Envoyé le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                          </p>
+                          {doc.rejection_reason && (
+                            <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+                              <p className="text-xs font-semibold text-red-700">Raison du rejet:</p>
+                              <p className="text-xs text-red-600">{doc.rejection_reason}</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {doc.validation_status === 'pending' && (
+                            <Badge variant="secondary" className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              En attente
+                            </Badge>
+                          )}
+                          {doc.validation_status === 'approved' && (
+                            <Badge variant="default" className="bg-green-600 flex items-center gap-1">
+                              <CheckCircle className="w-3 h-3" />
+                              Validé
+                            </Badge>
+                          )}
+                          {doc.validation_status === 'rejected' && (
+                            <Badge variant="destructive" className="flex items-center gap-1">
+                              <AlertCircle className="w-3 h-3" />
+                              Refusé
+                            </Badge>
+                          )}
+                          <a
+                            href={doc.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            <Download className="w-4 h-4" />
+                          </a>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {doc.validation_status === 'pending' && (
-                          <Badge variant="secondary" className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            En attente
-                          </Badge>
-                        )}
-                        {doc.validation_status === 'approved' && (
-                          <Badge variant="default" className="bg-green-600 flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Validé
-                          </Badge>
-                        )}
-                        {doc.validation_status === 'rejected' && (
-                          <Badge variant="destructive" className="flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            Refusé
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-center text-muted-foreground py-8">
                     Aucun document envoyé pour le moment

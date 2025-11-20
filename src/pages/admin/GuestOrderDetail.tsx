@@ -607,6 +607,7 @@ function DocumentValidationCard({
         .update({
           validation_status: "approved",
           validated_at: new Date().toISOString(),
+          rejection_reason: null,
         })
         .eq("id", doc.id);
 
