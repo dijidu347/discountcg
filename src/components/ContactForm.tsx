@@ -6,24 +6,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
 const ContactForm = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       const formElement = e.target as HTMLFormElement;
       const formData = new FormData(formElement);
-      
       const data = {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
         phone: formData.get("phone") as string,
-        message: formData.get("message") as string,
+        message: formData.get("message") as string
       };
 
       // Validation simple
@@ -39,12 +37,10 @@ const ContactForm = () => {
 
       // Simulation d'envoi (à remplacer par votre logique d'envoi d'email)
       await new Promise(resolve => setTimeout(resolve, 1000));
-
       toast({
         title: "Message envoyé !",
-        description: "Nous vous répondrons dans les plus brefs délais.",
+        description: "Nous vous répondrons dans les plus brefs délais."
       });
-      
       formElement.reset();
     } catch (error) {
       toast({
@@ -56,9 +52,7 @@ const ContactForm = () => {
       setIsSubmitting(false);
     }
   };
-
-  return (
-    <section id="contact" className="py-20 bg-gradient-to-b from-background to-primary/5">
+  return <section id="contact" className="py-20 bg-gradient-to-b from-background to-primary/5">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">Contactez-nous</h2>
@@ -101,35 +95,9 @@ const ContactForm = () => {
                   </div>
                 </Card>
 
-                <Card className="p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <MapPin className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold mb-1">Adresse</p>
-                      <p className="text-muted-foreground">
-                        123 Avenue de la République<br />
-                        75011 Paris, France
-                      </p>
-                    </div>
-                  </div>
-                </Card>
+                
 
-                <Card className="p-6 hover:shadow-lg transition-shadow">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <Clock className="w-6 h-6 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-semibold mb-1">Horaires</p>
-                      <p className="text-muted-foreground">
-                        Lundi - Vendredi : 9h - 18h<br />
-                        Samedi : 9h - 12h
-                      </p>
-                    </div>
-                  </div>
-                </Card>
+                
               </div>
             </div>
 
@@ -149,71 +117,37 @@ const ContactForm = () => {
                 <Label htmlFor="name" className="text-base">
                   Nom complet <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  placeholder="Votre nom"
-                  className="mt-2"
-                />
+                <Input id="name" name="name" type="text" required placeholder="Votre nom" className="mt-2" />
               </div>
 
               <div>
                 <Label htmlFor="email" className="text-base">
                   Email <span className="text-destructive">*</span>
                 </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  placeholder="votre@email.com"
-                  className="mt-2"
-                />
+                <Input id="email" name="email" type="email" required placeholder="votre@email.com" className="mt-2" />
               </div>
 
               <div>
                 <Label htmlFor="phone" className="text-base">
                   Téléphone
                 </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  placeholder="06 12 34 56 78"
-                  className="mt-2"
-                />
+                <Input id="phone" name="phone" type="tel" placeholder="06 12 34 56 78" className="mt-2" />
               </div>
 
               <div>
                 <Label htmlFor="message" className="text-base">
                   Votre message <span className="text-destructive">*</span>
                 </Label>
-                <Textarea
-                  id="message"
-                  name="message"
-                  required
-                  placeholder="Décrivez votre demande ou posez-nous vos questions..."
-                  className="mt-2 min-h-[150px]"
-                />
+                <Textarea id="message" name="message" required placeholder="Décrivez votre demande ou posez-nous vos questions..." className="mt-2 min-h-[150px]" />
               </div>
 
-              <Button 
-                type="submit" 
-                className="w-full" 
-                size="lg"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
                 {isSubmitting ? "Envoi en cours..." : "Envoyer le message"}
               </Button>
             </form>
           </Card>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default ContactForm;
-
