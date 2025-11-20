@@ -74,22 +74,14 @@ const CommanderSansCompte = () => {
   };
 
   const loadRequiredDocuments = async () => {
-    // Load documents for "CG" action type
-    const { data: actionData } = await supabase
-      .from("actions_rapides")
-      .select("id")
-      .eq("code", "CG")
-      .single();
+    // Load documents for guest orders from new table
+    const { data: docsData } = await supabase
+      .from("guest_order_required_documents")
+      .select("*")
+      .eq("actif", true)
+      .order("ordre");
 
-    if (actionData) {
-      const { data: docsData } = await supabase
-        .from("action_documents")
-        .select("*")
-        .eq("action_id", actionData.id)
-        .order("ordre");
-
-      setDocuments(docsData || []);
-    }
+    setDocuments(docsData || []);
   };
 
   const handleFileChange = (docIndex: number, file: File | null) => {
@@ -166,30 +158,69 @@ const CommanderSansCompte = () => {
         });
       }
 
-      // Send confirmation email if notifications enabled
-      if (formData.email_notifications) {
-        await supabase.functions.invoke('send-guest-order-email', {
-          body: {
-            type: 'order_confirmation',
-            orderData: {
-              tracking_number: order.tracking_number,
-              email: formData.email,
-              nom: formData.nom,
-              prenom: formData.prenom,
-              immatriculation: order.immatriculation,
-              montant_ttc: order.montant_ttc + (formData.sms_notifications ? 5 : 0)
+      // Check if Stripe is configured
+      const hasStripe = false; // TODO: Check if STRIPE_SECRET_KEY is configured
+      
+      if (!hasStripe) {
+        // Auto-validate payment if no Stripe
+        await supabase
+          .from("guest_orders")
+          .update({ 
+            paye: true,
+            paid_at: new Date().toISOString(),
+            status: "paye"
+          })
+          .eq("id", orderId);
+
+        // Send confirmation email
+        if (formData.email_notifications) {
+          await supabase.functions.invoke('send-guest-order-email', {
+            body: {
+              type: 'payment_confirmed',
+              orderData: {
+                tracking_number: order.tracking_number,
+                email: formData.email,
+                nom: formData.nom,
+                prenom: formData.prenom,
+                immatriculation: order.immatriculation,
+                montant_ttc: order.montant_ttc + (formData.sms_notifications ? 5 : 0)
+              }
             }
-          }
+          });
+        }
+
+        toast({
+          title: "Commande validée",
+          description: "Votre commande a été enregistrée avec succès",
         });
+
+        navigate(`/suivi/${order.tracking_number}`);
+      } else {
+        // Send confirmation email if notifications enabled
+        if (formData.email_notifications) {
+          await supabase.functions.invoke('send-guest-order-email', {
+            body: {
+              type: 'order_confirmation',
+              orderData: {
+                tracking_number: order.tracking_number,
+                email: formData.email,
+                nom: formData.nom,
+                prenom: formData.prenom,
+                immatriculation: order.immatriculation,
+                montant_ttc: order.montant_ttc + (formData.sms_notifications ? 5 : 0)
+              }
+            }
+          });
+        }
+
+        toast({
+          title: "Documents envoyés",
+          description: "Passons maintenant au paiement",
+        });
+
+        // Redirect to payment
+        navigate(`/paiement/${orderId}`);
       }
-
-      toast({
-        title: "Documents envoyés",
-        description: "Passons maintenant au paiement",
-      });
-
-      // Redirect to payment
-      navigate(`/paiement/${orderId}`);
     } catch (error: any) {
       console.error("Error:", error);
       toast({

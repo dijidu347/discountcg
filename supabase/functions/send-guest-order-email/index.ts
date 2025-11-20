@@ -80,7 +80,7 @@ serve(async (req) => {
 
     const { data, error } = await resend.emails.send({
       from: 'CarteGrise.com <onboarding@resend.dev>',
-      to: [orderData.email],
+      to: orderData.email,
       subject,
       html,
     });

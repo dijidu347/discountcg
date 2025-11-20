@@ -420,6 +420,36 @@ export type Database = {
           },
         ]
       }
+      guest_order_required_documents: {
+        Row: {
+          actif: boolean
+          created_at: string | null
+          id: string
+          nom_document: string
+          obligatoire: boolean
+          ordre: number
+          updated_at: string | null
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string | null
+          id?: string
+          nom_document: string
+          obligatoire?: boolean
+          ordre?: number
+          updated_at?: string | null
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string | null
+          id?: string
+          nom_document?: string
+          obligatoire?: boolean
+          ordre?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       guest_orders: {
         Row: {
           adresse: string

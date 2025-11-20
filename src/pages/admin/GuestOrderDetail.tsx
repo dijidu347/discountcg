@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send } from "lucide-react";
 import { Textarea as TextareaInput } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -72,6 +74,8 @@ export default function GuestOrderDetail() {
   const [commentaire, setCommentaire] = useState("");
   const [isValidating, setIsValidating] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
+  const [carteGriseUrl, setCarteGriseUrl] = useState("");
+  const [isSendingCarteGrise, setIsSendingCarteGrise] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -194,6 +198,51 @@ export default function GuestOrderDetail() {
       });
     } finally {
       setIsValidating(false);
+    }
+  };
+
+  const handleSendCarteGrise = async () => {
+    if (!order || !carteGriseUrl.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer l'URL de la carte grise",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSendingCarteGrise(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-carte-grise', {
+        body: {
+          orderId: order.id,
+          carteGriseUrl: carteGriseUrl,
+        }
+      });
+
+      if (error) throw error;
+
+      // Update order status to finalise
+      await supabase
+        .from("guest_orders")
+        .update({ status: "finalise" })
+        .eq("id", order.id);
+
+      toast({
+        title: "Carte grise envoyée",
+        description: "La carte grise a été envoyée au client par email",
+      });
+
+      await loadOrderData();
+    } catch (error) {
+      console.error("Erreur:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la carte grise",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingCarteGrise(false);
     }
   };
 
@@ -488,6 +537,46 @@ export default function GuestOrderDetail() {
             </CardContent>
           </Card>
         )}
+
+        {/* Envoi carte grise */}
+        {(order.status === "valide" || order.status === "finalise") && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Envoyer la carte grise</CardTitle>
+              <CardDescription>
+                Envoyez la carte grise au client par email
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="carte-grise-url">URL de la carte grise (PDF)</Label>
+                <Input
+                  id="carte-grise-url"
+                  value={carteGriseUrl}
+                  onChange={(e) => setCarteGriseUrl(e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+              <Button
+                onClick={handleSendCarteGrise}
+                disabled={isSendingCarteGrise || !carteGriseUrl.trim()}
+                className="w-full"
+              >
+                {isSendingCarteGrise ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-background mr-2" />
+                    Envoi en cours...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Envoyer la carte grise par email
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
@@ -522,6 +611,22 @@ function DocumentValidationCard({
         .eq("id", doc.id);
 
       if (error) throw error;
+
+      // Check if all documents are approved
+      const { data: allDocs } = await supabase
+        .from("guest_order_documents")
+        .select("validation_status")
+        .eq("order_id", order.id);
+
+      const allApproved = allDocs?.every(d => d.validation_status === 'approved');
+
+      // If all documents approved, update order status to processing
+      if (allApproved) {
+        await supabase
+          .from("guest_orders")
+          .update({ status: "en_traitement" })
+          .eq("id", order.id);
+      }
 
       // Send email notification
       await supabase.functions.invoke('send-document-notification', {
