@@ -177,7 +177,7 @@ export default function AdminDashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
@@ -185,14 +185,6 @@ export default function AdminDashboard() {
               >
                 <Calculator className="h-6 w-6" />
                 <span className="text-sm font-medium">Simulateur Particulier</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/guest-documents")}
-              >
-                <FileText className="h-6 w-6" />
-                <span className="text-sm font-medium">Documents Particuliers</span>
               </Button>
               <Button
                 variant="outline"
