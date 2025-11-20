@@ -80,28 +80,80 @@ export async function getVehicleByPlate(plate: string): Promise<VehicleApiRespon
   }
 }
 
+// Interface pour la configuration des prix
+interface PricingConfig {
+  prix_par_cv: number;
+  taxe_co2_seuil: number;
+  taxe_co2_montant: number;
+  frais_acheminement: number;
+  taxe_gestion: number;
+}
+
+// Récupérer la configuration des prix depuis la base de données
+export async function getPricingConfig(): Promise<PricingConfig> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  
+  const { data, error } = await supabase
+    .from("pricing_config")
+    .select("config_key, config_value");
+  
+  if (error || !data) {
+    console.error("Erreur lors de la récupération des tarifs:", error);
+    // Valeurs par défaut en cas d'erreur
+    return {
+      prix_par_cv: 42,
+      taxe_co2_seuil: 200,
+      taxe_co2_montant: 20,
+      frais_acheminement: 2.76,
+      taxe_gestion: 11,
+    };
+  }
+  
+  // Convertir le tableau en objet
+  const config: any = {};
+  data.forEach((item) => {
+    config[item.config_key] = item.config_value;
+  });
+  
+  return config as PricingConfig;
+}
+
 // Calcul du prix de la carte grise
-export function calculateCarteGrisePrice(vehicleData: NormalizedVehicleData, region: string = 'Île-de-France'): number {
+export async function calculateCarteGrisePrice(vehicleData: NormalizedVehicleData, region: string = 'Île-de-France'): Promise<number> {
+  const config = await getPricingConfig();
+  
   const puissanceFiscale = vehicleData.puissance_fiscale || 5;
   
-  // Prix moyen par CV fiscal (varie selon les régions, ici moyenne nationale)
-  const prixParCV = 42; // euros
-  
-  // Taxe CO2 (exemple simplifié)
+  // Taxe CO2
   const co2 = vehicleData.co2 || 120;
   let taxeCO2 = 0;
-  if (co2 > 200) {
-    taxeCO2 = (co2 - 200) * 20;
+  if (co2 > config.taxe_co2_seuil) {
+    taxeCO2 = (co2 - config.taxe_co2_seuil) * config.taxe_co2_montant;
   }
   
   // Taxe régionale
-  const taxeRegionale = puissanceFiscale * prixParCV;
+  const taxeRegionale = puissanceFiscale * config.prix_par_cv;
   
-  // Frais fixes
-  const fraisAcheminement = 2.76;
-  const taxeGestion = 11;
-  
-  const total = taxeRegionale + taxeCO2 + fraisAcheminement + taxeGestion;
+  // Total
+  const total = taxeRegionale + taxeCO2 + config.frais_acheminement + config.taxe_gestion;
   
   return Math.round(total * 100) / 100;
+}
+
+// Récupérer les frais de dossier depuis la base de données
+export async function getFraisDossier(): Promise<number> {
+  const { supabase } = await import("@/integrations/supabase/client");
+  
+  const { data, error } = await supabase
+    .from("pricing_config")
+    .select("config_value")
+    .eq("config_key", "frais_dossier")
+    .single();
+  
+  if (error || !data) {
+    console.error("Erreur lors de la récupération des frais de dossier:", error);
+    return 30; // Valeur par défaut
+  }
+  
+  return data.config_value;
 }

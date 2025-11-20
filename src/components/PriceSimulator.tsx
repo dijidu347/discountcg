@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Loader2, Search, Car, Calendar, Palette, Zap, Gauge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getVehicleByPlate, calculateCarteGrisePrice } from "@/lib/vehicle-api";
+import { getVehicleByPlate, calculateCarteGrisePrice, getFraisDossier } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
 
 export const PriceSimulator = () => {
@@ -14,8 +14,14 @@ export const PriceSimulator = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [price, setPrice] = useState<number | null>(null);
+  const [fraisDossier, setFraisDossier] = useState<number>(30);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Charger les frais de dossier au montage du composant
+    getFraisDossier().then(setFraisDossier);
+  }, []);
 
   const handleSearch = async () => {
     if (!plate || plate.length < 6) {
@@ -36,7 +42,7 @@ export const PriceSimulator = () => {
       
       if (result.success && result.data) {
         setVehicleData(result.data);
-        const calculatedPrice = calculateCarteGrisePrice(result.data);
+        const calculatedPrice = await calculateCarteGrisePrice(result.data);
         setPrice(calculatedPrice);
         
         toast({
@@ -83,11 +89,11 @@ export const PriceSimulator = () => {
           marque: vehicleData.marque || "",
           modele: vehicleData.modele || "",
           date_mec: vehicleData.date_mec || "",
-          puiss_fisc: vehicleData.puiss_fisc || 0,
+          puiss_fisc: vehicleData.puissance_fiscale || 0,
           energie: vehicleData.energie || "",
           montant_ht: price,
-          montant_ttc: price + 30,
-          frais_dossier: 30,
+          montant_ttc: price + fraisDossier,
+          frais_dossier: fraisDossier,
           email: "",
           telephone: "",
           nom: "",
@@ -289,12 +295,12 @@ export const PriceSimulator = () => {
                   </div>
                   <div className="flex items-center justify-between text-primary-foreground/90 text-lg px-8">
                     <span>Frais de dossier</span>
-                    <span className="font-bold">30,00 €</span>
+                    <span className="font-bold">{fraisDossier.toFixed(2)} €</span>
                   </div>
                   <div className="h-px bg-primary-foreground/30 mx-8" />
                   <div className="flex items-center justify-between text-primary-foreground text-2xl font-black px-8 pt-2">
                     <span>TOTAL</span>
-                    <span>{(price + 30).toFixed(2)} €</span>
+                    <span>{(price + fraisDossier).toFixed(2)} €</span>
                   </div>
                 </div>
                 
