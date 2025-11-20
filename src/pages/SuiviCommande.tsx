@@ -13,19 +13,26 @@ import {
   FileCheck,
   Mail,
   Phone,
-  MapPin
+  MapPin,
+  FileText,
+  AlertCircle,
+  Download
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [carteGriseUrl, setCarteGriseUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     loadOrder();
+    loadDocuments();
   }, [trackingNumber]);
 
   const loadOrder = async () => {
@@ -49,6 +56,44 @@ const SuiviCommande = () => {
 
     setOrder(data);
     setIsLoading(false);
+
+    // Check for carte grise finale
+    if (data.status === 'finalise') {
+      const { data: carteGriseDoc } = await supabase
+        .from('guest_order_documents')
+        .select('url')
+        .eq('order_id', data.id)
+        .eq('type_document', 'carte_grise_finale')
+        .single();
+      
+      if (carteGriseDoc) {
+        setCarteGriseUrl(carteGriseDoc.url);
+      }
+    }
+  };
+
+  const loadDocuments = async () => {
+    if (!trackingNumber) return;
+
+    // Get order first to get the ID
+    const { data: orderData } = await supabase
+      .from("guest_orders")
+      .select("id")
+      .eq("tracking_number", trackingNumber)
+      .single();
+
+    if (!orderData) return;
+
+    const { data: docsData } = await supabase
+      .from("guest_order_documents")
+      .select("*")
+      .eq("order_id", orderData.id)
+      .neq("type_document", "carte_grise_finale")
+      .order("created_at", { ascending: false });
+
+    if (docsData) {
+      setDocuments(docsData);
+    }
   };
 
   const getStatusInfo = (status: string) => {
@@ -341,6 +386,132 @@ const SuiviCommande = () => {
               </CardContent>
             </Card>
           )}
+
+          {/* Carte Grise Finale */}
+          {carteGriseUrl && (
+            <Card className="border-green-500 bg-green-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-green-700">
+                  <FileCheck className="w-6 h-6" />
+                  Votre carte grise est disponible !
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-muted-foreground">
+                  Votre carte grise a été traitée et est maintenant disponible au téléchargement.
+                </p>
+                <a
+                  href={carteGriseUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <Download className="w-5 h-5" />
+                  Télécharger ma carte grise
+                </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Documents envoyés */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                Mes documents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {documents.length > 0 ? (
+                  documents.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{doc.type_document}</p>
+                        {doc.side && (
+                          <p className="text-sm text-muted-foreground">{doc.side}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Envoyé le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {doc.validation_status === 'pending' && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            En attente
+                          </Badge>
+                        )}
+                        {doc.validation_status === 'approved' && (
+                          <Badge variant="default" className="bg-green-600 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Validé
+                          </Badge>
+                        )}
+                        {doc.validation_status === 'rejected' && (
+                          <Badge variant="destructive" className="flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            Refusé
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-muted-foreground py-8">
+                    Aucun document envoyé pour le moment
+                  </p>
+                )}
+
+                {/* Afficher les documents rejetés à re-uploader */}
+                {documents.some(doc => doc.validation_status === 'rejected') && (
+                  <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h3 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5" />
+                      Documents à renvoyer
+                    </h3>
+                    <p className="text-sm text-muted-foreground mb-4">
+                      Certains documents ont été refusés. Veuillez les renvoyer ci-dessous.
+                    </p>
+                    {documents
+                      .filter(doc => doc.validation_status === 'rejected')
+                      .map(doc => {
+                        // Get existing files for this document type and side
+                        const existingFiles = documents
+                          .filter(d => d.type_document === doc.type_document && d.side === doc.side)
+                          .map(d => ({
+                            id: d.id,
+                            fileName: d.nom_fichier,
+                            side: d.side || 'recto',
+                            validation_status: d.validation_status,
+                            rejection_reason: d.rejection_reason
+                          }));
+
+                        return (
+                          <div key={doc.id} className="mb-4">
+                            <div className="mb-2">
+                              <p className="font-medium">{doc.type_document}</p>
+                              {doc.rejection_reason && (
+                                <p className="text-sm text-red-600">
+                                  Raison: {doc.rejection_reason}
+                                </p>
+                              )}
+                            </div>
+                            <GuestDocumentUpload
+                              orderId={order.id}
+                              documentType={doc.type_document}
+                              label={doc.type_document}
+                              existingFiles={existingFiles}
+                              onUploadComplete={loadDocuments}
+                            />
+                          </div>
+                        );
+                      })}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 

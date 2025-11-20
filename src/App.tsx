@@ -18,6 +18,7 @@ import Support from "./pages/Support";
 import CommanderSansCompte from "./pages/CommanderSansCompte";
 import PaiementGuestOrder from "./pages/PaiementGuestOrder";
 import SuiviCommande from "./pages/SuiviCommande";
+import RechercheSuivi from "./pages/RechercheSuivi";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AllDemarches from "./pages/admin/AllDemarches";
 import AdminDemarcheDetail from "./pages/admin/DemarcheDetail";
@@ -49,6 +50,7 @@ const App = () => (
         <Route path="/register" element={<Register />} />
         <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
         <Route path="/paiement/:orderId" element={<PaiementGuestOrder />} />
+        <Route path="/recherche-suivi" element={<RechercheSuivi />} />
         <Route path="/suivi/:trackingNumber" element={<SuiviCommande />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/nouvelle-demarche" element={<NouvelleDemarche />} />

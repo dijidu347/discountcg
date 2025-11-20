@@ -41,6 +41,9 @@ const Navbar = () => {
             <button onClick={() => scrollToSection("faq")} className="text-foreground hover:text-primary transition-colors">
               FAQ
             </button>
+            <button onClick={() => navigate("/recherche-suivi")} className="text-foreground hover:text-primary transition-colors">
+              Suivi
+            </button>
             <Button variant="hero" size="lg" onClick={() => scrollToSection("contact")}>
               Commencer
             </Button>
@@ -78,6 +81,12 @@ const Navbar = () => {
             </button>
             <button onClick={() => scrollToSection("faq")} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               FAQ
+            </button>
+            <button onClick={() => {
+              setIsOpen(false);
+              navigate("/recherche-suivi");
+            }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
+              Suivi
             </button>
             <Button variant="hero" size="lg" className="w-full" onClick={() => scrollToSection("contact")}>
               Commencer
