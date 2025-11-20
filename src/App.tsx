@@ -29,6 +29,7 @@ import GuestOrders from "./pages/admin/GuestOrders";
 import ManageSubscriptions from "./pages/admin/ManageSubscriptions";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
+import ManageEmailTemplates from "./pages/admin/ManageEmailTemplates";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/admin/manage-subscriptions" element={<ManageSubscriptions />} />
           <Route path="/admin/notifications" element={<AdminNotifications />} />
           <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />
+          <Route path="/admin/email-templates" element={<ManageEmailTemplates />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
