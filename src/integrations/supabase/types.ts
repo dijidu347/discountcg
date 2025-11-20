@@ -229,6 +229,36 @@ export type Database = {
           },
         ]
       }
+      email_templates: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          html_content: string
+          id: string
+          subject: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          html_content: string
+          id?: string
+          subject: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          html_content?: string
+          id?: string
+          subject?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       factures: {
         Row: {
           created_at: string

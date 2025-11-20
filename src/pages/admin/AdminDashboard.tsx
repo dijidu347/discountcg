@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Building2, FileText, DollarSign } from "lucide-react";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail } from "lucide-react";
 
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -236,6 +236,14 @@ export default function AdminDashboard() {
               >
                 <Building2 className="h-6 w-6" />
                 <span className="text-sm font-medium">Administrateurs</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/email-templates")}
+              >
+                <Mail className="h-6 w-6" />
+                <span className="text-sm font-medium">Templates Email</span>
               </Button>
             </div>
           </CardContent>
