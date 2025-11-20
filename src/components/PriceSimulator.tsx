@@ -136,17 +136,30 @@ export const PriceSimulator = () => {
       <CardContent className="p-8 space-y-8">
         {/* Champ de recherche */}
         <div className="space-y-4">
-          <div>
+          <div className="space-y-3">
             <Label htmlFor="plate" className="text-xl font-bold text-foreground flex items-center gap-2">
               <Car className="w-5 h-5 text-primary" />
               Plaque d'immatriculation
             </Label>
-            <div className="mt-2 p-3 bg-muted/50 rounded-lg border border-border">
-              <p className="text-sm text-muted-foreground font-medium mb-1">Formats d'immatriculation acceptés :</p>
-              <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• <span className="font-mono">Nouveau format (SIV) : AA-123-AA</span></li>
-                <li>• <span className="font-mono">Ancien format (FNI) : 1234 ABC 45</span></li>
-              </ul>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="flex items-center gap-3 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                <div className="flex-shrink-0 w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <span className="text-primary font-bold text-sm">SIV</span>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Nouveau format</p>
+                  <p className="font-mono font-bold text-sm">AA-123-AA</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-secondary/5 border border-border rounded-lg">
+                <div className="flex-shrink-0 w-8 h-8 bg-secondary/10 rounded-full flex items-center justify-center">
+                  <span className="text-secondary-foreground font-bold text-sm">FNI</span>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Ancien format</p>
+                  <p className="font-mono font-bold text-sm">1234 ABC 45</p>
+                </div>
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
