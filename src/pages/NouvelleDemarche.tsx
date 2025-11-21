@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, FileCheck, Save, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VehicleForm } from "@/components/VehicleForm";
 import { TrackingServiceOption } from "@/components/TrackingServiceOption";
+import { StripePayment } from "@/components/StripePayment";
 
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
@@ -230,60 +231,17 @@ export default function NouvelleDemarche() {
     setShowPaymentDialog(true);
   };
 
-  const handlePayment = async () => {
+  const handlePaymentSuccess = async () => {
     if (!demarcheId) return;
 
-    setLoading(true);
-
-    // Simulate payment
-    const { error: demarcheError } = await supabase
+    // Update demarche to mark as not draft
+    await supabase
       .from('demarches')
       .update({
         is_draft: false,
-        paye: true,
         documents_complets: true,
-        status: 'en_attente'
       })
       .eq('id', demarcheId);
-
-    if (demarcheError) {
-      toast({
-        title: "Erreur",
-        description: "Impossible de valider le paiement",
-        variant: "destructive"
-      });
-      setLoading(false);
-      return;
-    }
-
-    // Create payment record
-    const frais_dossier = getFraisDossier();
-    
-    const { error: paymentError } = await supabase
-      .from('paiements')
-      .insert({
-        garage_id: garage.id,
-        demarche_id: demarcheId,
-        montant: frais_dossier,
-        status: 'valide'
-      });
-
-    if (paymentError) {
-      console.error(paymentError);
-    }
-
-    // Create notification
-    await supabase
-      .from('notifications')
-      .insert({
-        garage_id: garage.id,
-        demarche_id: demarcheId,
-        type: 'payment_confirmed',
-        message: `Votre paiement de ${frais_dossier}€ a été validé. Votre démarche est en cours de traitement.`
-      });
-
-    setLoading(false);
-    setShowPaymentDialog(false);
 
     toast({
       title: "Paiement validé",
@@ -291,6 +249,10 @@ export default function NouvelleDemarche() {
     });
 
     navigate("/mes-demarches");
+  };
+
+  const handlePaymentCancel = () => {
+    setShowPaymentDialog(false);
   };
 
   const handleDocumentUploadComplete = (documentType: string) => {
@@ -509,52 +471,23 @@ export default function NouvelleDemarche() {
             </form>
 
               <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
-                <DialogContent>
+                <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Confirmer le paiement</DialogTitle>
+                    <DialogTitle>Paiement de la démarche</DialogTitle>
                     <DialogDescription>
-                      Montant à payer : {getFraisDossier()}€
+                      Montant total : {getFraisDossier()}€
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4">
-                    <div className="space-y-4">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="stripe"
-                          name="payment"
-                          value="stripe"
-                          className="h-4 w-4"
-                          defaultChecked
-                        />
-                        <Label htmlFor="stripe" className="cursor-pointer">
-                          <p className="font-medium">Paiement par carte bancaire</p>
-                          <p className="text-sm text-muted-foreground">Via Stripe sécurisé</p>
-                        </Label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="radio"
-                          id="paypal"
-                          name="payment"
-                          value="paypal"
-                          className="h-4 w-4"
-                        />
-                        <Label htmlFor="paypal" className="cursor-pointer">
-                          <p className="font-medium">Paiement en 4x sans frais</p>
-                          <p className="text-sm text-muted-foreground">Via PayPal (4 x {(getFraisDossier() / 4).toFixed(2)}€)</p>
-                        </Label>
-                      </div>
-                    </div>
+                    {demarcheId && (
+                      <StripePayment
+                        demarcheId={demarcheId}
+                        amount={getFraisDossier()}
+                        onSuccess={handlePaymentSuccess}
+                        onCancel={handlePaymentCancel}
+                      />
+                    )}
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
-                      Annuler
-                    </Button>
-                    <Button onClick={handlePayment} disabled={loading}>
-                      {loading ? "Traitement..." : "Confirmer le paiement"}
-                    </Button>
-                  </DialogFooter>
                 </DialogContent>
               </Dialog>
           </CardContent>
