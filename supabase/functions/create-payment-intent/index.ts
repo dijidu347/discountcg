@@ -98,6 +98,7 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id);
 
     const { paymentType } = body;
+    console.log('Fetching demarche with ID:', demarcheId);
 
     // Get demarche details
     const { data: demarche, error: demarcheError } = await supabaseClient
@@ -106,6 +107,8 @@ serve(async (req) => {
       .eq('id', demarcheId)
       .single();
 
+    console.log('Demarche query result:', { demarche, error: demarcheError });
+
     if (demarcheError || !demarche) {
       console.error('Demarche error:', demarcheError);
       return new Response(JSON.stringify({ error: 'Démarche not found' }), {
@@ -113,6 +116,9 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Demarche found, checking ownership');
+    console.log('Garage user_id:', demarche.garages?.user_id, 'Authenticated user:', user.id);
 
     // Check user owns this garage
     if (demarche.garages.user_id !== user.id) {
