@@ -180,8 +180,31 @@ const PaiementDemarche = () => {
     }
   };
 
-  const handlePaymentSuccess = () => {
-    navigate("/mes-demarches");
+  const handlePaymentSuccess = async () => {
+    try {
+      // Mettre à jour le statut de la démarche
+      const { error } = await supabase
+        .from("demarches")
+        .update({ 
+          paye: true,
+          status: 'en_attente',
+          is_draft: false
+        })
+        .eq("id", demarcheId);
+
+      if (error) {
+        console.error("Error updating demarche:", error);
+        toast({
+          title: "Attention",
+          description: "Paiement effectué mais erreur de mise à jour. Contactez le support.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error in handlePaymentSuccess:", error);
+    } finally {
+      navigate("/mes-demarches");
+    }
   };
 
   if (isLoading) {
