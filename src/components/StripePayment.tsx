@@ -157,7 +157,10 @@ export function StripePayment({ demarcheId, amount, onSuccess, onCancel }: Strip
       }
 
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { demarcheId, paymentType: 'full' }
+        body: { demarcheId, paymentType: 'full' },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
       });
 
       if (error) throw error;
