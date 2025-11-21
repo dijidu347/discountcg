@@ -17,6 +17,7 @@ import GarageSettings from "./pages/GarageSettings";
 import Support from "./pages/Support";
 import CommanderSansCompte from "./pages/CommanderSansCompte";
 import PaiementGuestOrder from "./pages/PaiementGuestOrder";
+import PaiementDemarche from "./pages/PaiementDemarche";
 import SuiviCommande from "./pages/SuiviCommande";
 import RechercheSuivi from "./pages/RechercheSuivi";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -50,6 +51,7 @@ const App = () => (
         <Route path="/register" element={<Register />} />
         <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
         <Route path="/paiement/:orderId" element={<PaiementGuestOrder />} />
+        <Route path="/paiement-demarche/:demarcheId" element={<PaiementDemarche />} />
         <Route path="/recherche-suivi" element={<RechercheSuivi />} />
         <Route path="/suivi/:trackingNumber" element={<SuiviCommande />} />
             <Route path="/dashboard" element={<Dashboard />} />
