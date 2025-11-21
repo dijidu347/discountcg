@@ -149,21 +149,24 @@ export function StripePayment({ demarcheId, amount, onSuccess, onCancel }: Strip
 
   const createPaymentIntent = async () => {
     try {
-      // Vérifier que l'utilisateur est authentifié
-      const { data: { session } } = await supabase.auth.getSession();
+      // Forcer le refresh de la session pour obtenir un token valide
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
       
-      if (!session) {
-        throw new Error("Vous devez être connecté pour effectuer un paiement");
+      if (sessionError || !session) {
+        throw new Error("Session expirée. Veuillez vous reconnecter.");
       }
 
+      console.log('Creating payment intent with valid session');
+
+      // Le client Supabase gère automatiquement l'authentification
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { demarcheId, paymentType: 'full' },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
+        body: { demarcheId, paymentType: 'full' }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function invoke error:', error);
+        throw error;
+      }
 
       if (data?.clientSecret) {
         setClientSecret(data.clientSecret);
