@@ -5,14 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, Car, CreditCard, ChevronLeft, Calendar, Palette, Zap, Gauge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements } from "@stripe/react-stripe-js";
 import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export default function DevisCarteGrise() {
   const { orderId } = useParams();
@@ -21,12 +19,28 @@ export default function DevisCarteGrise() {
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPayment, setSelectedPayment] = useState<"stripe" | "paypal" | "wallet" | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
   useEffect(() => {
+    initializeStripe();
     if (orderId) {
       fetchOrder();
     }
   }, [orderId]);
+
+  const initializeStripe = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-stripe-key');
+      
+      if (error) throw error;
+      
+      if (data?.publishableKey) {
+        setStripePromise(loadStripe(data.publishableKey));
+      }
+    } catch (error) {
+      console.error("Error loading Stripe:", error);
+    }
+  };
 
   const fetchOrder = async () => {
     try {
@@ -268,15 +282,17 @@ export default function DevisCarteGrise() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Apple Pay / Google Pay */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold">Paiement rapide</h3>
-                  <Elements stripe={stripePromise}>
-                    <StripeWalletPayment
-                      amount={order.montant_ttc}
-                      onSuccess={handleWalletSuccess}
-                    />
-                  </Elements>
-                </div>
+                {stripePromise && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold">Paiement rapide</h3>
+                    <Elements stripe={stripePromise}>
+                      <StripeWalletPayment
+                        amount={order.montant_ttc}
+                        onSuccess={handleWalletSuccess}
+                      />
+                    </Elements>
+                  </div>
+                )}
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">

@@ -5,14 +5,10 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, CheckCircle, CreditCard, ArrowLeft } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-const stripePromise = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY 
-  ? loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY) 
-  : null;
 
 const CheckoutForm = ({ order }: { order: any }) => {
   const stripe = useStripe();
@@ -177,10 +173,31 @@ const PaiementGuestOrder = () => {
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
   useEffect(() => {
+    initializeStripe();
     loadOrder();
   }, [orderId]);
+
+  const initializeStripe = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-stripe-key');
+      
+      if (error) throw error;
+      
+      if (data?.publishableKey) {
+        setStripePromise(loadStripe(data.publishableKey));
+      }
+    } catch (error) {
+      console.error("Error loading Stripe:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger le système de paiement",
+        variant: "destructive",
+      });
+    }
+  };
 
   const loadOrder = async () => {
     if (!orderId) {
@@ -235,6 +252,14 @@ const PaiementGuestOrder = () => {
   }
 
   if (!order) return null;
+
+  if (!stripePromise) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
