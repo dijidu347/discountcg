@@ -4,17 +4,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, CheckCircle, CreditCard } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, CreditCard, Wallet, Smartphone } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PayPalButton } from "@/components/PayPalButton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { StripeWalletPayment } from "@/components/StripeWalletPayment";
+import { Separator } from "@/components/ui/separator";
 
 let stripePromise: any = null;
 
-const CheckoutForm = ({ demarche, onSuccess }: { demarche: any; onSuccess: () => void }) => {
+const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
@@ -63,31 +64,19 @@ const CheckoutForm = ({ demarche, onSuccess }: { demarche: any; onSuccess: () =>
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Informations de paiement</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="p-4 border rounded-lg bg-background">
-            <PaymentElement
-              options={{
-                layout: "tabs",
-                wallets: {
-                  applePay: "auto",
-                  googlePay: "auto",
-                },
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-4 border rounded-lg bg-background">
+        <PaymentElement
+          options={{
+            layout: "tabs",
+          }}
+        />
+      </div>
       <Button
         type="submit"
         disabled={!stripe || isProcessing}
         size="lg"
-        className="w-full text-lg h-14"
+        className="w-full text-lg h-12"
       >
         {isProcessing ? (
           <>
@@ -97,7 +86,7 @@ const CheckoutForm = ({ demarche, onSuccess }: { demarche: any; onSuccess: () =>
         ) : (
           <>
             <CheckCircle className="w-5 h-5 mr-2" />
-            Confirmer le paiement
+            Payer par carte
           </>
         )}
       </Button>
@@ -260,22 +249,18 @@ const PaiementDemarche = () => {
             </CardContent>
           </Card>
 
-          {/* Formulaire de paiement */}
-          <Tabs defaultValue="stripe" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="stripe">
-                <CreditCard className="w-4 h-4 mr-2" />
-                Carte bancaire
-              </TabsTrigger>
-              <TabsTrigger value="paypal">
-                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.76-4.852.072-.455.462-.788.922-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.857.174-3.407-.721-4.489z"/>
-                </svg>
-                PayPal
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="stripe" className="mt-6">
+          {/* Section 1: Stripe Wallet (Apple Pay / Google Pay) */}
+          <Card>
+            <CardHeader className="bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Wallet className="w-5 h-5 text-primary" />
+                <CardTitle>Paiement rapide</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Apple Pay, Google Pay et autres portefeuilles électroniques
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
               <Elements
                 stripe={stripePromise}
                 options={{
@@ -292,30 +277,84 @@ const PaiementDemarche = () => {
                   },
                 }}
               >
-                <CheckoutForm demarche={demarche} onSuccess={handlePaymentSuccess} />
+                <StripeWalletPayment 
+                  amount={demarche.montant_ttc} 
+                  onSuccess={handlePaymentSuccess}
+                />
               </Elements>
-            </TabsContent>
+            </CardContent>
+          </Card>
 
-            <TabsContent value="paypal" className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Paiement PayPal</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Payez en 1x ou en 4x sans frais avec PayPal
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <PayPalButton
-                    amount={demarche.montant_ttc}
-                    onSuccess={handlePaymentSuccess}
-                    onError={(error) => {
-                      console.error("PayPal error:", error);
-                    }}
-                  />
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+          <div className="relative">
+            <Separator className="my-6" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-4">
+              <span className="text-sm text-muted-foreground">ou</span>
+            </div>
+          </div>
+
+          {/* Section 2: Stripe Card */}
+          <Card>
+            <CardHeader className="bg-primary/5">
+              <div className="flex items-center gap-2">
+                <CreditCard className="w-5 h-5 text-primary" />
+                <CardTitle>Carte bancaire</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Visa, Mastercard, American Express
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: "stripe",
+                    variables: {
+                      colorPrimary: "hsl(var(--primary))",
+                      colorText: "hsl(var(--foreground))",
+                      colorDanger: "hsl(var(--destructive))",
+                      fontFamily: "system-ui, sans-serif",
+                      borderRadius: "8px",
+                    },
+                  },
+                }}
+              >
+                <StripeCardForm onSuccess={handlePaymentSuccess} />
+              </Elements>
+            </CardContent>
+          </Card>
+
+          <div className="relative">
+            <Separator className="my-6" />
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-4">
+              <span className="text-sm text-muted-foreground">ou</span>
+            </div>
+          </div>
+
+          {/* Section 3: PayPal */}
+          <Card>
+            <CardHeader className="bg-primary/5">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.76-4.852.072-.455.462-.788.922-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.857.174-3.407-.721-4.489z"/>
+                </svg>
+                <CardTitle>PayPal</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Payez en 1x ou en 4x sans frais (à partir de 30€)
+              </p>
+            </CardHeader>
+            <CardContent className="pt-6">
+              <PayPalButton
+                amount={demarche.montant_ttc}
+                onSuccess={handlePaymentSuccess}
+                onError={(error) => {
+                  console.error("PayPal error:", error);
+                }}
+              />
+            </CardContent>
+          </Card>
         </div>
       </div>
 
