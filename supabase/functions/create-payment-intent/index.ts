@@ -122,14 +122,18 @@ serve(async (req) => {
 
     // Check user owns this garage
     if (demarche.garages.user_id !== user.id) {
+      console.error('Ownership check failed');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('Ownership check passed, calculating amount');
     const paymentAmount = Math.round(demarche.montant_ttc * 100);
+    console.log('Payment amount (in cents):', paymentAmount, 'from TTC:', demarche.montant_ttc);
 
+    console.log('Creating Stripe payment intent...');
     // Create Stripe payment intent
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
@@ -146,13 +150,16 @@ serve(async (req) => {
       }),
     });
 
+    console.log('Stripe API response status:', response.status);
     const paymentIntent = await response.json();
+    console.log('Payment intent created:', { id: paymentIntent.id, status: paymentIntent.status });
 
     if (!response.ok) {
-      console.error('Stripe error:', paymentIntent);
+      console.error('Stripe API error:', paymentIntent);
       throw new Error(paymentIntent.error?.message || 'Payment intent creation failed');
     }
 
+    console.log('Creating payment record in database...');
     // Create payment record
     const { error: paymentError } = await supabaseClient
       .from('paiements')
@@ -166,8 +173,11 @@ serve(async (req) => {
 
     if (paymentError) {
       console.error('Payment record error:', paymentError);
+    } else {
+      console.log('Payment record created successfully');
     }
 
+    console.log('Returning client secret to frontend');
     return new Response(
       JSON.stringify({ 
         clientSecret: paymentIntent.client_secret,
