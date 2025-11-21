@@ -73,7 +73,8 @@ serve(async (req) => {
     // Handle authenticated demarche payments
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error('Missing Authorization header for demarche payment');
+      return new Response(JSON.stringify({ error: 'Unauthorized - Missing authentication' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -91,11 +92,14 @@ serve(async (req) => {
 
     const { data: { user } } = await supabaseAuthClient.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error('Invalid or expired token');
+      return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('Authenticated user:', user.id);
 
     const { paymentType } = body;
 

@@ -149,6 +149,13 @@ export function StripePayment({ demarcheId, amount, onSuccess, onCancel }: Strip
 
   const createPaymentIntent = async () => {
     try {
+      // Vérifier que l'utilisateur est authentifié
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        throw new Error("Vous devez être connecté pour effectuer un paiement");
+      }
+
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: { demarcheId, paymentType: 'full' }
       });
