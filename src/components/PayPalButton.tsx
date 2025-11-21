@@ -19,6 +19,18 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
   const buttonsRendered = useRef(false);
 
   useEffect(() => {
+    const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+    
+    if (!clientId) {
+      console.error("VITE_PAYPAL_CLIENT_ID not configured");
+      toast({
+        title: "Erreur PayPal",
+        description: "Configuration PayPal manquante",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const loadPayPalScript = () => {
       // Check if script already exists
       if (document.querySelector('script[src*="paypal.com/sdk"]')) {
@@ -29,8 +41,7 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
       }
 
       const script = document.createElement("script");
-      const clientId = import.meta.env.VITE_PAYPAL_CLIENT_ID;
-      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&intent=authorize&components=buttons,payment-fields,funding-eligibility`;
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&intent=capture&components=buttons,payment-fields,funding-eligibility`;
       script.async = true;
       script.onload = () => {
         renderPayPalButtons();
@@ -48,6 +59,8 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
     const renderPayPalButtons = () => {
       if (!paypalRef.current || !window.paypal || buttonsRendered.current) return;
 
+      // Clear any existing content
+      paypalRef.current.innerHTML = '';
       buttonsRendered.current = true;
 
       // Render PayPal button
@@ -58,7 +71,7 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
             color: "gold",
             shape: "rect",
             label: "paypal",
-            height: 45,
+            height: 48,
           },
           fundingSource: window.paypal.FUNDING.PAYPAL,
           createOrder: function (data: any, actions: any) {
@@ -104,10 +117,10 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
           .Buttons({
             style: {
               layout: "vertical",
-              color: "gold",
+              color: "white",
               shape: "rect",
               label: "paylater",
-              height: 45,
+              height: 48,
             },
             fundingSource: window.paypal.FUNDING.PAYLATER,
             createOrder: function (data: any, actions: any) {
