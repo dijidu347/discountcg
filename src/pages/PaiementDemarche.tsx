@@ -9,6 +9,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { PayPalButton } from "@/components/PayPalButton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 let stripePromise: any = null;
 
@@ -259,24 +261,61 @@ const PaiementDemarche = () => {
           </Card>
 
           {/* Formulaire de paiement */}
-          <Elements
-            stripe={stripePromise}
-            options={{
-              clientSecret,
-              appearance: {
-                theme: "stripe",
-                variables: {
-                  colorPrimary: "hsl(var(--primary))",
-                  colorText: "hsl(var(--foreground))",
-                  colorDanger: "hsl(var(--destructive))",
-                  fontFamily: "system-ui, sans-serif",
-                  borderRadius: "8px",
-                },
-              },
-            }}
-          >
-            <CheckoutForm demarche={demarche} onSuccess={handlePaymentSuccess} />
-          </Elements>
+          <Tabs defaultValue="stripe" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="stripe">
+                <CreditCard className="w-4 h-4 mr-2" />
+                Carte bancaire
+              </TabsTrigger>
+              <TabsTrigger value="paypal">
+                <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.76-4.852.072-.455.462-.788.922-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.857.174-3.407-.721-4.489z"/>
+                </svg>
+                PayPal
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="stripe" className="mt-6">
+              <Elements
+                stripe={stripePromise}
+                options={{
+                  clientSecret,
+                  appearance: {
+                    theme: "stripe",
+                    variables: {
+                      colorPrimary: "hsl(var(--primary))",
+                      colorText: "hsl(var(--foreground))",
+                      colorDanger: "hsl(var(--destructive))",
+                      fontFamily: "system-ui, sans-serif",
+                      borderRadius: "8px",
+                    },
+                  },
+                }}
+              >
+                <CheckoutForm demarche={demarche} onSuccess={handlePaymentSuccess} />
+              </Elements>
+            </TabsContent>
+
+            <TabsContent value="paypal" className="mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Paiement PayPal</CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    Payez en 1x ou en 4x sans frais avec PayPal
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <PayPalButton
+                    amount={demarche.montant_ttc}
+                    onSuccess={handlePaymentSuccess}
+                    onError={(error) => {
+                      console.error("PayPal error:", error);
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 
