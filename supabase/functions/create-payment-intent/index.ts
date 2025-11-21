@@ -80,19 +80,15 @@ serve(async (req) => {
       });
     }
 
-    const supabaseAuthClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: authHeader },
-        },
-      }
-    );
+    console.log('Verifying user token...');
 
-    const { data: { user } } = await supabaseAuthClient.auth.getUser();
-    if (!user) {
-      console.error('Invalid or expired token');
+    // Use service role client to verify the user token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+    
+    if (userError || !user) {
+      console.error('Token verification failed:', userError);
       return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
