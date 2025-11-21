@@ -41,7 +41,7 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
       }
 
       const script = document.createElement("script");
-      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&intent=capture&components=buttons,payment-fields,funding-eligibility`;
+      script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&intent=capture&enable-funding=paylater&components=buttons,marks,funding-eligibility`;
       script.async = true;
       script.onload = () => {
         renderPayPalButtons();
@@ -107,54 +107,64 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
         })
         .render(paypalRef.current);
 
-      // Render Pay Later button if amount >= 30
+      // Check if Pay Later is eligible and render button if amount >= 30
       if (amount >= 30 && paypalRef.current) {
-        const payLaterContainer = document.createElement("div");
-        payLaterContainer.className = "mt-2";
-        paypalRef.current.appendChild(payLaterContainer);
+        console.log("Checking Pay Later eligibility for amount:", amount);
+        
+        // Check if Pay Later is available
+        const isPayLaterEligible = window.paypal.isFundingEligible(window.paypal.FUNDING.PAYLATER);
+        console.log("Pay Later eligible:", isPayLaterEligible);
+        
+        if (isPayLaterEligible) {
+          const payLaterContainer = document.createElement("div");
+          payLaterContainer.className = "mt-2";
+          paypalRef.current.appendChild(payLaterContainer);
 
-        window.paypal
-          .Buttons({
-            style: {
-              layout: "vertical",
-              color: "white",
-              shape: "rect",
-              label: "paylater",
-              height: 48,
-            },
-            fundingSource: window.paypal.FUNDING.PAYLATER,
-            createOrder: function (data: any, actions: any) {
-              return actions.order.create({
-                purchase_units: [
-                  {
-                    amount: { 
-                      value: amount.toFixed(2),
-                      currency_code: "EUR"
+          window.paypal
+            .Buttons({
+              style: {
+                layout: "vertical",
+                color: "white",
+                shape: "rect",
+                label: "paylater",
+                height: 48,
+              },
+              fundingSource: window.paypal.FUNDING.PAYLATER,
+              createOrder: function (data: any, actions: any) {
+                return actions.order.create({
+                  purchase_units: [
+                    {
+                      amount: { 
+                        value: amount.toFixed(2),
+                        currency_code: "EUR"
+                      },
                     },
-                  },
-                ],
-              });
-            },
-            onApprove: function (data: any, actions: any) {
-              return actions.order.capture().then(function (details: any) {
-                toast({
-                  title: "Paiement réussi",
-                  description: "Votre paiement PayPal 4x a été effectué avec succès",
+                  ],
                 });
-                onSuccess(details);
-              });
-            },
-            onError: function (err: any) {
-              console.error("PayPal Pay Later error:", err);
-              toast({
-                title: "Erreur PayPal",
-                description: "Une erreur est survenue lors du paiement",
-                variant: "destructive",
-              });
-              onError(err);
-            },
-          })
-          .render(payLaterContainer);
+              },
+              onApprove: function (data: any, actions: any) {
+                return actions.order.capture().then(function (details: any) {
+                  toast({
+                    title: "Paiement réussi",
+                    description: "Votre paiement PayPal 4x a été effectué avec succès",
+                  });
+                  onSuccess(details);
+                });
+              },
+              onError: function (err: any) {
+                console.error("PayPal Pay Later error:", err);
+                toast({
+                  title: "Erreur PayPal",
+                  description: "Une erreur est survenue lors du paiement",
+                  variant: "destructive",
+                });
+                onError(err);
+              },
+            })
+            .render(payLaterContainer);
+        } else {
+          console.log("Pay Later not eligible - might not be available in your region or for your account");
+        }
       }
     };
 
@@ -170,7 +180,7 @@ export const PayPalButton = ({ amount, onSuccess, onError }: PayPalButtonProps) 
       <div ref={paypalRef} className="w-full" />
       {amount >= 30 && (
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Paiement en 4x disponible pour ce montant
+          Le paiement en 4x peut être disponible selon votre éligibilité PayPal
         </p>
       )}
     </div>
