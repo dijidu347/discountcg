@@ -255,30 +255,27 @@ export default function NouvelleDemarche() {
       return;
     }
 
-    // DC n'a pas besoin de documents
-    if (formData.type !== 'DC') {
-      // Check if all obligatory documents are uploaded
-      const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
-      const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
-        const docKey = `doc_${idx + 1}`;
-        const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
-        
-        // Pour la carte grise, vérifier si au moins le recto est uploadé
-        if (isCarteGrise) {
-          return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
-        }
-        
-        return uploadedDocuments.has(docKey);
-      });
+    // Check if all obligatory documents are uploaded
+    const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
+    const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
+      const docKey = `doc_${idx + 1}`;
+      const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
       
-      if (uploadedRequiredDocs.length < requiredDocs.length) {
-        toast({
-          title: "Documents obligatoires manquants",
-          description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
-          variant: "destructive"
-        });
-        return;
+      // Pour la carte grise, vérifier si au moins le recto est uploadé
+      if (isCarteGrise) {
+        return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
       }
+      
+      return uploadedDocuments.has(docKey);
+    });
+    
+    if (uploadedRequiredDocs.length < requiredDocs.length) {
+      toast({
+        title: "Documents obligatoires manquants",
+        description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
+        variant: "destructive"
+      });
+      return;
     }
 
     // Update before payment
@@ -427,7 +424,7 @@ export default function NouvelleDemarche() {
                 />
               )}
 
-              {formData.type && demarcheId && documentsRequis.length > 0 && (formData.type === 'CG' ? carteGrisePrice > 0 : true) && formData.type !== 'DC' && (
+              {formData.type && demarcheId && documentsRequis.length > 0 && (formData.type === 'CG' ? carteGrisePrice > 0 : true) && (
                 <div className="space-y-6">
                   {/* Pièces justificatives */}
                   <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">

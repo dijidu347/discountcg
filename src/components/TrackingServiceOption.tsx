@@ -108,14 +108,49 @@ export function TrackingServiceOption({ demarcheId, garageId, onPriceChange }: T
       }
       
       toast({
-        title: "Service mis à jour",
-        description: "Le service de suivi a été mis à jour pour votre démarche"
+        title: "Service ajouté",
+        description: "Le service de suivi a été ajouté à votre démarche"
       });
     } catch (error: any) {
       console.error('Error:', error);
       toast({
         title: "Erreur",
         description: error.message || "Impossible d'ajouter le service",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemove = async () => {
+    setLoading(true);
+
+    try {
+      // Delete the tracking service
+      const { error } = await supabase
+        .from('tracking_services')
+        .delete()
+        .eq('demarche_id', demarcheId);
+
+      if (error) throw error;
+
+      setSelectedService(null);
+      
+      // Reset price to 0
+      if (onPriceChange) {
+        onPriceChange(0);
+      }
+      
+      toast({
+        title: "Service retiré",
+        description: "Le service de suivi a été retiré"
+      });
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de retirer le service",
         variant: "destructive"
       });
     } finally {
@@ -149,10 +184,21 @@ export function TrackingServiceOption({ demarcheId, garageId, onPriceChange }: T
                     <p className="text-sm text-muted-foreground">{service.description}</p>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col gap-2">
                   <p className="font-bold text-lg">{service.price}€</p>
                   {selectedService === service.type ? (
-                    <Badge className="bg-accent">Activé</Badge>
+                    <div className="flex flex-col gap-1">
+                      <Badge className="bg-accent">Activé</Badge>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        onClick={handleRemove}
+                        disabled={loading}
+                      >
+                        Retirer
+                      </Button>
+                    </div>
                   ) : (
                   <Button
                       type="button"
