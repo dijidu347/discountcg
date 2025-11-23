@@ -13,8 +13,6 @@ import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-let stripePromise: any = null;
-
 const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
@@ -104,6 +102,7 @@ const PaiementDemarche = () => {
   const [showDetails, setShowDetails] = useState(false);
   const [trackingService, setTrackingService] = useState<any>(null);
   const [actionRapide, setActionRapide] = useState<any>(null);
+  const [stripePromise, setStripePromise] = useState<any>(null);
 
   useEffect(() => {
     loadDemarche();
@@ -173,7 +172,8 @@ const PaiementDemarche = () => {
         throw new Error("Impossible de charger la clé Stripe");
       }
 
-      stripePromise = loadStripe(keyData.publishableKey);
+      const stripe = await loadStripe(keyData.publishableKey);
+      setStripePromise(stripe);
 
       // Créer le payment intent
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
@@ -238,7 +238,7 @@ const PaiementDemarche = () => {
     );
   }
 
-  if (!demarche || !clientSecret) return null;
+  if (!demarche || !clientSecret || !stripePromise) return null;
 
   return (
     <div className="min-h-screen bg-background">
