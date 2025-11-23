@@ -155,32 +155,34 @@ export function TrackingServiceOption({
           Ajoutez des services optionnels à votre démarche
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {services.map(service => {
-        const Icon = service.icon;
-        return <div key={service.type} className={`border rounded-lg p-4 transition-all ${selectedService === service.type ? 'border-accent bg-accent/10' : ''}`}>
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1">
-                  <Icon className="h-5 w-5 text-accent mt-0.5" />
-                  <div>
-                    <h4 className="font-medium mb-1">{service.name}</h4>
-                    <p className="text-sm text-muted-foreground">{service.description}</p>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {services.map(service => {
+            const Icon = service.icon;
+            return <div key={service.type} className={`border rounded-lg p-4 transition-all ${selectedService === service.type ? 'border-accent bg-accent/10' : ''}`}>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start gap-3">
+                      <Icon className="h-5 w-5 text-accent mt-0.5" />
+                      <div className="flex-1">
+                        <h4 className="font-medium mb-1">{service.name}</h4>
+                        <p className="text-sm text-muted-foreground">{service.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <p className="font-bold text-lg">{service.price}€</p>
+                      {selectedService === service.type ? <div className="flex items-center gap-2">
+                          <Badge className="bg-accent">Activé</Badge>
+                          <Button type="button" size="sm" variant="destructive" onClick={handleRemove} disabled={loading}>
+                            Retirer
+                          </Button>
+                        </div> : <Button type="button" size="sm" variant="outline" onClick={() => handleSubscribe(service.type, service.price)} disabled={loading}>
+                          Ajouter
+                        </Button>}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right flex flex-col gap-2">
-                  <p className="font-bold text-lg">{service.price}€</p>
-                  {selectedService === service.type ? <div className="flex flex-col gap-1">
-                      <Badge className="bg-accent">Activé</Badge>
-                      <Button type="button" size="sm" variant="destructive" onClick={handleRemove} disabled={loading}>
-                        Retirer
-                      </Button>
-                    </div> : <Button type="button" size="sm" variant="outline" onClick={() => handleSubscribe(service.type, service.price)} disabled={loading}>
-                      Ajouter
-                    </Button>}
-                </div>
-              </div>
-            </div>;
-      })}
+                </div>;
+          })}
+        </div>
       </CardContent>
     </Card>;
 }
