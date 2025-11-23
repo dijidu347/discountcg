@@ -16,26 +16,27 @@ export function TrackingServiceOption({
   onPriceChange
 }: TrackingServiceOptionProps) {
   const [loading, setLoading] = useState(false);
-  const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const {
     toast
   } = useToast();
 
-  // Load existing service on mount
+  // Load existing services on mount
   useEffect(() => {
-    const loadExistingService = async () => {
+    const loadExistingServices = async () => {
       const {
         data
-      } = await supabase.from('tracking_services').select('service_type, price').eq('demarche_id', demarcheId).maybeSingle();
-      if (data) {
-        setSelectedService(data.service_type);
-        if (onPriceChange && data.price) {
-          onPriceChange(data.price);
+      } = await supabase.from('tracking_services').select('service_type, price').eq('demarche_id', demarcheId);
+      if (data && data.length > 0) {
+        setSelectedServices(data.map(s => s.service_type));
+        const totalPrice = data.reduce((sum, s) => sum + (s.price || 0), 0);
+        if (onPriceChange) {
+          onPriceChange(totalPrice);
         }
       }
     };
     if (demarcheId) {
-      loadExistingService();
+      loadExistingServices();
     }
   }, [demarcheId, onPriceChange]);
   const services = [{
@@ -72,38 +73,29 @@ export function TrackingServiceOption({
   const handleSubscribe = async (serviceType: string, price: number) => {
     setLoading(true);
     try {
-      // Check if a service already exists for this demarche
+      // Insert new service
       const {
-        data: existingService
-      } = await supabase.from('tracking_services').select('id').eq('demarche_id', demarcheId).maybeSingle();
-      if (existingService) {
-        // Update existing service
-        const {
-          error
-        } = await supabase.from('tracking_services').update({
-          service_type: serviceType,
-          price: price,
-          status: 'pending'
-        }).eq('id', existingService.id);
-        if (error) throw error;
-      } else {
-        // Insert new service
-        const {
-          error
-        } = await supabase.from('tracking_services').insert({
-          demarche_id: demarcheId,
-          service_type: serviceType,
-          price: price,
-          status: 'pending'
-        });
-        if (error) throw error;
-      }
-      setSelectedService(serviceType);
+        error
+      } = await supabase.from('tracking_services').insert({
+        demarche_id: demarcheId,
+        service_type: serviceType,
+        price: price,
+        status: 'pending'
+      });
+      if (error) throw error;
+      
+      const newSelectedServices = [...selectedServices, serviceType];
+      setSelectedServices(newSelectedServices);
 
-      // Notify parent of price change
+      // Calculate total price
+      const totalPrice = services
+        .filter(s => newSelectedServices.includes(s.type))
+        .reduce((sum, s) => sum + s.price, 0);
+      
       if (onPriceChange) {
-        onPriceChange(price);
+        onPriceChange(totalPrice);
       }
+      
       toast({
         title: "Service ajouté",
         description: "Le service de suivi a été ajouté à votre démarche"
@@ -119,20 +111,29 @@ export function TrackingServiceOption({
       setLoading(false);
     }
   };
-  const handleRemove = async () => {
+  const handleRemove = async (serviceType: string) => {
     setLoading(true);
     try {
-      // Delete the tracking service
+      // Delete the specific tracking service
       const {
         error
-      } = await supabase.from('tracking_services').delete().eq('demarche_id', demarcheId);
+      } = await supabase.from('tracking_services').delete()
+        .eq('demarche_id', demarcheId)
+        .eq('service_type', serviceType);
       if (error) throw error;
-      setSelectedService(null);
+      
+      const newSelectedServices = selectedServices.filter(s => s !== serviceType);
+      setSelectedServices(newSelectedServices);
 
-      // Reset price to 0
+      // Calculate new total price
+      const totalPrice = services
+        .filter(s => newSelectedServices.includes(s.type))
+        .reduce((sum, s) => sum + s.price, 0);
+      
       if (onPriceChange) {
-        onPriceChange(0);
+        onPriceChange(totalPrice);
       }
+      
       toast({
         title: "Service retiré",
         description: "Le service de suivi a été retiré"
@@ -156,26 +157,27 @@ export function TrackingServiceOption({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {services.map(service => {
             const Icon = service.icon;
-            return <div key={service.type} className={`border rounded-lg p-4 transition-all ${selectedService === service.type ? 'border-accent bg-accent/10' : ''}`}>
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-start gap-3">
-                      <Icon className="h-5 w-5 text-accent mt-0.5" />
-                      <div className="flex-1">
-                        <h4 className="font-medium mb-1">{service.name}</h4>
-                        <p className="text-sm text-muted-foreground">{service.description}</p>
+            const isSelected = selectedServices.includes(service.type);
+            return <div key={service.type} className={`border rounded-lg p-3 transition-all ${isSelected ? 'border-accent bg-accent/10' : 'border-border'}`}>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start gap-2">
+                      <Icon className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm mb-0.5">{service.name}</h4>
+                        <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
                       </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-lg">{service.price}€</p>
-                      {selectedService === service.type ? <div className="flex items-center gap-2">
-                          <Badge className="bg-accent">Activé</Badge>
-                          <Button type="button" size="sm" variant="destructive" onClick={handleRemove} disabled={loading}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="font-bold text-base">{service.price}€</p>
+                      {isSelected ? <div className="flex items-center gap-1">
+                          <Badge variant="default" className="text-xs">Activé</Badge>
+                          <Button type="button" size="sm" variant="destructive" onClick={() => handleRemove(service.type)} disabled={loading} className="h-7 text-xs px-2">
                             Retirer
                           </Button>
-                        </div> : <Button type="button" size="sm" variant="outline" onClick={() => handleSubscribe(service.type, service.price)} disabled={loading}>
+                        </div> : <Button type="button" size="sm" variant="outline" onClick={() => handleSubscribe(service.type, service.price)} disabled={loading} className="h-7 text-xs px-3">
                           Ajouter
                         </Button>}
                     </div>
