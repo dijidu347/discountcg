@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, CheckCircle } from "lucide-react";
+import { Zap, FileCheck } from "lucide-react";
 interface TrackingServiceOptionProps {
   demarcheId: string;
   garageId: string;
@@ -39,23 +39,17 @@ export function TrackingServiceOption({
     }
   }, [demarcheId, onPriceChange]);
   const services = [{
-    type: 'email',
-    name: 'Suivi par email',
+    type: 'dossier_prioritaire',
+    name: 'Dossier prioritaire',
     price: 5,
-    icon: Mail,
-    description: 'Notifications à chaque étape par email'
+    icon: Zap,
+    description: 'Traitement accéléré de votre dossier'
   }, {
-    type: 'phone',
-    name: 'Suivi par téléphone',
-    price: 15,
-    icon: Phone,
-    description: 'SMS à chaque étape par email'
-  }, {
-    type: 'email_phone',
-    name: 'Suivi complet',
-    price: 18,
-    icon: CheckCircle,
-    description: 'Email + téléphone'
+    type: 'certificat_non_gage',
+    name: 'Certificat de non gage',
+    price: 10,
+    icon: FileCheck,
+    description: 'Obtention du certificat de non gage'
   }];
   const handleSubscribe = async (serviceType: string, price: number) => {
     setLoading(true);
