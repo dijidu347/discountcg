@@ -122,32 +122,77 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
     setLoading(true);
 
     try {
-      // Enregistrer toutes les données du véhicule de l'API
-      const { data, error } = await supabase
+      // Vérifier si le véhicule existe déjà
+      const { data: existingVehicle } = await supabase
         .from('vehicules')
-        .insert({
-          garage_id: garageId,
-          immatriculation: immatriculation.toUpperCase(),
-          marque: vehicleData.marque || null,
-          modele: vehicleData.modele || null,
-          vin: vehicleData.vin || null,
-          date_mec: vehicleData.date_mec || null,
-          puiss_fisc: vehicleData.puissance_fiscale || null,
-          carrosserie: vehicleData.carrosserie || null,
-          genre: vehicleData.genre || null,
-          couleur: vehicleData.couleur || null,
-          energie: vehicleData.energie || null,
-          type: vehicleData.type || null,
-          version: vehicleData.version || null,
-          numero_formule: vehicleData.numero_formule || null,
-          puiss_ch: vehicleData.puissance_ch || null,
-          cylindree: vehicleData.cylindree || null,
-          co2: vehicleData.co2 || null,
-          ptr: vehicleData.ptr || null,
-          date_cg: vehicleData.date_cg || null,
-        })
-        .select()
-        .single();
+        .select('id')
+        .eq('garage_id', garageId)
+        .eq('immatriculation', immatriculation.toUpperCase())
+        .maybeSingle();
+
+      let data;
+      let error;
+
+      if (existingVehicle) {
+        // Mettre à jour le véhicule existant
+        const result = await supabase
+          .from('vehicules')
+          .update({
+            marque: vehicleData.marque || null,
+            modele: vehicleData.modele || null,
+            vin: vehicleData.vin || null,
+            date_mec: vehicleData.date_mec || null,
+            puiss_fisc: vehicleData.puissance_fiscale || null,
+            carrosserie: vehicleData.carrosserie || null,
+            genre: vehicleData.genre || null,
+            couleur: vehicleData.couleur || null,
+            energie: vehicleData.energie || null,
+            type: vehicleData.type || null,
+            version: vehicleData.version || null,
+            numero_formule: vehicleData.numero_formule || null,
+            puiss_ch: vehicleData.puissance_ch || null,
+            cylindree: vehicleData.cylindree || null,
+            co2: vehicleData.co2 || null,
+            ptr: vehicleData.ptr || null,
+            date_cg: vehicleData.date_cg || null,
+          })
+          .eq('id', existingVehicle.id)
+          .select()
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      } else {
+        // Insérer un nouveau véhicule
+        const result = await supabase
+          .from('vehicules')
+          .insert({
+            garage_id: garageId,
+            immatriculation: immatriculation.toUpperCase(),
+            marque: vehicleData.marque || null,
+            modele: vehicleData.modele || null,
+            vin: vehicleData.vin || null,
+            date_mec: vehicleData.date_mec || null,
+            puiss_fisc: vehicleData.puissance_fiscale || null,
+            carrosserie: vehicleData.carrosserie || null,
+            genre: vehicleData.genre || null,
+            couleur: vehicleData.couleur || null,
+            energie: vehicleData.energie || null,
+            type: vehicleData.type || null,
+            version: vehicleData.version || null,
+            numero_formule: vehicleData.numero_formule || null,
+            puiss_ch: vehicleData.puissance_ch || null,
+            cylindree: vehicleData.cylindree || null,
+            co2: vehicleData.co2 || null,
+            ptr: vehicleData.ptr || null,
+            date_cg: vehicleData.date_cg || null,
+          })
+          .select()
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      }
 
       if (error) {
         toast({
