@@ -4,14 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, CheckCircle, CreditCard, Wallet, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 let stripePromise: any = null;
@@ -103,6 +102,8 @@ const PaiementDemarche = () => {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
+  const [trackingService, setTrackingService] = useState<any>(null);
+  const [actionRapide, setActionRapide] = useState<any>(null);
 
   useEffect(() => {
     loadDemarche();
@@ -142,6 +143,28 @@ const PaiementDemarche = () => {
       }
 
       setDemarche(demarcheData);
+
+      // Charger le service de suivi si présent
+      const { data: trackingData } = await supabase
+        .from("tracking_services")
+        .select("*")
+        .eq("demarche_id", demarcheId)
+        .maybeSingle();
+
+      if (trackingData) {
+        setTrackingService(trackingData);
+      }
+
+      // Charger l'action rapide
+      const { data: actionData } = await supabase
+        .from("actions_rapides")
+        .select("*")
+        .eq("code", demarcheData.type)
+        .single();
+
+      if (actionData) {
+        setActionRapide(actionData);
+      }
 
       // Récupérer la clé publique Stripe
       const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
@@ -231,8 +254,127 @@ const PaiementDemarche = () => {
           Retour
         </Button>
 
-        <div className="grid lg:grid-cols-[400px,1fr] gap-6 max-w-7xl mx-auto">
-          {/* Colonne gauche : Récapitulatif */}
+        <div className="grid lg:grid-cols-[1fr,400px] gap-6 max-w-7xl mx-auto">
+          {/* Colonne gauche : Moyens de paiement */}
+          <div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Choisissez votre moyen de paiement</CardTitle>
+                <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* 1. Formulaire de carte Stripe */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-base">Carte bancaire</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Visa, Mastercard, American Express
+                  </p>
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: "stripe",
+                        variables: {
+                          colorPrimary: "hsl(var(--primary))",
+                          colorText: "hsl(var(--foreground))",
+                          colorDanger: "hsl(var(--destructive))",
+                          fontFamily: "system-ui, sans-serif",
+                          borderRadius: "8px",
+                        },
+                      },
+                    }}
+                  >
+                    <StripeCardForm onSuccess={handlePaymentSuccess} />
+                  </Elements>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
+                  </div>
+                </div>
+
+                {/* 2. Apple Pay & Google Pay */}
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-base">Paiement rapide</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Apple Pay, Google Pay et autres portefeuilles électroniques
+                  </p>
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: "stripe",
+                        variables: {
+                          colorPrimary: "hsl(var(--primary))",
+                          colorText: "hsl(var(--foreground))",
+                          colorDanger: "hsl(var(--destructive))",
+                          fontFamily: "system-ui, sans-serif",
+                          borderRadius: "8px",
+                        },
+                      },
+                    }}
+                  >
+                    <StripeWalletPayment 
+                      amount={demarche.montant_ttc} 
+                      onSuccess={handlePaymentSuccess}
+                    />
+                  </Elements>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
+                  </div>
+                </div>
+
+                {/* 3. PayPal avec 4X */}
+                <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Paiement recommandé</p>
+                      <h3 className="text-xl font-bold">Payez en 4x sans frais</h3>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-primary">{(demarche.montant_ttc / 4).toFixed(2)} €</p>
+                      <p className="text-sm text-muted-foreground">par mois</p>
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground">
+                    soit 4 mensualités de <span className="font-semibold text-foreground">{(demarche.montant_ttc / 4).toFixed(2)} €</span>
+                  </p>
+                  
+                  <PayPalButton
+                    amount={demarche.montant_ttc}
+                    onSuccess={handlePaymentSuccess}
+                    onError={(error) => {
+                      console.error("PayPal error:", error);
+                      toast({
+                        title: "Erreur PayPal",
+                        description: "Impossible de charger PayPal",
+                        variant: "destructive",
+                      });
+                    }}
+                  />
+                </div>
+
+                <p className="text-xs text-muted-foreground text-center pt-2">
+                  🔒 Tous les paiements sont sécurisés et cryptés
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Colonne droite : Récapitulatif */}
           <div className="space-y-4">
             <Card className="border-2 border-primary/20 sticky top-4">
               <CardHeader className="pb-4">
@@ -267,21 +409,25 @@ const PaiementDemarche = () => {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-3 space-y-2">
-                    {demarche.frais_dossier && (
-                      <>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">Montant HT</span>
-                          <span>{demarche.montant_ht?.toFixed(2) || "0.00"}€</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">Frais de dossier</span>
-                          <span>{demarche.frais_dossier.toFixed(2)}€</span>
-                        </div>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">TVA (20%)</span>
-                          <span>{((demarche.montant_ttc - demarche.montant_ht) || 0).toFixed(2)}€</span>
-                        </div>
-                      </>
+                    {actionRapide && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Frais de dossier</span>
+                        <span>{actionRapide.prix.toFixed(2)}€</span>
+                      </div>
+                    )}
+                    
+                    {demarche.type === 'CG' && demarche.frais_dossier > (actionRapide?.prix || 0) && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Prix carte grise</span>
+                        <span>{(demarche.frais_dossier - (actionRapide?.prix || 0) - (trackingService?.price || 0)).toFixed(2)}€</span>
+                      </div>
+                    )}
+                    
+                    {trackingService && (
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Service de suivi premium</span>
+                        <span>{trackingService.price.toFixed(2)}€</span>
+                      </div>
                     )}
                   </CollapsibleContent>
                 </Collapsible>
@@ -299,111 +445,6 @@ const PaiementDemarche = () => {
                   <CreditCard className="w-3 h-3" />
                   <span>Paiement 100% sécurisé</span>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Colonne droite : Moyens de paiement */}
-          <div>
-            <Card>
-              <CardHeader>
-                <CardTitle>Choisissez votre moyen de paiement</CardTitle>
-                <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="card" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3 mb-6">
-                    <TabsTrigger value="card" className="gap-2">
-                      <CreditCard className="w-4 h-4" />
-                      Carte
-                    </TabsTrigger>
-                    <TabsTrigger value="wallet" className="gap-2">
-                      <Wallet className="w-4 h-4" />
-                      Wallet
-                    </TabsTrigger>
-                    <TabsTrigger value="paypal" className="gap-2">
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.563.563 0 0 0-.556.479l-1.187 7.527h-.506l-.24 1.516a.56.56 0 0 0 .554.647h3.882c.46 0 .85-.334.922-.788.06-.26.76-4.852.76-4.852.072-.455.462-.788.922-.788h.58c3.76 0 6.705-1.528 7.565-5.946.36-1.857.174-3.407-.721-4.489z"/>
-                      </svg>
-                      PayPal
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="card" className="mt-0">
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Visa, Mastercard, American Express
-                      </p>
-                      <Elements
-                        stripe={stripePromise}
-                        options={{
-                          clientSecret,
-                          appearance: {
-                            theme: "stripe",
-                            variables: {
-                              colorPrimary: "hsl(var(--primary))",
-                              colorText: "hsl(var(--foreground))",
-                              colorDanger: "hsl(var(--destructive))",
-                              fontFamily: "system-ui, sans-serif",
-                              borderRadius: "8px",
-                            },
-                          },
-                        }}
-                      >
-                        <StripeCardForm onSuccess={handlePaymentSuccess} />
-                      </Elements>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="wallet" className="mt-0">
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Apple Pay, Google Pay et autres portefeuilles électroniques
-                      </p>
-                      <Elements
-                        stripe={stripePromise}
-                        options={{
-                          clientSecret,
-                          appearance: {
-                            theme: "stripe",
-                            variables: {
-                              colorPrimary: "hsl(var(--primary))",
-                              colorText: "hsl(var(--foreground))",
-                              colorDanger: "hsl(var(--destructive))",
-                              fontFamily: "system-ui, sans-serif",
-                              borderRadius: "8px",
-                            },
-                          },
-                        }}
-                      >
-                        <StripeWalletPayment 
-                          amount={demarche.montant_ttc} 
-                          onSuccess={handlePaymentSuccess}
-                        />
-                      </Elements>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="paypal" className="mt-0">
-                    <div className="space-y-4">
-                      <p className="text-sm text-muted-foreground">
-                        Payez en 1x ou en 4x sans frais (à partir de 30€)
-                      </p>
-                      <PayPalButton
-                        amount={demarche.montant_ttc}
-                        onSuccess={handlePaymentSuccess}
-                        onError={(error) => {
-                          console.error("PayPal error:", error);
-                          toast({
-                            title: "Erreur PayPal",
-                            description: "Impossible de charger PayPal",
-                            variant: "destructive",
-                          });
-                        }}
-                      />
-                    </div>
-                  </TabsContent>
-                </Tabs>
               </CardContent>
             </Card>
           </div>
