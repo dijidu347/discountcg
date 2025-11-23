@@ -8,25 +8,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Car, Plus } from "lucide-react";
 import { vehicleSchema } from "@/lib/validations";
+import { departementsLabels } from "@/data/departementsTarifs";
 
 interface VehicleFormProps {
   garageId: string;
   onVehicleSelect: (vehicleId: string, immatriculation: string, vehicleData?: any) => void;
   selectedVehicleId?: string | null;
+  onPriceCalculated?: (price: number) => void;
 }
 
-export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: VehicleFormProps) {
+export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPriceCalculated }: VehicleFormProps) {
   const { toast } = useToast();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [departement, setDepartement] = useState("");
+  const [fetchingVehicle, setFetchingVehicle] = useState(false);
   const [formData, setFormData] = useState({
     immatriculation: "",
     marque: "",
     modele: "",
-    vin: ""
+    vin: "",
+    date_mec: "",
+    puiss_fisc: ""
   });
 
   useEffect(() => {
@@ -61,11 +67,59 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
     }
   };
 
+  const fetchVehicleData = async (plate: string) => {
+    if (!plate || !departement) return;
+
+    setFetchingVehicle(true);
+    try {
+      const { getVehicleByPlate } = await import("@/lib/vehicle-api");
+      const result = await getVehicleByPlate(plate);
+
+      if (result.success && result.data) {
+        setFormData(prev => ({
+          ...prev,
+          marque: result.data?.marque || "",
+          modele: result.data?.modele || "",
+          date_mec: result.data?.date_mec || "",
+          puiss_fisc: result.data?.puissance_fiscale?.toString() || ""
+        }));
+
+        // Calculer le prix si on a les données nécessaires
+        if (result.data.puissance_fiscale && result.data.date_mec) {
+          const { calculatePrice } = await import("@/utils/calculatePrice");
+          const priceResult = calculatePrice(
+            departement,
+            result.data.puissance_fiscale,
+            result.data.date_mec
+          );
+          
+          if (onPriceCalculated) {
+            onPriceCalculated(priceResult.prixTotal);
+          }
+
+          toast({
+            title: "Données récupérées",
+            description: `Prix calculé: ${priceResult.prixTotal.toFixed(2)}€`
+          });
+        }
+      } else {
+        toast({
+          title: "Véhicule non trouvé",
+          description: "Impossible de récupérer les données du véhicule",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération:", error);
+    } finally {
+      setFetchingVehicle(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
 
     try {
-      // Prepare data for validation
       const validationData = {
         immatriculation: formData.immatriculation.toUpperCase(),
         marque: formData.marque || undefined,
@@ -73,7 +127,6 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
         vin: formData.vin?.toUpperCase() || null
       };
 
-      // Validate with Zod
       const validatedData = vehicleSchema.parse(validationData);
 
       const { data, error } = await supabase
@@ -83,7 +136,9 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
           immatriculation: validatedData.immatriculation,
           marque: validatedData.marque || null,
           modele: validatedData.modele || null,
-          vin: validatedData.vin
+          vin: validatedData.vin,
+          date_mec: formData.date_mec || null,
+          puiss_fisc: formData.puiss_fisc ? parseInt(formData.puiss_fisc) : null
         })
         .select()
         .single();
@@ -107,7 +162,9 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
         immatriculation: "",
         marque: "",
         modele: "",
-        vin: ""
+        vin: "",
+        date_mec: "",
+        puiss_fisc: ""
       });
       
       setShowForm(false);
@@ -190,17 +247,38 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="immatriculation">
-                  Immatriculation * 
-                </Label>
+                <Label htmlFor="immatriculation">Immatriculation *</Label>
                 <Input
                   id="immatriculation"
                   placeholder="AA-123-AA ou 1234 ABC 45"
                   value={formData.immatriculation}
                   onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
+                  onBlur={() => fetchVehicleData(formData.immatriculation)}
                   required
                 />
               </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label htmlFor="departement">Département d'immatriculation *</Label>
+                <Select value={departement} onValueChange={setDepartement}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez le département" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(departementsLabels).map(([code, label]) => (
+                      <SelectItem key={code} value={code}>
+                        {code} - {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {fetchingVehicle && (
+                <div className="md:col-span-2 text-center py-2">
+                  <p className="text-sm text-muted-foreground">Récupération des données du véhicule...</p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="marque">Marque</Label>
@@ -208,6 +286,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
                   id="marque"
                   value={formData.marque}
                   onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
+                  disabled={fetchingVehicle}
                 />
               </div>
 
@@ -217,6 +296,29 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
                   id="modele"
                   value={formData.modele}
                   onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
+                  disabled={fetchingVehicle}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date_mec">Date de mise en circulation</Label>
+                <Input
+                  id="date_mec"
+                  type="date"
+                  value={formData.date_mec}
+                  onChange={(e) => setFormData({ ...formData, date_mec: e.target.value })}
+                  disabled={fetchingVehicle}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="puiss_fisc">Chevaux fiscaux</Label>
+                <Input
+                  id="puiss_fisc"
+                  type="number"
+                  value={formData.puiss_fisc}
+                  onChange={(e) => setFormData({ ...formData, puiss_fisc: e.target.value })}
+                  disabled={fetchingVehicle}
                 />
               </div>
 
@@ -234,7 +336,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
 
             <Button
               onClick={handleSubmit}
-              disabled={loading || !formData.immatriculation.trim()}
+              disabled={loading || !formData.immatriculation.trim() || !departement}
               className="w-full"
             >
               {loading ? "Enregistrement..." : "Enregistrer le véhicule"}

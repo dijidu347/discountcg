@@ -157,28 +157,13 @@ export default function NouvelleDemarche() {
     }
   };
 
-  const handleVehicleSelect = async (vehicleId: string, immatriculation: string, vehicleData?: any) => {
+  const handleVehicleSelect = (vehicleId: string, immatriculation: string, vehicleData?: any) => {
     setSelectedVehicleId(vehicleId);
     setSelectedImmatriculation(immatriculation);
+  };
 
-    // Si l'action requiert immatriculation et qu'on a les données du véhicule, calculer le prix
-    if (actionDetails?.require_immatriculation && vehicleData) {
-      try {
-        const departement = vehicleData.immatriculation?.substring(vehicleData.immatriculation.length - 2);
-        
-        if (departement && vehicleData.date_mec && vehicleData.puiss_fisc) {
-          const { calculatePrice } = await import("@/utils/calculatePrice");
-          const result = calculatePrice(
-            departement,
-            vehicleData.puiss_fisc,
-            vehicleData.date_mec
-          );
-          setCarteGrisePrice(result.prixTotal);
-        }
-      } catch (error) {
-        console.error("Erreur lors du calcul du prix:", error);
-      }
-    }
+  const handlePriceCalculated = (price: number) => {
+    setCarteGrisePrice(price);
   };
 
   const handleSaveDraft = async () => {
@@ -347,11 +332,12 @@ export default function NouvelleDemarche() {
                 </Select>
               </div>
 
-              {garage && (
+              {garage && actionDetails?.require_immatriculation && (
                 <VehicleForm
                   garageId={garage.id}
                   onVehicleSelect={handleVehicleSelect}
                   selectedVehicleId={selectedVehicleId}
+                  onPriceCalculated={handlePriceCalculated}
                 />
               )}
 
