@@ -72,6 +72,27 @@ export default function NouvelleDemarche() {
     }
   }, [demarcheId]);
 
+  useEffect(() => {
+    // Update demarche montant when carteGrisePrice changes
+    if (demarcheId && actionDetails && carteGrisePrice > 0) {
+      updateDemarcheMontant();
+    }
+  }, [carteGrisePrice, demarcheId, actionDetails]);
+
+  const updateDemarcheMontant = async () => {
+    if (!demarcheId || !actionDetails) return;
+
+    const totalMontant = actionDetails.prix + carteGrisePrice;
+
+    await supabase
+      .from('demarches')
+      .update({
+        frais_dossier: totalMontant,
+        montant_ttc: totalMontant,
+      })
+      .eq('id', demarcheId);
+  };
+
   const loadExistingDocuments = async () => {
     if (!demarcheId) return;
 
