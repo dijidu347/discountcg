@@ -49,7 +49,7 @@ export function TrackingServiceOption({
     name: 'Suivi par téléphone',
     price: 15,
     icon: Phone,
-    description: 'Appel de suivi personnalisé'
+    description: 'SMS à chaque étape par email'
   }, {
     type: 'email_phone',
     name: 'Suivi complet',
