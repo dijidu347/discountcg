@@ -105,17 +105,56 @@ export default function ResultatCarteGrise() {
     <div className="min-h-screen bg-background">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
         <Button
           variant="ghost"
-          onClick={() => navigate('/simulateur')}
-          className="mb-6"
+          onClick={() => navigate('/')}
+          className="mb-8"
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
-          Nouvelle simulation
+          Retour au simulateur
         </Button>
 
-        <div className="grid lg:grid-cols-2 gap-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left side - Payment and Documents */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Step 1: Payment */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
+                  1
+                </div>
+                <h2 className="text-2xl font-bold">Payer votre commande</h2>
+              </div>
+              
+              <PaymentMethods
+                amount={calculation.prixTotal}
+                orderId={orderId}
+                onPaymentSuccess={() => setIsPaid(true)}
+              />
+            </div>
+
+            {/* Step 2: Documents */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
+                  isPaid 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground'
+                }`}>
+                  2
+                </div>
+                <h2 className="text-2xl font-bold">Envoyer vos documents</h2>
+              </div>
+              
+              <UploadList
+                orderId={orderId}
+                isPaid={isPaid}
+              />
+            </div>
+          </div>
+
+          {/* Right side - Price Summary */}
           <div className="space-y-6">
             <PriceSummary
               calculation={calculation}
@@ -123,19 +162,6 @@ export default function ResultatCarteGrise() {
             />
 
             <DetailsCollapse calculation={calculation} />
-          </div>
-
-          <div className="space-y-6">
-            <PaymentMethods
-              amount={calculation.prixTotal}
-              orderId={orderId}
-              onPaymentSuccess={() => setIsPaid(true)}
-            />
-
-            <UploadList
-              orderId={orderId}
-              isPaid={isPaid}
-            />
           </div>
         </div>
       </div>
