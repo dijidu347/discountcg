@@ -321,43 +321,29 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
               onChange={(e) => setSearchQuery(e.target.value)}
               className="mb-2"
             />
-            <div className="border rounded-md max-h-[300px] overflow-y-auto">
-              {filteredVehicles.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  Aucun véhicule trouvé
-                </div>
-              ) : (
-                filteredVehicles.map((vehicle) => (
-                  <div
-                    key={vehicle.id}
-                    className={cn(
-                      "flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-accent transition-colors",
-                      selectedVehicleId === vehicle.id && "bg-accent"
-                    )}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => handleVehicleSelect(vehicle.id)}
-                      className="flex-1 text-left"
-                    >
-                      <div className="font-medium">{vehicle.immatriculation}</div>
-                      {vehicle.marque && vehicle.modele && (
-                        <div className="text-sm text-muted-foreground">
-                          {vehicle.marque} {vehicle.modele}
-                        </div>
-                      )}
-                    </button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => handleDeleteVehicle(vehicle.id, e)}
-                      className="ml-2"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))
+            <div className="flex gap-2">
+              <Select value={selectedVehicleId || ""} onValueChange={handleVehicleSelect}>
+                <SelectTrigger className="flex-1">
+                  <SelectValue placeholder="Choisir dans l'historique" />
+                </SelectTrigger>
+                <SelectContent className="bg-background z-50">
+                  {filteredVehicles.map((vehicle) => (
+                    <SelectItem key={vehicle.id} value={vehicle.id}>
+                      {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedVehicleId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={(e) => handleDeleteVehicle(selectedVehicleId, e)}
+                  className="shrink-0"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
               )}
             </div>
           </div>
