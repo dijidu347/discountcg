@@ -11,7 +11,7 @@ import { vehicleSchema } from "@/lib/validations";
 
 interface VehicleFormProps {
   garageId: string;
-  onVehicleSelect: (vehicleId: string, immatriculation: string) => void;
+  onVehicleSelect: (vehicleId: string, immatriculation: string, vehicleData?: any) => void;
   selectedVehicleId?: string | null;
 }
 
@@ -114,7 +114,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
       loadVehicles();
       
       if (data) {
-        onVehicleSelect(data.id, data.immatriculation);
+        onVehicleSelect(data.id, data.immatriculation, data);
       }
     } catch (error: any) {
       toast({
@@ -130,7 +130,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId }: Ve
   const handleVehicleSelect = (vehicleId: string) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if (vehicle) {
-      onVehicleSelect(vehicleId, vehicle.immatriculation);
+      onVehicleSelect(vehicleId, vehicle.immatriculation, vehicle);
     }
   };
 
