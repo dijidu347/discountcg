@@ -5,9 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
-import { Car, Plus } from "lucide-react";
+import { Car, Plus, Trash2, Check, ChevronsUpDown } from "lucide-react";
 import { departementsLabels } from "@/data/departementsTarifs";
+import { cn } from "@/lib/utils";
 
 interface VehicleFormCGProps {
   garageId: string;
@@ -29,6 +32,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [immatriculation, setImmatriculation] = useState("");
+  const [openDepartement, setOpenDepartement] = useState(false);
 
   useEffect(() => {
     loadVehicles();
@@ -259,6 +263,35 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
     }
   };
 
+  const handleDeleteVehicle = async (vehicleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (!confirm("Voulez-vous vraiment supprimer ce véhicule de l'historique ?")) {
+      return;
+    }
+
+    const { error } = await supabase
+      .from('vehicules')
+      .delete()
+      .eq('id', vehicleId);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le véhicule",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    toast({
+      title: "Véhicule supprimé",
+      description: "Le véhicule a été retiré de l'historique"
+    });
+
+    loadVehicles();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -292,10 +325,23 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
               <SelectTrigger>
                 <SelectValue placeholder="Choisir dans l'historique" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-background">
                 {filteredVehicles.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id}>
-                    {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
+                  <SelectItem key={vehicle.id} value={vehicle.id} className="group">
+                    <div className="flex items-center justify-between w-full">
+                      <span>
+                        {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
+                        onClick={(e) => handleDeleteVehicle(vehicle.id, e)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -328,18 +374,50 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
 
               <div className="space-y-2">
                 <Label htmlFor="departement">Département d'immatriculation *</Label>
-                <Select value={departement} onValueChange={setDepartement} disabled={priceCalculated}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez le département" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(departementsLabels).map(([code, label]) => (
-                      <SelectItem key={code} value={code}>
-                        {code} - {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={openDepartement} onOpenChange={setOpenDepartement}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openDepartement}
+                      className="w-full justify-between"
+                      disabled={priceCalculated}
+                    >
+                      {departement
+                        ? `${departement} - ${departementsLabels[departement]}`
+                        : "Sélectionnez le département"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-background" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un département..." />
+                      <CommandList>
+                        <CommandEmpty>Aucun département trouvé.</CommandEmpty>
+                        <CommandGroup>
+                          {Object.entries(departementsLabels).map(([code, label]) => (
+                            <CommandItem
+                              key={code}
+                              value={`${code} ${label}`}
+                              onSelect={() => {
+                                setDepartement(code);
+                                setOpenDepartement(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  departement === code ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {code} - {label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {fetchingVehicle && (
