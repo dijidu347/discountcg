@@ -258,23 +258,27 @@ export default function NouvelleDemarche() {
     // Check if all obligatory documents are uploaded
     const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
     
-    // Trouver l'index de la première carte grise
-    const firstCarteGriseIdx = documentsRequis.findIndex(d => 
-      d.nom_document.toLowerCase().includes('carte grise')
-    );
+    // Trouver l'index de la première carte grise à dédoubler (sans recto/verso dans le nom)
+    const firstCarteGriseIdx = documentsRequis.findIndex(d => {
+      const name = d.nom_document.toLowerCase();
+      return name.includes('carte grise') && !name.includes('recto') && !name.includes('verso');
+    });
     
     const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
       // Récupérer l'index du document dans la liste complète
       const docIndex = documentsRequis.indexOf(doc);
       const docKey = `doc_${docIndex + 1}`;
-      const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
+      const docName = doc.nom_document.toLowerCase();
+      const isCarteGrise = docName.includes('carte grise') && 
+                          !docName.includes('recto') && 
+                          !docName.includes('verso');
       
-      // Pour la PREMIÈRE carte grise uniquement, vérifier si au moins le recto est uploadé
+      // Pour la PREMIÈRE carte grise à dédoubler uniquement, vérifier si au moins le recto est uploadé
       if (isCarteGrise && docIndex === firstCarteGriseIdx) {
         return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
       }
       
-      // Pour les autres documents (y compris autres cartes grises), vérifier normalement
+      // Pour tous les autres documents (y compris ceux avec "recto/verso" dans le nom), vérifier normalement
       return uploadedDocuments.has(docKey);
     });
     
@@ -449,13 +453,19 @@ export default function NouvelleDemarche() {
                     
                     <div className="space-y-3">
                       {documentsRequis.map((doc, idx) => {
-                        const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
-                        // Trouver l'index de la première carte grise
-                        const firstCarteGriseIdx = documentsRequis.findIndex(d => 
-                          d.nom_document.toLowerCase().includes('carte grise')
-                        );
+                        const docName = doc.nom_document.toLowerCase();
+                        // Ne dédoubler que si le nom contient "carte grise" SANS déjà mentionner "recto" ou "verso"
+                        const isCarteGrise = docName.includes('carte grise') && 
+                                           !docName.includes('recto') && 
+                                           !docName.includes('verso');
                         
-                        // Ne dédoubler que la PREMIÈRE carte grise trouvée
+                        // Trouver l'index de la première carte grise à dédoubler
+                        const firstCarteGriseIdx = documentsRequis.findIndex(d => {
+                          const name = d.nom_document.toLowerCase();
+                          return name.includes('carte grise') && !name.includes('recto') && !name.includes('verso');
+                        });
+                        
+                        // Dédoubler uniquement la PREMIÈRE carte grise sans mention recto/verso
                         if (isCarteGrise && idx === firstCarteGriseIdx) {
                           return (
                             <div key={doc.id} className="space-y-3">
@@ -498,6 +508,7 @@ export default function NouvelleDemarche() {
                           );
                         }
                         
+                        // Afficher tous les autres documents normalement (y compris ceux avec "recto/verso" dans le nom)
                         return (
                           <div key={doc.id} className="flex items-center gap-4">
                             <div className="flex-1">
