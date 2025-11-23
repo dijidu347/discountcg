@@ -332,12 +332,13 @@ export default function NouvelleDemarche() {
                 </Select>
               </div>
 
-              {garage && actionDetails?.require_immatriculation && (
+              {garage && (
                 <VehicleForm
                   garageId={garage.id}
                   onVehicleSelect={handleVehicleSelect}
                   selectedVehicleId={selectedVehicleId}
                   onPriceCalculated={handlePriceCalculated}
+                  useApiMode={formData.type === 'CG'}
                 />
               )}
 

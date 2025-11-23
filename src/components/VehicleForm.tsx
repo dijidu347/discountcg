@@ -15,9 +15,10 @@ interface VehicleFormProps {
   onVehicleSelect: (vehicleId: string, immatriculation: string, vehicleData?: any) => void;
   selectedVehicleId?: string | null;
   onPriceCalculated?: (price: number) => void;
+  useApiMode?: boolean; // true = avec API et département (CG), false = simple (DA)
 }
 
-export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPriceCalculated }: VehicleFormProps) {
+export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPriceCalculated, useApiMode = false }: VehicleFormProps) {
   const { toast } = useToast();
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [filteredVehicles, setFilteredVehicles] = useState<any[]>([]);
@@ -253,26 +254,28 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
                   placeholder="AA-123-AA ou 1234 ABC 45"
                   value={formData.immatriculation}
                   onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
-                  onBlur={() => fetchVehicleData(formData.immatriculation)}
+                  onBlur={() => useApiMode && fetchVehicleData(formData.immatriculation)}
                   required
                 />
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="departement">Département d'immatriculation *</Label>
-                <Select value={departement} onValueChange={setDepartement}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez le département" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(departementsLabels).map(([code, label]) => (
-                      <SelectItem key={code} value={code}>
-                        {code} - {label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {useApiMode && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="departement">Département d'immatriculation *</Label>
+                  <Select value={departement} onValueChange={setDepartement}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez le département" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(departementsLabels).map(([code, label]) => (
+                        <SelectItem key={code} value={code}>
+                          {code} - {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
 
               {fetchingVehicle && (
                 <div className="md:col-span-2 text-center py-2">
@@ -280,47 +283,73 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Label htmlFor="marque">Marque</Label>
-                <Input
-                  id="marque"
-                  value={formData.marque}
-                  onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
-                  disabled={fetchingVehicle}
-                />
-              </div>
+              {useApiMode && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="marque">Marque</Label>
+                    <Input
+                      id="marque"
+                      value={formData.marque}
+                      onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
+                      disabled={fetchingVehicle}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="modele">Modèle</Label>
-                <Input
-                  id="modele"
-                  value={formData.modele}
-                  onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
-                  disabled={fetchingVehicle}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="modele">Modèle</Label>
+                    <Input
+                      id="modele"
+                      value={formData.modele}
+                      onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
+                      disabled={fetchingVehicle}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="date_mec">Date de mise en circulation</Label>
-                <Input
-                  id="date_mec"
-                  type="date"
-                  value={formData.date_mec}
-                  onChange={(e) => setFormData({ ...formData, date_mec: e.target.value })}
-                  disabled={fetchingVehicle}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="date_mec">Date de mise en circulation</Label>
+                    <Input
+                      id="date_mec"
+                      type="date"
+                      value={formData.date_mec}
+                      onChange={(e) => setFormData({ ...formData, date_mec: e.target.value })}
+                      disabled={fetchingVehicle}
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="puiss_fisc">Chevaux fiscaux</Label>
-                <Input
-                  id="puiss_fisc"
-                  type="number"
-                  value={formData.puiss_fisc}
-                  onChange={(e) => setFormData({ ...formData, puiss_fisc: e.target.value })}
-                  disabled={fetchingVehicle}
-                />
-              </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="puiss_fisc">Chevaux fiscaux</Label>
+                    <Input
+                      id="puiss_fisc"
+                      type="number"
+                      value={formData.puiss_fisc}
+                      onChange={(e) => setFormData({ ...formData, puiss_fisc: e.target.value })}
+                      disabled={fetchingVehicle}
+                    />
+                  </div>
+                </>
+              )}
+
+              {!useApiMode && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="marque">Marque</Label>
+                    <Input
+                      id="marque"
+                      value={formData.marque}
+                      onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="modele">Modèle</Label>
+                    <Input
+                      id="modele"
+                      value={formData.modele}
+                      onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="space-y-2 md:col-span-2">
                 <Label htmlFor="vin">VIN (optionnel)</Label>
@@ -336,7 +365,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
 
             <Button
               onClick={handleSubmit}
-              disabled={loading || !formData.immatriculation.trim() || !departement}
+              disabled={loading || !formData.immatriculation.trim() || (useApiMode && !departement)}
               className="w-full"
             >
               {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
