@@ -27,6 +27,9 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
   const [loading, setLoading] = useState(false);
   const [departement, setDepartement] = useState("");
   const [fetchingVehicle, setFetchingVehicle] = useState(false);
+  const [priceCalculated, setPriceCalculated] = useState(false);
+  const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
+  const [vehicleData, setVehicleData] = useState<any>(null);
   const [formData, setFormData] = useState({
     immatriculation: "",
     marque: "",
@@ -68,39 +71,41 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
     }
   };
 
-  const fetchVehicleData = async (plate: string) => {
-    if (!plate || !departement) return;
+  const fetchVehicleDataAndPrice = async () => {
+    if (!formData.immatriculation || !departement) return;
 
     setFetchingVehicle(true);
     try {
       const { getVehicleByPlate } = await import("@/lib/vehicle-api");
-      const result = await getVehicleByPlate(plate);
+      const result = await getVehicleByPlate(formData.immatriculation);
 
       if (result.success && result.data) {
+        const data = result.data;
+        setVehicleData(data);
+        
         setFormData(prev => ({
           ...prev,
-          marque: result.data?.marque || "",
-          modele: result.data?.modele || "",
-          date_mec: result.data?.date_mec || "",
-          puiss_fisc: result.data?.puissance_fiscale?.toString() || ""
+          marque: data?.marque || "",
+          modele: data?.modele || "",
+          date_mec: data?.date_mec || "",
+          puiss_fisc: data?.puissance_fiscale?.toString() || ""
         }));
 
-        // Calculer le prix si on a les données nécessaires
-        if (result.data.puissance_fiscale && result.data.date_mec) {
+        // Calculer le prix
+        if (data.puissance_fiscale && data.date_mec) {
           const { calculatePrice } = await import("@/utils/calculatePrice");
           const priceResult = calculatePrice(
             departement,
-            result.data.puissance_fiscale,
-            result.data.date_mec
+            data.puissance_fiscale,
+            data.date_mec
           );
           
-          if (onPriceCalculated) {
-            onPriceCalculated(priceResult.prixTotal);
-          }
+          setCalculatedPrice(priceResult.prixTotal);
+          setPriceCalculated(true);
 
           toast({
-            title: "Données récupérées",
-            description: `Prix calculé: ${priceResult.prixTotal.toFixed(2)}€`
+            title: "Prix calculé",
+            description: `Prix de la carte grise: ${priceResult.prixTotal.toFixed(2)}€`
           });
         }
       } else {
@@ -112,8 +117,96 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
       }
     } catch (error) {
       console.error("Erreur lors de la récupération:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les données du véhicule",
+        variant: "destructive"
+      });
     } finally {
       setFetchingVehicle(false);
+    }
+  };
+
+  const handleModify = () => {
+    setPriceCalculated(false);
+    setCalculatedPrice(0);
+    setVehicleData(null);
+  };
+
+  const handleValidate = async () => {
+    setLoading(true);
+
+    try {
+      const validationData = {
+        immatriculation: formData.immatriculation.toUpperCase(),
+        marque: formData.marque || undefined,
+        modele: formData.modele || undefined,
+        vin: formData.vin?.toUpperCase() || null
+      };
+
+      const validatedData = vehicleSchema.parse(validationData);
+
+      const { data, error } = await supabase
+        .from('vehicules')
+        .insert({
+          garage_id: garageId,
+          immatriculation: validatedData.immatriculation,
+          marque: validatedData.marque || null,
+          modele: validatedData.modele || null,
+          vin: validatedData.vin,
+          date_mec: formData.date_mec || null,
+          puiss_fisc: formData.puiss_fisc ? parseInt(formData.puiss_fisc) : null
+        })
+        .select()
+        .single();
+
+      if (error) {
+        toast({
+          title: "Erreur",
+          description: "Impossible d'enregistrer le véhicule",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Notifier le parent du prix calculé
+      if (onPriceCalculated && calculatedPrice > 0) {
+        onPriceCalculated(calculatedPrice);
+      }
+
+      toast({
+        title: "Véhicule validé",
+        description: "Le véhicule a été enregistré et le prix ajouté"
+      });
+
+      setFormData({
+        immatriculation: "",
+        marque: "",
+        modele: "",
+        vin: "",
+        date_mec: "",
+        puiss_fisc: ""
+      });
+      setDepartement("");
+      setPriceCalculated(false);
+      setCalculatedPrice(0);
+      setVehicleData(null);
+      
+      setShowForm(false);
+      loadVehicles();
+      
+      if (data) {
+        onVehicleSelect(data.id, data.immatriculation, data);
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erreur de validation",
+        description: error.message || "Données invalides",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -254,7 +347,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
                   placeholder="AA-123-AA ou 1234 ABC 45"
                   value={formData.immatriculation}
                   onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
-                  onBlur={() => useApiMode && fetchVehicleData(formData.immatriculation)}
+                  disabled={priceCalculated}
                   required
                 />
               </div>
@@ -262,7 +355,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
               {useApiMode && (
                 <div className="space-y-2 md:col-span-2">
                   <Label htmlFor="departement">Département d'immatriculation *</Label>
-                  <Select value={departement} onValueChange={setDepartement}>
+                  <Select value={departement} onValueChange={setDepartement} disabled={priceCalculated}>
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionnez le département" />
                     </SelectTrigger>
@@ -283,50 +376,17 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
                 </div>
               )}
 
-              {useApiMode && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="marque">Marque</Label>
-                    <Input
-                      id="marque"
-                      value={formData.marque}
-                      onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
-                      disabled={fetchingVehicle}
-                    />
+              {priceCalculated && vehicleData && (
+                <div className="md:col-span-2 p-4 bg-green-50 border border-green-200 rounded-md">
+                  <h4 className="font-semibold text-green-900 mb-2">Informations du véhicule</h4>
+                  <div className="space-y-1 text-sm text-green-800">
+                    <p><strong>Marque:</strong> {vehicleData.marque}</p>
+                    <p><strong>Modèle:</strong> {vehicleData.modele}</p>
+                    <p><strong>Date MEC:</strong> {vehicleData.date_mec}</p>
+                    <p><strong>Puissance fiscale:</strong> {vehicleData.puissance_fiscale} CV</p>
+                    <p className="text-lg font-bold mt-2">Prix: {calculatedPrice.toFixed(2)}€</p>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="modele">Modèle</Label>
-                    <Input
-                      id="modele"
-                      value={formData.modele}
-                      onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
-                      disabled={fetchingVehicle}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="date_mec">Date de mise en circulation</Label>
-                    <Input
-                      id="date_mec"
-                      type="date"
-                      value={formData.date_mec}
-                      onChange={(e) => setFormData({ ...formData, date_mec: e.target.value })}
-                      disabled={fetchingVehicle}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="puiss_fisc">Chevaux fiscaux</Label>
-                    <Input
-                      id="puiss_fisc"
-                      type="number"
-                      value={formData.puiss_fisc}
-                      onChange={(e) => setFormData({ ...formData, puiss_fisc: e.target.value })}
-                      disabled={fetchingVehicle}
-                    />
-                  </div>
-                </>
+                </div>
               )}
 
               {!useApiMode && (
@@ -350,26 +410,45 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
                   </div>
                 </>
               )}
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="vin">VIN (optionnel)</Label>
-                <Input
-                  id="vin"
-                  placeholder="17 caractères"
-                  maxLength={17}
-                  value={formData.vin}
-                  onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
-                />
-              </div>
             </div>
 
-            <Button
-              onClick={handleSubmit}
-              disabled={loading || !formData.immatriculation.trim() || (useApiMode && !departement)}
-              className="w-full"
-            >
-              {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
-            </Button>
+            {useApiMode ? (
+              priceCalculated ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={handleModify}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    Modifier
+                  </Button>
+                  <Button
+                    onClick={handleValidate}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    {loading ? "Validation..." : "Valider"}
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  onClick={fetchVehicleDataAndPrice}
+                  disabled={fetchingVehicle || !formData.immatriculation.trim() || !departement}
+                  className="w-full"
+                >
+                  {fetchingVehicle ? "Calcul en cours..." : "Obtenir le prix"}
+                </Button>
+              )
+            ) : (
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || !formData.immatriculation.trim()}
+                className="w-full"
+              >
+                {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
+              </Button>
+            )}
           </div>
         )}
       </CardContent>
