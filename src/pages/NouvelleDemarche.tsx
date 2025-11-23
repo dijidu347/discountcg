@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { VehicleForm } from "@/components/VehicleForm";
 import { TrackingServiceOption } from "@/components/TrackingServiceOption";
 import { StripePayment } from "@/components/StripePayment";
+import { SimulateurCarteGrise } from "@/components/SimulateurCarteGrise";
 
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
@@ -31,6 +32,7 @@ export default function NouvelleDemarche() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [selectedImmatriculation, setSelectedImmatriculation] = useState<string>("");
   const [additionalDocs, setAdditionalDocs] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [carteGrisePrice, setCarteGrisePrice] = useState<number>(0);
   const [formData, setFormData] = useState({
     type: searchParams.get('type') || "",
     commentaire: ""
@@ -140,8 +142,8 @@ export default function NouvelleDemarche() {
         type: formData.type,
         immatriculation: selectedImmatriculation || 'TEMP',
         commentaire: formData.commentaire,
-        frais_dossier: actionDetails.prix,
-        montant_ttc: actionDetails.prix,
+        frais_dossier: actionDetails.prix + carteGrisePrice,
+        montant_ttc: actionDetails.prix + carteGrisePrice,
         status: 'en_saisie',
         is_draft: true,
         paye: false,
@@ -194,6 +196,10 @@ export default function NouvelleDemarche() {
     return actionDetails?.prix || 0;
   };
 
+  const getTotalPrice = () => {
+    return getFraisDossier() + carteGrisePrice;
+  };
+
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -206,11 +212,17 @@ export default function NouvelleDemarche() {
       return;
     }
 
-    // Check if all documents are uploaded
-    if (uploadedDocuments.size < documentsRequis.length) {
+    // Check if all obligatory documents are uploaded
+    const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
+    const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
+      const docKey = `doc_${idx + 1}`;
+      return uploadedDocuments.has(docKey);
+    });
+    
+    if (uploadedRequiredDocs.length < requiredDocs.length) {
       toast({
-        title: "Documents manquants",
-        description: `Veuillez télécharger tous les documents requis (${uploadedDocuments.size}/${documentsRequis.length})`,
+        title: "Documents obligatoires manquants",
+        description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
         variant: "destructive"
       });
       return;
@@ -272,7 +284,8 @@ export default function NouvelleDemarche() {
     );
   }
 
-  const allDocsUploaded = uploadedDocuments.size >= documentsRequis.length;
+  const requiredDocsCount = documentsRequis.filter(doc => doc.obligatoire).length;
+  const allDocsUploaded = uploadedDocuments.size >= requiredDocsCount;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
@@ -323,6 +336,10 @@ export default function NouvelleDemarche() {
                 />
               )}
 
+              {formData.type && actionDetails?.require_immatriculation && (
+                <SimulateurCarteGrise onPriceCalculated={setCarteGrisePrice} />
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="commentaire">Commentaire (optionnel)</Label>
                 <Textarea
@@ -340,7 +357,7 @@ export default function NouvelleDemarche() {
 
               {formData.type && demarcheId && documentsRequis.length > 0 && (
                 <div className="space-y-6">
-                  {/* Pièces justificatives obligatoires */}
+                  {/* Pièces justificatives */}
                   <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold text-lg">Pièces justificatives</h3>
@@ -348,6 +365,9 @@ export default function NouvelleDemarche() {
                         <FileCheck className="h-5 w-5 text-success" />
                       )}
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      <span className="text-destructive">*</span> = Document obligatoire
+                    </p>
                     
                     <div className="space-y-3">
                       {documentsRequis.map((doc, idx) => {
@@ -359,8 +379,13 @@ export default function NouvelleDemarche() {
                             <div key={doc.id} className="space-y-3">
                               <div className="flex items-center gap-4">
                                 <div className="flex-1">
-                                  <Label className="text-sm font-medium">
+                                  <Label className="text-sm font-medium flex items-center gap-2">
                                     Carte grise recto (ou recto/verso)
+                                    {doc.obligatoire ? (
+                                      <span className="text-destructive text-xs">*</span>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                                    )}
                                   </Label>
                                 </div>
                                 <div className="w-[400px]">
@@ -394,8 +419,13 @@ export default function NouvelleDemarche() {
                         return (
                           <div key={doc.id} className="flex items-center gap-4">
                             <div className="flex-1">
-                              <Label className="text-sm font-medium">
+                              <Label className="text-sm font-medium flex items-center gap-2">
                                 {doc.nom_document}
+                                {doc.obligatoire ? (
+                                  <span className="text-destructive text-xs">*</span>
+                                ) : (
+                                  <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                                )}
                               </Label>
                             </div>
                             <div className="w-[400px]">
@@ -465,7 +495,7 @@ export default function NouvelleDemarche() {
                   disabled={loading || !allDocsUploaded || !selectedImmatriculation.trim()}
                   className="flex-1 bg-success hover:bg-success/90"
                 >
-                  Payer {getFraisDossier()}€
+                  Payer {getTotalPrice()}€
                 </Button>
               </div>
             </form>
@@ -475,14 +505,17 @@ export default function NouvelleDemarche() {
                   <DialogHeader>
                     <DialogTitle>Paiement de la démarche</DialogTitle>
                     <DialogDescription>
-                      Montant total : {getFraisDossier()}€
+                      Frais de dossier : {getFraisDossier()}€
+                      {carteGrisePrice > 0 && ` + Prix carte grise : ${carteGrisePrice.toFixed(2)}€`}
+                      <br />
+                      Montant total : {getTotalPrice()}€
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4">
                     {demarcheId && (
                       <StripePayment
                         demarcheId={demarcheId}
-                        amount={getFraisDossier()}
+                        amount={getTotalPrice()}
                         onSuccess={handlePaymentSuccess}
                         onCancel={handlePaymentCancel}
                       />
