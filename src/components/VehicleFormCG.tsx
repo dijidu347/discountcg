@@ -246,22 +246,42 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if (vehicle) {
       onVehicleSelect(vehicleId, vehicle.immatriculation, vehicle);
+      setVehicleData(vehicle);
       
-      // Si le véhicule a déjà un prix calculé, le notifier
-      if (vehicle.puiss_fisc && vehicle.date_mec && onPriceCalculated) {
+      // Si on a un département et les données nécessaires, calculer le prix automatiquement
+      if (vehicle.puiss_fisc && vehicle.date_mec && departement && onPriceCalculated) {
         const { calculatePrice } = require("@/utils/calculatePrice");
-        // Utiliser le dernier département connu ou demander
-        if (departement) {
-          const priceResult = calculatePrice(
-            departement,
-            vehicle.puiss_fisc,
-            vehicle.date_mec
-          );
-          onPriceCalculated(priceResult.prixTotal);
-        }
+        const priceResult = calculatePrice(
+          departement,
+          vehicle.puiss_fisc,
+          vehicle.date_mec
+        );
+        setCalculatedPrice(priceResult.prixTotal);
+        setPriceCalculated(true);
+        onPriceCalculated(priceResult.prixTotal);
+        
+        toast({
+          title: "Prix calculé",
+          description: `Prix de la carte grise: ${priceResult.prixTotal.toFixed(2)}€`
+        });
       }
     }
   };
+
+  // Calculer automatiquement le prix quand département change et qu'un véhicule est déjà sélectionné
+  useEffect(() => {
+    if (selectedVehicleId && departement && vehicleData?.puiss_fisc && vehicleData?.date_mec && onPriceCalculated) {
+      const { calculatePrice } = require("@/utils/calculatePrice");
+      const priceResult = calculatePrice(
+        departement,
+        vehicleData.puiss_fisc,
+        vehicleData.date_mec
+      );
+      setCalculatedPrice(priceResult.prixTotal);
+      setPriceCalculated(true);
+      onPriceCalculated(priceResult.prixTotal);
+    }
+  }, [departement, selectedVehicleId, vehicleData, onPriceCalculated]);
 
   const handleDeleteVehicle = async (vehicleId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -313,39 +333,105 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
       </CardHeader>
       <CardContent className="space-y-4">
         {!showForm && (
-          <div className="space-y-2">
-            <Label>Sélectionner un véhicule existant</Label>
-            <Input
-              placeholder="Rechercher par immat, marque ou modèle..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="mb-2"
-            />
-            <div className="flex gap-2">
-              <Select value={selectedVehicleId || ""} onValueChange={handleVehicleSelect}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Choisir dans l'historique" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {filteredVehicles.map((vehicle) => (
-                    <SelectItem key={vehicle.id} value={vehicle.id}>
-                      {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedVehicleId && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={(e) => handleDeleteVehicle(selectedVehicleId, e)}
-                  className="shrink-0"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Sélectionner un véhicule existant</Label>
+              <Input
+                placeholder="Rechercher par immat, marque ou modèle..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="mb-2"
+              />
+              <div className="flex gap-2">
+                <Select value={selectedVehicleId || ""} onValueChange={handleVehicleSelect}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Choisir dans l'historique" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background z-50">
+                    {filteredVehicles.map((vehicle) => (
+                      <SelectItem key={vehicle.id} value={vehicle.id}>
+                        {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedVehicleId && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={(e) => handleDeleteVehicle(selectedVehicleId, e)}
+                    className="shrink-0"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                )}
+              </div>
             </div>
+
+            {selectedVehicleId && (
+              <div className="space-y-2">
+                <Label htmlFor="departement-historique">Département d'immatriculation *</Label>
+                <Popover open={openDepartement} onOpenChange={setOpenDepartement}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={openDepartement}
+                      className="w-full justify-between"
+                    >
+                      {departement
+                        ? `${departement} - ${departementsLabels[departement]}`
+                        : "Sélectionnez le département"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0 bg-background" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un département..." />
+                      <CommandList>
+                        <CommandEmpty>Aucun département trouvé.</CommandEmpty>
+                        <CommandGroup>
+                          {Object.entries(departementsLabels).map(([code, label]) => (
+                            <CommandItem
+                              key={code}
+                              value={`${code} ${label}`}
+                              onSelect={() => {
+                                setDepartement(code);
+                                setOpenDepartement(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  departement === code ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              {code} - {label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            )}
+
+            {priceCalculated && vehicleData && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                <h4 className="font-semibold text-green-900 mb-2">Informations du véhicule</h4>
+                <div className="space-y-1 text-sm text-green-800">
+                  <p><strong>Marque:</strong> {vehicleData.marque}</p>
+                  <p><strong>Modèle:</strong> {vehicleData.modele}</p>
+                  <p><strong>Date MEC:</strong> {vehicleData.date_mec}</p>
+                  <p><strong>Puissance fiscale:</strong> {vehicleData.puiss_fisc} CV</p>
+                  {vehicleData.energie && <p><strong>Énergie:</strong> {vehicleData.energie}</p>}
+                  {vehicleData.couleur && <p><strong>Couleur:</strong> {vehicleData.couleur}</p>}
+                  <p className="text-lg font-bold mt-2">Prix: {calculatedPrice.toFixed(2)}€</p>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
