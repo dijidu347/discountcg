@@ -247,6 +247,13 @@ export default function NouvelleDemarche() {
     const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
     const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
       const docKey = `doc_${idx + 1}`;
+      const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
+      
+      // Pour la carte grise, vérifier si au moins le recto est uploadé
+      if (isCarteGrise) {
+        return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
+      }
+      
       return uploadedDocuments.has(docKey);
     });
     
