@@ -85,18 +85,55 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
     );
   }
 
+  const monthlyAmount = (amount / 4).toFixed(2);
+
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <CreditCard className="w-5 h-5" />
-          Choisissez votre moyen de paiement
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="pt-6 space-y-6">
+        {/* Highlighted 4x Payment */}
+        <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-muted-foreground mb-1">Paiement recommandé</p>
+              <h3 className="text-2xl font-bold">Payez en 4x sans frais</h3>
+            </div>
+            <div className="text-right">
+              <p className="text-3xl font-bold text-primary">{monthlyAmount} €</p>
+              <p className="text-sm text-muted-foreground">par mois</p>
+            </div>
+          </div>
+          
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              soit 4 mensualités de <span className="font-semibold text-foreground">{monthlyAmount} €</span>
+            </p>
+            <PayPalButton
+              amount={amount}
+              onSuccess={handlePaymentSuccess}
+              onError={(error) => {
+                console.error("PayPal error:", error);
+                toast({
+                  title: "Erreur PayPal",
+                  description: "Une erreur est survenue lors du paiement",
+                  variant: "destructive",
+                });
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Autres moyens de paiement</span>
+          </div>
+        </div>
+
         {stripePromise && (
           <div className="space-y-3">
-            <h3 className="font-semibold">Paiement rapide</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">Paiement rapide</h3>
             <Elements stripe={stripePromise}>
               <StripeWalletPayment
                 amount={amount}
@@ -106,54 +143,21 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
           </div>
         )}
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Ou</span>
-          </div>
-        </div>
-
         <div className="space-y-3">
-          <h3 className="font-semibold">PayPal</h3>
-          <PayPalButton
-            amount={amount}
-            onSuccess={handlePaymentSuccess}
-            onError={(error) => {
-              console.error("PayPal error:", error);
-              toast({
-                title: "Erreur PayPal",
-                description: "Une erreur est survenue lors du paiement",
-                variant: "destructive",
-              });
-            }}
-          />
-        </div>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Ou</span>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <h3 className="font-semibold">Carte bancaire</h3>
+          <h3 className="font-medium text-sm text-muted-foreground">Carte bancaire</h3>
           <Button
             onClick={handleStripePayment}
+            variant="outline"
             className="w-full"
             size="lg"
           >
             <CreditCard className="w-5 h-5 mr-2" />
-            Payer par carte
+            Payer par carte ({amount.toFixed(2)} €)
           </Button>
         </div>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          Tous les paiements sont sécurisés et cryptés
+        <p className="text-xs text-muted-foreground text-center pt-4">
+          🔒 Tous les paiements sont sécurisés et cryptés
         </p>
       </CardContent>
     </Card>
