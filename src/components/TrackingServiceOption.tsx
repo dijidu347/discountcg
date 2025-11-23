@@ -161,9 +161,9 @@ export function TrackingServiceOption({ demarcheId, garageId, onPriceChange }: T
   return (
     <Card className="border-2 border-accent">
       <CardHeader>
-        <CardTitle className="text-xl">Service de suivi premium</CardTitle>
+        <CardTitle className="text-xl">Ventes additionnelles</CardTitle>
         <CardDescription>
-          Recevez des mises à jour régulières sur l'avancement de votre démarche
+          Ajoutez des services optionnels à votre démarche
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
