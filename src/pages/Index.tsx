@@ -9,14 +9,15 @@ import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import { GoogleReviewsCarousel } from "@/components/GoogleReviewsCarousel";
 import { PriceComparator } from "@/components/PriceComparator";
+import { SimulateurSection } from "@/components/SimulateurSection";
 
 const Index = () => {
   return (
     <div className="min-h-screen">
       <Navbar />
       <Hero />
+      <SimulateurSection />
       <GoogleReviewsCarousel />
-      <PriceComparator />
       <Services />
       <Process />
       <WhyUs />
