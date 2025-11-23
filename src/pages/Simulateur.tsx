@@ -7,12 +7,9 @@ import { PlateInput } from "@/components/simulateur/PlateInput";
 import { Loader2, Calculator } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getVehicleByPlate } from "@/lib/vehicle-api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
-// TODO: Remplacer par votre URL d'API réelle
-const API_URL = "VOTRE_URL_API_ICI";
-const API_KEY = "VOTRE_CLE_API_ICI";
 
 export default function Simulateur() {
   const navigate = useNavigate();
@@ -34,21 +31,17 @@ export default function Simulateur() {
 
     setLoading(true);
     try {
-      // Appel à l'API externe
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`,
-        },
-        body: JSON.stringify({ plaque }),
-      });
+      // Appel à l'API RapidAPI existante
+      const apiResponse = await getVehicleByPlate(plaque);
 
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des données du véhicule');
+      if (!apiResponse.success || !apiResponse.data) {
+        throw new Error(apiResponse.error || 'Impossible de récupérer les informations du véhicule');
       }
 
-      const vehicleData = await response.json();
+      const vehicleData = {
+        dateMiseEnCirculation: apiResponse.data.date_mec,
+        chevauxFiscaux: apiResponse.data.puissance_fiscale,
+      };
       
       if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {
         throw new Error('Données du véhicule incomplètes');
