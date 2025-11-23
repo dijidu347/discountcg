@@ -390,7 +390,7 @@ export default function NouvelleDemarche() {
                 <TrackingServiceOption demarcheId={demarcheId} garageId={garage.id} />
               )}
 
-              {formData.type && demarcheId && documentsRequis.length > 0 && (
+              {formData.type && demarcheId && documentsRequis.length > 0 && carteGrisePrice > 0 && (
                 <div className="space-y-6">
                   {/* Pièces justificatives */}
                   <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
@@ -527,7 +527,7 @@ export default function NouvelleDemarche() {
                 <Button 
                   type="submit"
                   size="lg" 
-                  disabled={loading || !allDocsUploaded || !selectedImmatriculation.trim()}
+                  disabled={loading || !selectedImmatriculation.trim() || carteGrisePrice === 0}
                   className="flex-1 bg-success hover:bg-success/90"
                 >
                   Payer {getTotalPrice()}€
