@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, CheckCircle } from "lucide-react";
+import { CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
-import { Elements } from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,9 +15,129 @@ interface PaymentMethodsProps {
   onPaymentSuccess: () => void;
 }
 
+const StripeCardForm = ({ amount, orderId, onSuccess }: { amount: number; orderId: string; onSuccess: () => void }) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // Create payment intent
+      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+        "create-payment-intent",
+        {
+          body: {
+            amount: Math.round(amount * 100),
+            metadata: {
+              order_id: orderId,
+              type: "guest_order",
+            },
+          },
+        }
+      );
+
+      if (paymentError) throw paymentError;
+
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error("Élément de carte introuvable");
+
+      // Confirm payment
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        paymentData.clientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+          },
+        }
+      );
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (paymentIntent?.status === "succeeded") {
+        // Update order
+        await supabase
+          .from("guest_orders")
+          .update({
+            paye: true,
+            payment_intent_id: paymentIntent.id,
+            paid_at: new Date().toISOString(),
+            status: "paye",
+          })
+          .eq("id", orderId);
+
+        toast({
+          title: "Paiement réussi",
+          description: "Votre commande a été payée avec succès",
+        });
+
+        onSuccess();
+      }
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Erreur de paiement",
+        description: error.message || "Une erreur est survenue",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="p-4 border rounded-lg bg-background">
+        <CardElement
+          options={{
+            style: {
+              base: {
+                fontSize: "16px",
+                color: "hsl(var(--foreground))",
+                "::placeholder": {
+                  color: "hsl(var(--muted-foreground))",
+                },
+              },
+            },
+          }}
+        />
+      </div>
+      <Button
+        type="submit"
+        disabled={!stripe || isProcessing}
+        size="lg"
+        className="w-full"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Traitement en cours...
+          </>
+        ) : (
+          <>
+            <CreditCard className="w-5 h-5 mr-2" />
+            Payer {amount.toFixed(2)} €
+          </>
+        )}
+      </Button>
+    </form>
+  );
+};
+
 export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMethodsProps) => {
   const [isPaid, setIsPaid] = useState(false);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
+  const [showCardForm, setShowCardForm] = useState(false);
   const { toast } = useToast();
 
   useState(() => {
@@ -65,8 +185,9 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
     }
   };
 
-  const handleStripePayment = () => {
-    window.location.href = `/paiement/${orderId}`;
+  const handleInternalSuccess = () => {
+    setIsPaid(true);
+    onPaymentSuccess();
   };
 
   if (isPaid) {
@@ -109,7 +230,7 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
             </p>
             <PayPalButton
               amount={amount}
-              onSuccess={handlePaymentSuccess}
+              onSuccess={handleInternalSuccess}
               onError={(error) => {
                 console.error("PayPal error:", error);
                 toast({
@@ -137,7 +258,7 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
             <Elements stripe={stripePromise}>
               <StripeWalletPayment
                 amount={amount}
-                onSuccess={handlePaymentSuccess}
+                onSuccess={handleInternalSuccess}
               />
             </Elements>
           </div>
@@ -145,15 +266,29 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
 
         <div className="space-y-3">
           <h3 className="font-medium text-sm text-muted-foreground">Carte bancaire</h3>
-          <Button
-            onClick={handleStripePayment}
-            variant="outline"
-            className="w-full"
-            size="lg"
-          >
-            <CreditCard className="w-5 h-5 mr-2" />
-            Payer par carte ({amount.toFixed(2)} €)
-          </Button>
+          {!showCardForm ? (
+            <Button
+              onClick={() => setShowCardForm(true)}
+              variant="outline"
+              className="w-full"
+              size="lg"
+            >
+              <CreditCard className="w-5 h-5 mr-2" />
+              Payer par carte ({amount.toFixed(2)} €)
+            </Button>
+          ) : stripePromise ? (
+            <Elements stripe={stripePromise}>
+              <StripeCardForm 
+                amount={amount} 
+                orderId={orderId} 
+                onSuccess={handleInternalSuccess}
+              />
+            </Elements>
+          ) : (
+            <div className="flex justify-center py-4">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          )}
         </div>
 
         <p className="text-xs text-muted-foreground text-center pt-4">
