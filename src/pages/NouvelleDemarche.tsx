@@ -13,6 +13,7 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { VehicleForm } from "@/components/VehicleForm";
 import { VehicleFormCG } from "@/components/VehicleFormCG";
+import { VehicleFormSimple } from "@/components/VehicleFormSimple";
 import { TrackingServiceOption } from "@/components/TrackingServiceOption";
 import { StripePayment } from "@/components/StripePayment";
 
@@ -75,15 +76,21 @@ export default function NouvelleDemarche() {
 
   useEffect(() => {
     // Update demarche montant when carteGrisePrice or trackingServicePrice changes
-    if (demarcheId && actionDetails && carteGrisePrice > 0) {
-      updateDemarcheMontant();
+    if (demarcheId && actionDetails) {
+      // Pour DA et DC, on n'a pas besoin de carteGrisePrice
+      if (formData.type === 'DA' || formData.type === 'DC') {
+        updateDemarcheMontant();
+      } else if (carteGrisePrice > 0) {
+        updateDemarcheMontant();
+      }
     }
-  }, [carteGrisePrice, trackingServicePrice, demarcheId, actionDetails]);
+  }, [carteGrisePrice, trackingServicePrice, demarcheId, actionDetails, formData.type]);
 
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
 
-    const totalMontant = actionDetails.prix + carteGrisePrice + trackingServicePrice;
+    // Pour DA et DC, pas de carte grise donc pas de carteGrisePrice
+    const totalMontant = actionDetails.prix + (formData.type === 'DA' || formData.type === 'DC' ? 0 : carteGrisePrice) + trackingServicePrice;
 
     await supabase
       .from('demarches')
@@ -158,6 +165,9 @@ export default function NouvelleDemarche() {
   const handleAutoCreateDraft = async () => {
     if (!garage || demarcheId || !actionDetails) return;
 
+    // Pour DA et DC, on n'attend pas le carteGrisePrice
+    const totalMontant = actionDetails.prix + (formData.type === 'DA' || formData.type === 'DC' ? 0 : carteGrisePrice);
+
     const { data, error } = await supabase
       .from('demarches')
       .insert({
@@ -165,8 +175,8 @@ export default function NouvelleDemarche() {
         type: formData.type,
         immatriculation: selectedImmatriculation || 'TEMP',
         commentaire: formData.commentaire,
-        frais_dossier: actionDetails.prix + carteGrisePrice,
-        montant_ttc: actionDetails.prix + carteGrisePrice,
+        frais_dossier: totalMontant,
+        montant_ttc: totalMontant,
         status: 'en_saisie',
         is_draft: true,
         paye: false,
@@ -224,7 +234,9 @@ export default function NouvelleDemarche() {
   };
 
   const getTotalPrice = () => {
-    return getFraisDossier() + carteGrisePrice + trackingServicePrice;
+    const basePrice = getFraisDossier();
+    const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
+    return basePrice + vehiclePrice + trackingServicePrice;
   };
 
   const handleTrackingServiceChange = (price: number) => {
@@ -243,27 +255,30 @@ export default function NouvelleDemarche() {
       return;
     }
 
-    // Check if all obligatory documents are uploaded
-    const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
-    const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
-      const docKey = `doc_${idx + 1}`;
-      const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
-      
-      // Pour la carte grise, vérifier si au moins le recto est uploadé
-      if (isCarteGrise) {
-        return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
-      }
-      
-      return uploadedDocuments.has(docKey);
-    });
-    
-    if (uploadedRequiredDocs.length < requiredDocs.length) {
-      toast({
-        title: "Documents obligatoires manquants",
-        description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
-        variant: "destructive"
+    // DC n'a pas besoin de documents
+    if (formData.type !== 'DC') {
+      // Check if all obligatory documents are uploaded
+      const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
+      const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
+        const docKey = `doc_${idx + 1}`;
+        const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
+        
+        // Pour la carte grise, vérifier si au moins le recto est uploadé
+        if (isCarteGrise) {
+          return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
+        }
+        
+        return uploadedDocuments.has(docKey);
       });
-      return;
+      
+      if (uploadedRequiredDocs.length < requiredDocs.length) {
+        toast({
+          title: "Documents obligatoires manquants",
+          description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Update before payment
@@ -375,6 +390,12 @@ export default function NouvelleDemarche() {
                       selectedVehicleId={selectedVehicleId}
                       onPriceCalculated={handlePriceCalculated}
                     />
+                  ) : (formData.type === 'DA' || formData.type === 'DC') ? (
+                    <VehicleFormSimple
+                      garageId={garage.id}
+                      onVehicleSelect={handleVehicleSelect}
+                      selectedVehicleId={selectedVehicleId}
+                    />
                   ) : (
                     <VehicleForm
                       garageId={garage.id}
@@ -406,7 +427,7 @@ export default function NouvelleDemarche() {
                 />
               )}
 
-              {formData.type && demarcheId && documentsRequis.length > 0 && carteGrisePrice > 0 && (
+              {formData.type && demarcheId && documentsRequis.length > 0 && (formData.type === 'CG' ? carteGrisePrice > 0 : true) && formData.type !== 'DC' && (
                 <div className="space-y-6">
                   {/* Pièces justificatives */}
                   <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
@@ -543,7 +564,7 @@ export default function NouvelleDemarche() {
                 <Button 
                   type="submit"
                   size="lg" 
-                  disabled={loading || !selectedImmatriculation.trim() || carteGrisePrice === 0}
+                  disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0)}
                   className="flex-1 bg-success hover:bg-success/90"
                 >
                   Payer {getTotalPrice()}€
@@ -557,7 +578,7 @@ export default function NouvelleDemarche() {
                     <DialogTitle>Paiement de la démarche</DialogTitle>
                     <DialogDescription>
                       Frais de dossier : {getFraisDossier()}€
-                      {carteGrisePrice > 0 && ` + Prix carte grise : ${carteGrisePrice.toFixed(2)}€`}
+                      {(formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice > 0 && ` + Prix carte grise : ${carteGrisePrice.toFixed(2)}€`}
                       {trackingServicePrice > 0 && ` + Service de suivi : ${trackingServicePrice.toFixed(2)}€`}
                       <br />
                       Montant total : {getTotalPrice()}€
