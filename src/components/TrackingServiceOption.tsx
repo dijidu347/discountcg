@@ -9,9 +9,10 @@ import { Mail, Phone, CheckCircle } from "lucide-react";
 interface TrackingServiceOptionProps {
   demarcheId: string;
   garageId: string;
+  onPriceChange?: (price: number) => void;
 }
 
-export function TrackingServiceOption({ demarcheId, garageId }: TrackingServiceOptionProps) {
+export function TrackingServiceOption({ demarcheId, garageId, onPriceChange }: TrackingServiceOptionProps) {
   const [loading, setLoading] = useState(false);
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const { toast } = useToast();
@@ -21,19 +22,22 @@ export function TrackingServiceOption({ demarcheId, garageId }: TrackingServiceO
     const loadExistingService = async () => {
       const { data } = await supabase
         .from('tracking_services')
-        .select('service_type')
+        .select('service_type, price')
         .eq('demarche_id', demarcheId)
         .maybeSingle();
 
       if (data) {
         setSelectedService(data.service_type);
+        if (onPriceChange && data.price) {
+          onPriceChange(data.price);
+        }
       }
     };
 
     if (demarcheId) {
       loadExistingService();
     }
-  }, [demarcheId]);
+  }, [demarcheId, onPriceChange]);
 
   const services = [
     { 
@@ -97,6 +101,12 @@ export function TrackingServiceOption({ demarcheId, garageId }: TrackingServiceO
       }
 
       setSelectedService(serviceType);
+      
+      // Notify parent of price change
+      if (onPriceChange) {
+        onPriceChange(price);
+      }
+      
       toast({
         title: "Service mis à jour",
         description: "Le service de suivi a été mis à jour pour votre démarche"
@@ -144,7 +154,8 @@ export function TrackingServiceOption({ demarcheId, garageId }: TrackingServiceO
                   {selectedService === service.type ? (
                     <Badge className="bg-accent">Activé</Badge>
                   ) : (
-                    <Button
+                  <Button
+                      type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => handleSubscribe(service.type, service.price)}

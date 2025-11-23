@@ -34,6 +34,7 @@ export default function NouvelleDemarche() {
   const [selectedImmatriculation, setSelectedImmatriculation] = useState<string>("");
   const [additionalDocs, setAdditionalDocs] = useState<number[]>([1, 2, 3, 4, 5]);
   const [carteGrisePrice, setCarteGrisePrice] = useState<number>(0);
+  const [trackingServicePrice, setTrackingServicePrice] = useState<number>(0);
   const [formData, setFormData] = useState({
     type: searchParams.get('type') || "",
     commentaire: ""
@@ -73,16 +74,16 @@ export default function NouvelleDemarche() {
   }, [demarcheId]);
 
   useEffect(() => {
-    // Update demarche montant when carteGrisePrice changes
+    // Update demarche montant when carteGrisePrice or trackingServicePrice changes
     if (demarcheId && actionDetails && carteGrisePrice > 0) {
       updateDemarcheMontant();
     }
-  }, [carteGrisePrice, demarcheId, actionDetails]);
+  }, [carteGrisePrice, trackingServicePrice, demarcheId, actionDetails]);
 
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
 
-    const totalMontant = actionDetails.prix + carteGrisePrice;
+    const totalMontant = actionDetails.prix + carteGrisePrice + trackingServicePrice;
 
     await supabase
       .from('demarches')
@@ -223,7 +224,11 @@ export default function NouvelleDemarche() {
   };
 
   const getTotalPrice = () => {
-    return getFraisDossier() + carteGrisePrice;
+    return getFraisDossier() + carteGrisePrice + trackingServicePrice;
+  };
+
+  const handleTrackingServiceChange = (price: number) => {
+    setTrackingServicePrice(price);
   };
 
   const handleSubmitPayment = async (e: React.FormEvent) => {
@@ -387,7 +392,11 @@ export default function NouvelleDemarche() {
               </div>
 
               {demarcheId && garage && (
-                <TrackingServiceOption demarcheId={demarcheId} garageId={garage.id} />
+                <TrackingServiceOption 
+                  demarcheId={demarcheId} 
+                  garageId={garage.id}
+                  onPriceChange={handleTrackingServiceChange}
+                />
               )}
 
               {formData.type && demarcheId && documentsRequis.length > 0 && carteGrisePrice > 0 && (
@@ -542,6 +551,7 @@ export default function NouvelleDemarche() {
                     <DialogDescription>
                       Frais de dossier : {getFraisDossier()}€
                       {carteGrisePrice > 0 && ` + Prix carte grise : ${carteGrisePrice.toFixed(2)}€`}
+                      {trackingServicePrice > 0 && ` + Service de suivi : ${trackingServicePrice.toFixed(2)}€`}
                       <br />
                       Montant total : {getTotalPrice()}€
                     </DialogDescription>
