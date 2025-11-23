@@ -58,9 +58,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = async () => {
     if (!formData.immatriculation.trim()) {
       toast({
         title: "Erreur",
@@ -89,7 +87,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
 
       toast({
         title: "Succès",
-        description: "Véhicule ajouté avec succès"
+        description: "Véhicule enregistré, vous pouvez maintenant télécharger vos documents"
       });
 
       setFormData({
@@ -99,7 +97,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
         vin: ""
       });
       setShowForm(false);
-      loadVehicles();
+      await loadVehicles();
       
       if (data) {
         onVehicleSelect(data.id, data.immatriculation);
@@ -144,7 +142,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       </CardHeader>
       <CardContent className="space-y-4">
         {showForm ? (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="immatriculation">Immatriculation *</Label>
               <Input
@@ -152,7 +150,6 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
                 placeholder="AA-123-AA"
                 value={formData.immatriculation}
                 onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
-                required
               />
             </div>
 
@@ -186,10 +183,10 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full">
+            <Button type="button" onClick={handleSubmit} disabled={loading} className="w-full">
               {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
             </Button>
-          </form>
+          </div>
         ) : (
           <>
             <div className="space-y-2">
