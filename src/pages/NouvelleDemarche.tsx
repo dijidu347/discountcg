@@ -257,15 +257,24 @@ export default function NouvelleDemarche() {
 
     // Check if all obligatory documents are uploaded
     const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
+    
+    // Trouver l'index de la première carte grise
+    const firstCarteGriseIdx = documentsRequis.findIndex(d => 
+      d.nom_document.toLowerCase().includes('carte grise')
+    );
+    
     const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
-      const docKey = `doc_${idx + 1}`;
+      // Récupérer l'index du document dans la liste complète
+      const docIndex = documentsRequis.indexOf(doc);
+      const docKey = `doc_${docIndex + 1}`;
       const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
       
-      // Pour la carte grise, vérifier si au moins le recto est uploadé
-      if (isCarteGrise) {
+      // Pour la PREMIÈRE carte grise uniquement, vérifier si au moins le recto est uploadé
+      if (isCarteGrise && docIndex === firstCarteGriseIdx) {
         return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
       }
       
+      // Pour les autres documents (y compris autres cartes grises), vérifier normalement
       return uploadedDocuments.has(docKey);
     });
     
@@ -441,9 +450,13 @@ export default function NouvelleDemarche() {
                     <div className="space-y-3">
                       {documentsRequis.map((doc, idx) => {
                         const isCarteGrise = doc.nom_document.toLowerCase().includes('carte grise');
+                        // Trouver l'index de la première carte grise
+                        const firstCarteGriseIdx = documentsRequis.findIndex(d => 
+                          d.nom_document.toLowerCase().includes('carte grise')
+                        );
                         
-                        // Si c'est une carte grise, afficher recto et verso séparément
-                        if (isCarteGrise) {
+                        // Ne dédoubler que la PREMIÈRE carte grise trouvée
+                        if (isCarteGrise && idx === firstCarteGriseIdx) {
                           return (
                             <div key={doc.id} className="space-y-3">
                               <div className="flex items-center gap-4">
