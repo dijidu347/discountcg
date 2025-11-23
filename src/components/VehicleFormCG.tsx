@@ -321,31 +321,45 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
               onChange={(e) => setSearchQuery(e.target.value)}
               className="mb-2"
             />
-            <Select value={selectedVehicleId || ""} onValueChange={handleVehicleSelect}>
-              <SelectTrigger>
-                <SelectValue placeholder="Choisir dans l'historique" />
-              </SelectTrigger>
-              <SelectContent className="bg-background">
-                {filteredVehicles.map((vehicle) => (
-                  <SelectItem key={vehicle.id} value={vehicle.id} className="group">
-                    <div className="flex items-center justify-between w-full">
-                      <span>
-                        {vehicle.immatriculation} {vehicle.marque && vehicle.modele ? `- ${vehicle.marque} ${vehicle.modele}` : ""}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="ml-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100"
-                        onClick={(e) => handleDeleteVehicle(vehicle.id, e)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="border rounded-md max-h-[300px] overflow-y-auto">
+              {filteredVehicles.length === 0 ? (
+                <div className="p-4 text-center text-muted-foreground">
+                  Aucun véhicule trouvé
+                </div>
+              ) : (
+                filteredVehicles.map((vehicle) => (
+                  <div
+                    key={vehicle.id}
+                    className={cn(
+                      "flex items-center justify-between p-3 border-b last:border-b-0 hover:bg-accent transition-colors",
+                      selectedVehicleId === vehicle.id && "bg-accent"
+                    )}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleVehicleSelect(vehicle.id)}
+                      className="flex-1 text-left"
+                    >
+                      <div className="font-medium">{vehicle.immatriculation}</div>
+                      {vehicle.marque && vehicle.modele && (
+                        <div className="text-sm text-muted-foreground">
+                          {vehicle.marque} {vehicle.modele}
+                        </div>
+                      )}
+                    </button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => handleDeleteVehicle(vehicle.id, e)}
+                      className="ml-2"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         )}
 
