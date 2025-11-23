@@ -21,7 +21,6 @@ interface VehicleFormCGProps {
 
 export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, onPriceCalculated }: VehicleFormCGProps) {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
   const [departement, setDepartement] = useState("");
   const [fetchingVehicle, setFetchingVehicle] = useState(false);
   const [priceCalculated, setPriceCalculated] = useState(false);
@@ -85,123 +84,44 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
     setVehicleData(null);
   };
 
-  const handleValidate = async () => {
+  const handleValidate = () => {
     if (!vehicleData) return;
 
-    setLoading(true);
-
-    try {
-      // Vérifier si le véhicule existe déjà
-      const { data: existingVehicle } = await supabase
-        .from('vehicules')
-        .select('id')
-        .eq('garage_id', garageId)
-        .eq('immatriculation', immatriculation.toUpperCase())
-        .maybeSingle();
-
-      let data;
-      let error;
-
-      if (existingVehicle) {
-        // Mettre à jour le véhicule existant
-        const result = await supabase
-          .from('vehicules')
-          .update({
-            marque: vehicleData.marque || null,
-            modele: vehicleData.modele || null,
-            vin: vehicleData.vin || null,
-            date_mec: vehicleData.date_mec || null,
-            puiss_fisc: vehicleData.puissance_fiscale || null,
-            carrosserie: vehicleData.carrosserie || null,
-            genre: vehicleData.genre || null,
-            couleur: vehicleData.couleur || null,
-            energie: vehicleData.energie || null,
-            type: vehicleData.type || null,
-            version: vehicleData.version || null,
-            numero_formule: vehicleData.numero_formule || null,
-            puiss_ch: vehicleData.puissance_ch || null,
-            cylindree: vehicleData.cylindree || null,
-            co2: vehicleData.co2 || null,
-            ptr: vehicleData.ptr || null,
-            date_cg: vehicleData.date_cg || null,
-          })
-          .eq('id', existingVehicle.id)
-          .select()
-          .single();
-        
-        data = result.data;
-        error = result.error;
-      } else {
-        // Insérer un nouveau véhicule
-        const result = await supabase
-          .from('vehicules')
-          .insert({
-            garage_id: garageId,
-            immatriculation: immatriculation.toUpperCase(),
-            marque: vehicleData.marque || null,
-            modele: vehicleData.modele || null,
-            vin: vehicleData.vin || null,
-            date_mec: vehicleData.date_mec || null,
-            puiss_fisc: vehicleData.puissance_fiscale || null,
-            carrosserie: vehicleData.carrosserie || null,
-            genre: vehicleData.genre || null,
-            couleur: vehicleData.couleur || null,
-            energie: vehicleData.energie || null,
-            type: vehicleData.type || null,
-            version: vehicleData.version || null,
-            numero_formule: vehicleData.numero_formule || null,
-            puiss_ch: vehicleData.puissance_ch || null,
-            cylindree: vehicleData.cylindree || null,
-            co2: vehicleData.co2 || null,
-            ptr: vehicleData.ptr || null,
-            date_cg: vehicleData.date_cg || null,
-          })
-          .select()
-          .single();
-        
-        data = result.data;
-        error = result.error;
-      }
-
-      if (error) {
-        toast({
-          title: "Erreur",
-          description: "Impossible d'enregistrer le véhicule",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Notifier le parent du prix calculé
-      if (onPriceCalculated && calculatedPrice > 0) {
-        onPriceCalculated(calculatedPrice);
-      }
-
-      toast({
-        title: "Véhicule validé",
-        description: "Le véhicule a été enregistré et le prix ajouté"
-      });
-
-      setImmatriculation("");
-      setDepartement("");
-      setPriceCalculated(false);
-      setCalculatedPrice(0);
-      setVehicleData(null);
-      
-      if (data) {
-        onVehicleSelect(data.id, data.immatriculation, data);
-      }
-    } catch (error: any) {
-      console.error("Validation error:", error);
-      toast({
-        title: "Erreur de validation",
-        description: error.message || "Données invalides",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
+    // Notifier le parent du prix calculé
+    if (onPriceCalculated && calculatedPrice > 0) {
+      onPriceCalculated(calculatedPrice);
     }
+
+    // Créer un objet véhicule temporaire avec les données
+    const tempVehicleData = {
+      id: `temp-${Date.now()}`, // ID temporaire
+      immatriculation: immatriculation.toUpperCase(),
+      marque: vehicleData.marque || null,
+      modele: vehicleData.modele || null,
+      vin: vehicleData.vin || null,
+      date_mec: vehicleData.date_mec || null,
+      puiss_fisc: vehicleData.puissance_fiscale || null,
+      carrosserie: vehicleData.carrosserie || null,
+      genre: vehicleData.genre || null,
+      couleur: vehicleData.couleur || null,
+      energie: vehicleData.energie || null,
+      type: vehicleData.type || null,
+      version: vehicleData.version || null,
+      numero_formule: vehicleData.numero_formule || null,
+      puiss_ch: vehicleData.puissance_ch || null,
+      cylindree: vehicleData.cylindree || null,
+      co2: vehicleData.co2 || null,
+      ptr: vehicleData.ptr || null,
+      date_cg: vehicleData.date_cg || null,
+    };
+
+    toast({
+      title: "Véhicule validé",
+      description: "Les informations du véhicule ont été ajoutées"
+    });
+
+    // Notifier le parent avec les données du véhicule
+    onVehicleSelect(tempVehicleData.id, tempVehicleData.immatriculation, tempVehicleData);
   };
 
 
@@ -310,17 +230,15 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
             <Button
               variant="outline"
               onClick={handleModify}
-              disabled={loading}
               className="flex-1"
             >
               Modifier
             </Button>
             <Button
               onClick={handleValidate}
-              disabled={loading}
               className="flex-1"
             >
-              {loading ? "Validation..." : "Valider"}
+              Valider
             </Button>
           </div>
         ) : (
