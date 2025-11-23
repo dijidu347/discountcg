@@ -6,50 +6,46 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
-const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
+const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isReady, setIsReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
-      toast({
-        title: "Erreur",
-        description: "Le système de paiement n'est pas encore prêt. Veuillez réessayer.",
-        variant: "destructive",
-      });
       return;
     }
 
     setIsProcessing(true);
 
     try {
-      const { error } = await stripe.confirmPayment({
-        elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/mes-demarches`,
-        },
-        redirect: "if_required",
-      });
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) throw new Error("Élément de carte introuvable");
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+          payment_method: {
+            card: cardElement,
+          },
+        }
+      );
 
       if (error) {
-        toast({
-          title: "Erreur de paiement",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
+        throw new Error(error.message);
+      }
+
+      if (paymentIntent?.status === "succeeded") {
         toast({
           title: "Paiement réussi",
           description: "Votre démarche a été payée avec succès",
@@ -57,6 +53,7 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
         onSuccess();
       }
     } catch (error: any) {
+      console.error("Payment error:", error);
       toast({
         title: "Erreur de paiement",
         description: error.message || "Une erreur est survenue",
@@ -70,16 +67,23 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="p-4 border rounded-lg bg-background">
-        <PaymentElement
-          onReady={() => setIsReady(true)}
+        <CardElement
           options={{
-            layout: "tabs",
+            style: {
+              base: {
+                fontSize: "16px",
+                color: "hsl(var(--foreground))",
+                "::placeholder": {
+                  color: "hsl(var(--muted-foreground))",
+                },
+              },
+            },
           }}
         />
       </div>
       <Button
         type="submit"
-        disabled={!stripe || !isReady || isProcessing}
+        disabled={!stripe || isProcessing}
         size="lg"
         className="w-full text-lg h-12"
       >
@@ -87,11 +91,6 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
           <>
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             Traitement en cours...
-          </>
-        ) : !isReady ? (
-          <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Chargement...
           </>
         ) : (
           <>
@@ -281,23 +280,8 @@ const PaiementDemarche = () => {
                   <p className="text-sm text-muted-foreground">
                     Visa, Mastercard, American Express
                   </p>
-                  <Elements
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret,
-                      appearance: {
-                        theme: "stripe",
-                        variables: {
-                          colorPrimary: "hsl(var(--primary))",
-                          colorText: "hsl(var(--foreground))",
-                          colorDanger: "hsl(var(--destructive))",
-                          fontFamily: "system-ui, sans-serif",
-                          borderRadius: "8px",
-                        },
-                      },
-                    }}
-                  >
-                    <StripeCardForm onSuccess={handlePaymentSuccess} />
+                  <Elements stripe={stripePromise}>
+                    <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
                   </Elements>
                 </div>
 
@@ -316,22 +300,7 @@ const PaiementDemarche = () => {
                   <p className="text-sm text-muted-foreground">
                     Apple Pay, Google Pay et autres portefeuilles électroniques
                   </p>
-                  <Elements
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret,
-                      appearance: {
-                        theme: "stripe",
-                        variables: {
-                          colorPrimary: "hsl(var(--primary))",
-                          colorText: "hsl(var(--foreground))",
-                          colorDanger: "hsl(var(--destructive))",
-                          fontFamily: "system-ui, sans-serif",
-                          borderRadius: "8px",
-                        },
-                      },
-                    }}
-                  >
+                  <Elements stripe={stripePromise}>
                     <StripeWalletPayment 
                       amount={demarche.montant_ttc} 
                       onSuccess={handlePaymentSuccess}
