@@ -18,11 +18,17 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!stripe || !elements) {
+      toast({
+        title: "Erreur",
+        description: "Le système de paiement n'est pas encore prêt. Veuillez réessayer.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -65,6 +71,7 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="p-4 border rounded-lg bg-background">
         <PaymentElement
+          onReady={() => setIsReady(true)}
           options={{
             layout: "tabs",
           }}
@@ -72,7 +79,7 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
       </div>
       <Button
         type="submit"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || !isReady || isProcessing}
         size="lg"
         className="w-full text-lg h-12"
       >
@@ -80,6 +87,11 @@ const StripeCardForm = ({ onSuccess }: { onSuccess: () => void }) => {
           <>
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
             Traitement en cours...
+          </>
+        ) : !isReady ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Chargement...
           </>
         ) : (
           <>
