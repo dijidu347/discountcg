@@ -136,28 +136,39 @@ serve(async (req) => {
           }
 
           // -----------------------------
-          // EMAIL INVOKÉ
+          // EMAIL - Appel HTTP direct
           // -----------------------------
           console.log("📧 Vérification email_notifications:", order.email_notifications);
           if (order.email_notifications) {
             console.log("📧 Envoi email payment_confirmed à:", order.email);
             try {
-              const emailResult = await supabase.functions.invoke("send-guest-order-email", {
-                body: {
-                  type: "payment_confirmed",
-                  orderData: {
-                    tracking_number: order.tracking_number,
-                    email: order.email,
-                    nom: order.nom,
-                    prenom: order.prenom,
-                    immatriculation: order.immatriculation,
-                    montant_ttc: order.montant_ttc,
+              const emailResponse = await fetch(
+                `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-guest-order-email`,
+                {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
                   },
-                },
-              });
+                  body: JSON.stringify({
+                    type: "payment_confirmed",
+                    orderData: {
+                      tracking_number: order.tracking_number,
+                      email: order.email,
+                      nom: order.nom,
+                      prenom: order.prenom,
+                      immatriculation: order.immatriculation,
+                      montant_ttc: order.montant_ttc,
+                    },
+                  }),
+                }
+              );
+              
+              const emailResult = await emailResponse.json();
               console.log("✅ Email envoyé, résultat:", emailResult);
-              if (emailResult.error) {
-                console.error("❌ Erreur email:", emailResult.error);
+              
+              if (!emailResponse.ok) {
+                console.error("❌ Erreur email:", emailResult);
               }
             } catch (emailError) {
               console.error("❌ Exception lors de l'envoi email:", emailError);
@@ -267,21 +278,31 @@ serve(async (req) => {
         if (demarche && demarche.garages) {
           console.log("📧 Envoi email payment_confirmed pour démarche à:", demarche.garages.email);
           try {
-            const emailResult = await supabase.functions.invoke("send-order-emails", {
-              body: {
-                type: "payment_confirmed",
-                email: demarche.garages.email,
-                customerName: demarche.garages.raison_sociale,
-                immatriculation: demarche.immatriculation,
-                demarcheId: demarche.numero_demarche || demarcheId,
-                montantTTC: (paymentIntent.amount / 100).toFixed(2),
-              },
-            });
-
-            if (emailResult.error) {
-              console.error("❌ Erreur envoi email:", emailResult.error);
+            const emailResponse = await fetch(
+              `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-order-emails`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+                },
+                body: JSON.stringify({
+                  type: "payment_confirmed",
+                  email: demarche.garages.email,
+                  customerName: demarche.garages.raison_sociale,
+                  immatriculation: demarche.immatriculation,
+                  demarcheId: demarche.numero_demarche || demarcheId,
+                  montantTTC: (paymentIntent.amount / 100).toFixed(2),
+                }),
+              }
+            );
+            
+            const emailResult = await emailResponse.json();
+            
+            if (!emailResponse.ok) {
+              console.error("❌ Erreur envoi email:", emailResult);
             } else {
-              console.log("✅ Email payment_confirmed envoyé avec succès");
+              console.log("✅ Email payment_confirmed envoyé avec succès:", emailResult);
             }
           } catch (emailError) {
             console.error("❌ Exception envoi email:", emailError);
