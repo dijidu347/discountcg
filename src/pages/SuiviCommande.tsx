@@ -21,6 +21,7 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
+import { GuestAdditionalDocuments } from "@/components/GuestAdditionalDocuments";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
@@ -536,7 +537,7 @@ const SuiviCommande = () => {
                       Documents à renvoyer
                     </h3>
                     <p className="text-sm text-muted-foreground mb-4">
-                      Certains documents ont été refusés. Veuillez les renvoyer ci-dessous.
+                      Certains documents ont été refusés. Veuillez les renvoyer ci-dessous avec vos pièces jointes complémentaires.
                     </p>
                     {documents
                       .filter(doc => doc.validation_status === 'rejected')
@@ -553,7 +554,7 @@ const SuiviCommande = () => {
                           }));
 
                         return (
-                          <div key={doc.id} className="mb-4">
+                          <div key={doc.id} className="mb-6 space-y-4">
                             <div className="mb-2">
                               <p className="font-medium">{doc.type_document}</p>
                               {doc.rejection_reason && (
@@ -562,11 +563,24 @@ const SuiviCommande = () => {
                                 </p>
                               )}
                             </div>
+                            
+                            {/* Upload recto/verso si besoin */}
                             <GuestDocumentUpload
                               orderId={order.id}
                               documentType={doc.type_document}
                               label={doc.type_document}
                               existingFiles={existingFiles}
+                              onUploadComplete={() => {
+                                loadDocuments();
+                                loadOrder();
+                              }}
+                            />
+                            
+                            {/* Zone pour documents complémentaires */}
+                            <GuestAdditionalDocuments
+                              orderId={order.id}
+                              documentType={doc.type_document}
+                              rejectionReason={doc.rejection_reason || ""}
                               onUploadComplete={() => {
                                 loadDocuments();
                                 loadOrder();
