@@ -137,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Sending email type: ${emailData.type} to ${emailData.email}`);
 
     const { data, error } = await resend.emails.send({
-      from: "Carte Grise <onboarding@resend.dev>",
+      from: "DiscountCarteGrise <noreply@discountcartegrise.fr>",
       to: [emailData.email],
       subject: subject,
       html: html,
