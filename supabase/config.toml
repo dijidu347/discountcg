@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.send-guest-order-email]
 verify_jwt = false
 
+[functions.send-order-emails]
+verify_jwt = false
+
 [functions.generate-facture]
 verify_jwt = false
 
