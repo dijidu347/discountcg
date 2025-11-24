@@ -36,6 +36,7 @@ import AdminNotifications from "./pages/admin/AdminNotifications";
 import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
 import ManageEmailTemplates from "./pages/admin/ManageEmailTemplates";
 import ManagePricingConfig from "./pages/admin/ManagePricingConfig";
+import TestEmail from "./pages/admin/TestEmail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -78,6 +79,7 @@ const App = () => (
           <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />
           <Route path="/admin/email-templates" element={<ManageEmailTemplates />} />
           <Route path="/admin/pricing-config" element={<ManagePricingConfig />} />
+          <Route path="/admin/test-email" element={<TestEmail />} />
           <Route path="/admin/guest-orders" element={<GuestOrders />} />
           <Route path="/admin/guest-order/:id" element={<GuestOrderDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
