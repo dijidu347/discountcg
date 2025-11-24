@@ -970,7 +970,6 @@ function DocumentValidationCard({
             <Checkbox 
               checked={isSelected}
               onCheckedChange={onToggleSelect}
-              disabled={doc.validation_status !== 'pending'}
             />
             <FileText className="h-5 w-5 text-muted-foreground mt-1" />
             <div className="flex-1">

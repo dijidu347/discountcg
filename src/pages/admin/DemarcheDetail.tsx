@@ -14,6 +14,7 @@ import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { Badge } from "@/components/ui/badge";
 import { FactureButton } from "@/components/FactureButton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,74 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
+// Bulk Reject Dialog Component
+function BulkRejectDialog({ 
+  onReject, 
+  disabled, 
+  count 
+}: { 
+  onReject: (reason: string) => void; 
+  disabled: boolean; 
+  count: number; 
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const handleReject = () => {
+    if (reason.trim()) {
+      onReject(reason);
+      setOpen(false);
+      setReason("");
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="destructive" size="sm" disabled={disabled}>
+          <XCircle className="mr-2 h-4 w-4" />
+          Refuser la sélection
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Refuser {count} document(s)</AlertDialogTitle>
+          <AlertDialogDescription>
+            Indiquez la raison du refus. Le garage sera notifié.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Textarea
+          placeholder="Raison du refus..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={4}
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleReject}
+            disabled={!reason.trim()}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Confirmer le refus
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
 
 export default function DemarcheDetail() {
   const { id } = useParams();
@@ -50,6 +119,7 @@ export default function DemarcheDetail() {
     type: string;
   }>({ isOpen: false, url: "", name: "", type: "" });
   const [adminUploadRows, setAdminUploadRows] = useState<number>(1);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -270,6 +340,100 @@ export default function DemarcheDetail() {
 
     await validateDocument(invalidDocDialog.docId, 'invalid', invalidDocDialog.comment);
     setInvalidDocDialog({ open: false, docId: null, comment: "" });
+  };
+
+  const toggleDocSelection = (docId: string) => {
+    setSelectedDocs(prev => 
+      prev.includes(docId) 
+        ? prev.filter(id => id !== docId)
+        : [...prev, docId]
+    );
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedDocs.length === 0) return;
+
+    try {
+      for (const docId of selectedDocs) {
+        await supabase
+          .from("documents")
+          .update({
+            validation_status: "validated",
+            validated_at: new Date().toISOString(),
+            validated_by: user?.id,
+            validation_comment: null,
+          })
+          .eq("id", docId);
+      }
+
+      toast({
+        title: "Documents validés",
+        description: `${selectedDocs.length} document(s) validé(s) avec succès`,
+      });
+
+      setSelectedDocs([]);
+      await loadDemarcheData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de valider les documents",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleBulkReject = async (reason: string) => {
+    if (selectedDocs.length === 0 || !reason.trim()) return;
+
+    try {
+      // Récupérer les noms des documents refusés
+      const { data: rejectedDocs } = await supabase
+        .from("documents")
+        .select("type_document")
+        .in("id", selectedDocs);
+
+      // Mettre à jour les documents
+      for (const docId of selectedDocs) {
+        await supabase
+          .from("documents")
+          .update({
+            validation_status: "rejected",
+            validated_at: new Date().toISOString(),
+            validated_by: user?.id,
+            validation_comment: reason,
+          })
+          .eq("id", docId);
+      }
+
+      // Créer une notification groupée
+      if (garage && rejectedDocs) {
+        await supabase
+          .from('notifications')
+          .insert({
+            garage_id: garage.id,
+            demarche_id: id,
+            type: 'document_invalid',
+            message: `${selectedDocs.length} document(s) refusé(s) pour la démarche ${demarche.immatriculation}. Raison: ${reason}`,
+            created_by: user?.id
+          });
+      }
+
+      toast({
+        title: "Documents refusés",
+        description: `${selectedDocs.length} document(s) refusé(s). Le garage a été notifié.`,
+      });
+
+      setSelectedDocs([]);
+      await loadDemarcheData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de refuser les documents",
+        variant: "destructive",
+      });
+    }
   };
 
   const sendNotification = async () => {
@@ -533,8 +697,32 @@ export default function DemarcheDetail() {
             {/* Documents */}
             <Card>
               <CardHeader>
-                <CardTitle>Documents</CardTitle>
-                <CardDescription>{documents.length} document(s)</CardDescription>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div>
+                    <CardTitle>Documents</CardTitle>
+                    <CardDescription>
+                      {documents.length} document(s)
+                      {selectedDocs.length > 0 && ` • ${selectedDocs.length} sélectionné(s)`}
+                    </CardDescription>
+                  </div>
+                  {selectedDocs.length > 0 && (
+                    <div className="flex gap-2">
+                      <BulkRejectDialog 
+                        onReject={handleBulkReject}
+                        disabled={false}
+                        count={selectedDocs.length}
+                      />
+                      <Button
+                        onClick={handleBulkApprove}
+                        size="sm"
+                        variant="default"
+                      >
+                        <CheckCircle className="mr-2 h-4 w-4" />
+                        Valider la sélection
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 {documents.length === 0 ? (
@@ -543,25 +731,31 @@ export default function DemarcheDetail() {
                   <div className="space-y-3">
                     {documents.map((doc) => (
                       <div key={doc.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            {documentLabels[doc.type_document] && (
-                              <p className="text-xs font-semibold text-primary uppercase mb-2">
-                                {documentLabels[doc.type_document]}
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 flex-1">
+                            <Checkbox 
+                              checked={selectedDocs.includes(doc.id)}
+                              onCheckedChange={() => toggleDocSelection(doc.id)}
+                            />
+                            <div className="flex-1">
+                              {documentLabels[doc.type_document] && (
+                                <p className="text-xs font-semibold text-primary uppercase mb-2">
+                                  {documentLabels[doc.type_document]}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="text-sm font-medium">{doc.nom_fichier}</p>
+                                {getValidationBadge(doc.validation_status || 'pending')}
+                              </div>
+                              <p className="text-xs text-muted-foreground">
+                                {(doc.taille_octets / 1024).toFixed(2)} KB
                               </p>
-                            )}
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-sm font-medium">{doc.nom_fichier}</p>
-                              {getValidationBadge(doc.validation_status || 'pending')}
+                              {doc.validation_comment && (
+                                <p className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded">
+                                  Motif du refus: {doc.validation_comment}
+                                </p>
+                              )}
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              {(doc.taille_octets / 1024).toFixed(2)} KB
-                            </p>
-                            {doc.validation_comment && (
-                              <p className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded">
-                                Motif du refus: {doc.validation_comment}
-                              </p>
-                            )}
                           </div>
                           <Button 
                             size="sm" 
