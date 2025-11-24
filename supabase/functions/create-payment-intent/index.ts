@@ -28,8 +28,35 @@ serve(async (req) => {
 
     // Handle guest orders (no auth required)
     if (metadata?.type === 'guest_order') {
-      if (!amount) {
-        return new Response(JSON.stringify({ error: 'Amount required' }), {
+      if (!amount || !metadata.order_id) {
+        return new Response(JSON.stringify({ error: 'Amount and order_id required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Vérifier si la commande existe et n'est pas déjà payée
+      const { data: existingOrder, error: orderError } = await supabaseClient
+        .from('guest_orders')
+        .select('paye, payment_intent_id')
+        .eq('id', metadata.order_id)
+        .single();
+
+      if (orderError) {
+        console.error('Order lookup error:', orderError);
+        return new Response(JSON.stringify({ error: 'Order not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Si déjà payée, empêcher un nouveau paiement
+      if (existingOrder.paye) {
+        console.log('Order already paid:', metadata.order_id);
+        return new Response(JSON.stringify({ 
+          error: 'Cette commande a déjà été payée',
+          alreadyPaid: true 
+        }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -113,6 +140,18 @@ serve(async (req) => {
       console.error('Demarche error:', demarcheError);
       return new Response(JSON.stringify({ error: 'Démarche not found' }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Vérifier si la démarche est déjà payée
+    if (demarche.paye) {
+      console.log('Demarche already paid:', demarcheId);
+      return new Response(JSON.stringify({ 
+        error: 'Cette démarche a déjà été payée',
+        alreadyPaid: true 
+      }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
