@@ -1,9 +1,9 @@
 project_id = "oiotlgkfwuwshpwraneb"
 
-[functions.create-payment-intent]
-verify_jwt = true
+[functions.create-checkout]
+verify_jwt = false
 
-[functions.get-stripe-key]
+[functions.webhook-stripe]
 verify_jwt = false
 
 [functions.send-carte-grise]
