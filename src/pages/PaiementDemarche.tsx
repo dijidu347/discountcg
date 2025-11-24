@@ -42,6 +42,19 @@ const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onS
       );
 
       if (error) {
+        // Détecter si l'erreur est due à un conflit test/live mode
+        if (error.message?.includes('test mode') || error.message?.includes('live mode')) {
+          toast({
+            title: "Configuration mise à jour",
+            description: "Les clés Stripe ont été modifiées. Veuillez rafraîchir la page complètement.",
+            variant: "destructive",
+          });
+          // Forcer un rechargement complet de la page après 2 secondes
+          setTimeout(() => {
+            window.location.reload();
+          }, 2000);
+          return;
+        }
         throw new Error(error.message);
       }
 
@@ -183,7 +196,10 @@ const PaiementDemarche = () => {
         throw new Error("Impossible de charger la clé Stripe");
       }
 
-      const stripe = await loadStripe(keyData.publishableKey);
+      // Forcer le rechargement de Stripe sans cache
+      const stripe = await loadStripe(keyData.publishableKey, {
+        stripeAccount: undefined,
+      });
       setStripePromise(stripe);
 
       // Créer le payment intent
