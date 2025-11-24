@@ -300,19 +300,16 @@ serve(async (req) => {
               console.error('Erreur lors de la génération de la facture guest order:', factureError);
             }
 
-            // Envoyer l'email de confirmation
+            // Envoyer l'email de confirmation de paiement
             if (order.email_notifications) {
-              await supabaseClient.functions.invoke('send-guest-order-email', {
+              await supabaseClient.functions.invoke('send-order-emails', {
                 body: {
                   type: 'payment_confirmed',
-                  orderData: {
-                    tracking_number: order.tracking_number,
-                    email: order.email,
-                    nom: order.nom,
-                    prenom: order.prenom,
-                    immatriculation: order.immatriculation,
-                    montant_ttc: order.montant_ttc
-                  }
+                  email: order.email,
+                  customerName: `${order.prenom} ${order.nom}`,
+                  immatriculation: order.immatriculation,
+                  trackingNumber: order.tracking_number,
+                  montantTTC: order.montant_ttc
                 }
               });
             }

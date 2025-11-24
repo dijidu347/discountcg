@@ -20,7 +20,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { DocumentViewer } from "@/components/DocumentViewer";
 
 interface GuestOrder {
@@ -63,6 +65,63 @@ interface Document {
   side: string | null;
 }
 
+// Bulk Reject Dialog Component
+function BulkRejectDialog({ 
+  onReject, 
+  disabled, 
+  count 
+}: { 
+  onReject: (reason: string) => void; 
+  disabled: boolean; 
+  count: number; 
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const handleReject = () => {
+    if (reason.trim()) {
+      onReject(reason);
+      setOpen(false);
+      setReason("");
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="destructive" size="sm" disabled={disabled}>
+          <XCircle className="mr-2 h-4 w-4" />
+          Refuser la sélection
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Refuser {count} document(s)</AlertDialogTitle>
+          <AlertDialogDescription>
+            Indiquez la raison du refus. Un seul email sera envoyé au client avec tous les documents refusés.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Textarea
+          placeholder="Raison du refus..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={4}
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleReject}
+            disabled={!reason.trim()}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Confirmer le refus
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 export default function GuestOrderDetail() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -76,6 +135,7 @@ export default function GuestOrderDetail() {
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
   const [carteGriseUrl, setCarteGriseUrl] = useState("");
   const [isSendingCarteGrise, setIsSendingCarteGrise] = useState(false);
+  const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -224,11 +284,14 @@ export default function GuestOrderDetail() {
         validation_status: 'approved',
       });
 
-      // Send email with carte grise
-      const { error } = await supabase.functions.invoke('send-carte-grise', {
+      // Send email avec carte grise - Envoi de l'email de dossier terminé
+      const { error } = await supabase.functions.invoke('send-order-emails', {
         body: {
-          orderId: order.id,
-          carteGriseUrl: carteGriseUrl,
+          type: 'order_complete',
+          email: order.email,
+          customerName: `${order.prenom} ${order.nom}`,
+          immatriculation: order.immatriculation,
+          trackingNumber: order.tracking_number
         }
       });
 
@@ -241,8 +304,8 @@ export default function GuestOrderDetail() {
         .eq("id", order.id);
 
       toast({
-        title: "Carte grise envoyée",
-        description: "La carte grise a été envoyée au client par email et la commande est finalisée",
+        title: "Démarche terminée",
+        description: "Le client a été notifié que sa démarche est terminée",
       });
 
       await loadOrderData();
@@ -250,11 +313,114 @@ export default function GuestOrderDetail() {
       console.error("Erreur:", error);
       toast({
         title: "Erreur",
-        description: "Impossible d'envoyer la carte grise",
+        description: "Impossible d'envoyer la notification",
         variant: "destructive",
       });
     } finally {
       setIsSendingCarteGrise(false);
+    }
+  };
+
+  const toggleDocSelection = (docId: string) => {
+    setSelectedDocs(prev => 
+      prev.includes(docId) 
+        ? prev.filter(id => id !== docId)
+        : [...prev, docId]
+    );
+  };
+
+  const handleBulkApprove = async () => {
+    if (selectedDocs.length === 0) return;
+
+    setIsValidating(true);
+    try {
+      const { error } = await supabase
+        .from("guest_order_documents")
+        .update({
+          validation_status: "approved",
+          validated_at: new Date().toISOString(),
+          validated_by: user?.id,
+          rejection_reason: null,
+        })
+        .in("id", selectedDocs);
+
+      if (error) throw error;
+
+      toast({
+        title: "Documents validés",
+        description: `${selectedDocs.length} document(s) validé(s) avec succès`,
+      });
+
+      setSelectedDocs([]);
+      await loadOrderData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de valider les documents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  const handleBulkReject = async (reason: string) => {
+    if (selectedDocs.length === 0 || !reason.trim()) return;
+
+    setIsValidating(true);
+    try {
+      const { error } = await supabase
+        .from("guest_order_documents")
+        .update({
+          validation_status: "rejected",
+          validated_at: new Date().toISOString(),
+          validated_by: user?.id,
+          rejection_reason: reason,
+        })
+        .in("id", selectedDocs);
+
+      if (error) throw error;
+
+      // Récupérer les documents refusés pour l'email
+      const { data: rejectedDocs } = await supabase
+        .from("guest_order_documents")
+        .select("type_document")
+        .in("id", selectedDocs);
+
+      // Envoyer l'email avec tous les documents refusés
+      if (order && rejectedDocs) {
+        await supabase.functions.invoke('send-order-emails', {
+          body: {
+            type: 'document_rejected',
+            email: order.email,
+            customerName: `${order.prenom} ${order.nom}`,
+            immatriculation: order.immatriculation,
+            trackingNumber: order.tracking_number,
+            rejectedDocuments: rejectedDocs.map(doc => ({
+              nom: doc.type_document,
+              raison: reason
+            }))
+          }
+        });
+      }
+
+      toast({
+        title: "Documents refusés",
+        description: `${selectedDocs.length} document(s) refusé(s). Le client a été notifié par email.`,
+      });
+
+      setSelectedDocs([]);
+      await loadOrderData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de refuser les documents",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
     }
   };
 
@@ -450,28 +616,51 @@ export default function GuestOrderDetail() {
         {/* Documents */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-primary" />
                 <CardTitle>Documents ({documents.length})</CardTitle>
+                {selectedDocs.length > 0 && (
+                  <Badge variant="secondary">{selectedDocs.length} sélectionné(s)</Badge>
+                )}
               </div>
-              <Button
-                variant={order.documents_complets ? "default" : "outline"}
-                size="sm"
-                onClick={toggleDocumentsComplets}
-              >
-                {order.documents_complets ? (
+              <div className="flex items-center gap-2 flex-wrap">
+                {selectedDocs.length > 0 && (
                   <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Documents complets
-                  </>
-                ) : (
-                  <>
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Documents incomplets
+                    <BulkRejectDialog 
+                      onReject={handleBulkReject}
+                      disabled={isValidating}
+                      count={selectedDocs.length}
+                    />
+                    <Button
+                      onClick={handleBulkApprove}
+                      disabled={isValidating}
+                      size="sm"
+                      variant="default"
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Valider la sélection
+                    </Button>
                   </>
                 )}
-              </Button>
+                <Button
+                  variant={order.documents_complets ? "default" : "outline"}
+                  size="sm"
+                  onClick={toggleDocumentsComplets}
+                >
+                  {order.documents_complets ? (
+                    <>
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Documents complets
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className="mr-2 h-4 w-4" />
+                      Documents incomplets
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -486,6 +675,8 @@ export default function GuestOrderDetail() {
                     order={order}
                     onValidationChange={loadOrderData}
                     onView={() => setSelectedDoc(doc)}
+                    isSelected={selectedDocs.includes(doc.id)}
+                    onToggleSelect={() => toggleDocSelection(doc.id)}
                   />
                 ))}
               </div>
@@ -554,9 +745,9 @@ export default function GuestOrderDetail() {
         {(order.status === "valide" || order.status === "finalise") && (
           <Card>
             <CardHeader>
-              <CardTitle>Envoyer la carte grise finale</CardTitle>
+              <CardTitle>Finaliser la démarche</CardTitle>
               <CardDescription>
-                Uploadez la carte grise finale et envoyez-la au client par email
+                Uploadez la carte grise finale et notifiez le client que sa démarche est terminée
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -619,7 +810,7 @@ export default function GuestOrderDetail() {
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Envoyer la carte grise et finaliser la commande
+                    Finaliser et notifier le client
                   </>
                 )}
               </Button>
@@ -636,12 +827,16 @@ function DocumentValidationCard({
   doc, 
   order, 
   onValidationChange,
-  onView 
+  onView,
+  isSelected,
+  onToggleSelect
 }: { 
   doc: Document; 
   order: GuestOrder;
   onValidationChange: () => void;
   onView: () => void;
+  isSelected: boolean;
+  onToggleSelect: () => void;
 }) {
   const { toast } = useToast();
   const { user } = useAuth();
@@ -681,23 +876,9 @@ function DocumentValidationCard({
           .eq("id", order.id);
       }
 
-      // Send email notification
-      await supabase.functions.invoke('send-document-notification', {
-        body: {
-          type: 'validation_approved',
-          orderData: {
-            tracking_number: order.tracking_number,
-            email: order.email,
-            nom: order.nom,
-            prenom: order.prenom,
-            documentName: doc.type_document,
-          }
-        }
-      });
-
       toast({
         title: "Document validé",
-        description: "Le client a été notifié par email",
+        description: "Document approuvé avec succès",
       });
 
       onValidationChange();
@@ -737,24 +918,24 @@ function DocumentValidationCard({
 
       if (error) throw error;
 
-      // Send email notification
-      await supabase.functions.invoke('send-document-notification', {
+      // Send email notification de documents refusés
+      await supabase.functions.invoke('send-order-emails', {
         body: {
-          type: 'validation_rejected',
-          orderData: {
-            tracking_number: order.tracking_number,
-            email: order.email,
-            nom: order.nom,
-            prenom: order.prenom,
-            documentName: doc.type_document,
-            rejectionReason: rejectionReason,
-          }
+          type: 'document_rejected',
+          email: order.email,
+          customerName: `${order.prenom} ${order.nom}`,
+          immatriculation: order.immatriculation,
+          trackingNumber: order.tracking_number,
+          rejectedDocuments: [{
+            nom: doc.type_document,
+            raison: rejectionReason
+          }]
         }
       });
 
       toast({
         title: "Document refusé",
-        description: "Le client a été notifié par email et peut uploader un nouveau document",
+        description: "Le client a été notifié par email",
       });
 
       setShowRejectDialog(false);
@@ -786,6 +967,11 @@ function DocumentValidationCard({
       <div className="p-3 border rounded-lg space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1">
+            <Checkbox 
+              checked={isSelected}
+              onCheckedChange={onToggleSelect}
+              disabled={doc.validation_status !== 'pending'}
+            />
             <FileText className="h-5 w-5 text-muted-foreground mt-1" />
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -798,36 +984,41 @@ function DocumentValidationCard({
               {doc.rejection_reason && (
                 <div className="mt-2 flex items-start gap-2 p-2 bg-destructive/10 border border-destructive/20 rounded-md">
                   <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-xs font-medium text-destructive">Raison du rejet :</p>
-                    <p className="text-xs text-destructive/80">{doc.rejection_reason}</p>
-                  </div>
+                  <p className="text-sm text-destructive">{doc.rejection_reason}</p>
                 </div>
               )}
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" size="sm" onClick={onView}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onView}
+            >
               <Eye className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => window.open(doc.url, '_blank')}>
-              <Download className="h-4 w-4" />
-            </Button>
+            {doc.validation_status === 'pending' && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleApprove}
+                  disabled={isProcessing}
+                >
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowRejectDialog(true)}
+                  disabled={isProcessing}
+                >
+                  <XCircle className="h-4 w-4 text-destructive" />
+                </Button>
+              </>
+            )}
           </div>
         </div>
-
-        {doc.validation_status === 'pending' && (
-          <div className="flex gap-2 pt-2 border-t">
-            <Button onClick={handleApprove} disabled={isProcessing} size="sm" className="flex-1">
-              <CheckCircle2 className="h-4 w-4 mr-1" />
-              Valider
-            </Button>
-            <Button variant="destructive" onClick={() => setShowRejectDialog(true)} disabled={isProcessing} size="sm" className="flex-1">
-              <XCircle className="h-4 w-4 mr-1" />
-              Refuser
-            </Button>
-          </div>
-        )}
       </div>
 
       <AlertDialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
@@ -835,25 +1026,23 @@ function DocumentValidationCard({
           <AlertDialogHeader>
             <AlertDialogTitle>Refuser le document</AlertDialogTitle>
             <AlertDialogDescription>
-              Indiquez la raison du rejet. Le client recevra un email et pourra uploader un nouveau document.
+              Indiquez la raison du refus. Le client recevra un email l'informant.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="my-4">
-            <TextareaInput
-              placeholder="Ex: Document illisible, flou, incomplet..."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              rows={4}
-            />
-          </div>
+          <Textarea
+            placeholder="Raison du refus..."
+            value={rejectionReason}
+            onChange={(e) => setRejectionReason(e.target.value)}
+            rows={4}
+          />
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isProcessing}>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={handleReject} 
-              disabled={isProcessing || !rejectionReason.trim()}
+              onClick={handleReject}
+              disabled={!rejectionReason.trim() || isProcessing}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isProcessing ? "Envoi..." : "Confirmer le rejet"}
+              Confirmer le refus
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
