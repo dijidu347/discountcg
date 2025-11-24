@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: 'order_complete' | 'document_rejected' | 'payment_confirmed';
+  type: 'order_complete' | 'document_rejected' | 'payment_confirmed' | 'account_verified' | 'account_rejected';
   orderId?: string;
   trackingNumber?: string;
   demarcheId?: string;
@@ -19,6 +19,7 @@ interface EmailRequest {
   immatriculation?: string;
   rejectedDocuments?: Array<{ nom: string; raison: string }>;
   montantTTC?: number;
+  rejectionReason?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -83,6 +84,49 @@ const handler = async (req: Request): Promise<Response> => {
             ${emailData.trackingNumber ? `<p>Numéro de suivi: <strong>${emailData.trackingNumber}</strong></p>` : ''}
             ${emailData.demarcheId ? `<p>Numéro de démarche: <strong>${emailData.demarcheId}</strong></p>` : ''}
             <p>Vous recevrez un nouvel email une fois votre démarche terminée.</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `;
+        break;
+
+      case 'account_verified':
+        subject = `✅ Votre compte a été vérifié`;
+        html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #22c55e;">Compte Vérifié</h1>
+            <p>Bonjour ${emailData.customerName},</p>
+            <p>Nous avons le plaisir de vous informer que votre compte professionnel a été <strong>vérifié avec succès</strong>.</p>
+            <p>Vous pouvez maintenant profiter de tous les avantages de votre compte vérifié :</p>
+            <ul style="line-height: 1.8;">
+              <li>Badge "Vérifié" sur votre compte</li>
+              <li>Confiance renforcée auprès de vos clients</li>
+              <li>Accès à toutes les fonctionnalités</li>
+            </ul>
+            <p>Merci de votre confiance.</p>
+            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `;
+        break;
+
+      case 'account_rejected':
+        subject = `⚠️ Vérification de compte - Action requise`;
+        html = `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h1 style="color: #ef4444;">Vérification non validée</h1>
+            <p>Bonjour ${emailData.customerName},</p>
+            <p>Nous avons examiné votre demande de vérification de compte.</p>
+            <p>Malheureusement, nous ne pouvons pas valider votre compte pour la raison suivante :</p>
+            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
+              <p style="color: #dc2626; margin: 0;">${emailData.rejectionReason}</p>
+            </div>
+            <p>Pour finaliser la vérification de votre compte, veuillez :</p>
+            <ul style="line-height: 1.8;">
+              <li>Corriger les documents requis</li>
+              <li>Soumettre à nouveau votre demande depuis votre espace</li>
+            </ul>
+            <p>Notre équipe reste à votre disposition pour toute question.</p>
             <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
           </div>

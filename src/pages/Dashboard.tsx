@@ -122,7 +122,15 @@ export default function Dashboard() {
       <div className="container mx-auto px-4 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold mb-2">Tableau de bord</h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-3xl font-bold mb-2">Tableau de bord</h2>
+            {garage?.is_verified && (
+              <Badge className="bg-green-500 mb-2">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Compte Vérifié
+              </Badge>
+            )}
+          </div>
           <p className="text-muted-foreground">Bienvenue sur votre espace professionnel</p>
         </div>
 

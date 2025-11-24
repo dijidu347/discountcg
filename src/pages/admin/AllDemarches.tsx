@@ -46,7 +46,7 @@ export default function AllDemarches() {
 
     const { data } = await supabase
       .from('demarches')
-      .select('*, garages(raison_sociale)')
+      .select('*, garages(raison_sociale, is_verified)')
       .order('created_at', { ascending: false });
 
     if (data) {
@@ -92,7 +92,16 @@ export default function AllDemarches() {
                 <TableRow key={d.id}>
                   <TableCell className="font-mono text-xs font-semibold text-primary">{d.numero_demarche}</TableCell>
                   <TableCell className="font-medium">{d.immatriculation}</TableCell>
-                  <TableCell>{d.garages?.raison_sociale}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {d.garages?.raison_sociale}
+                      {d.garages?.is_verified && (
+                        <Badge className="bg-green-500 text-xs">
+                          Vérifié
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
                   <TableCell>{d.type}</TableCell>
                   <TableCell><Badge>{d.status}</Badge></TableCell>
                   <TableCell>{d.montant_ttc.toFixed(2)}€</TableCell>

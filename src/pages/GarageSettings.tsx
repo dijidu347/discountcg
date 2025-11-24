@@ -159,21 +159,54 @@ export default function GarageSettings() {
           </TabsContent>
           <TabsContent value="verification" className="mt-6">
             <Card>
-              <CardHeader><CardTitle>Vérification du compte</CardTitle></CardHeader>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Vérification du compte</CardTitle>
+                    <CardDescription>Soumettez les documents requis pour obtenir le badge vérifié</CardDescription>
+                  </div>
+                  {garage?.is_verified && (
+                    <Badge className="bg-green-500">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Compte Vérifié
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
               <CardContent className="space-y-4">
-                {['kbis', 'id_card', 'mandate'].map(type => {
-                  const status = getDocStatus(type);
-                  return (
-                    <div key={type} className="border rounded-lg p-4">
-                      <div className="flex justify-between mb-2">
-                        <h3 className="font-medium">{type === 'kbis' ? 'KBIS' : type === 'id_card' ? 'Pièce d\'identité' : 'Mandat'}</h3>
-                        {status.badge}
-                      </div>
-                      {status.status === 'rejected' && <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm">{status.reason}</div>}
-                      {status.canUpload && <Input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => e.target.files?.[0] && handleFileUpload(type, e.target.files[0])} disabled={saving} />}
-                    </div>
-                  );
-                })}
+                {garage?.is_verified ? (
+                  <div className="text-center py-8">
+                    <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Votre compte est vérifié</h3>
+                    <p className="text-muted-foreground">
+                      Vous bénéficiez maintenant du badge "Compte Vérifié"
+                    </p>
+                  </div>
+                ) : garage?.verification_requested_at ? (
+                  <div className="text-center py-8">
+                    <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold mb-2">Vérification en cours</h3>
+                    <p className="text-muted-foreground">
+                      Votre demande est en cours d'examen par notre équipe
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    {['kbis', 'id_card', 'mandate'].map(type => {
+                      const status = getDocStatus(type);
+                      return (
+                        <div key={type} className="border rounded-lg p-4">
+                          <div className="flex justify-between mb-2">
+                            <h3 className="font-medium">{type === 'kbis' ? 'KBIS' : type === 'id_card' ? 'Pièce d\'identité' : 'Mandat'}</h3>
+                            {status.badge}
+                          </div>
+                          {status.status === 'rejected' && <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm">{status.reason}</div>}
+                          {status.canUpload && <Input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={(e) => e.target.files?.[0] && handleFileUpload(type, e.target.files[0])} disabled={saving} />}
+                        </div>
+                      );
+                    })}
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
