@@ -3,7 +3,7 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { PriceSummary } from "@/components/simulateur/PriceSummary";
 import { DetailsCollapse } from "@/components/simulateur/DetailsCollapse";
-import { SimplePaymentButton } from "@/components/payment/SimplePaymentButton";
+import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadList } from "@/components/upload/UploadList";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
 import { supabase } from "@/integrations/supabase/client";
@@ -127,7 +127,7 @@ export default function ResultatCarteGrise() {
                 <h2 className="text-2xl font-bold">Payer votre commande</h2>
               </div>
               
-              <SimplePaymentButton
+              <PaymentMethods
                 amount={calculation.prixTotal}
                 orderId={orderId}
                 onPaymentSuccess={() => setIsPaid(true)}

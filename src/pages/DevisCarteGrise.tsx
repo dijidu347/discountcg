@@ -5,7 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, Car, CreditCard, ChevronLeft, Calendar, Palette, Zap, Gauge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { loadStripe, Stripe } from "@stripe/stripe-js";
+import { Elements } from "@stripe/react-stripe-js";
 import { PayPalButton } from "@/components/PayPalButton";
+import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -15,13 +18,29 @@ export default function DevisCarteGrise() {
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedPayment, setSelectedPayment] = useState<"stripe" | "paypal" | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState<"stripe" | "paypal" | "wallet" | null>(null);
+  const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
   useEffect(() => {
+    initializeStripe();
     if (orderId) {
       fetchOrder();
     }
   }, [orderId]);
+
+  const initializeStripe = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-stripe-key');
+      
+      if (error) throw error;
+      
+      if (data?.publishableKey) {
+        setStripePromise(loadStripe(data.publishableKey));
+      }
+    } catch (error) {
+      console.error("Error loading Stripe:", error);
+    }
+  };
 
   const fetchOrder = async () => {
     try {
@@ -262,18 +281,18 @@ export default function DevisCarteGrise() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Stripe Payment */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold">Paiement par carte bancaire</h3>
-                  <Button
-                    variant={selectedPayment === "stripe" ? "default" : "outline"}
-                    className="w-full"
-                    onClick={() => setSelectedPayment("stripe")}
-                  >
-                    <CreditCard className="mr-2 h-5 w-5" />
-                    Payer par carte
-                  </Button>
-                </div>
+                {/* Apple Pay / Google Pay */}
+                {stripePromise && (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold">Paiement rapide</h3>
+                    <Elements stripe={stripePromise}>
+                      <StripeWalletPayment
+                        amount={order.montant_ttc}
+                        onSuccess={handleWalletSuccess}
+                      />
+                    </Elements>
+                  </div>
+                )}
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
