@@ -277,6 +277,14 @@ export default function AdminDashboard() {
                 <Mail className="h-6 w-6" />
                 <span className="text-sm font-medium">Templates Email</span>
               </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2 border-green-200 hover:border-green-300"
+                onClick={() => navigate("/admin/test-email")}
+              >
+                <Mail className="h-6 w-6 text-green-600" />
+                <span className="text-sm font-medium">Test Email</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
