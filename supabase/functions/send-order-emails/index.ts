@@ -30,109 +30,50 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const emailData: EmailRequest = await req.json();
     
-    let subject = "";
-    let html = "";
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    switch (emailData.type) {
-      case 'order_complete':
-        subject = `✅ Votre démarche ${emailData.immatriculation} est terminée`;
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #22c55e;">Démarche Terminée</h1>
-            <p>Bonjour ${emailData.customerName},</p>
-            <p>Nous avons le plaisir de vous informer que votre démarche pour le véhicule <strong>${emailData.immatriculation}</strong> est maintenant terminée.</p>
-            ${emailData.trackingNumber ? `<p>Numéro de suivi: <strong>${emailData.trackingNumber}</strong></p>` : ''}
-            <p>Merci de votre confiance.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-          </div>
-        `;
-        break;
+    // Fetch template from database
+    const { data: template, error: templateError } = await supabase
+      .from('email_templates')
+      .select('subject, html_content')
+      .eq('type', emailData.type)
+      .single();
 
-      case 'document_rejected':
-        const docList = emailData.rejectedDocuments?.map(doc => 
-          `<li><strong>${doc.nom}</strong>: ${doc.raison}</li>`
-        ).join('') || '';
-        
-        subject = `⚠️ Document(s) à revoir pour ${emailData.immatriculation}`;
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #ef4444;">Document(s) à revoir</h1>
-            <p>Bonjour ${emailData.customerName},</p>
-            <p>Nous avons examiné vos documents pour le véhicule <strong>${emailData.immatriculation}</strong>.</p>
-            <p>Malheureusement, les documents suivants nécessitent des corrections:</p>
-            <ul style="color: #dc2626; background-color: #fef2f2; padding: 15px; border-left: 4px solid #ef4444;">
-              ${docList}
-            </ul>
-            ${emailData.trackingNumber ? `<p>Numéro de suivi: <strong>${emailData.trackingNumber}</strong></p>` : ''}
-            ${emailData.demarcheId ? `<p>Numéro de démarche: <strong>${emailData.demarcheId}</strong></p>` : ''}
-            <p>Merci de télécharger à nouveau les documents corrigés.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-          </div>
-        `;
-        break;
-
-      case 'payment_confirmed':
-        subject = `✅ Paiement confirmé - ${emailData.immatriculation}`;
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #22c55e;">Paiement Confirmé</h1>
-            <p>Bonjour ${emailData.customerName},</p>
-            <p>Nous avons bien reçu votre paiement de <strong>${emailData.montantTTC}€</strong> pour le véhicule <strong>${emailData.immatriculation}</strong>.</p>
-            <p>Votre commande est confirmée et nous commençons le traitement de votre dossier.</p>
-            ${emailData.trackingNumber ? `<p>Numéro de suivi: <strong>${emailData.trackingNumber}</strong></p>` : ''}
-            ${emailData.demarcheId ? `<p>Numéro de démarche: <strong>${emailData.demarcheId}</strong></p>` : ''}
-            <p>Vous recevrez un nouvel email une fois votre démarche terminée.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-          </div>
-        `;
-        break;
-
-      case 'account_verified':
-        subject = `✅ Votre compte a été vérifié`;
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #22c55e;">Compte Vérifié</h1>
-            <p>Bonjour ${emailData.customerName},</p>
-            <p>Nous avons le plaisir de vous informer que votre compte professionnel a été <strong>vérifié avec succès</strong>.</p>
-            <p>Vous pouvez maintenant profiter de tous les avantages de votre compte vérifié :</p>
-            <ul style="line-height: 1.8;">
-              <li>Badge "Vérifié" sur votre compte</li>
-              <li>Confiance renforcée auprès de vos clients</li>
-              <li>Accès à toutes les fonctionnalités</li>
-            </ul>
-            <p>Merci de votre confiance.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-          </div>
-        `;
-        break;
-
-      case 'account_rejected':
-        subject = `⚠️ Vérification de compte - Action requise`;
-        html = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #ef4444;">Vérification non validée</h1>
-            <p>Bonjour ${emailData.customerName},</p>
-            <p>Nous avons examiné votre demande de vérification de compte.</p>
-            <p>Malheureusement, nous ne pouvons pas valider votre compte pour la raison suivante :</p>
-            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 15px; margin: 20px 0;">
-              <p style="color: #dc2626; margin: 0;">${emailData.rejectionReason}</p>
-            </div>
-            <p>Pour finaliser la vérification de votre compte, veuillez :</p>
-            <ul style="line-height: 1.8;">
-              <li>Corriger les documents requis</li>
-              <li>Soumettre à nouveau votre demande depuis votre espace</li>
-            </ul>
-            <p>Notre équipe reste à votre disposition pour toute question.</p>
-            <hr style="margin: 20px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
-          </div>
-        `;
-        break;
+    if (templateError) {
+      console.error(`Template not found for type: ${emailData.type}`, templateError);
+      throw new Error(`Email template not found: ${emailData.type}`);
     }
+
+    // Prepare replacement data
+    let replacements: Record<string, string> = {
+      customerName: emailData.customerName,
+      immatriculation: emailData.immatriculation || '',
+      trackingNumber: emailData.trackingNumber || '',
+      demarcheId: emailData.demarcheId || '',
+      montantTTC: emailData.montantTTC?.toString() || '',
+      rejectionReason: emailData.rejectionReason || '',
+    };
+
+    // Handle rejected documents list
+    if (emailData.rejectedDocuments && emailData.rejectedDocuments.length > 0) {
+      const docList = emailData.rejectedDocuments
+        .map(doc => `<li><strong>${doc.nom}</strong>: ${doc.raison}</li>`)
+        .join('');
+      replacements.rejectedDocuments = docList;
+    }
+
+    // Replace placeholders in subject and html
+    let subject = template.subject;
+    let html = template.html_content;
+
+    Object.entries(replacements).forEach(([key, value]) => {
+      const placeholder = new RegExp(`{{${key}}}`, 'g');
+      subject = subject.replace(placeholder, value);
+      html = html.replace(placeholder, value);
+    });
 
     console.log(`Sending email type: ${emailData.type} to ${emailData.email}`);
 
