@@ -47,8 +47,9 @@ serve(async (req) => {
     // 🔥 Vérification **OBLIGATOIRE**
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err) {
-    console.error("❌ Invalid Stripe Signature:", err.message);
-    return new Response(`Webhook error: ${err.message}`, {
+    const error = err as Error;
+    console.error("❌ Invalid Stripe Signature:", error.message);
+    return new Response(`Webhook error: ${error.message}`, {
       status: 400,
       headers: corsHeaders,
     });
@@ -137,20 +138,32 @@ serve(async (req) => {
           // -----------------------------
           // EMAIL INVOKÉ
           // -----------------------------
+          console.log("📧 Vérification email_notifications:", order.email_notifications);
           if (order.email_notifications) {
-            await supabase.functions.invoke("send-guest-order-email", {
-              body: {
-                type: "payment_confirmed",
-                orderData: {
-                  tracking_number: order.tracking_number,
-                  email: order.email,
-                  nom: order.nom,
-                  prenom: order.prenom,
-                  immatriculation: order.immatriculation,
-                  montant_ttc: order.montant_ttc,
+            console.log("📧 Envoi email payment_confirmed à:", order.email);
+            try {
+              const emailResult = await supabase.functions.invoke("send-guest-order-email", {
+                body: {
+                  type: "payment_confirmed",
+                  orderData: {
+                    tracking_number: order.tracking_number,
+                    email: order.email,
+                    nom: order.nom,
+                    prenom: order.prenom,
+                    immatriculation: order.immatriculation,
+                    montant_ttc: order.montant_ttc,
+                  },
                 },
-              },
-            });
+              });
+              console.log("✅ Email envoyé, résultat:", emailResult);
+              if (emailResult.error) {
+                console.error("❌ Erreur email:", emailResult.error);
+              }
+            } catch (emailError) {
+              console.error("❌ Exception lors de l'envoi email:", emailError);
+            }
+          } else {
+            console.log("ℹ️ Email notifications désactivées pour cette commande");
           }
         }
 
