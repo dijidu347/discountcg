@@ -46,7 +46,7 @@ export default function MesFactures() {
       .from('factures')
       .select(`
         *,
-        demarches (
+        demarches!factures_demarche_id_fkey (
           immatriculation,
           type,
           status
