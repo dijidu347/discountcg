@@ -99,12 +99,6 @@ export default function Dashboard() {
                   <Receipt className="mr-2 h-4 w-4" />
                   Mes factures
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/subscription")}>
-                  Abonnement
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => navigate("/account-verification")}>
-                  Vérifier mon compte
-                </Button>
                 <Button variant="ghost" size="sm" onClick={() => navigate("/support")}>
                   Support
                 </Button>

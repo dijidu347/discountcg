@@ -32,7 +32,6 @@ import ManageGarages from "./pages/admin/ManageGarages";
 import ManageAccounts from "./pages/admin/ManageAccounts";
 import GuestOrders from "./pages/admin/GuestOrders";
 import GuestOrderDetail from "./pages/admin/GuestOrderDetail";
-import ManageSubscriptions from "./pages/admin/ManageSubscriptions";
 import AdminNotifications from "./pages/admin/AdminNotifications";
 import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
 import ManageEmailTemplates from "./pages/admin/ManageEmailTemplates";
@@ -75,7 +74,6 @@ const App = () => (
           <Route path="/admin/manage-users" element={<ManageUsers />} />
           <Route path="/admin/manage-garages" element={<ManageGarages />} />
           <Route path="/admin/manage-accounts" element={<ManageAccounts />} />
-          <Route path="/admin/manage-subscriptions" element={<ManageSubscriptions />} />
           <Route path="/admin/notifications" element={<AdminNotifications />} />
           <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />
           <Route path="/admin/email-templates" element={<ManageEmailTemplates />} />

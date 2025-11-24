@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, Crown } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { passwordChangeSchema } from "@/lib/validations";
 
@@ -31,7 +31,6 @@ export default function GarageSettings() {
     confirmPassword: ""
   });
   const [verificationDocs, setVerificationDocs] = useState<any[]>([]);
-  const [currentSubscription, setCurrentSubscription] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -59,8 +58,6 @@ export default function GarageSettings() {
       });
       const { data: docs } = await supabase.from('verification_documents').select('*').eq('garage_id', garageData.id).order('created_at', { ascending: false });
       setVerificationDocs(docs || []);
-      const { data: subData } = await supabase.from('subscriptions').select('*').eq('garage_id', garageData.id).eq('status', 'active').single();
-      setCurrentSubscription(subData);
     }
     setLoading(false);
   };
@@ -117,22 +114,6 @@ export default function GarageSettings() {
     }
   };
 
-  const handleSubscribe = async (planType: string) => {
-    if (!garage) return;
-    const plans: Record<string, any> = { basic: { pricePerDemarche: 8.00, margin: 0 }, pro: { pricePerDemarche: 6.50, margin: 15 }, gold: { pricePerDemarche: 5.00, margin: 25 } };
-    const plan = plans[planType];
-    if (!plan) return;
-    try {
-      if (currentSubscription) await supabase.from('subscriptions').update({ status: 'cancelled' }).eq('id', currentSubscription.id);
-      await supabase.from('subscriptions').insert({ garage_id: garage.id, plan_type: planType, price_per_demarche: plan.pricePerDemarche, margin_percentage: plan.margin, status: 'active' });
-      if (planType === 'gold') await supabase.from('garages').update({ is_gold: true }).eq('id', garage.id);
-      toast({ title: "Abonnement activé", description: `Plan ${planType} activé` });
-      loadGarage();
-    } catch (error: any) {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
-    }
-  };
-
   if (authLoading || loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
 
   return (
@@ -141,10 +122,9 @@ export default function GarageSettings() {
         <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mb-6"><ArrowLeft className="mr-2 h-4 w-4" />Retour</Button>
         <h1 className="text-2xl font-bold mb-6">Paramètres du compte</h1>
         <Tabs defaultValue="info">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="info">Informations</TabsTrigger>
             <TabsTrigger value="verification">Vérification</TabsTrigger>
-            <TabsTrigger value="subscription">Abonnement</TabsTrigger>
           </TabsList>
           <TabsContent value="info" className="space-y-6 mt-6">
             <Card>
@@ -196,26 +176,6 @@ export default function GarageSettings() {
                 })}
               </CardContent>
             </Card>
-          </TabsContent>
-          <TabsContent value="subscription" className="mt-6">
-            <div className="grid md:grid-cols-3 gap-4">
-              {[
-                { type: 'basic', name: 'Basique', price: '8,00€', features: ['Traitement standard', 'Support email', '0% marge'] },
-                { type: 'pro', name: 'Pro', price: '6,50€', features: ['Traitement prioritaire', 'Support tel', '15% marge', 'Stats'] },
-                { type: 'gold', name: 'Gold', price: '5,00€', features: ['Ultra-prioritaire', 'Support 24/7', '25% marge', 'Stats', 'Badge Gold', 'API'] }
-              ].map(plan => (
-                <Card key={plan.type} className={currentSubscription?.plan_type === plan.type ? 'border-primary' : plan.type === 'gold' ? 'border-yellow-500' : ''}>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">{plan.type === 'gold' && <Crown className="h-5 w-5 text-yellow-500" />}{plan.name}</CardTitle>
-                    <div className="text-3xl font-bold">{plan.price}<span className="text-sm text-muted-foreground">/démarche</span></div>
-                  </CardHeader>
-                  <CardContent>
-                    <ul className="space-y-1 mb-4 text-sm">{plan.features.map(f => <li key={f}>✓ {f}</li>)}</ul>
-                    {currentSubscription?.plan_type === plan.type ? <Badge className="w-full justify-center">Actuel</Badge> : <Button onClick={() => handleSubscribe(plan.type)} className="w-full">Choisir</Button>}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </TabsContent>
         </Tabs>
       </div>

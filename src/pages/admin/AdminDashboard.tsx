@@ -240,14 +240,6 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/manage-subscriptions")}
-              >
-                <DollarSign className="h-6 w-6" />
-                <span className="text-sm font-medium">Gérer les abonnements</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2"
                 onClick={() => navigate("/admin/notifications")}
               >
                 <FileText className="h-6 w-6" />
