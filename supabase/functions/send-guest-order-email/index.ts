@@ -79,7 +79,7 @@ serve(async (req) => {
     const { subject, html } = await getEmailContent(type, orderData);
 
     const { data, error } = await resend.emails.send({
-      from: 'DiscountCarteGrise <onboarding@resend.dev>',
+      from: 'DiscountCarteGrise <noreply@discountcartegrise.fr>',
       to: orderData.email,
       subject,
       html,
