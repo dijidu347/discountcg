@@ -210,12 +210,12 @@ const CommanderSansCompte = () => {
         // Send confirmation email
         if (formData.email_notifications) {
           console.log('Sending payment confirmed email (no Stripe) to:', formData.email);
-          const emailResult = await supabase.functions.invoke('send-guest-order-email', {
+          await supabase.functions.invoke('send-email', {
             body: {
               type: 'payment_confirmed',
-              orderData: {
+              to: formData.email,
+              data: {
                 tracking_number: order.tracking_number,
-                email: formData.email,
                 nom: formData.nom,
                 prenom: formData.prenom,
                 immatriculation: order.immatriculation,
@@ -223,11 +223,6 @@ const CommanderSansCompte = () => {
               }
             }
           });
-          console.log('Email result:', emailResult);
-          
-          if (emailResult.error) {
-            console.error('Email error:', emailResult.error);
-          }
         } else {
           console.log('Email notifications disabled for this order');
         }
@@ -242,12 +237,12 @@ const CommanderSansCompte = () => {
         // Send confirmation email if notifications enabled
         if (formData.email_notifications) {
           console.log('Sending order confirmation email to:', formData.email);
-          const emailResult = await supabase.functions.invoke('send-guest-order-email', {
+          await supabase.functions.invoke('send-email', {
             body: {
               type: 'order_confirmation',
-              orderData: {
+              to: formData.email,
+              data: {
                 tracking_number: order.tracking_number,
-                email: formData.email,
                 nom: formData.nom,
                 prenom: formData.prenom,
                 immatriculation: order.immatriculation,
@@ -255,11 +250,6 @@ const CommanderSansCompte = () => {
               }
             }
           });
-          console.log('Email result:', emailResult);
-          
-          if (emailResult.error) {
-            console.error('Email error:', emailResult.error);
-          }
         } else {
           console.log('Email notifications disabled for this order');
         }

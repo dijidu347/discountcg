@@ -12,6 +12,9 @@ verify_jwt = false
 [functions.send-document-notification]
 verify_jwt = false
 
+[functions.send-email]
+verify_jwt = false
+
 [functions.send-guest-order-email]
 verify_jwt = false
 

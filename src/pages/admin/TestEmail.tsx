@@ -24,12 +24,12 @@ export default function TestEmail() {
     try {
       console.log('Sending test email to:', email);
       
-      const { data, error } = await supabase.functions.invoke('send-guest-order-email', {
+      const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
           type: 'order_confirmation',
-          orderData: {
+          to: email,
+          data: {
             tracking_number: 'TEST-2025-001',
-            email: email,
             nom: 'Test',
             prenom: 'Utilisateur',
             immatriculation: 'AB-123-CD',

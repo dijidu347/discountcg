@@ -285,23 +285,19 @@ export default function GuestOrderDetail() {
       });
 
       // Send email avec carte grise - Envoi de l'email de dossier terminé
-      const { error: emailError } = await supabase.functions.invoke('send-guest-order-email', {
+      await supabase.functions.invoke('send-email', {
         body: {
           type: 'completed',
-          orderData: {
+          to: order.email,
+          data: {
             tracking_number: order.tracking_number,
-            email: order.email,
             nom: order.nom,
             prenom: order.prenom,
             immatriculation: order.immatriculation,
-            montant_ttc: order.montant_ttc
           }
         }
       });
 
-      if (emailError) {
-        console.error('Error sending completion email:', emailError);
-      }
 
       // Update order status to finalise
       await supabase
@@ -396,16 +392,18 @@ export default function GuestOrderDetail() {
 
       // Envoyer l'email avec tous les documents refusés
       if (order && rejectedDocs) {
-        await supabase.functions.invoke('send-guest-order-email', {
+        await supabase.functions.invoke('send-email', {
           body: {
             type: 'document_rejected',
-            orderData: {
+            to: order.email,
+            data: {
               tracking_number: order.tracking_number,
-              email: order.email,
               nom: order.nom,
               prenom: order.prenom,
-              immatriculation: order.immatriculation,
-              montant_ttc: order.montant_ttc
+              rejectedDocuments: rejectedDocs.map(d => ({
+                nom: d.type_document,
+                raison: reason
+              }))
             }
           }
         });
@@ -925,16 +923,18 @@ function DocumentValidationCard({
       if (error) throw error;
 
       // Send email notification de documents refusés
-      await supabase.functions.invoke('send-guest-order-email', {
+      await supabase.functions.invoke('send-email', {
         body: {
           type: 'document_rejected',
-          orderData: {
+          to: order.email,
+          data: {
             tracking_number: order.tracking_number,
-            email: order.email,
             nom: order.nom,
             prenom: order.prenom,
-            immatriculation: order.immatriculation,
-            montant_ttc: order.montant_ttc
+            rejectedDocuments: [{
+              nom: doc.type_document,
+              raison: rejectionReason
+            }]
           }
         }
       });

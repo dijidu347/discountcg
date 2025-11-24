@@ -136,39 +136,28 @@ serve(async (req) => {
           }
 
           // -----------------------------
-          // EMAIL - Appel HTTP direct
+          // EMAIL via nouvelle fonction send-email
           // -----------------------------
           console.log("📧 Vérification email_notifications:", order.email_notifications);
           if (order.email_notifications) {
             console.log("📧 Envoi email payment_confirmed à:", order.email);
             try {
-              const emailResponse = await fetch(
-                `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-guest-order-email`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
+              const emailResult = await supabase.functions.invoke("send-email", {
+                body: {
+                  type: "payment_confirmed",
+                  to: order.email,
+                  data: {
+                    tracking_number: order.tracking_number,
+                    nom: order.nom,
+                    prenom: order.prenom,
+                    immatriculation: order.immatriculation,
+                    montant_ttc: order.montant_ttc,
                   },
-                  body: JSON.stringify({
-                    type: "payment_confirmed",
-                    orderData: {
-                      tracking_number: order.tracking_number,
-                      email: order.email,
-                      nom: order.nom,
-                      prenom: order.prenom,
-                      immatriculation: order.immatriculation,
-                      montant_ttc: order.montant_ttc,
-                    },
-                  }),
-                }
-              );
-              
-              const emailResult = await emailResponse.json();
+                },
+              });
               console.log("✅ Email envoyé, résultat:", emailResult);
-              
-              if (!emailResponse.ok) {
-                console.error("❌ Erreur email:", emailResult);
+              if (emailResult.error) {
+                console.error("❌ Erreur email:", emailResult.error);
               }
             } catch (emailError) {
               console.error("❌ Exception lors de l'envoi email:", emailError);
@@ -278,29 +267,21 @@ serve(async (req) => {
         if (demarche && demarche.garages) {
           console.log("📧 Envoi email payment_confirmed pour démarche à:", demarche.garages.email);
           try {
-            const emailResponse = await fetch(
-              `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-order-emails`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${Deno.env.get("SUPABASE_ANON_KEY")}`,
-                },
-                body: JSON.stringify({
-                  type: "payment_confirmed",
-                  email: demarche.garages.email,
+            const emailResult = await supabase.functions.invoke("send-email", {
+              body: {
+                type: "demarche_payment_confirmed",
+                to: demarche.garages.email,
+                data: {
                   customerName: demarche.garages.raison_sociale,
                   immatriculation: demarche.immatriculation,
                   demarcheId: demarche.numero_demarche || demarcheId,
                   montantTTC: (paymentIntent.amount / 100).toFixed(2),
-                }),
-              }
-            );
+                },
+              },
+            });
             
-            const emailResult = await emailResponse.json();
-            
-            if (!emailResponse.ok) {
-              console.error("❌ Erreur envoi email:", emailResult);
+            if (emailResult.error) {
+              console.error("❌ Erreur envoi email:", emailResult.error);
             } else {
               console.log("✅ Email payment_confirmed envoyé avec succès:", emailResult);
             }

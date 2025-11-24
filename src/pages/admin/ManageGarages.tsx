@@ -187,11 +187,13 @@ export default function ManageGarages() {
       if (updateError) throw updateError;
 
       // Envoyer email de vérification
-      await supabase.functions.invoke('send-order-emails', {
+      await supabase.functions.invoke('send-email', {
         body: {
           type: 'account_verified',
-          email: selectedGarage.email,
-          customerName: selectedGarage.raison_sociale
+          to: selectedGarage.email,
+          data: {
+            customerName: selectedGarage.raison_sociale
+          }
         }
       });
 
@@ -231,12 +233,14 @@ export default function ManageGarages() {
       if (updateError) throw updateError;
 
       // Envoyer email de refus
-      await supabase.functions.invoke('send-order-emails', {
+      await supabase.functions.invoke('send-email', {
         body: {
           type: 'account_rejected',
-          email: selectedGarage.email,
-          customerName: selectedGarage.raison_sociale,
-          rejectionReason: rejectAccountReason
+          to: selectedGarage.email,
+          data: {
+            customerName: selectedGarage.raison_sociale,
+            rejectionReason: rejectAccountReason
+          }
         }
       });
 

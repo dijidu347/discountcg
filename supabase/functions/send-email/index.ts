@@ -1,0 +1,245 @@
+import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { Resend } from "https://esm.sh/resend@2.0.0";
+
+const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+interface EmailRequest {
+  type: string;
+  to: string;
+  data: Record<string, any>;
+}
+
+const getEmailTemplate = (type: string, data: any) => {
+  const baseUrl = "https://discountcg.fr";
+  const trackingUrl = data.tracking_number ? `${baseUrl}/suivi/${data.tracking_number}` : "";
+
+  switch (type) {
+    // === GUEST ORDER EMAILS ===
+    case "order_confirmation":
+      return {
+        subject: `✅ Commande confirmée - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Commande confirmée !</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Nous avons bien reçu votre commande pour la carte grise du véhicule <strong>${data.immatriculation}</strong>.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Numéro de suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;"><strong>Montant TTC :</strong> ${data.montant_ttc} €</p>
+            </div>
+
+            <p>Suivez votre commande en cliquant sur le bouton ci-dessous :</p>
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Suivre ma commande
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "payment_confirmed":
+      return {
+        subject: `💳 Paiement confirmé - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Paiement confirmé !</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Votre paiement de <strong>${data.montant_ttc} €</strong> a été confirmé.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Numéro de suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+              <p style="margin: 8px 0;"><strong>Montant :</strong> ${data.montant_ttc} €</p>
+            </div>
+
+            <p>Nous allons maintenant traiter votre dossier. Vous recevrez un email dès qu'il y aura du nouveau.</p>
+            
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Suivre ma commande
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "document_rejected":
+      return {
+        subject: `⚠️ Documents à fournir - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #ef4444;">Documents à corriger</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Certains documents nécessitent votre attention pour la commande <strong>${data.tracking_number}</strong>.</p>
+            
+            <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #991b1b;">Documents concernés :</h3>
+              <ul style="margin: 0; padding-left: 20px;">
+                ${data.rejectedDocuments?.map((doc: any) => `
+                  <li style="margin: 8px 0;">
+                    <strong>${doc.nom}:</strong> ${doc.raison}
+                  </li>
+                `).join('') || '<li>Voir le détail sur votre espace de suivi</li>'}
+              </ul>
+            </div>
+
+            <p>Veuillez télécharger les documents corrigés via votre espace de suivi :</p>
+            
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accéder à mon suivi
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "completed":
+      return {
+        subject: `🎉 Votre carte grise est prête ! - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Votre carte grise est prête !</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Excellente nouvelle ! Votre carte grise pour le véhicule <strong>${data.immatriculation}</strong> est maintenant disponible.</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Numéro de suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;">Vous pouvez télécharger votre carte grise depuis votre espace de suivi.</p>
+            </div>
+
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Télécharger ma carte grise
+            </a>
+
+            <p style="margin-top: 20px;">Merci de votre confiance !</p>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    // === GARAGE/DEMARCHE EMAILS ===
+    case "demarche_payment_confirmed":
+      return {
+        subject: `💳 Paiement reçu - Démarche ${data.demarcheId}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Paiement confirmé</h1>
+            <p>Bonjour ${data.customerName},</p>
+            <p>Le paiement pour la démarche <strong>${data.demarcheId}</strong> a été confirmé.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Démarche :</strong> ${data.demarcheId}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+              <p style="margin: 8px 0;"><strong>Montant TTC :</strong> ${data.montantTTC} €</p>
+            </div>
+
+            <p>Le traitement de votre démarche va commencer.</p>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "account_verified":
+      return {
+        subject: `✅ Compte vérifié - Bienvenue !`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Compte vérifié !</h1>
+            <p>Bonjour ${data.customerName},</p>
+            <p>Félicitations ! Votre compte a été vérifié et activé avec succès.</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;">Vous pouvez maintenant accéder à toutes les fonctionnalités de la plateforme.</p>
+            </div>
+
+            <a href="${baseUrl}/dashboard" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accéder au tableau de bord
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "account_rejected":
+      return {
+        subject: `❌ Demande de vérification refusée`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #ef4444;">Demande refusée</h1>
+            <p>Bonjour ${data.customerName},</p>
+            <p>Malheureusement, votre demande de vérification de compte n'a pas pu être approuvée.</p>
+            
+            ${data.rejectionReason ? `
+              <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 20px 0;">
+                <strong>Raison :</strong> ${data.rejectionReason}
+              </div>
+            ` : ''}
+
+            <p>Si vous pensez qu'il s'agit d'une erreur, veuillez nous contacter.</p>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    default:
+      throw new Error(`Type d'email non supporté: ${type}`);
+  }
+};
+
+const handler = async (req: Request): Promise<Response> => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { type, to, data }: EmailRequest = await req.json();
+
+    console.log(`📧 Envoi email type: ${type} à ${to}`);
+
+    const { subject, html } = getEmailTemplate(type, data);
+
+    const emailResponse = await resend.emails.send({
+      from: "DiscountCarteGrise <onboarding@resend.dev>",
+      to: to,
+      subject: subject,
+      html: html,
+    });
+
+    console.log("✅ Email envoyé avec succès:", emailResponse);
+
+    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  } catch (error: any) {
+    console.error("❌ Erreur envoi email:", error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      }
+    );
+  }
+};
+
+serve(handler);
