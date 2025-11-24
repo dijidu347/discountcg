@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY_TEST') || Deno.env.get('STRIPE_SECRET_KEY');
+    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeKey) {
       throw new Error('STRIPE_SECRET_KEY not configured');
     }
@@ -26,7 +26,7 @@ serve(async (req) => {
     const body = await req.json();
     const { demarcheId, amount, metadata } = body;
 
-    // Pour les guest orders
+    // Handle guest orders (no auth required)
     if (metadata?.type === 'guest_order') {
       if (!amount) {
         return new Response(JSON.stringify({ error: 'Amount required' }), {
@@ -35,6 +35,7 @@ serve(async (req) => {
         });
       }
 
+      // Create Stripe payment intent
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
         headers: {
@@ -45,6 +46,7 @@ serve(async (req) => {
           amount: amount.toString(),
           currency: 'eur',
           'metadata[order_id]': metadata.order_id || '',
+          'metadata[guest_order_id]': metadata.order_id || '',
           'metadata[tracking_number]': metadata.tracking_number || '',
           'metadata[type]': 'guest_order',
         }),
@@ -68,41 +70,71 @@ serve(async (req) => {
       );
     }
 
-    // Pour les démarches authentifiées
+    // Handle authenticated demarche payments
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error('Missing Authorization header for demarche payment');
+      return new Response(JSON.stringify({ error: 'Unauthorized - Missing authentication' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: { user } } = await supabaseClient.auth.getUser(
+    console.log('Verifying user token...');
+
+    // Use service role client to verify the user token
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
     
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    if (userError || !user) {
+      console.error('Token verification failed:', userError);
+      return new Response(JSON.stringify({ error: 'Unauthorized - Invalid token' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const { data: demarche } = await supabaseClient
+    console.log('Authenticated user:', user.id);
+
+    const { paymentType } = body;
+    console.log('Fetching demarche with ID:', demarcheId);
+
+    // Get demarche details
+    const { data: demarche, error: demarcheError } = await supabaseClient
       .from('demarches')
       .select('*, garages!inner(*)')
       .eq('id', demarcheId)
       .single();
 
-    if (!demarche || demarche.garages.user_id !== user.id) {
-      return new Response(JSON.stringify({ error: 'Not found' }), {
+    console.log('Demarche query result:', { demarche, error: demarcheError });
+
+    if (demarcheError || !demarche) {
+      console.error('Demarche error:', demarcheError);
+      return new Response(JSON.stringify({ error: 'Démarche not found' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const paymentAmount = Math.round(demarche.montant_ttc * 100);
+    console.log('Demarche found, checking ownership');
+    console.log('Garage user_id:', demarche.garages?.user_id, 'Authenticated user:', user.id);
 
+    // Check user owns this garage
+    if (demarche.garages.user_id !== user.id) {
+      console.error('Ownership check failed');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('Ownership check passed, calculating amount');
+    const paymentAmount = Math.round(demarche.montant_ttc * 100);
+    console.log('Payment amount (in cents):', paymentAmount, 'from TTC:', demarche.montant_ttc);
+
+    console.log('Creating Stripe payment intent...');
+    // Create Stripe payment intent
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
       headers: {
@@ -114,16 +146,38 @@ serve(async (req) => {
         currency: 'eur',
         'metadata[demarche_id]': demarcheId,
         'metadata[garage_id]': demarche.garage_id,
+        'metadata[payment_type]': paymentType || 'full',
       }),
     });
 
+    console.log('Stripe API response status:', response.status);
     const paymentIntent = await response.json();
+    console.log('Payment intent created:', { id: paymentIntent.id, status: paymentIntent.status });
 
     if (!response.ok) {
       console.error('Stripe API error:', paymentIntent);
       throw new Error(paymentIntent.error?.message || 'Payment intent creation failed');
     }
 
+    console.log('Creating payment record in database...');
+    // Create payment record
+    const { error: paymentError } = await supabaseClient
+      .from('paiements')
+      .insert({
+        demarche_id: demarcheId,
+        garage_id: demarche.garage_id,
+        montant: demarche.montant_ttc,
+        status: 'en_attente',
+        stripe_payment_id: paymentIntent.id,
+      });
+
+    if (paymentError) {
+      console.error('Payment record error:', paymentError);
+    } else {
+      console.log('Payment record created successfully');
+    }
+
+    console.log('Returning client secret to frontend');
     return new Response(
       JSON.stringify({ 
         clientSecret: paymentIntent.client_secret,

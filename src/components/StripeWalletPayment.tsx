@@ -49,6 +49,7 @@ export const StripeWalletPayment = ({ amount, onSuccess }: StripeWalletPaymentPr
         <Smartphone className="h-4 w-4" />
         <AlertDescription>
           Apple Pay / Google Pay n'est pas disponible sur cet appareil ou ce navigateur.
+          Veuillez utiliser Safari sur iOS avec Apple Pay configuré, ou Chrome sur Android avec Google Pay.
         </AlertDescription>
       </Alert>
     );

@@ -1,15 +1,9 @@
 project_id = "oiotlgkfwuwshpwraneb"
 
 [functions.create-payment-intent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.get-stripe-key]
-verify_jwt = false
-
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.webhook-stripe]
 verify_jwt = false
 
 [functions.send-carte-grise]
@@ -25,10 +19,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.webhook-stripe]
-verify_jwt = false
-
-[functions.test-email]
-verify_jwt = false
-
-[functions.send-order-emails]
 verify_jwt = false

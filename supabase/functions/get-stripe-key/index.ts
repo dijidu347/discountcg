@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const publishableKey = Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY_TEST') || Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY');
+    const publishableKey = Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY');
     
     if (!publishableKey) {
       throw new Error('VITE_STRIPE_PUBLISHABLE_KEY not configured');
