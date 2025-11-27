@@ -3,6 +3,9 @@ project_id = "oiotlgkfwuwshpwraneb"
 [functions.create-payment-intent]
 verify_jwt = true
 
+[functions.create-resubmission-payment]
+verify_jwt = false
+
 [functions.get-stripe-key]
 verify_jwt = false
 
