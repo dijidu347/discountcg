@@ -1,6 +1,5 @@
 import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
-import Services from "@/components/Services";
 import Process from "@/components/Process";
 import WhyUs from "@/components/WhyUs";
 import Pricing from "@/components/Pricing";
@@ -17,12 +16,11 @@ const Index = () => {
       <Navbar />
       <Hero />
       <SimulateurSection />
-      <Services />
+      <TrustSection />
       <GoogleReviewsCarousel />
       <Process />
       <WhyUs />
       <Pricing />
-      <TrustSection />
       <FAQ />
       <ContactForm />
       <Footer />
