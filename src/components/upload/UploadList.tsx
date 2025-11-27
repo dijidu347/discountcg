@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -53,6 +55,11 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockedMessage, setBlockedMessage] = useState("");
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
+  
+  // Pièces jointes supplémentaires
+  const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
+  const [newDocName, setNewDocName] = useState("");
+  const additionalInputRef = useRef<HTMLInputElement>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -83,6 +90,19 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
           rejection_reason: doc.rejection_reason || undefined,
           type_document: doc.type_document
         })));
+        
+        // Extract additional document types
+        const standardTypes = reqDocs?.map(d => d.nom_document) || [];
+        const additionalTypes = [...new Set(
+          existingDocs
+            .filter(d => !standardTypes.includes(d.type_document) && 
+                        d.type_document !== 'Attestation de domicile (hébergement)' &&
+                        d.type_document !== "Pièce d'identité du co-titulaire" &&
+                        d.type_document !== 'carte_grise_finale' &&
+                        !d.type_document.startsWith('admin_'))
+            .map(d => d.type_document)
+        )];
+        setAdditionalDocs(additionalTypes);
       }
 
       // Check order info for conditional documents and blocking
@@ -107,6 +127,17 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAddDocument = () => {
+    if (newDocName.trim()) {
+      setAdditionalDocs(prev => [...prev, newDocName.trim()]);
+      setNewDocName("");
+    }
+  };
+
+  const handleRemoveAdditionalDoc = (docName: string) => {
+    setAdditionalDocs(prev => prev.filter(d => d !== docName));
   };
 
   const handleSubmit = async () => {
@@ -272,6 +303,65 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
             />
           );
         })}
+
+        {/* Pièces jointes supplémentaires */}
+        {additionalDocs.map((docName) => {
+          const filesForDoc = uploadedFiles.filter(f => f.type_document === docName);
+          
+          return (
+            <div key={docName} className="relative">
+              <GuestDocumentUpload
+                orderId={orderId}
+                documentType={docName}
+                label={docName}
+                existingFiles={filesForDoc}
+                onUploadComplete={loadData}
+                isBlocked={isBlocked}
+                blockedMessage={blockedMessage}
+                rectoOnly={true}
+              />
+              {filesForDoc.length === 0 && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveAdditionalDoc(docName)}
+                  className="absolute top-2 right-2 h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Ajouter une pièce jointe */}
+        <div className="border-t pt-4">
+          <Label className="text-sm font-medium mb-2 block">Ajouter une pièce jointe supplémentaire</Label>
+          <div className="flex gap-2">
+            <Input
+              ref={additionalInputRef}
+              placeholder="Nom du document (ex: Procuration)"
+              value={newDocName}
+              onChange={(e) => setNewDocName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddDocument();
+                }
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAddDocument}
+              disabled={!newDocName.trim()}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter
+            </Button>
+          </div>
+        </div>
 
         {/* Submit button */}
         <div className="pt-4 border-t">

@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -19,7 +21,8 @@ import {
   AlertCircle,
   Download,
   CreditCard,
-  Ban
+  Ban,
+  Upload
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -30,11 +33,13 @@ const SuiviCommande = () => {
   const { toast } = useToast();
   const [order, setOrder] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
+  const [adminDocuments, setAdminDocuments] = useState<any[]>([]);
   const [carteGriseUrl, setCarteGriseUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [requiredDocuments, setRequiredDocuments] = useState<any[]>([]);
-  const [stripeInvoiceUrl, setStripeInvoiceUrl] = useState<string | null>(null);
+  const [factureUrl, setFactureUrl] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     loadRequiredDocuments();
@@ -88,12 +93,15 @@ const SuiviCommande = () => {
       setCarteGriseUrl(carteGriseDoc.url);
     }
 
-    // Get Stripe invoice URL if payment was made
-    if (data.payment_intent_id && data.paye) {
-      // The invoice URL can be constructed from the payment intent or stored separately
-      // For now, we'll set it based on payment_intent_id
-      // In production, you'd fetch this from Stripe or store it in the database
-      setStripeInvoiceUrl(`https://invoice.stripe.com/i/${data.payment_intent_id}`);
+    // Get facture from factures table
+    const { data: facture } = await supabase
+      .from('factures')
+      .select('pdf_url')
+      .eq('guest_order_id', data.id)
+      .single();
+    
+    if (facture?.pdf_url) {
+      setFactureUrl(facture.pdf_url);
     }
   };
 
@@ -138,15 +146,29 @@ const SuiviCommande = () => {
 
     if (!orderData) return;
 
+    // Load customer documents (exclude carte_grise_finale and admin documents)
     const { data: docsData } = await supabase
       .from("guest_order_documents")
       .select("*")
       .eq("order_id", orderData.id)
       .neq("type_document", "carte_grise_finale")
+      .not("type_document", "like", "admin_%")
       .order("created_at", { ascending: false });
 
     if (docsData) {
       setDocuments(docsData);
+    }
+
+    // Load admin documents separately
+    const { data: adminDocs } = await supabase
+      .from("guest_order_documents")
+      .select("*")
+      .eq("order_id", orderData.id)
+      .like("type_document", "admin_%")
+      .order("created_at", { ascending: false });
+
+    if (adminDocs) {
+      setAdminDocuments(adminDocs);
     }
   };
 
@@ -259,6 +281,21 @@ const SuiviCommande = () => {
   const statusInfo = getStatusInfo(order.status);
   const StatusIcon = statusInfo.icon;
   const steps = getSteps();
+
+  // Group documents by type and side, filter out empty verso
+  const groupedDocuments = documents.reduce((acc: any[], doc) => {
+    // Skip if it's a verso without a file
+    if (doc.side === 'verso' && !doc.url) return acc;
+    acc.push(doc);
+    return acc;
+  }, []);
+
+  // Get unique rejected document types for re-upload
+  const rejectedDocTypes = [...new Set(
+    documents
+      .filter(doc => doc.validation_status === 'rejected')
+      .map(doc => doc.type_document)
+  )];
 
   return (
     <div className="min-h-screen bg-background">
@@ -530,8 +567,8 @@ const SuiviCommande = () => {
             </Card>
           )}
 
-          {/* Facture Stripe */}
-          {stripeInvoiceUrl && (
+          {/* Facture */}
+          {factureUrl && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -541,7 +578,7 @@ const SuiviCommande = () => {
               </CardHeader>
               <CardContent>
                 <a
-                  href={stripeInvoiceUrl}
+                  href={factureUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
@@ -549,6 +586,44 @@ const SuiviCommande = () => {
                   <Download className="w-4 h-4" />
                   Télécharger ma facture
                 </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Documents envoyés par l'administration */}
+          {adminDocuments.length > 0 && (
+            <Card className="border-2 border-primary">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                  <FileCheck className="w-5 h-5" />
+                  Documents de l'administration
+                </CardTitle>
+                <CardDescription>
+                  Documents envoyés par notre équipe pour votre dossier
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {adminDocuments.map((doc) => (
+                    <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg bg-primary/5">
+                      <div className="flex-1">
+                        <p className="font-medium">{doc.type_document.replace('admin_', '')}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Envoyé le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
+                        </p>
+                      </div>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+                      >
+                        <Download className="w-4 h-4" />
+                        Télécharger
+                      </a>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
@@ -594,8 +669,8 @@ const SuiviCommande = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                 {documents.length > 0 ? (
-                  documents.map((doc) => {
+                 {groupedDocuments.length > 0 ? (
+                  groupedDocuments.map((doc) => {
                     return (
                       <div key={doc.id} className="flex items-center justify-between p-4 border rounded-lg">
                         <div className="flex-1">
@@ -651,7 +726,7 @@ const SuiviCommande = () => {
                 )}
 
                 {/* Afficher les documents rejetés à re-uploader */}
-                {documents.some(doc => doc.validation_status === 'rejected') && (
+                {rejectedDocTypes.length > 0 && (
                   <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <h3 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
                       <AlertCircle className="w-5 h-5" />
@@ -697,47 +772,36 @@ const SuiviCommande = () => {
                       </p>
                     )}
 
-                    {documents
-                      .filter(doc => doc.validation_status === 'rejected')
-                      .map(doc => {
-                        // Get existing files for this document type and side
-                        const existingFiles = documents
-                          .filter(d => d.type_document === doc.type_document && d.side === doc.side)
-                          .map(d => ({
-                            id: d.id,
-                            fileName: d.nom_fichier,
-                            side: d.side || 'recto',
-                            validation_status: d.validation_status,
-                            rejection_reason: d.rejection_reason
-                          }));
+                    {rejectedDocTypes.map(docType => {
+                      const isBlocked = order.requires_resubmission_payment && !order.resubmission_paid;
+                      // Don't pass rejected files - allow fresh upload
+                      const existingFiles: any[] = [];
 
-                        const isBlocked = order.requires_resubmission_payment && !order.resubmission_paid;
-
-                        return (
-                          <div key={doc.id} className="mb-4">
-                            <div className="mb-2">
-                              <p className="font-medium">{doc.type_document}</p>
-                              {doc.rejection_reason && (
-                                <p className="text-sm text-red-600">
-                                  Raison: {doc.rejection_reason}
-                                </p>
-                              )}
-                            </div>
-                            <GuestDocumentUpload
-                              orderId={order.id}
-                              documentType={doc.type_document}
-                              label={doc.type_document}
-                              existingFiles={existingFiles}
-                              isBlocked={isBlocked}
-                              blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
-                              onUploadComplete={() => {
-                                loadDocuments();
-                                loadOrder();
-                              }}
-                            />
+                      return (
+                        <div key={docType} className="mb-4">
+                          <div className="mb-2">
+                            <p className="font-medium">{docType}</p>
+                            {documents.find(d => d.type_document === docType && d.rejection_reason)?.rejection_reason && (
+                              <p className="text-sm text-red-600">
+                                Raison: {documents.find(d => d.type_document === docType)?.rejection_reason}
+                              </p>
+                            )}
                           </div>
-                        );
-                      })}
+                          <GuestDocumentUpload
+                            orderId={order.id}
+                            documentType={docType}
+                            label={`Renvoyer: ${docType}`}
+                            existingFiles={existingFiles}
+                            isBlocked={isBlocked}
+                            blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
+                            onUploadComplete={() => {
+                              loadDocuments();
+                              loadOrder();
+                            }}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
