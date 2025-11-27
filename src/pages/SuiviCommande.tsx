@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -16,7 +17,9 @@ import {
   MapPin,
   FileText,
   AlertCircle,
-  Download
+  Download,
+  CreditCard,
+  Ban
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -31,6 +34,7 @@ const SuiviCommande = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [requiredDocuments, setRequiredDocuments] = useState<any[]>([]);
   const [stripeInvoiceUrl, setStripeInvoiceUrl] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   useEffect(() => {
     loadRequiredDocuments();
@@ -90,6 +94,35 @@ const SuiviCommande = () => {
       // For now, we'll set it based on payment_intent_id
       // In production, you'd fetch this from Stripe or store it in the database
       setStripeInvoiceUrl(`https://invoice.stripe.com/i/${data.payment_intent_id}`);
+    }
+  };
+
+  const handleResubmissionPayment = async () => {
+    if (!order) return;
+    
+    setIsProcessingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-resubmission-payment', {
+        body: {
+          order_id: order.id,
+          amount: order.resubmission_payment_amount || 10,
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le paiement",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingPayment(false);
     }
   };
 
@@ -535,9 +568,46 @@ const SuiviCommande = () => {
                       <AlertCircle className="w-5 h-5" />
                       Documents à renvoyer
                     </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Certains documents ont été refusés. Veuillez les renvoyer ci-dessous.
-                    </p>
+                    
+                    {/* Payment required message */}
+                    {order.requires_resubmission_payment && !order.resubmission_paid ? (
+                      <div className="p-4 bg-orange-100 border border-orange-300 rounded-lg mb-4">
+                        <div className="flex items-start gap-3">
+                          <Ban className="w-6 h-6 text-orange-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-orange-700 mb-2">
+                              Paiement requis pour renvoyer vos documents
+                            </p>
+                            <p className="text-sm text-orange-600 mb-4">
+                              Suite à des documents non conformes, un paiement de <strong>{order.resubmission_payment_amount || 10} €</strong> est 
+                              requis avant de pouvoir soumettre de nouveaux documents.
+                            </p>
+                            <Button 
+                              onClick={handleResubmissionPayment}
+                              disabled={isProcessingPayment}
+                              className="bg-orange-500 hover:bg-orange-600 text-white"
+                            >
+                              {isProcessingPayment ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Chargement...
+                                </>
+                              ) : (
+                                <>
+                                  <CreditCard className="w-4 h-4 mr-2" />
+                                  Payer {order.resubmission_payment_amount || 10} € pour renvoyer
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Certains documents ont été refusés. Veuillez les renvoyer ci-dessous.
+                      </p>
+                    )}
+
                     {documents
                       .filter(doc => doc.validation_status === 'rejected')
                       .map(doc => {
@@ -551,6 +621,8 @@ const SuiviCommande = () => {
                             validation_status: d.validation_status,
                             rejection_reason: d.rejection_reason
                           }));
+
+                        const isBlocked = order.requires_resubmission_payment && !order.resubmission_paid;
 
                         return (
                           <div key={doc.id} className="mb-4">
@@ -567,6 +639,8 @@ const SuiviCommande = () => {
                               documentType={doc.type_document}
                               label={doc.type_document}
                               existingFiles={existingFiles}
+                              isBlocked={isBlocked}
+                              blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
                               onUploadComplete={() => {
                                 loadDocuments();
                                 loadOrder();

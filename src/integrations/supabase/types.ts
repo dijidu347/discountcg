@@ -484,6 +484,10 @@ export type Database = {
           payment_intent_id: string | null
           prenom: string
           puiss_fisc: number | null
+          requires_resubmission_payment: boolean | null
+          resubmission_paid: boolean | null
+          resubmission_payment_amount: number | null
+          resubmission_payment_intent_id: string | null
           sms_notifications: boolean
           status: string
           telephone: string
@@ -516,6 +520,10 @@ export type Database = {
           payment_intent_id?: string | null
           prenom: string
           puiss_fisc?: number | null
+          requires_resubmission_payment?: boolean | null
+          resubmission_paid?: boolean | null
+          resubmission_payment_amount?: number | null
+          resubmission_payment_intent_id?: string | null
           sms_notifications?: boolean
           status?: string
           telephone: string
@@ -548,6 +556,10 @@ export type Database = {
           payment_intent_id?: string | null
           prenom?: string
           puiss_fisc?: number | null
+          requires_resubmission_payment?: boolean | null
+          resubmission_paid?: boolean | null
+          resubmission_payment_amount?: number | null
+          resubmission_payment_intent_id?: string | null
           sms_notifications?: boolean
           status?: string
           telephone?: string

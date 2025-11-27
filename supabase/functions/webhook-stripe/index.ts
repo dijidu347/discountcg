@@ -589,6 +589,58 @@ serve(async (req) => {
       break;
     }
 
+    case "checkout.session.completed": {
+      const session = event.data.object;
+      const metadata = session.metadata || {};
+      
+      // Handle resubmission payment
+      if (metadata.type === 'resubmission_payment' && metadata.order_id) {
+        console.log("📦 Traitement paiement de renvoi pour commande:", metadata.order_id);
+        
+        const { error: updateError } = await supabase
+          .from("guest_orders")
+          .update({
+            resubmission_paid: true,
+            resubmission_payment_intent_id: session.payment_intent,
+          })
+          .eq("id", metadata.order_id);
+
+        if (updateError) {
+          console.error("❌ Erreur mise à jour resubmission_paid:", updateError);
+        } else {
+          console.log("✔️ Paiement de renvoi validé pour:", metadata.order_id);
+          
+          // Get order for email
+          const { data: order } = await supabase
+            .from("guest_orders")
+            .select("*")
+            .eq("id", metadata.order_id)
+            .single();
+            
+          if (order && order.email_notifications) {
+            // Send confirmation email that they can now resubmit
+            await supabase.functions.invoke("send-email", {
+              body: {
+                type: "document_rejected", // Reuse this template to notify they can upload
+                to: order.email,
+                data: {
+                  tracking_number: order.tracking_number,
+                  nom: order.nom,
+                  prenom: order.prenom,
+                  rejectedDocuments: [{
+                    nom: "Paiement de renvoi",
+                    raison: "Votre paiement a été accepté. Vous pouvez maintenant renvoyer vos documents."
+                  }]
+                }
+              }
+            });
+          }
+        }
+      }
+      
+      break;
+    }
+
     case "payment_intent.payment_failed": {
       const paymentIntent = event.data.object;
 

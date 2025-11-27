@@ -22,6 +22,8 @@ interface GuestDocumentUploadProps {
   label: string;
   existingFiles: UploadedFile[];
   onUploadComplete?: () => void;
+  isBlocked?: boolean;
+  blockedMessage?: string;
 }
 
 export function GuestDocumentUpload({ 
@@ -29,7 +31,9 @@ export function GuestDocumentUpload({
   documentType, 
   label, 
   existingFiles,
-  onUploadComplete 
+  onUploadComplete,
+  isBlocked = false,
+  blockedMessage
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -39,6 +43,24 @@ export function GuestDocumentUpload({
 
   const rectoFile = existingFiles.find(f => f.side === 'recto');
   const versoFile = existingFiles.find(f => f.side === 'verso');
+
+  // If blocked, show message and disable uploads
+  if (isBlocked) {
+    return (
+      <div className="space-y-3">
+        <Label>{label}</Label>
+        <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-medium text-orange-700">Upload bloqué</p>
+              <p className="text-sm text-orange-600">{blockedMessage || "Un paiement est requis avant de pouvoir renvoyer des documents."}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
   
   const cleanFileName = (name: string) => {
     return name

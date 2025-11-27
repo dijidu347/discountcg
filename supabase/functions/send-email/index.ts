@@ -140,6 +140,33 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "resubmission_payment_required":
+      return {
+        subject: `⚠️ Paiement requis pour renvoyer vos documents - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">Paiement requis</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Suite à des documents illisibles ou non recevables, un paiement de <strong>${data.amount} €</strong> est requis pour pouvoir renvoyer vos documents.</p>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Numéro de suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;"><strong>Montant à payer :</strong> ${data.amount} €</p>
+              ${data.reason ? `<p style="margin: 8px 0;"><strong>Motif :</strong> ${data.reason}</p>` : ''}
+            </div>
+
+            <p>Une fois le paiement effectué, vous pourrez renvoyer vos documents corrigés.</p>
+
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Payer et renvoyer mes documents
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
     // === GARAGE/DEMARCHE EMAILS ===
     case "demarche_payment_confirmed":
       return {

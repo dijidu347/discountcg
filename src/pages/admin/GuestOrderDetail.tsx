@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban } from "lucide-react";
 import { Textarea as TextareaInput } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -51,6 +51,9 @@ interface GuestOrder {
   created_at: string;
   validated_at: string | null;
   validated_by: string | null;
+  requires_resubmission_payment: boolean;
+  resubmission_payment_amount: number;
+  resubmission_paid: boolean;
 }
 
 interface Document {
@@ -115,6 +118,66 @@ function BulkRejectDialog({
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Confirmer le refus
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// Reject with Payment Dialog Component
+function RejectWithPaymentDialog({ 
+  onReject, 
+  disabled, 
+  count,
+  amount = 10
+}: { 
+  onReject: (reason: string) => void; 
+  disabled: boolean; 
+  count: number;
+  amount?: number;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const handleReject = () => {
+    if (reason.trim()) {
+      onReject(reason);
+      setOpen(false);
+      setReason("");
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button variant="outline" size="sm" disabled={disabled} className="border-orange-500 text-orange-600 hover:bg-orange-50">
+          <Ban className="mr-2 h-4 w-4" />
+          Refuser + Paiement ({count})
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-orange-600">Refuser et demander paiement</AlertDialogTitle>
+          <AlertDialogDescription>
+            Le client devra payer <strong>{amount} €</strong> avant de pouvoir renvoyer ses documents. 
+            Utilisez cette option uniquement en cas d'abus (documents illisibles répétés, documents non recevables...).
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Textarea
+          placeholder="Raison du refus (sera communiquée au client)..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={4}
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleReject}
+            disabled={!reason.trim()}
+            className="bg-orange-500 text-white hover:bg-orange-600"
+          >
+            Refuser et exiger {amount} €
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -467,6 +530,69 @@ export default function GuestOrderDetail() {
     }
   };
 
+  const handleBulkRejectWithPayment = async (reason: string) => {
+    if (selectedDocs.length === 0 || !reason.trim() || !order) return;
+
+    setIsValidating(true);
+    try {
+      // Update documents as rejected
+      const { error } = await supabase
+        .from("guest_order_documents")
+        .update({
+          validation_status: "rejected",
+          validated_at: new Date().toISOString(),
+          validated_by: user?.id,
+          rejection_reason: reason,
+        })
+        .in("id", selectedDocs);
+
+      if (error) throw error;
+
+      // Set resubmission payment requirement on the order
+      const { error: orderError } = await supabase
+        .from("guest_orders")
+        .update({
+          requires_resubmission_payment: true,
+          resubmission_paid: false,
+        })
+        .eq("id", order.id);
+
+      if (orderError) throw orderError;
+
+      // Send email notification about payment required
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'resubmission_payment_required',
+          to: order.email,
+          data: {
+            tracking_number: order.tracking_number,
+            nom: order.nom,
+            prenom: order.prenom,
+            amount: order.resubmission_payment_amount || 10,
+            reason: reason
+          }
+        }
+      });
+
+      toast({
+        title: "Documents refusés avec paiement requis",
+        description: `Le client doit payer ${order.resubmission_payment_amount || 10} € pour renvoyer ses documents.`,
+      });
+
+      setSelectedDocs([]);
+      await loadOrderData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de traiter la demande",
+        variant: "destructive",
+      });
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   const toggleDocumentsComplets = async () => {
     if (!order) return;
 
@@ -648,10 +774,15 @@ export default function GuestOrderDetail() {
               <span>Total TTC</span>
               <span>{order.montant_ttc.toFixed(2)} €</span>
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex gap-2 flex-wrap">
               <Badge variant={order.paye ? "default" : "secondary"}>
                 {order.paye ? "Payé" : "Non payé"}
               </Badge>
+              {order.requires_resubmission_payment && (
+                <Badge variant={order.resubmission_paid ? "default" : "outline"} className={order.resubmission_paid ? "bg-green-500" : "border-orange-500 text-orange-600"}>
+                  {order.resubmission_paid ? "Renvoi payé" : `Renvoi requis: ${order.resubmission_payment_amount || 10}€`}
+                </Badge>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -674,6 +805,12 @@ export default function GuestOrderDetail() {
                       onReject={handleBulkReject}
                       disabled={isValidating}
                       count={selectedDocs.length}
+                    />
+                    <RejectWithPaymentDialog
+                      onReject={handleBulkRejectWithPayment}
+                      disabled={isValidating}
+                      count={selectedDocs.length}
+                      amount={order.resubmission_payment_amount || 10}
                     />
                     <Button
                       onClick={handleBulkApprove}
