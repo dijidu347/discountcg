@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -103,6 +103,7 @@ export default function DemarcheDetail() {
   const [vehicule, setVehicule] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [paiement, setPaiement] = useState<any>(null);
+  const [trackingServices, setTrackingServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
   const [notificationMessage, setNotificationMessage] = useState("");
@@ -206,6 +207,14 @@ export default function DemarcheDetail() {
       if (paiementData) {
         setPaiement(paiementData);
       }
+
+      // Load tracking services
+      const { data: trackingData } = await supabase
+        .from('tracking_services')
+        .select('*')
+        .eq('demarche_id', id);
+
+      setTrackingServices(trackingData || []);
 
       // Load document labels from action_documents
       const { data: actionData } = await supabase
@@ -906,6 +915,40 @@ export default function DemarcheDetail() {
                   <div>
                     <Label>Adresse</Label>
                     <p className="font-medium">{garage.adresse}<br />{garage.code_postal} {garage.ville}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Options souscrites */}
+            {trackingServices.length > 0 && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    Options souscrites
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col gap-2">
+                    {trackingServices.map((service) => {
+                      const serviceLabels: Record<string, { name: string; icon: any }> = {
+                        'dossier_prioritaire': { name: 'Dossier prioritaire', icon: Zap },
+                        'certificat_non_gage': { name: 'Certificat de non gage', icon: FileCheckIcon },
+                        'email': { name: 'Suivi par email', icon: Mail },
+                        'phone': { name: 'Suivi par SMS', icon: Phone },
+                        'email_phone': { name: 'Suivi complet', icon: CheckCircle },
+                      };
+                      const serviceInfo = serviceLabels[service.service_type] || { name: service.service_type, icon: CheckCircle };
+                      const Icon = serviceInfo.icon;
+                      return (
+                        <Badge key={service.id} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm w-fit">
+                          <Icon className="h-3.5 w-3.5" />
+                          {serviceInfo.name}
+                          <span className="text-muted-foreground ml-1">({service.price}€)</span>
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </CardContent>
               </Card>

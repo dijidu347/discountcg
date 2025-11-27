@@ -17,6 +17,21 @@ const corsHeaders = {
 };
 
 // -----------------------------
+// HELPER FUNCTIONS
+// -----------------------------
+
+// Vérifie si une démarche a le suivi email activé
+async function hasEmailTracking(supabaseClient: any, demarcheId: string): Promise<boolean> {
+  const { data } = await supabaseClient
+    .from("tracking_services")
+    .select("service_type")
+    .eq("demarche_id", demarcheId)
+    .in("service_type", ["email", "email_phone"]);
+  
+  return data && data.length > 0;
+}
+
+// -----------------------------
 // PDF GENERATORS
 // -----------------------------
 
@@ -535,30 +550,36 @@ serve(async (req) => {
           )}€ a été validé. Votre démarche est en cours de traitement.`,
         });
 
-        // Email de confirmation
+        // Email de confirmation - SEULEMENT si suivi email activé
         if (demarche && demarche.garages) {
-          console.log("📧 Envoi email payment_confirmed pour démarche à:", demarche.garages.email);
-          try {
-            const emailResult = await supabase.functions.invoke("send-email", {
-              body: {
-                type: "demarche_payment_confirmed",
-                to: demarche.garages.email,
-                data: {
-                  customerName: demarche.garages.raison_sociale,
-                  immatriculation: demarche.immatriculation,
-                  demarcheId: demarche.numero_demarche || demarcheId,
-                  montantTTC: (paymentIntent.amount / 100).toFixed(2),
+          const emailTrackingEnabled = await hasEmailTracking(supabase, demarcheId);
+          
+          if (emailTrackingEnabled) {
+            console.log("📧 Suivi email activé - Envoi email payment_confirmed pour démarche à:", demarche.garages.email);
+            try {
+              const emailResult = await supabase.functions.invoke("send-email", {
+                body: {
+                  type: "demarche_payment_confirmed",
+                  to: demarche.garages.email,
+                  data: {
+                    customerName: demarche.garages.raison_sociale,
+                    immatriculation: demarche.immatriculation,
+                    demarcheId: demarche.numero_demarche || demarcheId,
+                    montantTTC: (paymentIntent.amount / 100).toFixed(2),
+                  },
                 },
-              },
-            });
-            
-            if (emailResult.error) {
-              console.error("❌ Erreur envoi email:", emailResult.error);
-            } else {
-              console.log("✅ Email payment_confirmed envoyé avec succès:", emailResult);
+              });
+              
+              if (emailResult.error) {
+                console.error("❌ Erreur envoi email:", emailResult.error);
+              } else {
+                console.log("✅ Email payment_confirmed envoyé avec succès:", emailResult);
+              }
+            } catch (emailError) {
+              console.error("❌ Exception envoi email:", emailError);
             }
-          } catch (emailError) {
-            console.error("❌ Exception envoi email:", emailError);
+          } else {
+            console.log("ℹ️ Suivi email NON activé pour cette démarche - email non envoyé");
           }
         }
 

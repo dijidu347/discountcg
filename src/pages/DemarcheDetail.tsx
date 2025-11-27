@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye } from "lucide-react";
+import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Mail, Phone, Zap, FileCheck as FileCheckIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FactureButton } from "@/components/FactureButton";
 
@@ -39,6 +39,7 @@ export default function DemarcheDetail() {
   const [documents, setDocuments] = useState<any[]>([]);
   const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [trackingServices, setTrackingServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewerState, setViewerState] = useState<{
     isOpen: boolean;
@@ -133,6 +134,14 @@ export default function DemarcheDetail() {
       .order('created_at', { ascending: false });
 
     setNotifications(notifData || []);
+
+    // Load tracking services
+    const { data: trackingData } = await supabase
+      .from('tracking_services')
+      .select('*')
+      .eq('demarche_id', id);
+
+    setTrackingServices(trackingData || []);
 
     // Load document labels from action_documents
     const { data: actionData } = await supabase
@@ -405,6 +414,40 @@ export default function DemarcheDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Options souscrites */}
+            {trackingServices.length > 0 && (
+              <Card className="border-primary/30 bg-primary/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                    Options souscrites
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {trackingServices.map((service) => {
+                      const serviceLabels: Record<string, { name: string; icon: any }> = {
+                        'dossier_prioritaire': { name: 'Dossier prioritaire', icon: Zap },
+                        'certificat_non_gage': { name: 'Certificat de non gage', icon: FileCheckIcon },
+                        'email': { name: 'Suivi par email', icon: Mail },
+                        'phone': { name: 'Suivi par SMS', icon: Phone },
+                        'email_phone': { name: 'Suivi complet (Email + SMS)', icon: CheckCircle },
+                      };
+                      const serviceInfo = serviceLabels[service.service_type] || { name: service.service_type, icon: CheckCircle };
+                      const Icon = serviceInfo.icon;
+                      return (
+                        <Badge key={service.id} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm">
+                          <Icon className="h-3.5 w-3.5" />
+                          {serviceInfo.name}
+                          <span className="text-muted-foreground ml-1">({service.price}€)</span>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Documents de l'administration */}
             {documents.filter(d => d.type_document === 'admin_document').length > 0 && (
