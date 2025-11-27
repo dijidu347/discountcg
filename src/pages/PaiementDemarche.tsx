@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PaymentDetailsSummary } from "@/components/payment/PaymentDetailsSummary";
 
 const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
   const stripe = useStripe();
@@ -388,99 +389,14 @@ const PaiementDemarche = () => {
                       )}
                     </Button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="mt-3 space-y-2">
-                    {(() => {
-                      const totalOptions = trackingServices.reduce((sum, s) => sum + (s.price || 0), 0);
-                      const fraisDossier = demarche.frais_dossier || 30;
-                      
-                      if (demarche.type === 'CG') {
-                        // Pour CG: prix carte grise = montant_ttc - frais_dossier - options
-                        const prixCarteGrise = demarche.montant_ttc - fraisDossier - totalOptions;
-                        // TVA uniquement sur frais_dossier et options
-                        const montantTaxableHT = (fraisDossier + totalOptions) / 1.20;
-                        const tva = (fraisDossier + totalOptions) - montantTaxableHT;
-                        const totalHT = montantTaxableHT + prixCarteGrise;
-                        
-                        return (
-                          <>
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="text-muted-foreground">Carte Grise (frais de dossier)</span>
-                              <span>{fraisDossier.toFixed(2)}€</span>
-                            </div>
-                            
-                            {prixCarteGrise > 0 && (
-                              <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Prix carte grise (taxe)</span>
-                                <span>{prixCarteGrise.toFixed(2)}€</span>
-                              </div>
-                            )}
-                            
-                            {trackingServices.map((service) => (
-                              <div key={service.id} className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">
-                                  {service.service_type === 'dossier_prioritaire' && 'Dossier prioritaire'}
-                                  {service.service_type === 'certificat_non_gage' && 'Certificat de non-gage'}
-                                  {service.service_type === 'suivi_email' && 'Suivi par email'}
-                                  {service.service_type === 'suivi_sms' && 'Suivi par SMS'}
-                                  {service.service_type === 'suivi_complet' && 'Suivi complet'}
-                                </span>
-                                <span>{service.price.toFixed(2)}€</span>
-                              </div>
-                            ))}
-                            
-                            <div className="pt-2 mt-2 border-t border-dashed space-y-1">
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>Total HT</span>
-                                <span>{totalHT.toFixed(2)}€</span>
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>TVA 20% (hors taxe carte grise)</span>
-                                <span>{tva.toFixed(2)}€</span>
-                              </div>
-                            </div>
-                          </>
-                        );
-                      } else {
-                        // Pour DA, DC, etc.: TVA sur tout
-                        const totalHT = demarche.montant_ttc / 1.20;
-                        const tva = demarche.montant_ttc - totalHT;
-                        
-                        return (
-                          <>
-                            {actionRapide && (
-                              <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">{actionRapide.titre}</span>
-                                <span>{fraisDossier.toFixed(2)}€</span>
-                              </div>
-                            )}
-                            
-                            {trackingServices.map((service) => (
-                              <div key={service.id} className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">
-                                  {service.service_type === 'dossier_prioritaire' && 'Dossier prioritaire'}
-                                  {service.service_type === 'certificat_non_gage' && 'Certificat de non-gage'}
-                                  {service.service_type === 'suivi_email' && 'Suivi par email'}
-                                  {service.service_type === 'suivi_sms' && 'Suivi par SMS'}
-                                  {service.service_type === 'suivi_complet' && 'Suivi complet'}
-                                </span>
-                                <span>{service.price.toFixed(2)}€</span>
-                              </div>
-                            ))}
-                            
-                            <div className="pt-2 mt-2 border-t border-dashed space-y-1">
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>Total HT</span>
-                                <span>{totalHT.toFixed(2)}€</span>
-                              </div>
-                              <div className="flex justify-between items-center text-xs text-muted-foreground">
-                                <span>TVA 20%</span>
-                                <span>{tva.toFixed(2)}€</span>
-                              </div>
-                            </div>
-                          </>
-                        );
-                      }
-                    })()}
+                  <CollapsibleContent className="mt-3">
+                    <PaymentDetailsSummary
+                      demarcheType={demarche.type}
+                      fraisDossier={demarche.frais_dossier || 30}
+                      montantTtc={demarche.montant_ttc}
+                      trackingServices={trackingServices}
+                      actionRapideTitre={actionRapide?.titre}
+                    />
                   </CollapsibleContent>
                 </Collapsible>
 
