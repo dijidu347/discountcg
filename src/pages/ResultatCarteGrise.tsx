@@ -55,12 +55,19 @@ export default function ResultatCarteGrise() {
 
         setCalculation(calc);
 
+        // Calculer le TTC correct : carte grise + frais dossier + TVA sur frais dossier
+        const fraisDossier = 30;
+        const totalServicesHT = fraisDossier; // Pas d'options sélectionnées à ce stade
+        const tva = totalServicesHT * 0.20;
+        const montantTTC = calc.prixTotal + totalServicesHT + tva;
+
         // Mettre à jour la commande avec le prix calculé
         const { error } = await supabase
           .from('guest_orders')
           .update({
-            montant_ht: calc.prixTotal,
-            montant_ttc: calc.prixTotal,
+            montant_ht: calc.prixTotal, // Prix carte grise (exonéré TVA)
+            montant_ttc: montantTTC, // Carte grise + frais dossier + TVA
+            frais_dossier: fraisDossier,
             puiss_fisc: vehicleData.chevauxFiscaux,
             date_mec: vehicleData.dateMiseEnCirculation,
           })

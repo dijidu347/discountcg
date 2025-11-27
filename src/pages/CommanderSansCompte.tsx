@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Upload, FileCheck, CreditCard, Loader2, Shield, Clock } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
 
 const CommanderSansCompte = () => {
   const { orderId } = useParams();
@@ -476,33 +477,12 @@ const CommanderSansCompte = () => {
           </Card>
 
           {/* Price Summary */}
-          <Card className="border-2 border-primary">
-            <CardHeader className="bg-primary/5">
-              <CardTitle>Récapitulatif</CardTitle>
-            </CardHeader>
-            <CardContent className="pt-6 space-y-2">
-              <div className="flex justify-between text-lg">
-                <span>Prix de la carte grise</span>
-                <span className="font-bold">{order.montant_ht.toFixed(2)}€</span>
-              </div>
-              <div className="flex justify-between text-lg">
-                <span>Frais de dossier</span>
-                <span className="font-bold">{order.frais_dossier.toFixed(2)}€</span>
-              </div>
-              {formData.sms_notifications && (
-                <div className="flex justify-between text-lg">
-                  <span>Notifications SMS</span>
-                  <span className="font-bold">5.00€</span>
-                </div>
-              )}
-              <div className="border-t pt-2 mt-2 flex justify-between text-xl font-bold">
-                <span>Total TTC</span>
-                <span className="text-primary">
-                  {(order.montant_ttc + (formData.sms_notifications ? 5 : 0)).toFixed(2)}€
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <GuestPaymentDetailsSummary
+            prixCarteGrise={order.montant_ht || 0}
+            fraisDossier={order.frais_dossier || 30}
+            smsNotifications={formData.sms_notifications}
+            emailNotifications={formData.email_notifications}
+          />
 
           {/* Submit Button */}
           <Button

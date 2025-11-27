@@ -9,6 +9,7 @@ import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
 
 const CheckoutForm = ({ order }: { order: any }) => {
   const stripe = useStripe();
@@ -27,8 +28,12 @@ const CheckoutForm = ({ order }: { order: any }) => {
     setIsProcessing(true);
 
     try {
-      // Calculate total amount
-      const totalAmount = order.montant_ttc + (order.sms_notifications ? 5 : 0);
+      // Calculate total amount with correct TVA
+      const totalAmount = calculateGuestOrderTTC(
+        order.montant_ht || 0,
+        order.frais_dossier || 30,
+        order.sms_notifications
+      );
 
       // Create payment intent
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
@@ -70,6 +75,13 @@ const CheckoutForm = ({ order }: { order: any }) => {
       }
 
       if (paymentIntent?.status === "succeeded") {
+        // Recalculate total for storage
+        const finalTTC = calculateGuestOrderTTC(
+          order.montant_ht || 0,
+          order.frais_dossier || 30,
+          order.sms_notifications
+        );
+        
         // Update order
         await supabase
           .from("guest_orders")
@@ -78,7 +90,7 @@ const CheckoutForm = ({ order }: { order: any }) => {
             payment_intent_id: paymentIntent.id,
             paid_at: new Date().toISOString(),
             status: "paye",
-            montant_ttc: totalAmount,
+            montant_ttc: finalTTC,
           })
           .eq("id", order.id);
 
@@ -129,21 +141,12 @@ const CheckoutForm = ({ order }: { order: any }) => {
         </CardContent>
       </Card>
 
-      <Card className="border-2 border-primary">
-        <CardHeader className="bg-primary/5">
-          <CardTitle>Montant à payer</CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="text-center">
-            <p className="text-4xl font-bold text-primary">
-              {(order.montant_ttc + (order.sms_notifications ? 5 : 0)).toFixed(2)}€
-            </p>
-            <p className="text-sm text-muted-foreground mt-2">
-              Paiement sécurisé par Stripe
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <GuestPaymentDetailsSummary
+        prixCarteGrise={order.montant_ht || 0}
+        fraisDossier={order.frais_dossier || 30}
+        smsNotifications={order.sms_notifications}
+        emailNotifications={order.email_notifications}
+      />
 
       <Button
         type="submit"

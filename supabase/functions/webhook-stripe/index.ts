@@ -166,7 +166,13 @@ async function generateDemarcheFacturePDF(facture: any, demarche: any, garage: a
   return await pdfDoc.save();
 }
 
-async function generateGuestOrderFacturePDF(facture: any, order: any): Promise<Uint8Array> {
+async function generateGuestOrderFacturePDF(
+  facture: any, 
+  order: any,
+  prixCarteGrise: number,
+  fraisDossier: number,
+  smsPrice: number
+): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
@@ -197,7 +203,7 @@ async function generateGuestOrderFacturePDF(facture: any, order: any): Promise<U
   
   // Parties
   y -= 40;
-  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("EMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
   page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
   
   y -= 20;
@@ -219,15 +225,15 @@ async function generateGuestOrderFacturePDF(facture: any, order: any): Promise<U
   y -= 12;
   page.drawText(order?.telephone || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
   
-  // Détails box
+  // Details box
   y -= 40;
   page.drawRectangle({ x: margin, y: y - 70, width: width - 2 * margin, height: 80, color: lightGray });
   
   y -= 10;
-  page.drawText("Détails de la commande", { x: margin + 15, y, size: 12, font: fontBold, color: blue });
+  page.drawText("Details de la commande", { x: margin + 15, y, size: 12, font: fontBold, color: blue });
   
   y -= 20;
-  page.drawText("N° Suivi :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("N Suivi :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
   page.drawText(order?.tracking_number || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
   
   y -= 15;
@@ -235,64 +241,114 @@ async function generateGuestOrderFacturePDF(facture: any, order: any): Promise<U
   page.drawText(order?.immatriculation || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
   
   y -= 15;
-  page.drawText("Véhicule :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("Vehicule :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
   page.drawText(`${order?.marque || ""} ${order?.modele || ""}`, { x: margin + 150, y, size: 10, font: fontBold, color: black });
   
-  // Table header
-  y -= 50;
-  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
-  page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("Qté", { x: width - margin - 150, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  // =============================================
+  // SECTION 1: CARTE GRISE (exonérée TVA)
+  // =============================================
+  if (prixCarteGrise > 0) {
+    y -= 40;
+    page.drawText("CARTE GRISE (exoneree TVA)", { x: margin, y, size: 11, font: fontBold, color: blue });
+    
+    y -= 25;
+    page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+    page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    page.drawText("Montant", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    
+    y -= 25;
+    page.drawText("Taxe regionale", { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+    page.drawText(`${prixCarteGrise.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+    
+    y -= 8;
+    page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
+  }
   
-  // Table row
-  y -= 35;
-  const montantHT = Number(facture.montant_ht).toFixed(2);
-  page.drawText("Changement de titulaire carte grise", { x: margin + 10, y, size: 10, font: fontRegular, color: black });
-  page.drawText("1", { x: width - margin - 145, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${montantHT} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  // =============================================
+  // SECTION 2: SERVICES (soumis à TVA 20%)
+  // =============================================
+  const hasServices = fraisDossier > 0 || smsPrice > 0;
   
-  y -= 12;
-  page.drawText(`Immatriculation : ${order?.immatriculation || "N/A"}`, { x: margin + 10, y, size: 8, font: fontRegular, color: gray });
+  if (hasServices) {
+    y -= 40;
+    page.drawText("SERVICES (soumis a TVA 20%)", { x: margin, y, size: 11, font: fontBold, color: blue });
+    
+    y -= 25;
+    page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+    page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    
+    // Frais de dossier
+    if (fraisDossier > 0) {
+      y -= 25;
+      page.drawText("Frais de dossier", { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+      page.drawText(`${fraisDossier.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+      
+      y -= 8;
+      page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
+    }
+    
+    // SMS option
+    if (smsPrice > 0) {
+      y -= 25;
+      page.drawText("Suivi par SMS", { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+      page.drawText(`${smsPrice.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+      
+      y -= 8;
+      page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
+    }
+  }
   
-  // Line
+  // =============================================
+  // SECTION 3: TOTAUX
+  // =============================================
+  const totalServicesHT = fraisDossier + smsPrice;
+  const montantTVA = totalServicesHT * 0.20;
+  const montantTTC = prixCarteGrise + totalServicesHT + montantTVA;
+  
+  y -= 40;
+  page.drawRectangle({ x: width - margin - 220, y: y - 75, width: 220, height: 90, color: lightGray });
+  
   y -= 10;
-  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  if (prixCarteGrise > 0) {
+    page.drawText("Carte grise (exoneree TVA)", { x: width - margin - 210, y, size: 10, font: fontRegular, color: gray });
+    page.drawText(`${prixCarteGrise.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+    y -= 15;
+  }
   
-  // Totals
-  const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
-  const montantTTC = Number(facture.montant_ttc).toFixed(2);
+  page.drawText("Total HT (services)", { x: width - margin - 210, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${totalServicesHT.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
   
-  y -= 30;
-  page.drawText("Total HT", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${montantHT} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
-  
-  y -= 18;
-  page.drawText("TVA (20%)", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${montantTVA} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  y -= 15;
+  page.drawText("TVA 20%", { x: width - margin - 210, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantTVA.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
   
   y -= 5;
-  page.drawLine({ start: { x: width - margin - 200, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
+  page.drawLine({ start: { x: width - margin - 210, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
   
   y -= 20;
-  page.drawText("Total TTC", { x: width - margin - 180, y, size: 14, font: fontBold, color: blue });
-  page.drawText(`${montantTTC} €`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
+  page.drawText("TOTAL TTC", { x: width - margin - 210, y, size: 14, font: fontBold, color: blue });
+  page.drawText(`${montantTTC.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
   
   // Payment info
   y -= 50;
   page.drawRectangle({ x: margin, y: y - 25, width: width - 2 * margin, height: 40, color: rgb(0.93, 0.99, 0.96) });
   y -= 5;
-  page.drawText("✓ Paiement reçu", { x: margin + 15, y, size: 11, font: fontBold, color: green });
+  page.drawText("Paiement recu", { x: margin + 15, y, size: 11, font: fontBold, color: green });
   y -= 15;
-  page.drawText("Paiement effectué par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
+  page.drawText("Paiement effectue par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
+  
+  // Note about TVA
+  y -= 30;
+  page.drawText("* La TVA s'applique uniquement sur les frais de dossier et options, pas sur la taxe carte grise.", { x: margin, y, size: 8, font: fontRegular, color: gray });
   
   // Footer
   y = margin + 40;
   page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
   y -= 15;
-  page.drawText("DiscountCarteGrise - Service agréé de cartes grises", { x: width / 2 - 120, y, size: 9, font: fontRegular, color: gray });
+  page.drawText("DiscountCarteGrise - Service agree de cartes grises", { x: width / 2 - 120, y, size: 9, font: fontRegular, color: gray });
   y -= 12;
-  page.drawText("Cette facture a été générée automatiquement et est valable sans signature.", { x: width / 2 - 160, y, size: 8, font: fontRegular, color: gray });
+  page.drawText("Cette facture a ete generee automatiquement et est valable sans signature.", { x: width / 2 - 160, y, size: 8, font: fontRegular, color: gray });
   
   return await pdfDoc.save();
 }
@@ -337,6 +393,18 @@ serve(async (req) => {
       // GESTION DES "guest_orders"
       // -----------------------------------
       if (guestOrderId) {
+        // Calculer le TTC correct avant mise à jour
+        const { data: orderForCalc } = await supabase.from("guest_orders").select("*").eq("id", guestOrderId).single();
+        
+        let calculatedTTC = orderForCalc?.montant_ttc || 0;
+        if (orderForCalc) {
+          const prixCG = Number(orderForCalc.montant_ht) || 0;
+          const fraisD = Number(orderForCalc.frais_dossier) || 30;
+          const smsP = orderForCalc.sms_notifications ? 5 : 0;
+          const servicesHT = fraisD + smsP;
+          calculatedTTC = prixCG + servicesHT + (servicesHT * 0.20);
+        }
+        
         await supabase
           .from("guest_orders")
           .update({
@@ -344,13 +412,14 @@ serve(async (req) => {
             paid_at: new Date().toISOString(),
             status: "en_traitement",
             payment_intent_id: paymentIntent.id,
+            montant_ttc: calculatedTTC,
           })
           .eq("id", guestOrderId);
 
         const { data: order } = await supabase.from("guest_orders").select("*").eq("id", guestOrderId).single();
 
         if (order) {
-          // FACTURE "guest order" - PDF
+          // FACTURE "guest order" - PDF avec calcul TVA correct
           let pdfBase64: string | null = null;
           let factureNumero: string | null = null;
 
@@ -360,15 +429,24 @@ serve(async (req) => {
             if (numeroData) {
               const numero = numeroData as string;
               factureNumero = numero;
-              const montantTTC = Number(order.montant_ttc);
-              const montantHT = montantTTC / 1.2;
+              
+              // Calcul TVA correct pour commandes particuliers
+              // montant_ht = prix carte grise (taxe régionale, exonérée TVA)
+              // frais_dossier = frais de dossier (soumis à TVA)
+              const prixCarteGrise = Number(order.montant_ht) || 0;
+              const fraisDossier = Number(order.frais_dossier) || 30;
+              const smsPrice = order.sms_notifications ? 5 : 0;
+              
+              const totalServicesHT = fraisDossier + smsPrice;
+              const tva = totalServicesHT * 0.20;
+              const montantTTC = prixCarteGrise + totalServicesHT + tva;
 
               const { data: facture } = await supabase
                 .from("factures")
                 .insert({
                   numero,
                   guest_order_id: guestOrderId,
-                  montant_ht: montantHT,
+                  montant_ht: totalServicesHT, // Services HT uniquement (pas carte grise)
                   montant_ttc: montantTTC,
                   tva: 20,
                 })
@@ -376,7 +454,13 @@ serve(async (req) => {
                 .single();
 
               if (facture) {
-                const pdfBytes = await generateGuestOrderFacturePDF(facture, order);
+                const pdfBytes = await generateGuestOrderFacturePDF(
+                  facture, 
+                  order,
+                  prixCarteGrise,
+                  fraisDossier,
+                  smsPrice
+                );
 
                 // Convertir en base64 pour l'email
                 const uint8Array = new Uint8Array(pdfBytes);
@@ -413,6 +497,14 @@ serve(async (req) => {
           // EMAIL avec facture en pièce jointe
           console.log("📧 Vérification email_notifications:", order.email_notifications);
           if (order.email_notifications) {
+            // Recalculer le TTC correct pour l'email
+            const prixCarteGriseEmail = Number(order.montant_ht) || 0;
+            const fraisDossierEmail = Number(order.frais_dossier) || 30;
+            const smsPriceEmail = order.sms_notifications ? 5 : 0;
+            const totalServicesHTEmail = fraisDossierEmail + smsPriceEmail;
+            const tvaEmail = totalServicesHTEmail * 0.20;
+            const calculatedTTC = prixCarteGriseEmail + totalServicesHTEmail + tvaEmail;
+            
             console.log("📧 Envoi email payment_confirmed à:", order.email);
             try {
               const emailBody: any = {
@@ -423,7 +515,7 @@ serve(async (req) => {
                   nom: order.nom,
                   prenom: order.prenom,
                   immatriculation: order.immatriculation,
-                  montant_ttc: order.montant_ttc,
+                  montant_ttc: calculatedTTC,
                 },
               };
 
