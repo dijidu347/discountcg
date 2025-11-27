@@ -117,31 +117,33 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
         throw new Error("Impossible de récupérer les informations de la commande");
       }
 
-      // Update order status to indicate documents received
+      // Update order to indicate documents received (keep status as 'paye', just mark documents complete)
       await supabase
         .from('guest_orders')
-        .update({ documents_complets: true, status: 'documents_recus' })
+        .update({ documents_complets: true })
         .eq('id', orderId);
 
-      // Send email with order details and tracking link
-      const { error: emailError } = await supabase.functions.invoke('send-guest-order-email', {
-        body: {
-          type: 'documents_received',
-          orderData: {
-            tracking_number: order.tracking_number,
-            email: order.email,
-            nom: order.nom,
-            prenom: order.prenom,
-            immatriculation: order.immatriculation,
-            montant_ttc: order.montant_ttc,
-            marque: order.marque,
-            modele: order.modele,
+      // Send email only if email is provided
+      if (order.email && order.email.trim() !== '') {
+        const { error: emailError } = await supabase.functions.invoke('send-guest-order-email', {
+          body: {
+            type: 'documents_received',
+            orderData: {
+              tracking_number: order.tracking_number,
+              email: order.email,
+              nom: order.nom,
+              prenom: order.prenom,
+              immatriculation: order.immatriculation,
+              montant_ttc: order.montant_ttc,
+              marque: order.marque,
+              modele: order.modele,
+            }
           }
-        }
-      });
+        });
 
-      if (emailError) {
-        console.error('Error sending email:', emailError);
+        if (emailError) {
+          console.error('Error sending email:', emailError);
+        }
       }
 
       toast({
