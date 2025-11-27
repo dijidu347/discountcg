@@ -24,6 +24,7 @@ interface GuestDocumentUploadProps {
   onUploadComplete?: () => void;
   isBlocked?: boolean;
   blockedMessage?: string;
+  rectoOnly?: boolean; // Nouveau prop pour documents recto uniquement
 }
 
 export function GuestDocumentUpload({ 
@@ -33,10 +34,10 @@ export function GuestDocumentUpload({
   existingFiles,
   onUploadComplete,
   isBlocked = false,
-  blockedMessage
+  blockedMessage,
+  rectoOnly = false
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
   const rectoInputRef = useRef<HTMLInputElement>(null);
   const versoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -227,38 +228,53 @@ export function GuestDocumentUpload({
   };
 
   return (
-    <div className="space-y-3">
-      <Label>{label}</Label>
+    <div className="space-y-3 p-4 border rounded-lg bg-card">
+      <Label className="font-medium">{label}</Label>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {rectoOnly ? (
+        // Recto uniquement
         <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Recto</Label>
+          <Label className="text-xs text-muted-foreground">Document</Label>
           <Input
             ref={rectoInputRef}
             type="file"
             onChange={(e) => handleFileChange(e, 'recto')}
             accept=".pdf,.jpg,.jpeg,.png,image/*"
-            capture="environment"
             disabled={uploading}
             className="hidden"
           />
           {renderFileStatus(rectoFile, 'recto')}
         </div>
+      ) : (
+        // Recto + Verso
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Recto</Label>
+            <Input
+              ref={rectoInputRef}
+              type="file"
+              onChange={(e) => handleFileChange(e, 'recto')}
+              accept=".pdf,.jpg,.jpeg,.png,image/*"
+              disabled={uploading}
+              className="hidden"
+            />
+            {renderFileStatus(rectoFile, 'recto')}
+          </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">Verso</Label>
-          <Input
-            ref={versoInputRef}
-            type="file"
-            onChange={(e) => handleFileChange(e, 'verso')}
-            accept=".pdf,.jpg,.jpeg,.png,image/*"
-            capture="environment"
-            disabled={uploading}
-            className="hidden"
-          />
-          {renderFileStatus(versoFile, 'verso')}
+          <div className="space-y-2">
+            <Label className="text-xs text-muted-foreground">Verso</Label>
+            <Input
+              ref={versoInputRef}
+              type="file"
+              onChange={(e) => handleFileChange(e, 'verso')}
+              accept=".pdf,.jpg,.jpeg,.png,image/*"
+              disabled={uploading}
+              className="hidden"
+            />
+            {renderFileStatus(versoFile, 'verso')}
+          </div>
         </div>
-      </div>
+      )}
 
       {uploading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
