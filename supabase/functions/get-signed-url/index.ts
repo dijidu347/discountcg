@@ -106,12 +106,32 @@ serve(async (req) => {
         .single();
       
       if (orderData) {
-        const { data: adminDocData } = await supabase
+        // Check both encoded and decoded versions of the path
+        const encodedPath = encodeURIComponent(path).replace(/%2F/g, '/');
+        const decodedPath = decodeURIComponent(path);
+        
+        // First try with the path as-is
+        let { data: adminDocData } = await supabase
           .from("guest_order_admin_documents")
           .select("id")
           .eq("order_id", orderData.id)
-          .ilike("url", `%${path}%`)
+          .or(`url.ilike.%${path}%,url.ilike.%${encodedPath}%,url.ilike.%${decodedPath}%`)
+          .limit(1)
           .single();
+        
+        // If not found, try checking if the file path starts with the order ID (admin docs are in orderId/admin_xxx format)
+        if (!adminDocData && path.startsWith(orderData.id)) {
+          const { data: anyAdminDoc } = await supabase
+            .from("guest_order_admin_documents")
+            .select("id")
+            .eq("order_id", orderData.id)
+            .limit(1)
+            .single();
+          
+          if (anyAdminDoc) {
+            adminDocData = anyAdminDoc;
+          }
+        }
         
         if (adminDocData) {
           isAuthorized = true;
