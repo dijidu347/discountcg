@@ -183,7 +183,8 @@ export default function ResultatCarteGrise() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left side - Options and Payment */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Step 1: Options de suivi */}
+            {/* Step 1: Options de suivi - masqué après paiement */}
+            {!isPaid && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
@@ -274,6 +275,7 @@ export default function ResultatCarteGrise() {
                 </CardContent>
               </Card>
             </div>
+            )}
 
             {/* Step 2: Payment */}
             <div className="space-y-4">
