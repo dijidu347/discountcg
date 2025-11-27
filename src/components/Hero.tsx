@@ -1,16 +1,15 @@
 import { Shield, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 const Hero = () => {
   const scrollToSimulator = () => {
     const element = document.getElementById("simulateur");
     if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+      element.scrollIntoView({
+        behavior: "smooth"
+      });
     }
   };
-
-  return (
-    <section className="relative pt-16 overflow-hidden">
+  return <section className="relative pt-16 overflow-hidden">
       {/* Bande tricolore */}
       <div className="absolute top-16 left-0 right-0 h-1 flex z-20">
         <div className="flex-1 bg-france-blue" />
@@ -25,7 +24,7 @@ const Hero = () => {
             {/* Contenu texte */}
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
-                Carte grise en ligne<br/>
+                Carte grise en ligne<br />
                 <span className="text-primary-foreground/90">rapide et sécurisée</span>
               </h1>
               
@@ -44,11 +43,7 @@ const Hero = () => {
                 </div>
               </div>
 
-              <Button 
-                onClick={scrollToSimulator}
-                size="lg"
-                className="bg-background text-primary hover:bg-background/90 font-semibold py-6 px-10 rounded-2xl text-lg"
-              >
+              <Button onClick={scrollToSimulator} size="lg" className="bg-background text-primary hover:bg-background/90 font-semibold py-6 px-10 rounded-2xl text-lg">
                 Simuler mon tarif
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
@@ -57,11 +52,7 @@ const Hero = () => {
             {/* Image carte grise */}
             <div className="flex justify-center">
               <div className="relative">
-                <img 
-                  src="/lovable-uploads/cde191fb-e77f-4260-bde8-152e023920a5.jpg" 
-                  alt="Carte grise française"
-                  className="rounded-3xl shadow-2xl w-full max-w-md border-4 border-primary-foreground/20"
-                />
+                <img alt="Carte grise française" className="rounded-3xl shadow-2xl w-full max-w-md border-4 border-primary-foreground/20" src="/lovable-uploads/afe744c8-2491-4bc5-b822-6e18a95d9183.webp" />
                 <div className="absolute -bottom-4 -right-4 bg-background text-foreground px-4 py-2 rounded-xl shadow-lg">
                   <div className="text-sm font-bold text-primary">100% en ligne</div>
                 </div>
@@ -70,8 +61,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
