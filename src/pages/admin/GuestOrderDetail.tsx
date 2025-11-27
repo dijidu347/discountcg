@@ -210,9 +210,29 @@ export default function GuestOrderDetail() {
 
       if (error) throw error;
 
+      // Envoyer email de confirmation de commande validée
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'order_confirmation',
+            to: order.email,
+            data: {
+              tracking_number: order.tracking_number,
+              nom: order.nom,
+              prenom: order.prenom,
+              immatriculation: order.immatriculation,
+              montant_ttc: order.montant_ttc,
+            }
+          }
+        });
+        console.log('Email de validation envoyé');
+      } catch (emailError) {
+        console.error('Erreur envoi email:', emailError);
+      }
+
       toast({
         title: "Commande validée",
-        description: "La commande a été validée avec succès",
+        description: "La commande a été validée avec succès et le client a été notifié",
       });
 
       await loadOrderData();
@@ -245,9 +265,28 @@ export default function GuestOrderDetail() {
 
       if (error) throw error;
 
+      // Envoyer email de refus de commande
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'document_rejected',
+            to: order.email,
+            data: {
+              tracking_number: order.tracking_number,
+              nom: order.nom,
+              prenom: order.prenom,
+              rejectedDocuments: [{ nom: 'Commande', raison: commentaire || 'Commande refusée' }]
+            }
+          }
+        });
+        console.log('Email de refus envoyé');
+      } catch (emailError) {
+        console.error('Erreur envoi email:', emailError);
+      }
+
       toast({
         title: "Commande refusée",
-        description: "La commande a été refusée",
+        description: "La commande a été refusée et le client a été notifié",
       });
 
       await loadOrderData();
