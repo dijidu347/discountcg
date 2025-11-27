@@ -114,26 +114,49 @@ export const SimulateurSection = () => {
         </p>
 
         <div className="max-w-xl mx-auto bg-card border border-border shadow-xl rounded-2xl p-8">
-          {/* Plaque d'immatriculation visuelle */}
+          {/* Plaque d'immatriculation visuelle - Style français réaliste */}
           <div className="mb-10 flex justify-center">
-            <div className="w-full max-w-lg h-24 md:h-28 rounded-xl border-4 border-foreground/80 shadow-inner relative overflow-hidden bg-gradient-to-br from-muted to-muted/50">
-              {/* Bande gauche - EU/F */}
-              <div className="absolute inset-y-0 left-0 w-14 md:w-20 bg-primary flex flex-col items-center justify-center text-primary-foreground font-bold border-r-4 border-foreground/80">
-                <span className="text-lg md:text-xl">F</span>
-                <span className="text-xs md:text-sm mt-1">EU</span>
+            <div className="w-full max-w-lg h-20 md:h-24 rounded-lg border-[3px] border-foreground shadow-lg relative overflow-hidden bg-background">
+              {/* Bordure intérieure noire */}
+              <div className="absolute inset-[3px] rounded border border-foreground/30" />
+              
+              {/* Bande gauche - Drapeau EU + F */}
+              <div className="absolute inset-y-0 left-0 w-12 md:w-14 bg-[#003399] flex flex-col items-center justify-between py-1.5 md:py-2 rounded-l">
+                {/* Étoiles européennes en cercle */}
+                <div className="relative w-8 h-8 md:w-9 md:h-9">
+                  {[...Array(12)].map((_, i) => {
+                    const angle = (i * 30 - 90) * (Math.PI / 180);
+                    const x = 50 + 38 * Math.cos(angle);
+                    const y = 50 + 38 * Math.sin(angle);
+                    return (
+                      <span
+                        key={i}
+                        className="absolute text-[#FFCC00] text-[6px] md:text-[7px]"
+                        style={{
+                          left: `${x}%`,
+                          top: `${y}%`,
+                          transform: 'translate(-50%, -50%)'
+                        }}
+                      >
+                        ★
+                      </span>
+                    );
+                  })}
+                </div>
+                {/* F pour France */}
+                <span className="text-white font-bold text-sm md:text-base">F</span>
               </div>
               
-              {/* Zone centrale - Numéro */}
-              <div className="absolute inset-y-0 left-14 md:left-20 right-14 md:right-20 flex items-center justify-center">
-                <span className="text-3xl md:text-5xl font-bold tracking-widest text-foreground font-mono">
+              {/* Zone centrale - Numéro sur fond blanc */}
+              <div className="absolute inset-y-0 left-12 md:left-14 right-12 md:right-14 flex items-center justify-center bg-background">
+                <span className="text-2xl md:text-4xl font-black tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                   {displayPlate}
                 </span>
               </div>
               
-              {/* Bande droite - Département */}
-              <div className="absolute inset-y-0 right-0 w-14 md:w-20 bg-primary flex flex-col items-center justify-center text-primary-foreground border-l-4 border-foreground/80">
-                <div className="w-5 h-5 md:w-7 md:h-7 bg-primary-foreground rounded-full mb-1" />
-                <span className="text-lg md:text-xl font-bold">{displayDept}</span>
+              {/* Bande droite - Département uniquement */}
+              <div className="absolute inset-y-0 right-0 w-12 md:w-14 bg-[#003399] flex items-center justify-center rounded-r">
+                <span className="text-white font-bold text-lg md:text-xl">{displayDept}</span>
               </div>
             </div>
           </div>
