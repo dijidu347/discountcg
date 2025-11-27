@@ -29,7 +29,7 @@ import {
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
-import { SecureDownloadButton } from "@/components/SecureDownloadButton";
+import { SimpleDownloadButton } from "@/components/SimpleDownloadButton";
 import { cn } from "@/lib/utils";
 
 const SuiviCommande = () => {
@@ -634,7 +634,7 @@ const SuiviCommande = () => {
                           Envoyé le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
-                      <SecureDownloadButton
+                      <SimpleDownloadButton
                         url={doc.url}
                         filename={doc.nom_fichier}
                         trackingNumber={trackingNumber}
@@ -644,7 +644,7 @@ const SuiviCommande = () => {
                       >
                         <Download className="w-4 h-4" />
                         Télécharger
-                      </SecureDownloadButton>
+                      </SimpleDownloadButton>
                     </div>
                   ))}
                   {/* Legacy admin documents from guest_order_documents */}
@@ -656,7 +656,7 @@ const SuiviCommande = () => {
                           Envoyé le {new Date(doc.created_at).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
-                      <SecureDownloadButton
+                      <SimpleDownloadButton
                         url={doc.url}
                         filename={doc.nom_fichier || doc.type_document}
                         trackingNumber={trackingNumber}
@@ -666,7 +666,7 @@ const SuiviCommande = () => {
                       >
                         <Download className="w-4 h-4" />
                         Télécharger
-                      </SecureDownloadButton>
+                      </SimpleDownloadButton>
                     </div>
                   ))}
                 </div>
