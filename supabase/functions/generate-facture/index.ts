@@ -18,7 +18,21 @@ function isValidUUID(uuid: string): boolean {
   return UUID_REGEX.test(uuid);
 }
 
-async function generateFacturePDF(facture: any, demarche: any, garage: any): Promise<Uint8Array> {
+interface InvoiceLineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  isTaxable: boolean;
+}
+
+async function generateFacturePDF(
+  facture: any, 
+  demarche: any, 
+  garage: any, 
+  trackingServices: any[] = [],
+  prixCarteGrise: number = 0,
+  fraisDossier: number = 0
+): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
   const { width, height } = page.getSize();
@@ -90,45 +104,92 @@ async function generateFacturePDF(facture: any, demarche: any, garage: any): Pro
   page.drawText("Type :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
   page.drawText(demarche?.type || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
   
+  // Build line items
+  const lineItems: InvoiceLineItem[] = [];
+  
+  // Carte grise (NOT taxable)
+  if (prixCarteGrise > 0) {
+    lineItems.push({
+      description: `Taxe carte grise - ${demarche?.immatriculation || "N/A"}`,
+      quantity: 1,
+      unitPrice: prixCarteGrise,
+      isTaxable: false,
+    });
+  }
+  
+  // Frais de dossier (taxable)
+  if (fraisDossier > 0) {
+    lineItems.push({
+      description: "Frais de dossier",
+      quantity: 1,
+      unitPrice: fraisDossier,
+      isTaxable: true,
+    });
+  }
+  
+  // Tracking services / Options (taxable)
+  for (const service of trackingServices) {
+    const serviceLabels: Record<string, string> = {
+      'priority': 'Dossier prioritaire',
+      'non_gage': 'Certificat de non gage',
+      'email_tracking': 'Suivi par email',
+      'sms_tracking': 'Suivi par SMS',
+      'full_tracking': 'Suivi complet',
+    };
+    lineItems.push({
+      description: serviceLabels[service.service_type] || service.service_type,
+      quantity: 1,
+      unitPrice: Number(service.price),
+      isTaxable: true,
+    });
+  }
+  
   // Table header
   y -= 50;
   page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
   page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("Qte", { x: width - margin - 150, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("TVA", { x: width - margin - 200, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
   page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
   
-  // Table row
-  y -= 35;
-  const montantHT = Number(facture.montant_ht).toFixed(2);
-  page.drawText(`Demarche carte grise - ${demarche?.type || "Standard"}`, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
-  page.drawText("1", { x: width - margin - 145, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${montantHT} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  // Table rows
+  let totalHT = 0;
+  let totalTaxable = 0;
   
-  y -= 12;
-  page.drawText(`Immatriculation : ${demarche?.immatriculation || "N/A"}`, { x: margin + 10, y, size: 8, font: fontRegular, color: gray });
+  for (const item of lineItems) {
+    y -= 25;
+    page.drawText(item.description, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+    page.drawText(item.isTaxable ? "20%" : "0%", { x: width - margin - 195, y, size: 10, font: fontRegular, color: black });
+    page.drawText(`${item.unitPrice.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+    
+    totalHT += item.unitPrice;
+    if (item.isTaxable) {
+      totalTaxable += item.unitPrice;
+    }
+    
+    // Line separator
+    y -= 8;
+    page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
+  }
   
-  // Line
-  y -= 10;
-  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  // Calculate TVA only on taxable items
+  const montantTVA = totalTaxable * 0.20;
+  const montantTTC = totalHT + montantTVA;
   
   // Totals
-  const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
-  const montantTTC = Number(facture.montant_ttc).toFixed(2);
-  
   y -= 30;
   page.drawText("Total HT", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${montantHT} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${totalHT.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
   
   y -= 18;
-  page.drawText("TVA (20%)", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${montantTVA} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`TVA 20% (sur ${totalTaxable.toFixed(2)} EUR)`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantTVA.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
   
   y -= 5;
   page.drawLine({ start: { x: width - margin - 200, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
   
   y -= 20;
   page.drawText("Total TTC", { x: width - margin - 180, y, size: 14, font: fontBold, color: blue });
-  page.drawText(`${montantTTC} EUR`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
+  page.drawText(`${montantTTC.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
   
   // Payment info
   y -= 50;
@@ -137,6 +198,10 @@ async function generateFacturePDF(facture: any, demarche: any, garage: any): Pro
   page.drawText("Paiement recu", { x: margin + 15, y, size: 11, font: fontBold, color: green });
   y -= 15;
   page.drawText("Paiement effectue par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
+  
+  // Note about TVA
+  y -= 30;
+  page.drawText("* La TVA s'applique uniquement sur les frais de dossier et options, pas sur la taxe carte grise.", { x: margin, y, size: 8, font: fontRegular, color: gray });
   
   // Footer
   y = margin + 40;
@@ -234,6 +299,40 @@ serve(async (req: Request): Promise<Response> => {
       );
     }
 
+    // Fetch tracking services for the demarche
+    const { data: trackingServices } = await supabase
+      .from('tracking_services')
+      .select('*')
+      .eq('demarche_id', demarcheId);
+
+    // Calculate prices with proper TVA separation
+    // Prix carte grise = montant_ttc - frais_dossier - options (no TVA on carte grise)
+    const fraisDossier = Number(demarche.frais_dossier) || 0;
+    const optionsTotal = (trackingServices || []).reduce((sum: number, s: any) => sum + Number(s.price), 0);
+    const montantTotal = Number(demarche.montant_ttc) || 0;
+    
+    // Prix carte grise (taxe régionale + frais acheminement) - NOT taxable
+    const prixCarteGrise = montantTotal - fraisDossier - optionsTotal;
+    
+    // TVA only on frais dossier + options
+    const taxableAmount = fraisDossier + optionsTotal;
+    const tvaAmount = taxableAmount * 0.20;
+    
+    // Total HT = prix carte grise + frais dossier + options (before TVA on taxable)
+    const totalHT = prixCarteGrise + taxableAmount;
+    // Total TTC = HT + TVA on taxable items only
+    const totalTTC = totalHT + tvaAmount;
+
+    console.log('Invoice calculation:', {
+      prixCarteGrise,
+      fraisDossier,
+      optionsTotal,
+      taxableAmount,
+      tvaAmount,
+      totalHT,
+      totalTTC
+    });
+
     // Generate facture number
     const { data: numeroData, error: numeroError } = await supabase
       .rpc('generate_facture_numero');
@@ -244,15 +343,15 @@ serve(async (req: Request): Promise<Response> => {
 
     const numero = numeroData as string;
 
-    // Create facture record
+    // Create facture record with correct TVA calculation
     const { data: facture, error: factureError } = await supabase
       .from('factures')
       .insert({
         numero,
         demarche_id: demarcheId,
         garage_id: demarche.garage_id,
-        montant_ht: demarche.montant_ht || 0,
-        montant_ttc: demarche.montant_ttc || 0,
+        montant_ht: totalHT,
+        montant_ttc: totalTTC,
         tva: 20,
       })
       .select()
@@ -264,8 +363,15 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log('Facture created:', facture);
 
-    // Generate PDF
-    const pdfBytes = await generateFacturePDF(facture, demarche, demarche.garages);
+    // Generate PDF with detailed line items
+    const pdfBytes = await generateFacturePDF(
+      facture, 
+      demarche, 
+      demarche.garages, 
+      trackingServices || [],
+      prixCarteGrise,
+      fraisDossier
+    );
 
     // Store the PDF
     const fileName = `${demarche.garage_id}/${facture.numero}.pdf`;
