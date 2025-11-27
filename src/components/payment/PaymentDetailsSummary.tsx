@@ -40,12 +40,13 @@ export const PaymentDetailsSummary = ({
   
   if (demarcheType === "CG") {
     // Pour CG : TVA uniquement sur les services, pas sur la taxe régionale
-    // montant_ttc = prixCarteGrise + servicesHT + (servicesHT * 0.20)
-    // montant_ttc = prixCarteGrise + servicesHT * 1.20
-    // prixCarteGrise = montant_ttc - servicesHT * 1.20
+    // Calcul: Total TTC = prix carte grise + services HT + TVA (20% sur services)
     const servicesHT = fraisDossier + totalOptionsHT;
     const servicesTVA = servicesHT * 0.20;
-    const prixCarteGrise = montantTtc - servicesHT - servicesTVA;
+    // Prix carte grise = ce qui reste après avoir enlevé les services + TVA
+    // Ne peut pas être négatif
+    const prixCarteGrise = Math.max(0, montantTtc - servicesHT - servicesTVA);
+    // Total TTC = TOUJOURS au moins (services HT + TVA)
     const totalTTC = prixCarteGrise + servicesHT + servicesTVA;
 
     return (
