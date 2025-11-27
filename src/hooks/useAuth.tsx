@@ -52,39 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    if (!error && data.user) {
-      // Create garage profile
-      const { error: garageError } = await supabase
-        .from('garages')
-        .insert({
-          user_id: data.user.id,
-          raison_sociale: userData.raison_sociale,
-          siret: userData.siret,
-          adresse: userData.adresse,
-          code_postal: userData.code_postal,
-          ville: userData.ville,
-          email: userData.email,
-          telephone: userData.telephone
-        });
-
-      if (garageError) {
-        console.error('Error creating garage profile:', garageError);
-        return { error: garageError };
-      }
-
-      // Assign garage role
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: data.user.id,
-          role: 'garage'
-        });
-
-      if (roleError) {
-        console.error('Error assigning role:', roleError);
-      }
-    }
-
+    // Garage profile and role are created automatically via database trigger
     return { error };
   };
 
