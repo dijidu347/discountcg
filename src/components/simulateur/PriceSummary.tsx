@@ -19,6 +19,7 @@ interface PriceSummaryProps {
   selectedOptions?: {
     smsNotifications: boolean;
     emailNotifications: boolean;
+    packNotifications?: boolean;
   };
 }
 
@@ -29,10 +30,21 @@ export const PriceSummary = ({
   fraisDossier = 30,
   selectedOptions
 }: PriceSummaryProps) => {
+  // Prix des options
+  const emailPrix = 5;
+  const smsPrix = 8;
+  const packPrix = 19;
+
   // Calcul TVA comme pour les garages
   const prixCarteGrise = calculation.prixTotal;
-  const smsPrix = selectedOptions?.smsNotifications ? 5 : 0;
-  const totalServicesHT = fraisDossier + smsPrix;
+  let optionsPrix = 0;
+  if (selectedOptions?.packNotifications) {
+    optionsPrix = packPrix;
+  } else {
+    if (selectedOptions?.emailNotifications) optionsPrix += emailPrix;
+    if (selectedOptions?.smsNotifications) optionsPrix += smsPrix;
+  }
+  const totalServicesHT = fraisDossier + optionsPrix;
   const tva = totalServicesHT * 0.20;
   const totalTTC = prixCarteGrise + totalServicesHT + tva;
 
@@ -97,16 +109,22 @@ export const PriceSummary = ({
               <span>Frais de dossier</span>
               <span className="font-medium">{fraisDossier.toFixed(2)} €</span>
             </div>
-            {selectedOptions?.smsNotifications && (
+            {selectedOptions?.packNotifications && (
               <div className="flex justify-between items-center text-sm">
-                <span>Suivi par SMS</span>
-                <span className="font-medium">5.00 €</span>
+                <span>Pack Suivi Complet</span>
+                <span className="font-medium">{packPrix.toFixed(2)} €</span>
               </div>
             )}
-            {selectedOptions?.emailNotifications && (
-              <div className="flex justify-between items-center text-sm text-muted-foreground">
+            {!selectedOptions?.packNotifications && selectedOptions?.emailNotifications && (
+              <div className="flex justify-between items-center text-sm">
                 <span>Suivi par email</span>
-                <span>Gratuit</span>
+                <span className="font-medium">{emailPrix.toFixed(2)} €</span>
+              </div>
+            )}
+            {!selectedOptions?.packNotifications && selectedOptions?.smsNotifications && (
+              <div className="flex justify-between items-center text-sm">
+                <span>Suivi par SMS</span>
+                <span className="font-medium">{smsPrix.toFixed(2)} €</span>
               </div>
             )}
           </div>
