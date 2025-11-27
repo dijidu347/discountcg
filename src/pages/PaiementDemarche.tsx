@@ -389,23 +389,36 @@ const PaiementDemarche = () => {
                     </Button>
                   </CollapsibleTrigger>
                   <CollapsibleContent className="mt-3 space-y-2">
-                    {actionRapide && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">{actionRapide.titre}</span>
-                        <span>{actionRapide.prix.toFixed(2)}€</span>
-                      </div>
-                    )}
-                    
-                    {demarche.type === 'CG' && (() => {
-                      const totalOptions = trackingServices.reduce((sum, s) => sum + (s.price || 0), 0);
-                      const prixCarteGrise = demarche.frais_dossier - (actionRapide?.prix || 0) - totalOptions;
-                      return prixCarteGrise > 0 ? (
+                    {demarche.type === 'CG' ? (
+                      <>
+                        {/* Pour CG: Frais de dossier = prix action rapide (30€) */}
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">Prix carte grise</span>
-                          <span>{prixCarteGrise.toFixed(2)}€</span>
+                          <span className="text-muted-foreground">Carte Grise</span>
+                          <span>{(demarche.frais_dossier || 30).toFixed(2)}€</span>
                         </div>
-                      ) : null;
-                    })()}
+                        
+                        {/* Prix carte grise (taxe régionale - pas de TVA) */}
+                        {(() => {
+                          const totalOptions = trackingServices.reduce((sum, s) => sum + (s.price || 0), 0);
+                          const fraisDossier = demarche.frais_dossier || 30;
+                          const prixCarteGrise = demarche.montant_ttc - fraisDossier - totalOptions;
+                          return prixCarteGrise > 0 ? (
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-muted-foreground">Prix carte grise</span>
+                              <span>{prixCarteGrise.toFixed(2)}€</span>
+                            </div>
+                          ) : null;
+                        })()}
+                      </>
+                    ) : (
+                      /* Pour les autres actions (DA, DC, etc.) */
+                      actionRapide && (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">{actionRapide.titre}</span>
+                          <span>{(demarche.frais_dossier || actionRapide.prix).toFixed(2)}€</span>
+                        </div>
+                      )
+                    )}
                     
                     {trackingServices.map((service) => (
                       <div key={service.id} className="flex justify-between items-center text-sm">
