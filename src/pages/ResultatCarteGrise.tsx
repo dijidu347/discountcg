@@ -417,6 +417,7 @@ export default function ResultatCarteGrise() {
                 dossierPrioritaire,
                 certificatNonGage,
               }}
+              isPaid={isPaid}
             />
 
             <DetailsCollapse calculation={calculation} />

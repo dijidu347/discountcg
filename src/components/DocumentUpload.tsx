@@ -316,7 +316,6 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
           type="file"
           onChange={handleFileChange}
           accept=".pdf,.jpg,.jpeg,.png,image/*"
-          capture="environment"
           disabled={uploading}
           className="hidden"
         />

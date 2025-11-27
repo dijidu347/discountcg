@@ -28,6 +28,21 @@ interface UploadedFile {
   type_document: string;
 }
 
+interface OrderInfo {
+  is_heberge: boolean;
+  has_cotitulaire: boolean;
+  tracking_number: string;
+  requires_resubmission_payment: boolean;
+  resubmission_paid: boolean;
+  email: string;
+  nom: string;
+  prenom: string;
+  immatriculation: string;
+  montant_ttc: number;
+  marque: string | null;
+  modele: string | null;
+}
+
 export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -37,7 +52,7 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockedMessage, setBlockedMessage] = useState("");
-  const [trackingNumber, setTrackingNumber] = useState("");
+  const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -70,15 +85,15 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
         })));
       }
 
-      // Check if order is blocked for resubmission payment and get tracking number
+      // Check order info for conditional documents and blocking
       const { data: order } = await supabase
         .from('guest_orders')
-        .select('requires_resubmission_payment, resubmission_paid, tracking_number')
+        .select('requires_resubmission_payment, resubmission_paid, tracking_number, is_heberge, has_cotitulaire, email, nom, prenom, immatriculation, montant_ttc, marque, modele')
         .eq('id', orderId)
         .single();
 
       if (order) {
-        setTrackingNumber(order.tracking_number);
+        setOrderInfo(order as OrderInfo);
         if (order.requires_resubmission_payment && !order.resubmission_paid) {
           setIsBlocked(true);
           setBlockedMessage("Un paiement de 10€ est requis avant de pouvoir renvoyer des documents.");
@@ -104,39 +119,37 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
       return;
     }
 
+    if (!orderInfo) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les informations de la commande",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // Fetch order details for email
-      const { data: order, error: orderError } = await supabase
-        .from('guest_orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-      if (orderError || !order) {
-        throw new Error("Impossible de récupérer les informations de la commande");
-      }
-
-      // Update order to indicate documents received (keep status as 'paye', just mark documents complete)
+      // Update order to indicate documents received
       await supabase
         .from('guest_orders')
         .update({ documents_complets: true })
         .eq('id', orderId);
 
       // Send email only if email is provided
-      if (order.email && order.email.trim() !== '') {
+      if (orderInfo.email && orderInfo.email.trim() !== '') {
         const { error: emailError } = await supabase.functions.invoke('send-guest-order-email', {
           body: {
             type: 'documents_received',
             orderData: {
-              tracking_number: order.tracking_number,
-              email: order.email,
-              nom: order.nom,
-              prenom: order.prenom,
-              immatriculation: order.immatriculation,
-              montant_ttc: order.montant_ttc,
-              marque: order.marque,
-              modele: order.modele,
+              tracking_number: orderInfo.tracking_number,
+              email: orderInfo.email,
+              nom: orderInfo.nom,
+              prenom: orderInfo.prenom,
+              immatriculation: orderInfo.immatriculation,
+              montant_ttc: orderInfo.montant_ttc,
+              marque: orderInfo.marque,
+              modele: orderInfo.modele,
             }
           }
         });
@@ -153,7 +166,7 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
 
       // Redirect to tracking page
       setTimeout(() => {
-        navigate(`/suivi/${order.tracking_number}`);
+        navigate(`/suivi/${orderInfo.tracking_number}`);
       }, 1500);
 
     } catch (error) {
@@ -187,7 +200,7 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">
-            Vous pourrez déposer vos documents après le paiement
+            Vous pourrez déposer vos documents après le paiement et avoir renseigné vos informations
           </p>
         </CardContent>
       </Card>
@@ -210,6 +223,29 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
     );
   }
 
+  // Build the list of documents to display
+  const documentsToShow: Array<{ id: string; nom_document: string; rectoOnly?: boolean }> = [
+    ...requiredDocuments.map(doc => ({ id: doc.id, nom_document: doc.nom_document, rectoOnly: false }))
+  ];
+
+  // Add attestation de domicile if hébergé
+  if (orderInfo?.is_heberge) {
+    documentsToShow.push({
+      id: 'attestation_domicile',
+      nom_document: 'Attestation de domicile (hébergement)',
+      rectoOnly: true
+    });
+  }
+
+  // Add co-titulaire ID if has_cotitulaire
+  if (orderInfo?.has_cotitulaire) {
+    documentsToShow.push({
+      id: 'cotitulaire_id',
+      nom_document: "Pièce d'identité du co-titulaire",
+      rectoOnly: false
+    });
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -218,8 +254,8 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
           Déposez vos documents
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
-        {requiredDocuments.map((doc) => {
+      <CardContent className="space-y-4">
+        {documentsToShow.map((doc) => {
           const filesForDoc = uploadedFiles.filter(f => f.type_document === doc.nom_document);
           
           return (
@@ -232,6 +268,7 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
               onUploadComplete={loadData}
               isBlocked={isBlocked}
               blockedMessage={blockedMessage}
+              rectoOnly={doc.rectoOnly}
             />
           );
         })}
