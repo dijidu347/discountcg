@@ -18,13 +18,6 @@ function isValidUUID(uuid: string): boolean {
   return UUID_REGEX.test(uuid);
 }
 
-interface InvoiceLineItem {
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  isTaxable: boolean;
-}
-
 async function generateFacturePDF(
   facture: any, 
   demarche: any, 
@@ -105,91 +98,103 @@ async function generateFacturePDF(
   page.drawText("Type :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
   page.drawText(demarche?.type || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
   
-  // Build line items
-  const lineItems: InvoiceLineItem[] = [];
-  
-  // Carte grise (NOT taxable)
+  // =============================================
+  // SECTION 1: CARTE GRISE (exonérée TVA)
+  // =============================================
   if (prixCarteGrise > 0) {
-    lineItems.push({
-      description: `Taxe carte grise - ${demarche?.immatriculation || "N/A"}`,
-      quantity: 1,
-      unitPrice: prixCarteGrise,
-      isTaxable: false,
-    });
-  }
-  
-  // Frais de dossier / Action (taxable)
-  if (fraisDossier > 0) {
-    lineItems.push({
-      description: actionTitre,
-      quantity: 1,
-      unitPrice: fraisDossier,
-      isTaxable: true,
-    });
-  }
-  
-  // Tracking services / Options (taxable)
-  for (const service of trackingServices) {
-    const serviceLabels: Record<string, string> = {
-      'dossier_prioritaire': 'Dossier prioritaire',
-      'certificat_non_gage': 'Certificat de non gage',
-      'suivi_email': 'Suivi par email',
-      'suivi_sms': 'Suivi par SMS',
-      'suivi_complet': 'Suivi complet',
-    };
-    lineItems.push({
-      description: serviceLabels[service.service_type] || service.service_type,
-      quantity: 1,
-      unitPrice: Number(service.price),
-      isTaxable: true,
-    });
-  }
-  
-  // Table header
-  y -= 50;
-  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
-  page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("TVA", { x: width - margin - 200, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
-  
-  // Table rows
-  let totalHT = 0;
-  let totalTaxable = 0;
-  
-  for (const item of lineItems) {
+    y -= 40;
+    page.drawText("CARTE GRISE (exoneree TVA)", { x: margin, y, size: 11, font: fontBold, color: blue });
+    
     y -= 25;
-    page.drawText(item.description, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
-    page.drawText(item.isTaxable ? "20%" : "0%", { x: width - margin - 195, y, size: 10, font: fontRegular, color: black });
-    page.drawText(`${item.unitPrice.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+    page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+    page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    page.drawText("Montant", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
     
-    totalHT += item.unitPrice;
-    if (item.isTaxable) {
-      totalTaxable += item.unitPrice;
-    }
+    y -= 25;
+    page.drawText("Taxe regionale", { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+    page.drawText(`${prixCarteGrise.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
     
-    // Line separator
     y -= 8;
     page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
   }
   
-  // Calculate TVA only on taxable items
-  const montantTVA = totalTaxable * 0.20;
-  const montantTTC = totalHT + montantTVA;
+  // =============================================
+  // SECTION 2: SERVICES (soumis à TVA 20%)
+  // =============================================
+  const hasServices = fraisDossier > 0 || trackingServices.length > 0;
   
-  // Totals
-  y -= 30;
-  page.drawText("Total HT", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
-  page.drawText(`${totalHT.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  if (hasServices) {
+    y -= 40;
+    page.drawText("SERVICES (soumis a TVA 20%)", { x: margin, y, size: 11, font: fontBold, color: blue });
+    
+    y -= 25;
+    page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+    page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+    
+    // Frais de dossier
+    if (fraisDossier > 0) {
+      y -= 25;
+      page.drawText(actionTitre, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+      page.drawText(`${fraisDossier.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+      
+      y -= 8;
+      page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
+    }
+    
+    // Options / Tracking services
+    for (const service of trackingServices) {
+      const serviceLabels: Record<string, string> = {
+        'priority': 'Dossier prioritaire',
+        'non_gage': 'Certificat de non gage',
+        'email': 'Suivi par email',
+        'sms': 'Suivi par SMS',
+        'complete': 'Suivi complet',
+        'dossier_prioritaire': 'Dossier prioritaire',
+        'certificat_non_gage': 'Certificat de non gage',
+        'suivi_email': 'Suivi par email',
+        'suivi_sms': 'Suivi par SMS',
+        'suivi_complet': 'Suivi complet',
+      };
+      
+      y -= 25;
+      page.drawText(serviceLabels[service.service_type] || service.service_type, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+      page.drawText(`${Number(service.price).toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+      
+      y -= 8;
+      page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
+    }
+  }
   
-  y -= 18;
-  page.drawText(`TVA 20% (sur ${totalTaxable.toFixed(2)} EUR)`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  // =============================================
+  // SECTION 3: TOTAUX
+  // =============================================
+  const totalServicesHT = fraisDossier + trackingServices.reduce((sum, s) => sum + Number(s.price), 0);
+  const montantTVA = totalServicesHT * 0.20;
+  const montantTTC = prixCarteGrise + totalServicesHT + montantTVA;
+  
+  y -= 40;
+  page.drawRectangle({ x: width - margin - 220, y: y - 75, width: 220, height: 90, color: lightGray });
+  
+  y -= 10;
+  if (prixCarteGrise > 0) {
+    page.drawText("Carte grise (exoneree TVA)", { x: width - margin - 210, y, size: 10, font: fontRegular, color: gray });
+    page.drawText(`${prixCarteGrise.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+    y -= 15;
+  }
+  
+  page.drawText("Total HT (services)", { x: width - margin - 210, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${totalServicesHT.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 15;
+  page.drawText("TVA 20%", { x: width - margin - 210, y, size: 10, font: fontRegular, color: black });
   page.drawText(`${montantTVA.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
   
   y -= 5;
-  page.drawLine({ start: { x: width - margin - 200, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
+  page.drawLine({ start: { x: width - margin - 210, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
   
   y -= 20;
-  page.drawText("Total TTC", { x: width - margin - 180, y, size: 14, font: fontBold, color: blue });
+  page.drawText("TOTAL TTC", { x: width - margin - 210, y, size: 14, font: fontBold, color: blue });
   page.drawText(`${montantTTC.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
   
   // Payment info
@@ -306,50 +311,40 @@ serve(async (req: Request): Promise<Response> => {
       .select('*')
       .eq('demarche_id', demarcheId);
 
-    // Fetch action rapide to get base action price
+    // Fetch action rapide to get base action price and title
     const { data: actionRapide } = await supabase
       .from('actions_rapides')
       .select('prix, titre')
       .eq('code', demarche.type)
       .single();
 
-    const actionPrix = Number(actionRapide?.prix) || 0;
     const actionTitre = actionRapide?.titre || demarche.type;
     const optionsTotal = (trackingServices || []).reduce((sum: number, s: any) => sum + Number(s.price), 0);
-    const montantTotal = Number(demarche.montant_ttc) || 0;
 
-    // Calculate based on demarche type
-    // For CG: prix carte grise = montant_ttc - action_prix - options (NOT taxable)
-    // For DA/DC etc: no carte grise, everything is taxable
+    // Determine if it's a CG demarche
     const isCG = demarche.type === 'CG' || demarche.type === 'CG_DA' || demarche.type === 'CG_IMPORT';
     
-    let prixCarteGrise = 0;
-    let taxableAmount = 0;
+    // Use the stored values from the database (new correct structure)
+    // prix_carte_grise: taxe régionale (exonérée TVA)
+    // frais_dossier: prix de l'action/dossier (soumis à TVA)
+    const prixCarteGrise = isCG ? (Number(demarche.prix_carte_grise) || 0) : 0;
+    const fraisDossierHT = Number(demarche.frais_dossier) || Number(actionRapide?.prix) || 0;
     
-    if (isCG) {
-      // For CG: carte grise price is NOT taxable, but action fee + options ARE taxable
-      prixCarteGrise = montantTotal - actionPrix - optionsTotal;
-      taxableAmount = actionPrix + optionsTotal;
-    } else {
-      // For DA, DC, etc: everything is taxable (action fee + options)
-      prixCarteGrise = 0;
-      taxableAmount = actionPrix + optionsTotal;
-    }
+    // Total services HT (soumis à TVA) = frais de dossier + options
+    const totalServicesHT = fraisDossierHT + optionsTotal;
     
-    const tvaAmount = taxableAmount * 0.20;
+    // TVA 20% sur les services uniquement
+    const tvaAmount = totalServicesHT * 0.20;
     
-    // Total HT = prix carte grise (non taxable) + taxable items
-    const totalHT = prixCarteGrise + taxableAmount;
-    // Total TTC = HT + TVA on taxable items only
-    const totalTTC = totalHT + tvaAmount;
+    // Total TTC = carte grise (exonérée) + services HT + TVA
+    const totalTTC = prixCarteGrise + totalServicesHT + tvaAmount;
 
     console.log('Invoice calculation:', {
       prixCarteGrise,
-      actionPrix,
+      fraisDossierHT,
       optionsTotal,
-      taxableAmount,
+      totalServicesHT,
       tvaAmount,
-      totalHT,
       totalTTC,
       isCG
     });
@@ -365,13 +360,15 @@ serve(async (req: Request): Promise<Response> => {
     const numero = numeroData as string;
 
     // Create facture record with correct TVA calculation
+    // montant_ht = total services HT (sans carte grise)
+    // montant_ttc = carte grise + services HT + TVA
     const { data: facture, error: factureError } = await supabase
       .from('factures')
       .insert({
         numero,
         demarche_id: demarcheId,
         garage_id: demarche.garage_id,
-        montant_ht: totalHT,
+        montant_ht: totalServicesHT,
         montant_ttc: totalTTC,
         tva: 20,
       })
@@ -391,7 +388,7 @@ serve(async (req: Request): Promise<Response> => {
       demarche.garages, 
       trackingServices || [],
       prixCarteGrise,
-      actionPrix,
+      fraisDossierHT,
       actionTitre
     );
 
