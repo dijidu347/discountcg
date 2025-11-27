@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +16,137 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 function isValidUUID(uuid: string): boolean {
   return UUID_REGEX.test(uuid);
+}
+
+async function generateFacturePDF(facture: any, demarche: any, garage: any): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const { width, height } = page.getSize();
+  
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  const blue = rgb(0.145, 0.388, 0.922); // #2563eb
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const lightGray = rgb(0.95, 0.96, 0.98);
+  const green = rgb(0.02, 0.59, 0.41);
+  
+  const margin = 50;
+  let y = height - margin;
+  
+  // Header
+  page.drawText("DiscountCarteGrise", { x: margin, y, size: 24, font: fontBold, color: blue });
+  
+  const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  
+  // Blue line
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+  
+  // Parties
+  y -= 40;
+  page.drawText("EMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  
+  y -= 20;
+  page.drawText("DiscountCarteGrise", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(garage?.raison_sociale || "Client", { x: width / 2, y, size: 12, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Service de cartes grises", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(garage?.adresse || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText("SIRET : 123 456 789 00012", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`${garage?.code_postal || ""} ${garage?.ville || ""}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText(garage?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  // Détails box
+  y -= 40;
+  page.drawRectangle({ x: margin, y: y - 70, width: width - 2 * margin, height: 80, color: lightGray });
+  
+  y -= 10;
+  page.drawText("Details de la demarche", { x: margin + 15, y, size: 12, font: fontBold, color: blue });
+  
+  y -= 20;
+  page.drawText("N Demarche :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(demarche?.numero_demarche || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Immatriculation :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(demarche?.immatriculation || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Type :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(demarche?.type || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  // Table header
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+  page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("Qte", { x: width - margin - 150, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  
+  // Table row
+  y -= 35;
+  const montantHT = Number(facture.montant_ht).toFixed(2);
+  page.drawText(`Demarche carte grise - ${demarche?.type || "Standard"}`, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+  page.drawText("1", { x: width - margin - 145, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantHT} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 12;
+  page.drawText(`Immatriculation : ${demarche?.immatriculation || "N/A"}`, { x: margin + 10, y, size: 8, font: fontRegular, color: gray });
+  
+  // Line
+  y -= 10;
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  
+  // Totals
+  const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
+  const montantTTC = Number(facture.montant_ttc).toFixed(2);
+  
+  y -= 30;
+  page.drawText("Total HT", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantHT} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 18;
+  page.drawText("TVA (20%)", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantTVA} EUR`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 5;
+  page.drawLine({ start: { x: width - margin - 200, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
+  
+  y -= 20;
+  page.drawText("Total TTC", { x: width - margin - 180, y, size: 14, font: fontBold, color: blue });
+  page.drawText(`${montantTTC} EUR`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
+  
+  // Payment info
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 25, width: width - 2 * margin, height: 40, color: rgb(0.93, 0.99, 0.96) });
+  y -= 5;
+  page.drawText("Paiement recu", { x: margin + 15, y, size: 11, font: fontBold, color: green });
+  y -= 15;
+  page.drawText("Paiement effectue par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
+  
+  // Footer
+  y = margin + 40;
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  y -= 15;
+  page.drawText("DiscountCarteGrise - Service agree de cartes grises", { x: width / 2 - 120, y, size: 9, font: fontRegular, color: gray });
+  y -= 12;
+  page.drawText("Cette facture a ete generee automatiquement et est valable sans signature.", { x: width / 2 - 160, y, size: 8, font: fontRegular, color: gray });
+  
+  return await pdfDoc.save();
 }
 
 serve(async (req: Request): Promise<Response> => {
@@ -132,16 +264,15 @@ serve(async (req: Request): Promise<Response> => {
 
     console.log('Facture created:', facture);
 
-    // Generate PDF content (simple HTML that can be converted to PDF)
-    const pdfContent = generateFactureHTML(facture, demarche, demarche.garages);
+    // Generate PDF
+    const pdfBytes = await generateFacturePDF(facture, demarche, demarche.garages);
 
-    // Store the HTML content temporarily (in a real implementation, you'd use a PDF library)
-    // For now, we'll store the HTML and let the frontend handle PDF conversion
-    const fileName = `${demarche.garage_id}/${facture.numero}.html`;
+    // Store the PDF
+    const fileName = `${demarche.garage_id}/${facture.numero}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('factures')
-      .upload(fileName, pdfContent, {
-        contentType: 'text/html',
+      .upload(fileName, pdfBytes, {
+        contentType: 'application/pdf',
         upsert: true,
       });
 
@@ -192,93 +323,3 @@ serve(async (req: Request): Promise<Response> => {
     );
   }
 });
-
-function generateFactureHTML(facture: any, demarche: any, garage: any): string {
-  const date = new Date(facture.created_at).toLocaleDateString('fr-FR');
-  
-  return `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facture ${facture.numero}</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 40px; }
-    .header { display: flex; justify-content: space-between; margin-bottom: 40px; }
-    .company { font-weight: bold; font-size: 18px; }
-    .invoice-number { font-size: 24px; font-weight: bold; color: #333; }
-    .section { margin: 20px 0; }
-    .section-title { font-weight: bold; font-size: 14px; margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #f5f5f5; font-weight: bold; }
-    .total-row { font-weight: bold; font-size: 16px; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center; color: #666; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <div class="company">DiscountCG</div>
-      <div>Service de gestion des démarches</div>
-    </div>
-    <div>
-      <div class="invoice-number">FACTURE ${facture.numero}</div>
-      <div>Date: ${date}</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">FACTURÉ À:</div>
-    <div><strong>${garage.raison_sociale}</strong></div>
-    <div>${garage.adresse}</div>
-    <div>${garage.code_postal} ${garage.ville}</div>
-    <div>SIRET: ${garage.siret}</div>
-    <div>Email: ${garage.email}</div>
-    <div>Tél: ${garage.telephone}</div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>N° Démarche</th>
-        <th>Description</th>
-        <th>Immatriculation</th>
-        <th>Type</th>
-        <th style="text-align: right;">Montant HT</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td style="font-family: monospace; font-weight: bold;">${demarche.numero_demarche}</td>
-        <td>Démarche administrative</td>
-        <td>${demarche.immatriculation}</td>
-        <td>${demarche.type}</td>
-        <td style="text-align: right;">${Number(facture.montant_ht).toFixed(2)} €</td>
-      </tr>
-    </tbody>
-    <tfoot>
-      <tr>
-        <td colspan="4" style="text-align: right;"><strong>Total HT</strong></td>
-        <td style="text-align: right;"><strong>${Number(facture.montant_ht).toFixed(2)} €</strong></td>
-      </tr>
-      <tr>
-        <td colspan="4" style="text-align: right;">TVA (${facture.tva}%)</td>
-        <td style="text-align: right;">${(Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2)} €</td>
-      </tr>
-      <tr class="total-row">
-        <td colspan="4" style="text-align: right;">Total TTC</td>
-        <td style="text-align: right;">${Number(facture.montant_ttc).toFixed(2)} €</td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <div class="footer">
-    <p>Merci de votre confiance</p>
-    <p>DiscountCG - Service professionnel de gestion des démarches automobiles</p>
-  </div>
-</body>
-</html>
-  `.trim();
-}

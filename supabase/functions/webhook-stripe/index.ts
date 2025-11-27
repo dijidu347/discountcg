@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import Stripe from "https://esm.sh/stripe?target=deno";
+import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
 
 // Stripe client - Production
 const stripe = Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
@@ -16,283 +17,269 @@ const corsHeaders = {
 };
 
 // -----------------------------
-// HTML GENERATORS
+// PDF GENERATORS
 // -----------------------------
 
-function generateDemarcheFactureHTML(facture: any, demarche: any, garage: any): string {
+async function generateDemarcheFacturePDF(facture: any, demarche: any, garage: any): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const { width, height } = page.getSize();
+  
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  const blue = rgb(0.145, 0.388, 0.922); // #2563eb
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const lightGray = rgb(0.95, 0.96, 0.98);
+  const green = rgb(0.02, 0.59, 0.41);
+  
+  const margin = 50;
+  let y = height - margin;
+  
+  // Header
+  page.drawText("DiscountCarteGrise", { x: margin, y, size: 24, font: fontBold, color: blue });
+  
   const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  
+  // Blue line
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+  
+  // Parties
+  y -= 40;
+  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  
+  y -= 20;
+  page.drawText("DiscountCarteGrise", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(garage?.raison_sociale || "Client", { x: width / 2, y, size: 12, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Service de cartes grises", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(garage?.adresse || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText("SIRET : 123 456 789 00012", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`${garage?.code_postal || ""} ${garage?.ville || ""}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText(garage?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  // Détails box
+  y -= 40;
+  page.drawRectangle({ x: margin, y: y - 70, width: width - 2 * margin, height: 80, color: lightGray });
+  
+  y -= 10;
+  page.drawText("Détails de la démarche", { x: margin + 15, y, size: 12, font: fontBold, color: blue });
+  
+  y -= 20;
+  page.drawText("N° Démarche :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(demarche?.numero_demarche || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Immatriculation :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(demarche?.immatriculation || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Type :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(demarche?.type || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  // Table header
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+  page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("Qté", { x: width - margin - 150, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  
+  // Table row
+  y -= 35;
   const montantHT = Number(facture.montant_ht).toFixed(2);
+  page.drawText(`Démarche carte grise - ${demarche?.type || "Standard"}`, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+  page.drawText("1", { x: width - margin - 145, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantHT} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 12;
+  page.drawText(`Immatriculation : ${demarche?.immatriculation || "N/A"}`, { x: margin + 10, y, size: 8, font: fontRegular, color: gray });
+  
+  // Line
+  y -= 10;
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  
+  // Totals
   const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
   const montantTTC = Number(facture.montant_ttc).toFixed(2);
-
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facture ${facture.numero}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; padding: 40px; }
-    .container { max-width: 800px; margin: 0 auto; background: #fff; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
-    .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
-    .invoice-info { text-align: right; }
-    .invoice-number { font-size: 20px; font-weight: bold; color: #2563eb; }
-    .invoice-date { color: #666; margin-top: 5px; }
-    .parties { display: flex; justify-content: space-between; margin-bottom: 40px; }
-    .party { width: 45%; }
-    .party-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 10px; font-weight: bold; }
-    .party-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-    .party-details { color: #666; font-size: 13px; }
-    .details-box { background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
-    .details-title { font-weight: bold; margin-bottom: 10px; color: #2563eb; }
-    .details-row { display: flex; justify-content: space-between; padding: 5px 0; }
-    .details-label { color: #666; }
-    .details-value { font-weight: 500; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-    th { background: #2563eb; color: white; padding: 12px; text-align: left; font-weight: 500; }
-    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
-    .text-right { text-align: right; }
-    .totals { margin-left: auto; width: 300px; }
-    .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-    .total-row.final { border-bottom: none; border-top: 2px solid #2563eb; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #2563eb; }
-    .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #666; text-align: center; }
-    .payment-info { background: #ecfdf5; border-radius: 8px; padding: 15px; margin-top: 30px; }
-    .payment-title { font-weight: bold; color: #059669; margin-bottom: 5px; }
-    @media print { body { padding: 20px; } .container { max-width: 100%; } }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">DiscountCarteGrise</div>
-      <div class="invoice-info">
-        <div class="invoice-number">Facture N° ${facture.numero}</div>
-        <div class="invoice-date">Date : ${date}</div>
-      </div>
-    </div>
-
-    <div class="parties">
-      <div class="party">
-        <div class="party-title">Émetteur</div>
-        <div class="party-name">DiscountCarteGrise</div>
-        <div class="party-details">
-          Service de cartes grises<br>
-          SIRET : 123 456 789 00012<br>
-          contact@discountcartegrise.fr
-        </div>
-      </div>
-      <div class="party">
-        <div class="party-title">Client</div>
-        <div class="party-name">${garage?.raison_sociale || 'Client'}</div>
-        <div class="party-details">
-          ${garage?.adresse || ''}<br>
-          ${garage?.code_postal || ''} ${garage?.ville || ''}<br>
-          SIRET : ${garage?.siret || 'N/A'}<br>
-          ${garage?.email || ''}
-        </div>
-      </div>
-    </div>
-
-    <div class="details-box">
-      <div class="details-title">Détails de la démarche</div>
-      <div class="details-row">
-        <span class="details-label">N° Démarche :</span>
-        <span class="details-value">${demarche?.numero_demarche || 'N/A'}</span>
-      </div>
-      <div class="details-row">
-        <span class="details-label">Immatriculation :</span>
-        <span class="details-value">${demarche?.immatriculation || 'N/A'}</span>
-      </div>
-      <div class="details-row">
-        <span class="details-label">Type :</span>
-        <span class="details-value">${demarche?.type || 'N/A'}</span>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th class="text-right">Quantité</th>
-          <th class="text-right">Prix HT</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Démarche carte grise - ${demarche?.type || 'Standard'}<br><small style="color:#666">Immatriculation : ${demarche?.immatriculation || 'N/A'}</small></td>
-          <td class="text-right">1</td>
-          <td class="text-right">${montantHT} €</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="totals">
-      <div class="total-row">
-        <span>Total HT</span>
-        <span>${montantHT} €</span>
-      </div>
-      <div class="total-row">
-        <span>TVA (20%)</span>
-        <span>${montantTVA} €</span>
-      </div>
-      <div class="total-row final">
-        <span>Total TTC</span>
-        <span>${montantTTC} €</span>
-      </div>
-    </div>
-
-    <div class="payment-info">
-      <div class="payment-title">✓ Paiement reçu</div>
-      <div>Paiement effectué par carte bancaire via Stripe</div>
-    </div>
-
-    <div class="footer">
-      <p>DiscountCarteGrise - Service agréé de cartes grises</p>
-      <p>Cette facture a été générée automatiquement et est valable sans signature.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+  
+  y -= 30;
+  page.drawText("Total HT", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantHT} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 18;
+  page.drawText("TVA (20%)", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantTVA} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 5;
+  page.drawLine({ start: { x: width - margin - 200, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
+  
+  y -= 20;
+  page.drawText("Total TTC", { x: width - margin - 180, y, size: 14, font: fontBold, color: blue });
+  page.drawText(`${montantTTC} €`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
+  
+  // Payment info
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 25, width: width - 2 * margin, height: 40, color: rgb(0.93, 0.99, 0.96) });
+  y -= 5;
+  page.drawText("✓ Paiement reçu", { x: margin + 15, y, size: 11, font: fontBold, color: green });
+  y -= 15;
+  page.drawText("Paiement effectué par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
+  
+  // Footer
+  y = margin + 40;
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  y -= 15;
+  page.drawText("DiscountCarteGrise - Service agréé de cartes grises", { x: width / 2 - 120, y, size: 9, font: fontRegular, color: gray });
+  y -= 12;
+  page.drawText("Cette facture a été générée automatiquement et est valable sans signature.", { x: width / 2 - 160, y, size: 8, font: fontRegular, color: gray });
+  
+  return await pdfDoc.save();
 }
 
-function generateGuestOrderFactureHTML(facture: any, order: any): string {
+async function generateGuestOrderFacturePDF(facture: any, order: any): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]); // A4
+  const { width, height } = page.getSize();
+  
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  
+  const blue = rgb(0.145, 0.388, 0.922);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const lightGray = rgb(0.95, 0.96, 0.98);
+  const green = rgb(0.02, 0.59, 0.41);
+  
+  const margin = 50;
+  let y = height - margin;
+  
+  // Header
+  page.drawText("DiscountCarteGrise", { x: margin, y, size: 24, font: fontBold, color: blue });
+  
   const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  
+  // Blue line
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+  
+  // Parties
+  y -= 40;
+  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  
+  y -= 20;
+  page.drawText("DiscountCarteGrise", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(`${order?.prenom || ""} ${order?.nom || ""}`, { x: width / 2, y, size: 12, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Service de cartes grises", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(order?.adresse || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText("SIRET : 123 456 789 00012", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`${order?.code_postal || ""} ${order?.ville || ""}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(order?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  y -= 12;
+  page.drawText(order?.telephone || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  
+  // Détails box
+  y -= 40;
+  page.drawRectangle({ x: margin, y: y - 70, width: width - 2 * margin, height: 80, color: lightGray });
+  
+  y -= 10;
+  page.drawText("Détails de la commande", { x: margin + 15, y, size: 12, font: fontBold, color: blue });
+  
+  y -= 20;
+  page.drawText("N° Suivi :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(order?.tracking_number || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Immatriculation :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(order?.immatriculation || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  y -= 15;
+  page.drawText("Véhicule :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`${order?.marque || ""} ${order?.modele || ""}`, { x: margin + 150, y, size: 10, font: fontBold, color: black });
+  
+  // Table header
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 25, color: blue });
+  page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("Qté", { x: width - margin - 150, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("Prix HT", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  
+  // Table row
+  y -= 35;
   const montantHT = Number(facture.montant_ht).toFixed(2);
+  page.drawText("Changement de titulaire carte grise", { x: margin + 10, y, size: 10, font: fontRegular, color: black });
+  page.drawText("1", { x: width - margin - 145, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantHT} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 12;
+  page.drawText(`Immatriculation : ${order?.immatriculation || "N/A"}`, { x: margin + 10, y, size: 8, font: fontRegular, color: gray });
+  
+  // Line
+  y -= 10;
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  
+  // Totals
   const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
   const montantTTC = Number(facture.montant_ttc).toFixed(2);
-
-  return `<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facture ${facture.numero}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; padding: 40px; }
-    .container { max-width: 800px; margin: 0 auto; background: #fff; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
-    .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
-    .invoice-info { text-align: right; }
-    .invoice-number { font-size: 20px; font-weight: bold; color: #2563eb; }
-    .invoice-date { color: #666; margin-top: 5px; }
-    .parties { display: flex; justify-content: space-between; margin-bottom: 40px; }
-    .party { width: 45%; }
-    .party-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 10px; font-weight: bold; }
-    .party-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
-    .party-details { color: #666; font-size: 13px; }
-    .details-box { background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
-    .details-title { font-weight: bold; margin-bottom: 10px; color: #2563eb; }
-    .details-row { display: flex; justify-content: space-between; padding: 5px 0; }
-    .details-label { color: #666; }
-    .details-value { font-weight: 500; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-    th { background: #2563eb; color: white; padding: 12px; text-align: left; font-weight: 500; }
-    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
-    .text-right { text-align: right; }
-    .totals { margin-left: auto; width: 300px; }
-    .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
-    .total-row.final { border-bottom: none; border-top: 2px solid #2563eb; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #2563eb; }
-    .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #666; text-align: center; }
-    .payment-info { background: #ecfdf5; border-radius: 8px; padding: 15px; margin-top: 30px; }
-    .payment-title { font-weight: bold; color: #059669; margin-bottom: 5px; }
-    @media print { body { padding: 20px; } .container { max-width: 100%; } }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo">DiscountCarteGrise</div>
-      <div class="invoice-info">
-        <div class="invoice-number">Facture N° ${facture.numero}</div>
-        <div class="invoice-date">Date : ${date}</div>
-      </div>
-    </div>
-
-    <div class="parties">
-      <div class="party">
-        <div class="party-title">Émetteur</div>
-        <div class="party-name">DiscountCarteGrise</div>
-        <div class="party-details">
-          Service de cartes grises<br>
-          SIRET : 123 456 789 00012<br>
-          contact@discountcartegrise.fr
-        </div>
-      </div>
-      <div class="party">
-        <div class="party-title">Client</div>
-        <div class="party-name">${order?.prenom || ''} ${order?.nom || ''}</div>
-        <div class="party-details">
-          ${order?.adresse || ''}<br>
-          ${order?.code_postal || ''} ${order?.ville || ''}<br>
-          ${order?.email || ''}<br>
-          ${order?.telephone || ''}
-        </div>
-      </div>
-    </div>
-
-    <div class="details-box">
-      <div class="details-title">Détails de la commande</div>
-      <div class="details-row">
-        <span class="details-label">N° Suivi :</span>
-        <span class="details-value">${order?.tracking_number || 'N/A'}</span>
-      </div>
-      <div class="details-row">
-        <span class="details-label">Immatriculation :</span>
-        <span class="details-value">${order?.immatriculation || 'N/A'}</span>
-      </div>
-      <div class="details-row">
-        <span class="details-label">Véhicule :</span>
-        <span class="details-value">${order?.marque || ''} ${order?.modele || ''}</span>
-      </div>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Description</th>
-          <th class="text-right">Quantité</th>
-          <th class="text-right">Prix HT</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>Changement de titulaire carte grise<br><small style="color:#666">Immatriculation : ${order?.immatriculation || 'N/A'}</small></td>
-          <td class="text-right">1</td>
-          <td class="text-right">${montantHT} €</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div class="totals">
-      <div class="total-row">
-        <span>Total HT</span>
-        <span>${montantHT} €</span>
-      </div>
-      <div class="total-row">
-        <span>TVA (20%)</span>
-        <span>${montantTVA} €</span>
-      </div>
-      <div class="total-row final">
-        <span>Total TTC</span>
-        <span>${montantTTC} €</span>
-      </div>
-    </div>
-
-    <div class="payment-info">
-      <div class="payment-title">✓ Paiement reçu</div>
-      <div>Paiement effectué par carte bancaire via Stripe</div>
-    </div>
-
-    <div class="footer">
-      <p>DiscountCarteGrise - Service agréé de cartes grises</p>
-      <p>Cette facture a été générée automatiquement et est valable sans signature.</p>
-    </div>
-  </div>
-</body>
-</html>`;
+  
+  y -= 30;
+  page.drawText("Total HT", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantHT} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 18;
+  page.drawText("TVA (20%)", { x: width - margin - 180, y, size: 10, font: fontRegular, color: black });
+  page.drawText(`${montantTVA} €`, { x: width - margin - 70, y, size: 10, font: fontRegular, color: black });
+  
+  y -= 5;
+  page.drawLine({ start: { x: width - margin - 200, y }, end: { x: width - margin, y }, thickness: 2, color: blue });
+  
+  y -= 20;
+  page.drawText("Total TTC", { x: width - margin - 180, y, size: 14, font: fontBold, color: blue });
+  page.drawText(`${montantTTC} €`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
+  
+  // Payment info
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 25, width: width - 2 * margin, height: 40, color: rgb(0.93, 0.99, 0.96) });
+  y -= 5;
+  page.drawText("✓ Paiement reçu", { x: margin + 15, y, size: 11, font: fontBold, color: green });
+  y -= 15;
+  page.drawText("Paiement effectué par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
+  
+  // Footer
+  y = margin + 40;
+  page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
+  y -= 15;
+  page.drawText("DiscountCarteGrise - Service agréé de cartes grises", { x: width / 2 - 120, y, size: 9, font: fontRegular, color: gray });
+  y -= 12;
+  page.drawText("Cette facture a été générée automatiquement et est valable sans signature.", { x: width / 2 - 160, y, size: 8, font: fontRegular, color: gray });
+  
+  return await pdfDoc.save();
 }
 
 // -----------------------------
@@ -348,7 +335,7 @@ serve(async (req) => {
         const { data: order } = await supabase.from("guest_orders").select("*").eq("id", guestOrderId).single();
 
         if (order) {
-          // FACTURE "guest order"
+          // FACTURE "guest order" - PDF
           try {
             const { data: numeroData } = await supabase.rpc("generate_facture_numero");
 
@@ -370,22 +357,26 @@ serve(async (req) => {
                 .single();
 
               if (facture) {
-                const htmlContent = generateGuestOrderFactureHTML(facture, order);
+                const pdfBytes = await generateGuestOrderFacturePDF(facture, order);
 
-                const fileName = `guest-orders/${order.tracking_number}/${facture.numero}.html`;
+                const fileName = `guest-orders/${order.tracking_number}/${facture.numero}.pdf`;
 
-                await supabase.storage.from("factures").upload(fileName, htmlContent, {
-                  contentType: "text/html",
+                const { error: uploadError } = await supabase.storage.from("factures").upload(fileName, pdfBytes, {
+                  contentType: "application/pdf",
                   upsert: true,
                 });
 
-                const {
-                  data: { publicUrl },
-                } = supabase.storage.from("factures").getPublicUrl(fileName);
+                if (uploadError) {
+                  console.error("❌ Erreur upload PDF:", uploadError);
+                } else {
+                  const {
+                    data: { publicUrl },
+                  } = supabase.storage.from("factures").getPublicUrl(fileName);
 
-                await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+                  await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
 
-                console.log("✔️ Facture guest order créée :", facture.numero);
+                  console.log("✔️ Facture PDF guest order créée :", facture.numero);
+                }
               }
             }
           } catch (err) {
@@ -452,7 +443,7 @@ serve(async (req) => {
           .eq("id", demarcheId)
           .single();
 
-        // FACTURE DÉMARCHE
+        // FACTURE DÉMARCHE - PDF
         if (demarche) {
           try {
             const { data: existingFacture } = await supabase
@@ -481,22 +472,26 @@ serve(async (req) => {
                   .single();
 
                 if (facture) {
-                  const html = generateDemarcheFactureHTML(facture, demarche, demarche.garages);
+                  const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, demarche.garages);
 
-                  const fileName = `${demarche.garage_id}/${facture.numero}.html`;
+                  const fileName = `${demarche.garage_id}/${facture.numero}.pdf`;
 
-                  await supabase.storage.from("factures").upload(fileName, html, {
-                    contentType: "text/html",
+                  const { error: uploadError } = await supabase.storage.from("factures").upload(fileName, pdfBytes, {
+                    contentType: "application/pdf",
                     upsert: true,
                   });
 
-                  const {
-                    data: { publicUrl },
-                  } = supabase.storage.from("factures").getPublicUrl(fileName);
+                  if (uploadError) {
+                    console.error("❌ Erreur upload PDF:", uploadError);
+                  } else {
+                    const {
+                      data: { publicUrl },
+                    } = supabase.storage.from("factures").getPublicUrl(fileName);
 
-                  await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+                    await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
 
-                  console.log("✔️ Facture démarche créée :", facture.numero);
+                    console.log("✔️ Facture PDF démarche créée :", facture.numero);
+                  }
                 }
               }
             }
