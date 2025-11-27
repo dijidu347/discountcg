@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.download-facture]
 verify_jwt = false
+
+[functions.download-file]
+verify_jwt = false
