@@ -1,4 +1,4 @@
-import { Shield, CreditCard, CheckCircle, Lock } from "lucide-react";
+import { Shield, CreditCard, CheckCircle, Lock, ShieldCheck } from "lucide-react";
 
 export const TrustSection = () => {
   return (
@@ -52,6 +52,17 @@ export const TrustSection = () => {
                     Tous vos documents sont cryptés (SSL 256 bits) et automatiquement supprimés après le traitement de votre dossier. Votre vie privée est notre priorité.
                   </p>
                 </div>
+              </div>
+            </div>
+            
+            {/* Badge RGPD */}
+            <div className="flex items-center gap-3 bg-primary-foreground/10 p-3 rounded-xl border border-primary-foreground/20">
+              <div className="flex items-center justify-center w-10 h-10 bg-primary-foreground/20 rounded-full flex-shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Conforme RGPD</p>
+                <p className="text-xs opacity-80">Protection des données personnelles</p>
               </div>
             </div>
           </div>
