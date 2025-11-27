@@ -111,7 +111,7 @@ const PaiementDemarche = () => {
   const [clientSecret, setClientSecret] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [showDetails, setShowDetails] = useState(false);
-  const [trackingService, setTrackingService] = useState<any>(null);
+  const [trackingServices, setTrackingServices] = useState<any[]>([]);
   const [actionRapide, setActionRapide] = useState<any>(null);
   const [stripePromise, setStripePromise] = useState<any>(null);
 
@@ -154,15 +154,14 @@ const PaiementDemarche = () => {
 
       setDemarche(demarcheData);
 
-      // Charger le service de suivi si présent
+      // Charger tous les services de suivi
       const { data: trackingData } = await supabase
         .from("tracking_services")
         .select("*")
-        .eq("demarche_id", demarcheId)
-        .maybeSingle();
+        .eq("demarche_id", demarcheId);
 
-      if (trackingData) {
-        setTrackingService(trackingData);
+      if (trackingData && trackingData.length > 0) {
+        setTrackingServices(trackingData);
       }
 
       // Charger l'action rapide
@@ -392,24 +391,34 @@ const PaiementDemarche = () => {
                   <CollapsibleContent className="mt-3 space-y-2">
                     {actionRapide && (
                       <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Frais de dossier</span>
+                        <span className="text-muted-foreground">{actionRapide.titre}</span>
                         <span>{actionRapide.prix.toFixed(2)}€</span>
                       </div>
                     )}
                     
-                    {demarche.type === 'CG' && demarche.frais_dossier > (actionRapide?.prix || 0) && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Prix carte grise</span>
-                        <span>{(demarche.frais_dossier - (actionRapide?.prix || 0) - (trackingService?.price || 0)).toFixed(2)}€</span>
-                      </div>
-                    )}
+                    {demarche.type === 'CG' && (() => {
+                      const totalOptions = trackingServices.reduce((sum, s) => sum + (s.price || 0), 0);
+                      const prixCarteGrise = demarche.frais_dossier - (actionRapide?.prix || 0) - totalOptions;
+                      return prixCarteGrise > 0 ? (
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Prix carte grise</span>
+                          <span>{prixCarteGrise.toFixed(2)}€</span>
+                        </div>
+                      ) : null;
+                    })()}
                     
-                    {trackingService && (
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Service de suivi premium</span>
-                        <span>{trackingService.price.toFixed(2)}€</span>
+                    {trackingServices.map((service) => (
+                      <div key={service.id} className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">
+                          {service.service_type === 'dossier_prioritaire' && 'Dossier prioritaire'}
+                          {service.service_type === 'certificat_non_gage' && 'Certificat de non-gage'}
+                          {service.service_type === 'suivi_email' && 'Suivi par email'}
+                          {service.service_type === 'suivi_sms' && 'Suivi par SMS'}
+                          {service.service_type === 'suivi_complet' && 'Suivi complet'}
+                        </span>
+                        <span>{service.price.toFixed(2)}€</span>
                       </div>
-                    )}
+                    ))}
                   </CollapsibleContent>
                 </Collapsible>
 

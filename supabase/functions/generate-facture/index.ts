@@ -31,7 +31,8 @@ async function generateFacturePDF(
   garage: any, 
   trackingServices: any[] = [],
   prixCarteGrise: number = 0,
-  fraisDossier: number = 0
+  fraisDossier: number = 0,
+  actionTitre: string = "Frais de dossier"
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]); // A4
@@ -117,10 +118,10 @@ async function generateFacturePDF(
     });
   }
   
-  // Frais de dossier (taxable)
+  // Frais de dossier / Action (taxable)
   if (fraisDossier > 0) {
     lineItems.push({
-      description: "Frais de dossier",
+      description: actionTitre,
       quantity: 1,
       unitPrice: fraisDossier,
       isTaxable: true,
@@ -130,11 +131,11 @@ async function generateFacturePDF(
   // Tracking services / Options (taxable)
   for (const service of trackingServices) {
     const serviceLabels: Record<string, string> = {
-      'priority': 'Dossier prioritaire',
-      'non_gage': 'Certificat de non gage',
-      'email_tracking': 'Suivi par email',
-      'sms_tracking': 'Suivi par SMS',
-      'full_tracking': 'Suivi complet',
+      'dossier_prioritaire': 'Dossier prioritaire',
+      'certificat_non_gage': 'Certificat de non gage',
+      'suivi_email': 'Suivi par email',
+      'suivi_sms': 'Suivi par SMS',
+      'suivi_complet': 'Suivi complet',
     };
     lineItems.push({
       description: serviceLabels[service.service_type] || service.service_type,
@@ -305,32 +306,52 @@ serve(async (req: Request): Promise<Response> => {
       .select('*')
       .eq('demarche_id', demarcheId);
 
-    // Calculate prices with proper TVA separation
-    // Prix carte grise = montant_ttc - frais_dossier - options (no TVA on carte grise)
-    const fraisDossier = Number(demarche.frais_dossier) || 0;
+    // Fetch action rapide to get base action price
+    const { data: actionRapide } = await supabase
+      .from('actions_rapides')
+      .select('prix, titre')
+      .eq('code', demarche.type)
+      .single();
+
+    const actionPrix = Number(actionRapide?.prix) || 0;
+    const actionTitre = actionRapide?.titre || demarche.type;
     const optionsTotal = (trackingServices || []).reduce((sum: number, s: any) => sum + Number(s.price), 0);
     const montantTotal = Number(demarche.montant_ttc) || 0;
+
+    // Calculate based on demarche type
+    // For CG: prix carte grise = montant_ttc - action_prix - options (NOT taxable)
+    // For DA/DC etc: no carte grise, everything is taxable
+    const isCG = demarche.type === 'CG' || demarche.type === 'CG_DA' || demarche.type === 'CG_IMPORT';
     
-    // Prix carte grise (taxe régionale + frais acheminement) - NOT taxable
-    const prixCarteGrise = montantTotal - fraisDossier - optionsTotal;
+    let prixCarteGrise = 0;
+    let taxableAmount = 0;
     
-    // TVA only on frais dossier + options
-    const taxableAmount = fraisDossier + optionsTotal;
+    if (isCG) {
+      // For CG: carte grise price is NOT taxable, but action fee + options ARE taxable
+      prixCarteGrise = montantTotal - actionPrix - optionsTotal;
+      taxableAmount = actionPrix + optionsTotal;
+    } else {
+      // For DA, DC, etc: everything is taxable (action fee + options)
+      prixCarteGrise = 0;
+      taxableAmount = actionPrix + optionsTotal;
+    }
+    
     const tvaAmount = taxableAmount * 0.20;
     
-    // Total HT = prix carte grise + frais dossier + options (before TVA on taxable)
+    // Total HT = prix carte grise (non taxable) + taxable items
     const totalHT = prixCarteGrise + taxableAmount;
     // Total TTC = HT + TVA on taxable items only
     const totalTTC = totalHT + tvaAmount;
 
     console.log('Invoice calculation:', {
       prixCarteGrise,
-      fraisDossier,
+      actionPrix,
       optionsTotal,
       taxableAmount,
       tvaAmount,
       totalHT,
-      totalTTC
+      totalTTC,
+      isCG
     });
 
     // Generate facture number
@@ -370,7 +391,8 @@ serve(async (req: Request): Promise<Response> => {
       demarche.garages, 
       trackingServices || [],
       prixCarteGrise,
-      fraisDossier
+      actionPrix,
+      actionTitre
     );
 
     // Store the PDF
