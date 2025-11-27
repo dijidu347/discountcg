@@ -22,12 +22,15 @@ import {
   Download,
   CreditCard,
   Ban,
-  Upload
+  Upload,
+  Send,
+  CheckCircle2
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SecureDownloadButton } from "@/components/SecureDownloadButton";
+import { cn } from "@/lib/utils";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
@@ -41,6 +44,8 @@ const SuiviCommande = () => {
   const [requiredDocuments, setRequiredDocuments] = useState<any[]>([]);
   const [factureUrl, setFactureUrl] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [reuploadedDocs, setReuploadedDocs] = useState<Set<string>>(new Set());
+  const [isSubmittingReupload, setIsSubmittingReupload] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -768,10 +773,29 @@ const SuiviCommande = () => {
 
                 {/* Afficher les documents rejetés à re-uploader */}
                 {rejectedDocTypes.length > 0 && (
-                  <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h3 className="font-semibold text-red-700 mb-2 flex items-center gap-2">
-                      <AlertCircle className="w-5 h-5" />
-                      Documents à renvoyer
+                  <div className={cn(
+                    "mt-6 p-4 border rounded-lg transition-all duration-500",
+                    reuploadedDocs.size === rejectedDocTypes.length 
+                      ? "bg-green-50 border-green-300" 
+                      : "bg-red-50 border-red-200"
+                  )}>
+                    <h3 className={cn(
+                      "font-semibold mb-2 flex items-center gap-2 transition-colors duration-300",
+                      reuploadedDocs.size === rejectedDocTypes.length 
+                        ? "text-green-700" 
+                        : "text-red-700"
+                    )}>
+                      {reuploadedDocs.size === rejectedDocTypes.length ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 animate-scale-in" />
+                          Documents prêts à être envoyés
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle className="w-5 h-5" />
+                          Documents à renvoyer ({reuploadedDocs.size}/{rejectedDocTypes.length})
+                        </>
+                      )}
                     </h3>
                     
                     {/* Payment required message */}
@@ -809,40 +833,169 @@ const SuiviCommande = () => {
                       </div>
                     ) : (
                       <p className="text-sm text-muted-foreground mb-4">
-                        Certains documents ont été refusés. Veuillez les renvoyer ci-dessous.
+                        {reuploadedDocs.size === rejectedDocTypes.length 
+                          ? "Tous les documents ont été téléchargés. Cliquez sur 'Valider' pour les envoyer."
+                          : "Certains documents ont été refusés. Veuillez les renvoyer ci-dessous."}
                       </p>
                     )}
 
                     {rejectedDocTypes.map(docType => {
                       const isBlocked = order.requires_resubmission_payment && !order.resubmission_paid;
-                      // Don't pass rejected files - allow fresh upload
-                      const existingFiles: any[] = [];
+                      const isReuploaded = reuploadedDocs.has(docType);
+                      // Check if there's a pending document for this type (newly uploaded)
+                      const newDoc = documents.find(d => 
+                        d.type_document === docType && 
+                        d.validation_status === 'pending'
+                      );
+                      const rejectedDoc = documents.find(d => 
+                        d.type_document === docType && 
+                        d.validation_status === 'rejected'
+                      );
 
                       return (
-                        <div key={docType} className="mb-4">
-                          <div className="mb-2">
-                            <p className="font-medium">{docType}</p>
-                            {documents.find(d => d.type_document === docType && d.rejection_reason)?.rejection_reason && (
-                              <p className="text-sm text-red-600">
-                                Raison: {documents.find(d => d.type_document === docType)?.rejection_reason}
+                        <div 
+                          key={docType} 
+                          className={cn(
+                            "mb-4 p-3 rounded-lg border transition-all duration-500",
+                            isReuploaded || newDoc
+                              ? "bg-green-100 border-green-300 animate-fade-in"
+                              : "bg-white border-red-200"
+                          )}
+                        >
+                          <div className="mb-2 flex items-center justify-between">
+                            <div>
+                              <p className="font-medium flex items-center gap-2">
+                                {docType}
+                                {(isReuploaded || newDoc) && (
+                                  <Badge className="bg-green-500 animate-scale-in">
+                                    <CheckCircle2 className="w-3 h-3 mr-1" />
+                                    Nouveau fichier ajouté
+                                  </Badge>
+                                )}
                               </p>
-                            )}
+                              {rejectedDoc?.rejection_reason && !isReuploaded && !newDoc && (
+                                <p className="text-sm text-red-600">
+                                  Raison: {rejectedDoc.rejection_reason}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <GuestDocumentUpload
-                            orderId={order.id}
-                            documentType={docType}
-                            label={`Renvoyer: ${docType}`}
-                            existingFiles={existingFiles}
-                            isBlocked={isBlocked}
-                            blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
-                            onUploadComplete={() => {
-                              loadDocuments();
-                              loadOrder();
-                            }}
-                          />
+                          
+                          {/* Show upload component only if not reuploaded */}
+                          {!isReuploaded && !newDoc && (
+                            <GuestDocumentUpload
+                              orderId={order.id}
+                              documentType={docType}
+                              label={`Renvoyer: ${docType}`}
+                              existingFiles={[]}
+                              isBlocked={isBlocked}
+                              blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
+                              onUploadComplete={() => {
+                                setReuploadedDocs(prev => new Set([...prev, docType]));
+                                loadDocuments();
+                                loadOrder();
+                                toast({
+                                  title: "Document téléchargé",
+                                  description: "N'oubliez pas de cliquer sur 'Valider' pour envoyer vos documents.",
+                                });
+                              }}
+                            />
+                          )}
+                          
+                          {/* Show success state with file name */}
+                          {(isReuploaded || newDoc) && newDoc && (
+                            <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                              <FileCheck className="w-4 h-4 text-green-600" />
+                              <span className="text-sm text-green-700">{newDoc.nom_fichier}</span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
+
+                    {/* Validate button */}
+                    {!(order.requires_resubmission_payment && !order.resubmission_paid) && reuploadedDocs.size > 0 && (
+                      <div className="mt-4 pt-4 border-t border-green-200">
+                        <Button
+                          onClick={async () => {
+                            setIsSubmittingReupload(true);
+                            try {
+                              // Update order to show documents have been resubmitted
+                              await supabase
+                                .from('guest_orders')
+                                .update({ 
+                                  documents_complets: true,
+                                  status: 'en_traitement'
+                                })
+                                .eq('id', order.id);
+
+                              // Send notification email
+                              if (order.email) {
+                                await supabase.functions.invoke('send-guest-order-email', {
+                                  body: {
+                                    type: 'documents_received',
+                                    orderData: {
+                                      tracking_number: order.tracking_number,
+                                      email: order.email,
+                                      nom: order.nom,
+                                      prenom: order.prenom,
+                                      immatriculation: order.immatriculation,
+                                      montant_ttc: order.montant_ttc,
+                                      marque: order.marque,
+                                      modele: order.modele,
+                                    }
+                                  }
+                                });
+                              }
+
+                              toast({
+                                title: "Documents envoyés !",
+                                description: "Vos documents ont été soumis avec succès. Nous allons les examiner dans les plus brefs délais.",
+                              });
+
+                              // Reset reuploaded docs and reload
+                              setReuploadedDocs(new Set());
+                              loadDocuments();
+                              loadOrder();
+                            } catch (error) {
+                              console.error('Error submitting:', error);
+                              toast({
+                                title: "Erreur",
+                                description: "Une erreur est survenue lors de l'envoi.",
+                                variant: "destructive",
+                              });
+                            } finally {
+                              setIsSubmittingReupload(false);
+                            }
+                          }}
+                          disabled={isSubmittingReupload || reuploadedDocs.size === 0}
+                          className={cn(
+                            "w-full transition-all duration-300",
+                            reuploadedDocs.size === rejectedDocTypes.length
+                              ? "bg-green-600 hover:bg-green-700"
+                              : "bg-primary hover:bg-primary/90"
+                          )}
+                          size="lg"
+                        >
+                          {isSubmittingReupload ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Envoi en cours...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-2" />
+                              Valider et envoyer mes documents ({reuploadedDocs.size}/{rejectedDocTypes.length})
+                            </>
+                          )}
+                        </Button>
+                        {reuploadedDocs.size < rejectedDocTypes.length && (
+                          <p className="text-xs text-muted-foreground text-center mt-2">
+                            Vous pouvez valider maintenant ou ajouter les autres documents
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
