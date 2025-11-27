@@ -54,6 +54,8 @@ interface GuestOrder {
   requires_resubmission_payment: boolean;
   resubmission_payment_amount: number;
   resubmission_paid: boolean;
+  sms_notifications: boolean;
+  email_notifications: boolean;
 }
 
 interface Document {
@@ -760,24 +762,71 @@ export default function GuestOrderDetail() {
               <CardTitle>Détails du paiement</CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Montant HT</span>
-              <span className="font-medium">{order.montant_ht.toFixed(2)} €</span>
+          <CardContent className="space-y-3">
+            {/* Carte Grise (exonérée TVA) */}
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Carte grise (exonérée TVA)</p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Taxe régionale</span>
+                <span className="font-medium">{order.montant_ht.toFixed(2)} €</span>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Frais de dossier</span>
-              <span className="font-medium">{order.frais_dossier.toFixed(2)} €</span>
+            
+            {/* Services (soumis à TVA) */}
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-muted-foreground uppercase">Services (HT)</p>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Frais de dossier</span>
+                <span className="font-medium">{order.frais_dossier.toFixed(2)} €</span>
+              </div>
+              {order.sms_notifications && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Suivi par SMS</span>
+                  <span className="font-medium">5.00 €</span>
+                </div>
+              )}
+              {order.email_notifications && (
+                <div className="flex justify-between text-muted-foreground">
+                  <span>Suivi par email</span>
+                  <span>Gratuit</span>
+                </div>
+              )}
             </div>
+            
+            <div className="h-px bg-border" />
+            
+            {/* Totaux */}
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Carte grise (exonérée)</span>
+                <span>{order.montant_ht.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Total HT (services)</span>
+                <span>{(order.frais_dossier + (order.sms_notifications ? 5 : 0)).toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>TVA (20%)</span>
+                <span>{((order.frais_dossier + (order.sms_notifications ? 5 : 0)) * 0.20).toFixed(2)} €</span>
+              </div>
+            </div>
+            
             <div className="h-px bg-border" />
             <div className="flex justify-between text-lg font-bold">
               <span>Total TTC</span>
               <span>{order.montant_ttc.toFixed(2)} €</span>
             </div>
+            
             <div className="pt-2 flex gap-2 flex-wrap">
               <Badge variant={order.paye ? "default" : "secondary"}>
                 {order.paye ? "Payé" : "Non payé"}
               </Badge>
+              {order.sms_notifications && (
+                <Badge className="bg-primary">SMS activé</Badge>
+              )}
+              {order.email_notifications && (
+                <Badge variant="secondary">Email activé</Badge>
+              )}
               {order.requires_resubmission_payment && (
                 <Badge variant={order.resubmission_paid ? "default" : "outline"} className={order.resubmission_paid ? "bg-green-500" : "border-orange-500 text-orange-600"}>
                   {order.resubmission_paid ? "Renvoi payé" : `Renvoi requis: ${order.resubmission_payment_amount || 10}€`}

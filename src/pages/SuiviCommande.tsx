@@ -384,28 +384,51 @@ const SuiviCommande = () => {
             </Card>
           </div>
 
-          {/* Notifications */}
+          {/* Options souscrites */}
           <Card>
             <CardHeader>
-              <CardTitle>Notifications actives</CardTitle>
+              <CardTitle>Options souscrites</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2">
-              {order.email_notifications && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">Email</Badge>
-                  <span className="text-sm">
-                    Vous recevrez des mises à jour par email
-                  </span>
+            <CardContent className="space-y-3">
+              {order.email_notifications ? (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-green-100 text-green-700">Email</Badge>
+                    <span className="text-sm">Suivi par email</span>
+                  </div>
+                  <span className="text-sm text-green-600 font-medium">Gratuit</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">Email</Badge>
+                    <span className="text-sm text-muted-foreground">Suivi par email</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Non souscrit</span>
                 </div>
               )}
-              {order.sms_notifications && (
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary">SMS</Badge>
-                  <span className="text-sm">
-                    Vous recevrez des mises à jour par SMS
-                  </span>
+              
+              {order.sms_notifications ? (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-primary">SMS</Badge>
+                    <span className="text-sm">Suivi par SMS</span>
+                  </div>
+                  <span className="text-sm text-primary font-medium">5,00 €</span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">SMS</Badge>
+                    <span className="text-sm text-muted-foreground">Suivi par SMS</span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">Non souscrit</span>
                 </div>
               )}
+              
+              <p className="text-xs text-muted-foreground pt-2">
+                * Les emails essentiels (document refusé, dossier terminé) sont toujours envoyés.
+              </p>
             </CardContent>
           </Card>
 

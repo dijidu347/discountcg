@@ -24,43 +24,46 @@ export const DetailsCollapse = ({ calculation }: DetailsCollapseProps) => {
         <Card>
           <CardContent className="pt-6">
             <div className="space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Tarif du département</span>
-                <span className="font-medium">{calculation.tarifDepartement.toFixed(2)} €/CV</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Nombre de chevaux fiscaux</span>
-                <span className="font-medium">{calculation.chevauxFiscaux} CV</span>
-              </div>
-              {calculation.prixCVAvantAbattement && (
+              {/* Prix taxe régionale */}
+              {calculation.prixCVAvantAbattement ? (
                 <>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Prix avant abattement</span>
+                    <span className="text-muted-foreground">Taxe régionale avant abattement</span>
                     <span className="font-medium">{calculation.prixCVAvantAbattement.toFixed(2)} €</span>
                   </div>
                   <div className="flex justify-between text-sm text-green-600">
-                    <span>Abattement -50%</span>
+                    <span>Abattement -50% (véhicule +10 ans)</span>
                     <span className="font-medium">-{(calculation.prixCVAvantAbattement * 0.5).toFixed(2)} €</span>
                   </div>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>Taxe régionale après abattement</span>
+                    <span>{calculation.prixCV.toFixed(2)} €</span>
+                  </div>
                 </>
+              ) : (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Taxe régionale</span>
+                  <span className="font-medium">{calculation.prixCV.toFixed(2)} €</span>
+                </div>
               )}
+              
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Prix taxe régionale</span>
-                <span className="font-medium">{calculation.prixCV.toFixed(2)} €</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Frais de gestion</span>
+                <span className="text-muted-foreground">Taxe de gestion</span>
                 <span className="font-medium">{calculation.fraisGestion.toFixed(2)} €</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Frais d'acheminement</span>
+                <span className="text-muted-foreground">Redevance d'acheminement</span>
                 <span className="font-medium">{calculation.fraisAcheminement.toFixed(2)} €</span>
               </div>
+              
               <div className="border-t pt-3 mt-3">
                 <div className="flex justify-between font-bold text-lg">
-                  <span>Total TTC</span>
+                  <span>Total carte grise</span>
                   <span className="text-primary">{calculation.prixTotal.toFixed(2)} €</span>
                 </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exonéré de TVA (taxe régionale)
+                </p>
               </div>
             </div>
           </CardContent>

@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { PriceSummary } from "@/components/simulateur/PriceSummary";
 import { DetailsCollapse } from "@/components/simulateur/DetailsCollapse";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadList } from "@/components/upload/UploadList";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
+import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft } from "lucide-react";
+import { Loader2, ChevronLeft, Mail, MessageSquare, Bell } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -23,14 +25,32 @@ export default function ResultatCarteGrise() {
   const [calculation, setCalculation] = useState<PriceCalculation | null>(null);
   const [orderId, setOrderId] = useState<string>("");
   const [departement, setDepartement] = useState<string>("");
+  const [vehicleInfo, setVehicleInfo] = useState<NormalizedVehicleData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
+  
+  // Options de paiement
+  const [smsNotifications, setSmsNotifications] = useState(false);
+  const [emailNotifications, setEmailNotifications] = useState(true);
+
+  const fraisDossier = 30;
+
+  // Calcul du total TTC
+  const calculateTotalTTC = () => {
+    if (!calculation) return 0;
+    const prixCarteGrise = calculation.prixTotal;
+    const smsPrix = smsNotifications ? 5 : 0;
+    const totalServicesHT = fraisDossier + smsPrix;
+    const tva = totalServicesHT * 0.20;
+    return prixCarteGrise + totalServicesHT + tva;
+  };
 
   useEffect(() => {
     const loadData = async () => {
       try {
         const orderIdParam = searchParams.get('orderId');
         const departementParam = searchParams.get('departement');
+        const plaqueParam = searchParams.get('plaque');
         const vehicleData = location.state?.vehicleData;
 
         if (!orderIdParam || !departementParam || !vehicleData) {
@@ -46,6 +66,14 @@ export default function ResultatCarteGrise() {
         setOrderId(orderIdParam);
         setDepartement(departementParam);
 
+        // Récupérer les infos véhicule via l'API
+        if (plaqueParam) {
+          const vehicleResponse = await getVehicleByPlate(plaqueParam);
+          if (vehicleResponse.success && vehicleResponse.data) {
+            setVehicleInfo(vehicleResponse.data);
+          }
+        }
+
         // Calculer le prix
         const calc = calculatePrice(
           departementParam,
@@ -54,26 +82,6 @@ export default function ResultatCarteGrise() {
         );
 
         setCalculation(calc);
-
-        // Calculer le TTC correct : carte grise + frais dossier + TVA sur frais dossier
-        const fraisDossier = 30;
-        const totalServicesHT = fraisDossier; // Pas d'options sélectionnées à ce stade
-        const tva = totalServicesHT * 0.20;
-        const montantTTC = calc.prixTotal + totalServicesHT + tva;
-
-        // Mettre à jour la commande avec le prix calculé
-        const { error } = await supabase
-          .from('guest_orders')
-          .update({
-            montant_ht: calc.prixTotal, // Prix carte grise (exonéré TVA)
-            montant_ttc: montantTTC, // Carte grise + frais dossier + TVA
-            frais_dossier: fraisDossier,
-            puiss_fisc: vehicleData.chevauxFiscaux,
-            date_mec: vehicleData.dateMiseEnCirculation,
-          })
-          .eq('id', orderIdParam);
-
-        if (error) throw error;
 
       } catch (error) {
         console.error('Error loading data:', error);
@@ -89,6 +97,37 @@ export default function ResultatCarteGrise() {
 
     loadData();
   }, [searchParams, location.state, navigate, toast]);
+
+  // Mettre à jour la commande quand les options changent
+  useEffect(() => {
+    const updateOrder = async () => {
+      if (!orderId || !calculation) return;
+
+      const prixCarteGrise = calculation.prixTotal;
+      const smsPrix = smsNotifications ? 5 : 0;
+      const totalServicesHT = fraisDossier + smsPrix;
+      const tva = totalServicesHT * 0.20;
+      const montantTTC = prixCarteGrise + totalServicesHT + tva;
+
+      await supabase
+        .from('guest_orders')
+        .update({
+          montant_ht: prixCarteGrise,
+          montant_ttc: montantTTC,
+          frais_dossier: fraisDossier,
+          sms_notifications: smsNotifications,
+          email_notifications: emailNotifications,
+          marque: vehicleInfo?.marque || null,
+          modele: vehicleInfo?.modele || null,
+          energie: vehicleInfo?.energie || null,
+          date_mec: vehicleInfo?.date_mec || null,
+          puiss_fisc: calculation.chevauxFiscaux,
+        })
+        .eq('id', orderId);
+    };
+
+    updateOrder();
+  }, [orderId, calculation, smsNotifications, emailNotifications, vehicleInfo, fraisDossier]);
 
   if (isLoading) {
     return (
@@ -123,25 +162,85 @@ export default function ResultatCarteGrise() {
         </Button>
 
         <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left side - Payment and Documents */}
+          {/* Left side - Options and Payment */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Step 1: Payment */}
+            {/* Step 1: Options de suivi */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
                   1
                 </div>
+                <h2 className="text-2xl font-bold">Options de suivi</h2>
+              </div>
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    Notifications
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                    <Checkbox
+                      id="email_notif"
+                      checked={emailNotifications}
+                      onCheckedChange={(checked) => setEmailNotifications(checked as boolean)}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="email_notif" className="cursor-pointer flex items-center gap-2 font-medium">
+                        <Mail className="w-4 h-4 text-primary" />
+                        Suivi par email
+                        <span className="ml-auto text-green-600 font-semibold">Gratuit</span>
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Recevez les mises à jour de votre dossier par email
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                    <Checkbox
+                      id="sms_notif"
+                      checked={smsNotifications}
+                      onCheckedChange={(checked) => setSmsNotifications(checked as boolean)}
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="sms_notif" className="cursor-pointer flex items-center gap-2 font-medium">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                        Suivi par SMS
+                        <span className="ml-auto text-primary font-semibold">+5,00 €</span>
+                      </Label>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Recevez les mises à jour importantes par SMS en temps réel
+                      </p>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground mt-4">
+                    * Les emails essentiels (document refusé, dossier terminé, facture) sont toujours envoyés.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Step 2: Payment */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
+                  2
+                </div>
                 <h2 className="text-2xl font-bold">Payer votre commande</h2>
               </div>
               
               <PaymentMethods
-                amount={calculation.prixTotal}
+                amount={calculateTotalTTC()}
                 orderId={orderId}
                 onPaymentSuccess={() => setIsPaid(true)}
               />
             </div>
 
-            {/* Step 2: Documents */}
+            {/* Step 3: Documents */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
@@ -149,7 +248,7 @@ export default function ResultatCarteGrise() {
                     ? 'bg-primary text-primary-foreground' 
                     : 'bg-muted text-muted-foreground'
                 }`}>
-                  2
+                  3
                 </div>
                 <h2 className="text-2xl font-bold">Envoyer vos documents</h2>
               </div>
@@ -166,6 +265,12 @@ export default function ResultatCarteGrise() {
             <PriceSummary
               calculation={calculation}
               departement={departement}
+              vehicleInfo={vehicleInfo || undefined}
+              fraisDossier={fraisDossier}
+              selectedOptions={{
+                smsNotifications,
+                emailNotifications,
+              }}
             />
 
             <DetailsCollapse calculation={calculation} />
