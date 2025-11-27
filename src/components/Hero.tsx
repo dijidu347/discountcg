@@ -1,123 +1,77 @@
-import { Shield, Award, Clock, Star, Flag, CheckCircle, Lock, Zap } from "lucide-react";
-import { PriceSimulator } from "@/components/PriceSimulator";
-import { StatsCounter } from "@/components/StatsCounter";
+import { Shield, Clock, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 const Hero = () => {
-  return <section className="relative min-h-screen pt-16 pb-16 overflow-hidden bg-gradient-to-b from-background via-primary/5 to-background">
-      {/* Bande tricolore française */}
-      <div className="absolute top-16 left-0 right-0 h-1.5 flex z-20">
-        <div className="flex-1 bg-gradient-to-r from-france-blue to-france-blue" />
+  const scrollToSimulator = () => {
+    const element = document.getElementById("simulateur");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
+  return (
+    <section className="relative pt-16 overflow-hidden">
+      {/* Bande tricolore */}
+      <div className="absolute top-16 left-0 right-0 h-1 flex z-20">
+        <div className="flex-1 bg-france-blue" />
         <div className="flex-1 bg-background" />
-        <div className="flex-1 bg-gradient-to-l from-france-red to-france-red" />
+        <div className="flex-1 bg-france-red" />
       </div>
 
-      <div className="container mx-auto px-4 relative z-10 pt-8">
-        {/* En-tête principale */}
-        <div className="text-center mb-12 space-y-4">
-          <div className="inline-flex items-center gap-3 mb-2">
-            <span className="text-6xl">🇫🇷</span>
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black bg-gradient-to-r from-primary via-primary to-accent bg-clip-text text-transparent">
-              Nom à trouver    
-            </h1>
-          </div>
-          
-          <p className="text-2xl md:text-3xl font-bold text-primary">
-            Carte Grise Simplifiée
-          </p>
-          
-          <div className="flex items-center justify-center gap-8 mt-6 flex-wrap">
-            <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20">
-              <Shield className="w-5 h-5 text-primary" />
-              <span className="text-sm font-semibold text-primary">Service Agréé État</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-success/10 rounded-full border border-success/20">
-              <Award className="w-5 h-5 text-success" />
-              <span className="text-sm font-semibold text-success">Depuis 2017</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-accent/10 rounded-full border border-accent/20">
-              <Clock className="w-5 h-5 text-accent" />
-              <span className="text-sm font-semibold text-accent">Traitement 24h</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Grille principale améliorée */}
-        <div className="max-w-7xl mx-auto">
-          {/* Simulateur principal */}
-          <div className="mb-8">
-            <PriceSimulator />
-          </div>
-
-          {/* Grille stats + Google */}
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
-            <StatsCounter />
-            
-            {/* Carte Google My Business mise en avant */}
-            <a href="https://www.google.fr/search?sca_esv=a73f109bbcae9216&sxsrf=AE3TifMH8hCDAbm_y2mEw-YvpIEG7jzcdg:1763372759531&kgmid=/g/11w9zk40cx&q=Garage+Jimmy+2x" target="_blank" rel="noopener noreferrer" className="group relative bg-gradient-to-br from-card to-card/80 hover:from-primary/5 hover:to-primary/10 transition-all duration-300 rounded-2xl p-8 shadow-2xl border-2 border-primary/30 hover:border-primary hover:scale-[1.02] overflow-hidden">
-              {/* Effet de brillance au survol */}
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+      {/* Hero principal */}
+      <div className="bg-gradient-to-br from-primary via-primary/90 to-primary/80 text-primary-foreground py-20 md:py-28">
+        <div className="container mx-auto px-4">
+          <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+            {/* Contenu texte */}
+            <div className="text-center md:text-left">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
+                Carte grise en ligne<br/>
+                <span className="text-primary-foreground/90">rapide et sécurisée</span>
+              </h1>
               
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-6">
-                  <img alt="Garage Jimmy 2x" className="w-16 h-16 rounded-full shadow-lg object-cover" src="/lovable-uploads/cde191fb-e77f-4260-bde8-152e023920a5.jpg" />
-                  <div>
-                    <p className="font-bold text-2xl text-foreground">Garage Jimmy 2x</p>
-                    <p className="text-sm text-muted-foreground">Google My Business</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 mb-4">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" />)}
-                  <span className="text-xl font-bold text-foreground ml-2">5.0</span>
-                </div>
-                
-                <p className="text-sm text-muted-foreground mb-6">
-                  Des centaines de clients satisfaits nous font confiance
-                </p>
-                
-                <div className="flex items-center gap-3 text-primary group-hover:text-primary/80 transition-colors">
-                  <span className="font-semibold text-lg">Voir tous nos avis</span>
-                  <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </div>
-            </a>
-          </div>
+              <p className="text-lg md:text-xl mb-8 opacity-90">
+                Service habilité par l'État – traitement sous 24h maximum
+              </p>
 
-          {/* Badges de confiance */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-6 h-6 text-primary" />
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8">
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary-foreground/10 rounded-full border border-primary-foreground/20">
+                  <Shield className="w-5 h-5" />
+                  <span className="text-sm font-medium">Service Agréé</span>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary-foreground/10 rounded-full border border-primary-foreground/20">
+                  <Clock className="w-5 h-5" />
+                  <span className="text-sm font-medium">24h Max</span>
+                </div>
               </div>
-              <h3 className="font-bold text-lg mb-2 text-center text-primary">100% Légal</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Service habilité par le Ministère de l'Intérieur
-              </p>
+
+              <Button 
+                onClick={scrollToSimulator}
+                size="lg"
+                className="bg-background text-primary hover:bg-background/90 font-semibold py-6 px-10 rounded-2xl text-lg"
+              >
+                Simuler mon tarif
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
-            
-            <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Lock className="w-6 h-6 text-primary" />
+
+            {/* Image carte grise */}
+            <div className="flex justify-center">
+              <div className="relative">
+                <img 
+                  src="/lovable-uploads/cde191fb-e77f-4260-bde8-152e023920a5.jpg" 
+                  alt="Carte grise française"
+                  className="rounded-3xl shadow-2xl w-full max-w-md border-4 border-primary-foreground/20"
+                />
+                <div className="absolute -bottom-4 -right-4 bg-background text-foreground px-4 py-2 rounded-xl shadow-lg">
+                  <div className="text-sm font-bold text-primary">100% en ligne</div>
+                </div>
               </div>
-              <h3 className="font-bold text-lg mb-2 text-center text-primary">Paiement Sécurisé</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Transaction cryptée et 100% sécurisée
-              </p>
-            </div>
-            
-            <div className="bg-card rounded-xl p-6 shadow-lg border border-border hover:shadow-xl transition-all duration-300">
-              <div className="w-12 h-12 mx-auto mb-3 bg-primary/10 rounded-lg flex items-center justify-center">
-                <Zap className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-lg mb-2 text-center text-primary">Service Rapide</h3>
-              <p className="text-sm text-muted-foreground text-center">
-                Traitement de votre dossier en moins de 24h
-              </p>
             </div>
           </div>
         </div>
       </div>
-    </section>;
+    </section>
+  );
 };
+
 export default Hero;

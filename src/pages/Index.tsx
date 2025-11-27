@@ -8,20 +8,21 @@ import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
 import { GoogleReviewsCarousel } from "@/components/GoogleReviewsCarousel";
-import { PriceComparator } from "@/components/PriceComparator";
 import { SimulateurSection } from "@/components/SimulateurSection";
+import { TrustSection } from "@/components/TrustSection";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-background">
       <Navbar />
       <Hero />
       <SimulateurSection />
-      <GoogleReviewsCarousel />
       <Services />
+      <GoogleReviewsCarousel />
       <Process />
       <WhyUs />
       <Pricing />
+      <TrustSection />
       <FAQ />
       <ContactForm />
       <Footer />
