@@ -317,6 +317,35 @@ export default function DemarcheDetail() {
             message: `Un document a été refusé pour la démarche ${demarche.immatriculation}. Raison: ${comment}`,
             created_by: user?.id
           });
+
+        // Récupérer le type du document refusé
+        const { data: docData } = await supabase
+          .from('documents')
+          .select('type_document')
+          .eq('id', docId)
+          .single();
+
+        // Envoyer email au garage
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'document_rejected',
+              to: garage.email,
+              data: {
+                tracking_number: demarche.numero_demarche || demarche.id,
+                nom: garage.raison_sociale,
+                prenom: '',
+                rejectedDocuments: [{
+                  nom: docData?.type_document || 'Document',
+                  raison: comment
+                }]
+              }
+            }
+          });
+          console.log('Email de refus envoyé au garage');
+        } catch (emailError) {
+          console.error('Erreur envoi email:', emailError);
+        }
       }
 
       // Reload data to reflect changes
@@ -417,11 +446,33 @@ export default function DemarcheDetail() {
             message: `${selectedDocs.length} document(s) refusé(s) pour la démarche ${demarche.immatriculation}. Raison: ${reason}`,
             created_by: user?.id
           });
+
+        // Envoyer email au garage
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'document_rejected',
+              to: garage.email,
+              data: {
+                tracking_number: demarche.numero_demarche || demarche.id,
+                nom: garage.raison_sociale,
+                prenom: '',
+                rejectedDocuments: rejectedDocs.map(d => ({
+                  nom: d.type_document,
+                  raison: reason
+                }))
+              }
+            }
+          });
+          console.log('Email de refus envoyé au garage');
+        } catch (emailError) {
+          console.error('Erreur envoi email:', emailError);
+        }
       }
 
       toast({
         title: "Documents refusés",
-        description: `${selectedDocs.length} document(s) refusé(s). Le garage a été notifié.`,
+        description: `${selectedDocs.length} document(s) refusé(s). Le garage a été notifié par email.`,
       });
 
       setSelectedDocs([]);
