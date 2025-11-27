@@ -69,15 +69,36 @@ export default function MesFactures() {
     setFactures(data || []);
   };
 
-  const handleDownload = (pdfUrl: string, numero: string) => {
-    if (pdfUrl) {
-      window.open(pdfUrl, '_blank');
-    } else {
+  const [downloading, setDownloading] = useState<string | null>(null);
+
+  const handleDownload = async (factureId: string, numero: string) => {
+    setDownloading(factureId);
+    try {
+      const { data, error } = await supabase.functions.invoke('download-facture', {
+        body: { factureId }
+      });
+
+      if (error) throw error;
+
+      // Créer un blob et télécharger
+      const blob = new Blob([data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `facture_${numero}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Erreur téléchargement:', error);
       toast({
         title: "Erreur",
-        description: "URL de facture non disponible",
+        description: "Impossible de télécharger la facture",
         variant: "destructive"
       });
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -175,10 +196,14 @@ export default function MesFactures() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDownload(facture.pdf_url, facture.numero)}
-                            disabled={!facture.pdf_url}
+                            onClick={() => handleDownload(facture.id, facture.numero)}
+                            disabled={!facture.pdf_url || downloading === facture.id}
                           >
-                            <Download className="h-4 w-4" />
+                            {downloading === facture.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4" />
+                            )}
                           </Button>
                         </TableCell>
                       </TableRow>
