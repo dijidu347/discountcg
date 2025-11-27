@@ -271,9 +271,6 @@ export default function ResultatCarteGrise() {
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground mt-4">
-                    * Les emails essentiels (document refusé, dossier terminé, facture) sont toujours envoyés.
-                  </p>
                 </CardContent>
               </Card>
             </div>
