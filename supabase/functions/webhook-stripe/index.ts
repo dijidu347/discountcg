@@ -3,8 +3,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import Stripe from "https://esm.sh/stripe?target=deno";
 
-// Stripe client
-const stripe = Stripe(Deno.env.get("STRIPE_SECRET_KEY_TEST"), {
+// Stripe client - Production
+const stripe = Stripe(Deno.env.get("STRIPE_SECRET_KEY"), {
   apiVersion: "2023-10-16",
 });
 
@@ -16,17 +16,283 @@ const corsHeaders = {
 };
 
 // -----------------------------
-// HTML GENERATORS (inchangé)
+// HTML GENERATORS
 // -----------------------------
 
 function generateDemarcheFactureHTML(facture: any, demarche: any, garage: any): string {
   const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
-  return `YOUR_HTML_HERE`; // ⚠️ Pour alléger la réponse, mets ton HTML ici (identique à ton fichier)
+  const montantHT = Number(facture.montant_ht).toFixed(2);
+  const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
+  const montantTTC = Number(facture.montant_ttc).toFixed(2);
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facture ${facture.numero}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; padding: 40px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+    .invoice-info { text-align: right; }
+    .invoice-number { font-size: 20px; font-weight: bold; color: #2563eb; }
+    .invoice-date { color: #666; margin-top: 5px; }
+    .parties { display: flex; justify-content: space-between; margin-bottom: 40px; }
+    .party { width: 45%; }
+    .party-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 10px; font-weight: bold; }
+    .party-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+    .party-details { color: #666; font-size: 13px; }
+    .details-box { background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+    .details-title { font-weight: bold; margin-bottom: 10px; color: #2563eb; }
+    .details-row { display: flex; justify-content: space-between; padding: 5px 0; }
+    .details-label { color: #666; }
+    .details-value { font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    th { background: #2563eb; color: white; padding: 12px; text-align: left; font-weight: 500; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+    .text-right { text-align: right; }
+    .totals { margin-left: auto; width: 300px; }
+    .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    .total-row.final { border-bottom: none; border-top: 2px solid #2563eb; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #2563eb; }
+    .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #666; text-align: center; }
+    .payment-info { background: #ecfdf5; border-radius: 8px; padding: 15px; margin-top: 30px; }
+    .payment-title { font-weight: bold; color: #059669; margin-bottom: 5px; }
+    @media print { body { padding: 20px; } .container { max-width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">DiscountCarteGrise</div>
+      <div class="invoice-info">
+        <div class="invoice-number">Facture N° ${facture.numero}</div>
+        <div class="invoice-date">Date : ${date}</div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div class="party">
+        <div class="party-title">Émetteur</div>
+        <div class="party-name">DiscountCarteGrise</div>
+        <div class="party-details">
+          Service de cartes grises<br>
+          SIRET : 123 456 789 00012<br>
+          contact@discountcartegrise.fr
+        </div>
+      </div>
+      <div class="party">
+        <div class="party-title">Client</div>
+        <div class="party-name">${garage?.raison_sociale || 'Client'}</div>
+        <div class="party-details">
+          ${garage?.adresse || ''}<br>
+          ${garage?.code_postal || ''} ${garage?.ville || ''}<br>
+          SIRET : ${garage?.siret || 'N/A'}<br>
+          ${garage?.email || ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="details-box">
+      <div class="details-title">Détails de la démarche</div>
+      <div class="details-row">
+        <span class="details-label">N° Démarche :</span>
+        <span class="details-value">${demarche?.numero_demarche || 'N/A'}</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Immatriculation :</span>
+        <span class="details-value">${demarche?.immatriculation || 'N/A'}</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Type :</span>
+        <span class="details-value">${demarche?.type || 'N/A'}</span>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="text-right">Quantité</th>
+          <th class="text-right">Prix HT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Démarche carte grise - ${demarche?.type || 'Standard'}<br><small style="color:#666">Immatriculation : ${demarche?.immatriculation || 'N/A'}</small></td>
+          <td class="text-right">1</td>
+          <td class="text-right">${montantHT} €</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="total-row">
+        <span>Total HT</span>
+        <span>${montantHT} €</span>
+      </div>
+      <div class="total-row">
+        <span>TVA (20%)</span>
+        <span>${montantTVA} €</span>
+      </div>
+      <div class="total-row final">
+        <span>Total TTC</span>
+        <span>${montantTTC} €</span>
+      </div>
+    </div>
+
+    <div class="payment-info">
+      <div class="payment-title">✓ Paiement reçu</div>
+      <div>Paiement effectué par carte bancaire via Stripe</div>
+    </div>
+
+    <div class="footer">
+      <p>DiscountCarteGrise - Service agréé de cartes grises</p>
+      <p>Cette facture a été générée automatiquement et est valable sans signature.</p>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 function generateGuestOrderFactureHTML(facture: any, order: any): string {
   const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
-  return `YOUR_HTML_HERE`; // ⚠️ Mets ton HTML complet ici (identique à ton fichier)
+  const montantHT = Number(facture.montant_ht).toFixed(2);
+  const montantTVA = (Number(facture.montant_ttc) - Number(facture.montant_ht)).toFixed(2);
+  const montantTTC = Number(facture.montant_ttc).toFixed(2);
+
+  return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facture ${facture.numero}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.5; padding: 40px; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 3px solid #2563eb; padding-bottom: 20px; }
+    .logo { font-size: 24px; font-weight: bold; color: #2563eb; }
+    .invoice-info { text-align: right; }
+    .invoice-number { font-size: 20px; font-weight: bold; color: #2563eb; }
+    .invoice-date { color: #666; margin-top: 5px; }
+    .parties { display: flex; justify-content: space-between; margin-bottom: 40px; }
+    .party { width: 45%; }
+    .party-title { font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 10px; font-weight: bold; }
+    .party-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+    .party-details { color: #666; font-size: 13px; }
+    .details-box { background: #f8fafc; border-radius: 8px; padding: 20px; margin-bottom: 30px; }
+    .details-title { font-weight: bold; margin-bottom: 10px; color: #2563eb; }
+    .details-row { display: flex; justify-content: space-between; padding: 5px 0; }
+    .details-label { color: #666; }
+    .details-value { font-weight: 500; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    th { background: #2563eb; color: white; padding: 12px; text-align: left; font-weight: 500; }
+    td { padding: 12px; border-bottom: 1px solid #e5e7eb; }
+    .text-right { text-align: right; }
+    .totals { margin-left: auto; width: 300px; }
+    .total-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; }
+    .total-row.final { border-bottom: none; border-top: 2px solid #2563eb; margin-top: 10px; padding-top: 15px; font-size: 18px; font-weight: bold; color: #2563eb; }
+    .footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #e5e7eb; font-size: 11px; color: #666; text-align: center; }
+    .payment-info { background: #ecfdf5; border-radius: 8px; padding: 15px; margin-top: 30px; }
+    .payment-title { font-weight: bold; color: #059669; margin-bottom: 5px; }
+    @media print { body { padding: 20px; } .container { max-width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">DiscountCarteGrise</div>
+      <div class="invoice-info">
+        <div class="invoice-number">Facture N° ${facture.numero}</div>
+        <div class="invoice-date">Date : ${date}</div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div class="party">
+        <div class="party-title">Émetteur</div>
+        <div class="party-name">DiscountCarteGrise</div>
+        <div class="party-details">
+          Service de cartes grises<br>
+          SIRET : 123 456 789 00012<br>
+          contact@discountcartegrise.fr
+        </div>
+      </div>
+      <div class="party">
+        <div class="party-title">Client</div>
+        <div class="party-name">${order?.prenom || ''} ${order?.nom || ''}</div>
+        <div class="party-details">
+          ${order?.adresse || ''}<br>
+          ${order?.code_postal || ''} ${order?.ville || ''}<br>
+          ${order?.email || ''}<br>
+          ${order?.telephone || ''}
+        </div>
+      </div>
+    </div>
+
+    <div class="details-box">
+      <div class="details-title">Détails de la commande</div>
+      <div class="details-row">
+        <span class="details-label">N° Suivi :</span>
+        <span class="details-value">${order?.tracking_number || 'N/A'}</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Immatriculation :</span>
+        <span class="details-value">${order?.immatriculation || 'N/A'}</span>
+      </div>
+      <div class="details-row">
+        <span class="details-label">Véhicule :</span>
+        <span class="details-value">${order?.marque || ''} ${order?.modele || ''}</span>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th class="text-right">Quantité</th>
+          <th class="text-right">Prix HT</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Changement de titulaire carte grise<br><small style="color:#666">Immatriculation : ${order?.immatriculation || 'N/A'}</small></td>
+          <td class="text-right">1</td>
+          <td class="text-right">${montantHT} €</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="totals">
+      <div class="total-row">
+        <span>Total HT</span>
+        <span>${montantHT} €</span>
+      </div>
+      <div class="total-row">
+        <span>TVA (20%)</span>
+        <span>${montantTVA} €</span>
+      </div>
+      <div class="total-row final">
+        <span>Total TTC</span>
+        <span>${montantTTC} €</span>
+      </div>
+    </div>
+
+    <div class="payment-info">
+      <div class="payment-title">✓ Paiement reçu</div>
+      <div>Paiement effectué par carte bancaire via Stripe</div>
+    </div>
+
+    <div class="footer">
+      <p>DiscountCarteGrise - Service agréé de cartes grises</p>
+      <p>Cette facture a été générée automatiquement et est valable sans signature.</p>
+    </div>
+  </div>
+</body>
+</html>`;
 }
 
 // -----------------------------
@@ -44,7 +310,6 @@ serve(async (req) => {
   let event;
 
   try {
-    // 🔥 Vérification **OBLIGATOIRE**
     event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
   } catch (err) {
     const error = err as Error;
@@ -57,12 +322,7 @@ serve(async (req) => {
 
   console.log("✔️ Stripe event reçu :", event.type);
 
-  // Supabase client (service role)
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-
-  // -----------------------------
-  // SWITCH — TOUS TES TRAITEMENTS
-  // -----------------------------
 
   switch (event.type) {
     case "payment_intent.succeeded": {
@@ -72,10 +332,9 @@ serve(async (req) => {
       const guestOrderId = paymentIntent.metadata.guest_order_id;
 
       // -----------------------------------
-      // 🔵 GESTION DES "guest_orders"
+      // GESTION DES "guest_orders"
       // -----------------------------------
       if (guestOrderId) {
-        // 1. Marquer la commande payée
         await supabase
           .from("guest_orders")
           .update({
@@ -89,9 +348,7 @@ serve(async (req) => {
         const { data: order } = await supabase.from("guest_orders").select("*").eq("id", guestOrderId).single();
 
         if (order) {
-          // -----------------------------
           // FACTURE "guest order"
-          // -----------------------------
           try {
             const { data: numeroData } = await supabase.rpc("generate_facture_numero");
 
@@ -135,9 +392,7 @@ serve(async (req) => {
             console.error("❌ Erreur facture guest order:", err);
           }
 
-          // -----------------------------
-          // EMAIL via nouvelle fonction send-email
-          // -----------------------------
+          // EMAIL
           console.log("📧 Vérification email_notifications:", order.email_notifications);
           if (order.email_notifications) {
             console.log("📧 Envoi email payment_confirmed à:", order.email);
@@ -171,7 +426,7 @@ serve(async (req) => {
       }
 
       // -----------------------------------
-      // 🔵 GESTION DÉMARCHE NORMALE
+      // GESTION DÉMARCHE NORMALE
       // -----------------------------------
       else if (demarcheId) {
         await supabase
@@ -191,16 +446,13 @@ serve(async (req) => {
           })
           .eq("id", demarcheId);
 
-        // Récupération démarche + garage
         const { data: demarche } = await supabase
           .from("demarches")
           .select("*, garages(*)")
           .eq("id", demarcheId)
           .single();
 
-        // -----------------------------
         // FACTURE DÉMARCHE
-        // -----------------------------
         if (demarche) {
           try {
             const { data: existingFacture } = await supabase
@@ -263,7 +515,7 @@ serve(async (req) => {
           )}€ a été validé. Votre démarche est en cours de traitement.`,
         });
 
-        // Envoi d'email de confirmation si demarche est disponible
+        // Email de confirmation
         if (demarche && demarche.garages) {
           console.log("📧 Envoi email payment_confirmed pour démarche à:", demarche.garages.email);
           try {
