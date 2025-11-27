@@ -3,12 +3,12 @@ import { Separator } from "@/components/ui/separator";
 interface TrackingService {
   id: string;
   service_type: string;
-  price: number;
+  price: number; // Prix HT
 }
 
 interface PaymentDetailsSummaryProps {
   demarcheType: string;
-  fraisDossier: number;
+  fraisDossier: number; // Prix HT
   montantTtc: number;
   trackingServices: TrackingService[];
   actionRapideTitre?: string;
@@ -22,6 +22,12 @@ const SERVICE_LABELS: Record<string, string> = {
   suivi_complet: "Suivi complet",
 };
 
+/**
+ * Règles TVA simplifiées :
+ * - TVA 20% sur TOUT sauf la carte grise (taxe régionale)
+ * - Carte grise = exonérée TVA (HT = TTC)
+ * - Services = prix HT + TVA 20%
+ */
 export const PaymentDetailsSummary = ({
   demarcheType,
   fraisDossier,
@@ -29,21 +35,22 @@ export const PaymentDetailsSummary = ({
   trackingServices,
   actionRapideTitre,
 }: PaymentDetailsSummaryProps) => {
-  // Calculate totals based on demarche type
-  const totalOptions = trackingServices.reduce((sum, s) => sum + (s.price || 0), 0);
+  // Calcul des totaux - tous les prix en HT
+  const totalOptionsHT = trackingServices.reduce((sum, s) => sum + (s.price || 0), 0);
   
   if (demarcheType === "CG") {
-    // For CG: prix carte grise = montant_ttc - frais_dossier - options - TVA on services
-    // We need to reverse calculate: montant_ttc = prixCarteGrise + (fraisDossier + options) * 1.20
-    // So: prixCarteGrise = montant_ttc - (fraisDossier + options) * 1.20
-    const servicesHT = fraisDossier + totalOptions;
+    // Pour CG : TVA uniquement sur les services, pas sur la taxe régionale
+    // montant_ttc = prixCarteGrise + servicesHT + (servicesHT * 0.20)
+    // montant_ttc = prixCarteGrise + servicesHT * 1.20
+    // prixCarteGrise = montant_ttc - servicesHT * 1.20
+    const servicesHT = fraisDossier + totalOptionsHT;
     const servicesTVA = servicesHT * 0.20;
     const prixCarteGrise = montantTtc - servicesHT - servicesTVA;
     const totalTTC = prixCarteGrise + servicesHT + servicesTVA;
 
     return (
       <div className="space-y-4">
-        {/* Block 1: Carte grise (sans TVA) */}
+        {/* Bloc 1 : Carte grise (SANS TVA) */}
         {prixCarteGrise > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -59,42 +66,48 @@ export const PaymentDetailsSummary = ({
           </div>
         )}
 
-        <Separator />
+        {(prixCarteGrise > 0 && servicesHT > 0) && <Separator />}
 
-        {/* Block 2: Services (avec TVA 20%) */}
-        <div className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-            Services (HT)
-          </p>
-          
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Frais de dossier</span>
-            <span>{fraisDossier.toFixed(2)} €</span>
-          </div>
-
-          {trackingServices.map((service) => (
-            <div key={service.id} className="flex justify-between items-center text-sm">
-              <span className="text-muted-foreground">
-                {SERVICE_LABELS[service.service_type] || service.service_type}
-              </span>
-              <span>{service.price.toFixed(2)} €</span>
+        {/* Bloc 2 : Services (HT - TVA 20% appliquée à la fin) */}
+        {servicesHT > 0 && (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Services (HT)
+            </p>
+            
+            <div className="flex justify-between items-center text-sm">
+              <span className="text-muted-foreground">Frais de dossier</span>
+              <span>{fraisDossier.toFixed(2)} €</span>
             </div>
-          ))}
-        </div>
+
+            {trackingServices.map((service) => (
+              <div key={service.id} className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">
+                  {SERVICE_LABELS[service.service_type] || service.service_type}
+                </span>
+                <span>{service.price.toFixed(2)} €</span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <Separator />
 
-        {/* Block 3: TVA et totaux */}
+        {/* Bloc 3 : TVA et totaux */}
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">Total HT (services)</span>
-            <span>{servicesHT.toFixed(2)} €</span>
-          </div>
-          <div className="flex justify-between items-center text-sm">
-            <span className="text-muted-foreground">TVA (20%)</span>
-            <span>{servicesTVA.toFixed(2)} €</span>
-          </div>
-          <Separator className="my-2" />
+          {servicesHT > 0 && (
+            <>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Total HT (services)</span>
+                <span>{servicesHT.toFixed(2)} €</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">TVA (20%)</span>
+                <span>{servicesTVA.toFixed(2)} €</span>
+              </div>
+              <Separator className="my-2" />
+            </>
+          )}
           <div className="flex justify-between items-center font-semibold">
             <span>Total TTC</span>
             <span className="text-lg text-primary">{totalTTC.toFixed(2)} €</span>
@@ -104,13 +117,15 @@ export const PaymentDetailsSummary = ({
     );
   }
 
-  // For other types (DA, DC, etc.): TVA on everything
-  const totalHT = montantTtc / 1.20;
-  const totalTVA = montantTtc - totalHT;
+  // Pour les autres types (DA, DC, etc.) : TVA 20% sur tout
+  // Tous les prix sont stockés en HT dans la DB
+  const servicesHT = fraisDossier + totalOptionsHT;
+  const servicesTVA = servicesHT * 0.20;
+  const totalTTC = servicesHT + servicesTVA;
 
   return (
     <div className="space-y-4">
-      {/* Services (avec TVA 20%) */}
+      {/* Services (HT - TVA 20% appliquée à la fin) */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
           Services (HT)
@@ -119,7 +134,7 @@ export const PaymentDetailsSummary = ({
         {actionRapideTitre && (
           <div className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">{actionRapideTitre}</span>
-            <span>{(fraisDossier / 1.20).toFixed(2)} €</span>
+            <span>{fraisDossier.toFixed(2)} €</span>
           </div>
         )}
 
@@ -128,7 +143,7 @@ export const PaymentDetailsSummary = ({
             <span className="text-muted-foreground">
               {SERVICE_LABELS[service.service_type] || service.service_type}
             </span>
-            <span>{(service.price / 1.20).toFixed(2)} €</span>
+            <span>{service.price.toFixed(2)} €</span>
           </div>
         ))}
       </div>
@@ -139,16 +154,16 @@ export const PaymentDetailsSummary = ({
       <div className="space-y-2">
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">Total HT</span>
-          <span>{totalHT.toFixed(2)} €</span>
+          <span>{servicesHT.toFixed(2)} €</span>
         </div>
         <div className="flex justify-between items-center text-sm">
           <span className="text-muted-foreground">TVA (20%)</span>
-          <span>{totalTVA.toFixed(2)} €</span>
+          <span>{servicesTVA.toFixed(2)} €</span>
         </div>
         <Separator className="my-2" />
         <div className="flex justify-between items-center font-semibold">
           <span>Total TTC</span>
-          <span className="text-lg text-primary">{montantTtc.toFixed(2)} €</span>
+          <span className="text-lg text-primary">{totalTTC.toFixed(2)} €</span>
         </div>
       </div>
     </div>
