@@ -503,9 +503,6 @@ const SuiviCommande = () => {
                 </div>
               )}
               
-              <p className="text-xs text-muted-foreground pt-2">
-                * Les emails essentiels (document refusé, dossier terminé) sont toujours envoyés.
-              </p>
             </CardContent>
           </Card>
 
