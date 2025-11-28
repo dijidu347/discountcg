@@ -18,9 +18,16 @@ export function getCerfaUrl(cerfaNumber: string): string {
 }
 
 /**
- * Check if a Cerfa file exists (you may need to add more as you collect them)
+ * Check if a Cerfa file exists
  */
 export function cerfaExists(cerfaNumber: string): boolean {
-  const availableCerfas = ['15776_01', '13751_02'];
+  const availableCerfas = ['15776_01', '13751_02', '13750_05', '13757_03'];
   return availableCerfas.includes(cerfaNumber);
+}
+
+/**
+ * Get Cerfa display name
+ */
+export function getCerfaDisplayName(cerfaNumber: string): string {
+  return `CERFA ${cerfaNumber.replace('_', '*')}`;
 }
