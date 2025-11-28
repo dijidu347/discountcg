@@ -399,6 +399,46 @@ export default function NouvelleDemarche() {
             },
           });
         }
+
+        // Email de confirmation au garage (jeton gratuit)
+        await supabase.functions.invoke("send-email", {
+          body: {
+            type: "garage_demarche_confirmation",
+            to: garage.email,
+            data: {
+              garage_name: garage.raison_sociale,
+              type: demarche.type,
+              reference: demarche.numero_demarche || demarcheId,
+              immatriculation: demarche.immatriculation,
+              montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+              is_free_token: true,
+            },
+          },
+        });
+      }
+    } else {
+      // Démarche payante - envoyer email de confirmation au garage
+      const { data: demarche } = await supabase
+        .from('demarches')
+        .select('*, vehicules(*)')
+        .eq('id', demarcheId)
+        .single();
+
+      if (demarche && garage) {
+        await supabase.functions.invoke("send-email", {
+          body: {
+            type: "garage_demarche_confirmation",
+            to: garage.email,
+            data: {
+              garage_name: garage.raison_sociale,
+              type: demarche.type,
+              reference: demarche.numero_demarche || demarcheId,
+              immatriculation: demarche.immatriculation,
+              montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+              is_free_token: false,
+            },
+          },
+        });
       }
     }
 

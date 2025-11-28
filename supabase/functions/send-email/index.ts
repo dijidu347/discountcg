@@ -354,6 +354,35 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "garage_demarche_confirmation":
+      return {
+        subject: `✅ Démarche soumise - ${data.reference}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Démarche soumise avec succès !</h1>
+            <p>Bonjour ${data.garage_name},</p>
+            <p>Votre démarche a bien été enregistrée et sera traitée dans les plus brefs délais.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Type :</strong> ${data.type}</p>
+              <p style="margin: 8px 0;"><strong>Référence :</strong> ${data.reference}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+              <p style="margin: 8px 0;"><strong>Montant TTC :</strong> ${data.montant_ttc} €</p>
+              ${data.is_free_token ? '<p style="margin: 8px 0; color: #22c55e;"><strong>🎁 Démarche offerte (jeton gratuit utilisé)</strong></p>' : ''}
+            </div>
+
+            <p>Vous pouvez suivre l'avancement de votre démarche depuis votre espace garage.</p>
+
+            <a href="https://discountcg.fr/mes-demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir mes démarches
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }
