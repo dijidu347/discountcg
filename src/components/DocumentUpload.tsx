@@ -242,8 +242,7 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
               <a
                 key={index}
                 href={getCerfaUrl(cerfaNumber)}
-                target="_blank"
-                rel="noopener noreferrer"
+                download
                 className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
