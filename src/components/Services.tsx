@@ -93,14 +93,6 @@ const Services = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <div className="mb-4">
-                    <p className="text-2xl font-bold text-primary">
-                      {action.prix}€ <span className="text-base font-normal">HT</span>
-                      <span className="text-sm font-normal text-muted-foreground ml-1">
-                        {action.code.includes("CG") && "+ taxe régionale"}
-                      </span>
-                    </p>
-                  </div>
                   <Button 
                     onClick={scrollToSimulator} 
                     variant="outline"
@@ -114,6 +106,10 @@ const Services = () => {
             );
           })}
         </div>
+
+        <p className="text-center text-muted-foreground mt-8 italic">
+          ...et plus de services à venir
+        </p>
       </div>
     </section>
   );
