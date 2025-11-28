@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Phone, CheckCircle, Zap, FileCheck } from "lucide-react";
+import { Phone } from "lucide-react";
 interface TrackingServiceOptionProps {
   demarcheId: string;
   garageId: string;
@@ -40,35 +40,12 @@ export function TrackingServiceOption({
     }
   }, [demarcheId, onPriceChange]);
   const services = [{
-    type: 'dossier_prioritaire',
-    name: 'Dossier prioritaire',
-    price: 5,
-    icon: Zap,
-    description: 'Traitement accéléré de votre dossier'
-  }, {
-    type: 'certificat_non_gage',
-    name: 'Certificat de non gage',
-    price: 10,
-    icon: FileCheck,
-    description: 'Obtention du certificat de non gage'
-  }, {
-    type: 'email',
-    name: 'Suivi par email',
-    price: 5,
-    icon: Mail,
-    description: 'Notifications à chaque étape par email'
-  }, {
     type: 'phone',
     name: 'Suivi par SMS',
-    price: 15,
+    price: 0,
     icon: Phone,
-    description: 'SMS à chaque étape'
-  }, {
-    type: 'email_phone',
-    name: 'Suivi complet',
-    price: 18,
-    icon: CheckCircle,
-    description: 'Email + SMS'
+    description: 'SMS à chaque étape',
+    comingSoon: true
   }];
   const handleSubscribe = async (serviceType: string, price: number) => {
     setLoading(true);
@@ -161,25 +138,33 @@ export function TrackingServiceOption({
           {services.map(service => {
             const Icon = service.icon;
             const isSelected = selectedServices.includes(service.type);
-            return <div key={service.type} className={`border rounded-lg p-3 transition-all ${isSelected ? 'border-accent bg-accent/10' : 'border-border'}`}>
+            const isComingSoon = 'comingSoon' in service && service.comingSoon;
+            
+            return <div key={service.type} className={`border rounded-lg p-3 transition-all ${isComingSoon ? 'border-border bg-muted/50 opacity-60' : isSelected ? 'border-accent bg-accent/10' : 'border-border'}`}>
                   <div className="flex flex-col gap-2">
                     <div className="flex items-start gap-2">
-                      <Icon className="h-5 w-5 text-accent mt-0.5 flex-shrink-0" />
+                      <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isComingSoon ? 'text-muted-foreground' : 'text-accent'}`} />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm mb-0.5">{service.name}</h4>
                         <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="font-bold text-base">{service.price}€</p>
-                      {isSelected ? <div className="flex items-center gap-1">
-                          <Badge variant="default" className="text-xs">Activé</Badge>
-                          <Button type="button" size="sm" variant="destructive" onClick={() => handleRemove(service.type)} disabled={loading} className="h-7 text-xs px-2">
-                            Retirer
-                          </Button>
-                        </div> : <Button type="button" size="sm" variant="outline" onClick={() => handleSubscribe(service.type, service.price)} disabled={loading} className="h-7 text-xs px-3">
-                          Ajouter
-                        </Button>}
+                      {isComingSoon ? (
+                        <Badge variant="secondary" className="text-xs">À venir</Badge>
+                      ) : (
+                        <>
+                          <p className="font-bold text-base">{service.price}€</p>
+                          {isSelected ? <div className="flex items-center gap-1">
+                              <Badge variant="default" className="text-xs">Activé</Badge>
+                              <Button type="button" size="sm" variant="destructive" onClick={() => handleRemove(service.type)} disabled={loading} className="h-7 text-xs px-2">
+                                Retirer
+                              </Button>
+                            </div> : <Button type="button" size="sm" variant="outline" onClick={() => handleSubscribe(service.type, service.price)} disabled={loading} className="h-7 text-xs px-3">
+                              Ajouter
+                            </Button>}
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>;
