@@ -88,13 +88,18 @@ export const SimulateurSection = () => {
 
   const formatPlateDisplay = (value: string) => {
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    // Ancienne plaque (commence par un chiffre): 1234 AB 75
     if (/^\d/.test(clean)) {
-      return value.toUpperCase();
+      return value.toUpperCase().replace(/-/g, ' ');
     }
+    // Nouvelle plaque: AA-123-AA
     if (clean.length <= 2) return clean;
     if (clean.length <= 5) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
     return `${clean.slice(0, 2)}-${clean.slice(2, 5)}-${clean.slice(5, 7)}`;
   };
+
+  // Détecte si c'est une ancienne plaque (commence par un chiffre)
+  const isOldPlate = plaque && /^\d/.test(plaque.replace(/[^A-Z0-9]/gi, ''));
 
   const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -200,6 +205,7 @@ export const SimulateurSection = () => {
 
   const displayPlate = plaque ? formatPlateDisplay(plaque) : "AA-123-AA";
   const displayDept = departement || "75";
+  const showOldPlate = isOldPlate;
 
   if (loadingTypes) {
     return (
@@ -226,43 +232,56 @@ export const SimulateurSection = () => {
         <div className="max-w-xl mx-auto bg-card border border-border shadow-xl rounded-2xl p-8">
           {/* Plaque d'immatriculation visuelle */}
           <div className="mb-10 flex justify-center">
-            <div className="w-full max-w-lg h-20 md:h-24 rounded-lg border-[3px] border-foreground shadow-lg relative overflow-hidden bg-background">
-              <div className="absolute inset-[3px] rounded border border-foreground/30" />
-              
-              <div className="absolute inset-y-0 left-0 w-12 md:w-14 bg-[#003399] flex flex-col items-center justify-between py-1.5 md:py-2 rounded-l">
-                <div className="relative w-8 h-8 md:w-9 md:h-9">
-                  {[...Array(12)].map((_, i) => {
-                    const angle = (i * 30 - 90) * (Math.PI / 180);
-                    const x = 50 + 38 * Math.cos(angle);
-                    const y = 50 + 38 * Math.sin(angle);
-                    return (
-                      <span
-                        key={i}
-                        className="absolute text-[#FFCC00] text-[6px] md:text-[7px]"
-                        style={{
-                          left: `${x}%`,
-                          top: `${y}%`,
-                          transform: 'translate(-50%, -50%)'
-                        }}
-                      >
-                        ★
-                      </span>
-                    );
-                  })}
+            {showOldPlate ? (
+              // Ancienne plaque (format FNI: 1234 AB 75)
+              <div className="w-full max-w-lg h-20 md:h-24 rounded-lg border-[3px] border-foreground shadow-lg relative overflow-hidden bg-background">
+                <div className="absolute inset-[3px] rounded border border-foreground/30" />
+                <div className="absolute inset-0 flex items-center justify-center bg-background">
+                  <span className="text-2xl md:text-4xl font-black tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    {displayPlate}
+                  </span>
                 </div>
-                <span className="text-white font-bold text-sm md:text-base">F</span>
               </div>
-              
-              <div className="absolute inset-y-0 left-12 md:left-14 right-12 md:right-14 flex items-center justify-center bg-background">
-                <span className="text-2xl md:text-4xl font-black tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-                  {displayPlate}
-                </span>
+            ) : (
+              // Nouvelle plaque (format SIV: AA-123-AA)
+              <div className="w-full max-w-lg h-20 md:h-24 rounded-lg border-[3px] border-foreground shadow-lg relative overflow-hidden bg-background">
+                <div className="absolute inset-[3px] rounded border border-foreground/30" />
+                
+                <div className="absolute inset-y-0 left-0 w-12 md:w-14 bg-[#003399] flex flex-col items-center justify-between py-1.5 md:py-2 rounded-l">
+                  <div className="relative w-8 h-8 md:w-9 md:h-9">
+                    {[...Array(12)].map((_, i) => {
+                      const angle = (i * 30 - 90) * (Math.PI / 180);
+                      const x = 50 + 38 * Math.cos(angle);
+                      const y = 50 + 38 * Math.sin(angle);
+                      return (
+                        <span
+                          key={i}
+                          className="absolute text-[#FFCC00] text-[6px] md:text-[7px]"
+                          style={{
+                            left: `${x}%`,
+                            top: `${y}%`,
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        >
+                          ★
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <span className="text-white font-bold text-sm md:text-base">F</span>
+                </div>
+                
+                <div className="absolute inset-y-0 left-12 md:left-14 right-12 md:right-14 flex items-center justify-center bg-background">
+                  <span className="text-2xl md:text-4xl font-black tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                    {displayPlate}
+                  </span>
+                </div>
+                
+                <div className="absolute inset-y-0 right-0 w-12 md:w-14 bg-[#003399] flex items-center justify-center rounded-r">
+                  <span className="text-white font-bold text-lg md:text-xl">{displayDept}</span>
+                </div>
               </div>
-              
-              <div className="absolute inset-y-0 right-0 w-12 md:w-14 bg-[#003399] flex items-center justify-center rounded-r">
-                <span className="text-white font-bold text-lg md:text-xl">{displayDept}</span>
-              </div>
-            </div>
+            )}
           </div>
 
           {/* Formulaire */}

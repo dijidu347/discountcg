@@ -5,6 +5,7 @@ import WhyUs from "@/components/WhyUs";
 import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
+import Services from "@/components/Services";
 import { GoogleReviewsCarousel } from "@/components/GoogleReviewsCarousel";
 import { SimulateurSection } from "@/components/SimulateurSection";
 import { TrustSection } from "@/components/TrustSection";
@@ -15,6 +16,7 @@ const Index = () => {
       <Navbar />
       <Hero />
       <SimulateurSection />
+      <Services />
       <TrustSection />
       <GoogleReviewsCarousel />
       <Process />
