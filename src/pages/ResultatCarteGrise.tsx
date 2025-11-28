@@ -32,17 +32,13 @@ export default function ResultatCarteGrise() {
   const [isInfoCompleted, setIsInfoCompleted] = useState(false);
   
   // Options de suivi
-  const [smsNotifications, setSmsNotifications] = useState(false);
   const [emailNotifications, setEmailNotifications] = useState(false);
-  const [packNotifications, setPackNotifications] = useState(false);
   
   // Nouvelles options
   const [dossierPrioritaire, setDossierPrioritaire] = useState(false);
   const [certificatNonGage, setCertificatNonGage] = useState(false);
 
   const emailPrix = 5;
-  const smsPrix = 8;
-  const packPrix = 10;
   const dossierPrioritairePrix = 5;
   const certificatNonGagePrix = 10;
 
@@ -53,12 +49,7 @@ export default function ResultatCarteGrise() {
     if (!calculation) return 0;
     const prixCarteGrise = calculation.prixTotal;
     let optionsPrix = 0;
-    if (packNotifications) {
-      optionsPrix = packPrix;
-    } else {
-      if (emailNotifications) optionsPrix += emailPrix;
-      if (smsNotifications) optionsPrix += smsPrix;
-    }
+    if (emailNotifications) optionsPrix += emailPrix;
     if (dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
     if (certificatNonGage) optionsPrix += certificatNonGagePrix;
     
@@ -127,12 +118,7 @@ export default function ResultatCarteGrise() {
 
       const prixCarteGrise = calculation.prixTotal;
       let optionsPrix = 0;
-      if (packNotifications) {
-        optionsPrix = packPrix;
-      } else {
-        if (emailNotifications) optionsPrix += emailPrix;
-        if (smsNotifications) optionsPrix += smsPrix;
-      }
+      if (emailNotifications) optionsPrix += emailPrix;
       if (dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
       if (certificatNonGage) optionsPrix += certificatNonGagePrix;
       
@@ -140,16 +126,14 @@ export default function ResultatCarteGrise() {
       const tva = totalServicesHT * 0.20;
       const montantTTC = prixCarteGrise + totalServicesHT + tva;
 
-      // Email toujours actif (même si non coché, emails essentiels envoyés)
-      // SMS seulement si payé (smsNotifications ou packNotifications)
       await supabase
         .from('guest_orders')
         .update({
           montant_ht: prixCarteGrise,
           montant_ttc: montantTTC,
           frais_dossier: fraisDossier,
-          sms_notifications: smsNotifications || packNotifications,
-          email_notifications: true, // Toujours actif
+          sms_notifications: false, // SMS désactivé pour l'instant
+          email_notifications: emailNotifications,
           dossier_prioritaire: dossierPrioritaire,
           certificat_non_gage: certificatNonGage,
           marque: vehicleInfo?.marque || null,
@@ -162,7 +146,7 @@ export default function ResultatCarteGrise() {
     };
 
     updateOrder();
-  }, [orderId, calculation, smsNotifications, emailNotifications, packNotifications, dossierPrioritaire, certificatNonGage, vehicleInfo, fraisDossier]);
+  }, [orderId, calculation, emailNotifications, dossierPrioritaire, certificatNonGage, vehicleInfo, fraisDossier]);
 
   if (isLoading) {
     return (
@@ -271,42 +255,12 @@ export default function ResultatCarteGrise() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Pack option */}
-                  <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-                    packNotifications ? 'border-primary bg-primary/5' : 'border-border bg-card hover:bg-accent/50'
-                  }`}>
-                    <Checkbox
-                      id="pack_notif"
-                      checked={packNotifications}
-                      onCheckedChange={(checked) => {
-                        setPackNotifications(checked as boolean);
-                        if (checked) {
-                          setEmailNotifications(false);
-                          setSmsNotifications(false);
-                        }
-                      }}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="pack_notif" className="cursor-pointer flex items-center gap-2 font-medium">
-                        <Bell className="w-4 h-4 text-primary" />
-                        Pack Suivi Complet
-                        <span className="ml-auto text-primary font-semibold">+{packPrix},00 €</span>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Email + SMS - Économisez {emailPrix + smsPrix - packPrix}€
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-center text-sm text-muted-foreground">ou choisissez séparément</div>
-
                   <div className={`flex items-start space-x-3 p-4 rounded-lg border transition-colors ${
-                    packNotifications ? 'opacity-50 pointer-events-none' : ''
-                  } ${emailNotifications ? 'border-primary bg-primary/5' : 'bg-card hover:bg-accent/50'}`}>
+                    emailNotifications ? 'border-primary bg-primary/5' : 'bg-card hover:bg-accent/50'
+                  }`}>
                     <Checkbox
                       id="email_notif"
                       checked={emailNotifications}
-                      disabled={packNotifications}
                       onCheckedChange={(checked) => setEmailNotifications(checked as boolean)}
                     />
                     <div className="flex-1">
@@ -321,23 +275,21 @@ export default function ResultatCarteGrise() {
                     </div>
                   </div>
                   
-                  <div className={`flex items-start space-x-3 p-4 rounded-lg border transition-colors ${
-                    packNotifications ? 'opacity-50 pointer-events-none' : ''
-                  } ${smsNotifications ? 'border-primary bg-primary/5' : 'bg-card hover:bg-accent/50'}`}>
+                  {/* SMS - Coming soon */}
+                  <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50 opacity-60">
                     <Checkbox
                       id="sms_notif"
-                      checked={smsNotifications}
-                      disabled={packNotifications}
-                      onCheckedChange={(checked) => setSmsNotifications(checked as boolean)}
+                      checked={false}
+                      disabled={true}
                     />
                     <div className="flex-1">
-                      <Label htmlFor="sms_notif" className="cursor-pointer flex items-center gap-2 font-medium">
-                        <MessageSquare className="w-4 h-4 text-primary" />
+                      <Label htmlFor="sms_notif" className="cursor-not-allowed flex items-center gap-2 font-medium text-muted-foreground">
+                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
                         Suivi par SMS
-                        <span className="ml-auto text-primary font-semibold">+{smsPrix},00 €</span>
+                        <span className="ml-2 text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">À venir</span>
                       </Label>
                       <p className="text-sm text-muted-foreground mt-1">
-                        Recevez les mises à jour importantes par SMS en temps réel
+                        Bientôt disponible
                       </p>
                     </div>
                   </div>
@@ -411,9 +363,9 @@ export default function ResultatCarteGrise() {
               vehicleInfo={vehicleInfo || undefined}
               fraisDossier={fraisDossier}
               selectedOptions={{
-                smsNotifications,
+                smsNotifications: false,
                 emailNotifications,
-                packNotifications,
+                packNotifications: false,
                 dossierPrioritaire,
                 certificatNonGage,
               }}
