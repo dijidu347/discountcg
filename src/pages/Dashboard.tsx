@@ -4,9 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 export default function Dashboard() {
   const {
     user,
@@ -141,30 +142,57 @@ export default function Dashboard() {
           <p className="text-muted-foreground">Bienvenue sur votre espace professionnel</p>
         </div>
 
+        {/* Free Token Alert */}
+        {garage?.free_token_available && (
+          <Alert className="mb-8 border-2 border-green-500 bg-green-500/10">
+            <Gift className="h-5 w-5 text-green-500" />
+            <AlertTitle className="text-green-600 font-bold">🎁 Bienvenue ! Votre première démarche est offerte</AlertTitle>
+            <AlertDescription className="text-green-600">
+              En tant que nouveau client, vous bénéficiez d'une démarche gratuite (hors taxe régionale carte grise). 
+              Cette offre est valable une seule fois.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Actions rapides</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {actionsRapides.map(action => <Card key={action.id} className={`cursor-pointer hover:shadow-xl transition-all border-2 hover:border-${action.couleur} hover:scale-105 bg-gradient-to-br from-${action.couleur}/10 to-${action.couleur}/5`} onClick={() => navigate(`/nouvelle-demarche?type=${action.code}`)}>
-                <CardHeader>
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <div className={`w-10 h-10 rounded-full bg-${action.couleur}/20 flex items-center justify-center`}>
-                      <FileText className={`h-5 w-5 text-${action.couleur}`} />
-                    </div>
-                    {action.titre}
-                  </CardTitle>
-                  <CardDescription className={`text-3xl font-bold text-${action.couleur} mt-2`}>
-                    {action.prix}€ HT{action.code === 'CG' && ' + CG'}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{action.description}</p>
-                  <Button className={`w-full mt-4 bg-${action.couleur} hover:bg-${action.couleur}/90`} size="sm">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Créer
-                  </Button>
-                </CardContent>
-              </Card>)}
+            {actionsRapides.map(action => {
+              const displayPrice = garage?.free_token_available ? 0 : action.prix;
+              const priceLabel = garage?.free_token_available 
+                ? (action.code === 'CG' ? '0€ HT + CG' : '0€ HT')
+                : `${action.prix}€ HT${action.code === 'CG' ? ' + CG' : ''}`;
+              
+              return (
+                <Card key={action.id} className={`cursor-pointer hover:shadow-xl transition-all border-2 hover:border-${action.couleur} hover:scale-105 bg-gradient-to-br from-${action.couleur}/10 to-${action.couleur}/5 ${garage?.free_token_available ? 'ring-2 ring-green-500' : ''}`} onClick={() => navigate(`/nouvelle-demarche?type=${action.code}`)}>
+                  <CardHeader>
+                    <CardTitle className="text-xl flex items-center gap-2">
+                      <div className={`w-10 h-10 rounded-full bg-${action.couleur}/20 flex items-center justify-center`}>
+                        <FileText className={`h-5 w-5 text-${action.couleur}`} />
+                      </div>
+                      {action.titre}
+                      {garage?.free_token_available && (
+                        <Badge className="bg-green-500 text-white ml-2">GRATUIT</Badge>
+                      )}
+                    </CardTitle>
+                    <CardDescription className={`text-3xl font-bold mt-2 ${garage?.free_token_available ? 'text-green-500' : `text-${action.couleur}`}`}>
+                      {garage?.free_token_available && action.prix > 0 && (
+                        <span className="text-lg line-through text-muted-foreground mr-2">{action.prix}€</span>
+                      )}
+                      {priceLabel}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-muted-foreground">{action.description}</p>
+                    <Button className={`w-full mt-4 ${garage?.free_token_available ? 'bg-green-500 hover:bg-green-600' : `bg-${action.couleur} hover:bg-${action.couleur}/90`}`} size="sm">
+                      <Plus className="mr-2 h-4 w-4" />
+                      {garage?.free_token_available ? 'Utiliser mon offre' : 'Créer'}
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
 

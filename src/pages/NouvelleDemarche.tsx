@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileCheck, Save, Plus } from "lucide-react";
+import { ArrowLeft, FileCheck, Save, Plus, Gift } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -16,6 +16,7 @@ import { VehicleFormCG } from "@/components/VehicleFormCG";
 import { VehicleFormSimple } from "@/components/VehicleFormSimple";
 import { TrackingServiceOption } from "@/components/TrackingServiceOption";
 import { StripePayment } from "@/components/StripePayment";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 export default function NouvelleDemarche() {
@@ -36,6 +37,7 @@ export default function NouvelleDemarche() {
   const [additionalDocs, setAdditionalDocs] = useState<number[]>([1, 2, 3, 4, 5]);
   const [carteGrisePrice, setCarteGrisePrice] = useState<number>(0);
   const [trackingServicePrice, setTrackingServicePrice] = useState<number>(0);
+  const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     type: searchParams.get('type') || "",
     commentaire: ""
@@ -89,8 +91,8 @@ export default function NouvelleDemarche() {
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
 
-    // Frais de dossier = prix de l'action (soumis à TVA)
-    const fraisDossierHT = actionDetails.prix;
+    // Frais de dossier = prix de l'action (0 si jeton gratuit)
+    const fraisDossierHT = freeTokenAvailable ? 0 : actionDetails.prix;
     
     // Prix carte grise (taxe régionale, exonérée TVA) - 0 pour DA/DC
     const prixCarteGrise = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
@@ -143,6 +145,7 @@ export default function NouvelleDemarche() {
 
     if (data) {
       setGarage(data);
+      setFreeTokenAvailable(data.free_token_available === true);
     }
   };
 
@@ -182,8 +185,8 @@ export default function NouvelleDemarche() {
   const handleAutoCreateDraft = async () => {
     if (!garage || demarcheId || !actionDetails) return;
 
-    // Frais de dossier = prix de l'action (soumis à TVA)
-    const fraisDossierHT = actionDetails.prix;
+    // Frais de dossier = prix de l'action (0 si jeton gratuit)
+    const fraisDossierHT = freeTokenAvailable ? 0 : actionDetails.prix;
     
     // Prix carte grise (taxe régionale, exonérée TVA) - 0 pour DA/DC
     const prixCarteGrise = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
@@ -261,6 +264,12 @@ export default function NouvelleDemarche() {
   };
 
   const getFraisDossier = () => {
+    // Si jeton gratuit disponible, le prix de l'action est 0
+    if (freeTokenAvailable) return 0;
+    return actionDetails?.prix || 0;
+  };
+
+  const getOriginalFraisDossier = () => {
     return actionDetails?.prix || 0;
   };
 
@@ -334,6 +343,12 @@ export default function NouvelleDemarche() {
         .eq('id', demarcheId);
     }
 
+    // Si le montant total est 0, valider directement sans paiement
+    if (getTotalPrice() === 0) {
+      await handlePaymentSuccess();
+      return;
+    }
+
     setShowPaymentDialog(true);
   };
 
@@ -348,6 +363,16 @@ export default function NouvelleDemarche() {
         documents_complets: true,
       })
       .eq('id', demarcheId);
+
+    // Si jeton gratuit utilisé, le marquer comme consommé
+    if (freeTokenAvailable && garage) {
+      await supabase
+        .from('garages')
+        .update({ free_token_available: false })
+        .eq('id', garage.id);
+      
+      setFreeTokenAvailable(false);
+    }
 
     toast({
       title: "Paiement validé",
@@ -401,6 +426,17 @@ export default function NouvelleDemarche() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {freeTokenAvailable && (
+              <Alert className="mb-6 border-2 border-green-500 bg-green-500/10">
+                <Gift className="h-5 w-5 text-green-500" />
+                <AlertTitle className="text-green-600 font-bold">🎁 Offre de bienvenue activée</AlertTitle>
+                <AlertDescription className="text-green-600">
+                  Les frais de dossier sont offerts pour cette démarche ! 
+                  {(formData.type !== 'DA' && formData.type !== 'DC') && " Seule la taxe régionale carte grise reste à payer."}
+                  {(formData.type === 'DA' || formData.type === 'DC') && " Cette démarche sera entièrement gratuite."}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmitPayment} className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="type">Type de démarche *</Label>
@@ -415,7 +451,7 @@ export default function NouvelleDemarche() {
                   <SelectContent>
                     {actionsRapides.map((action) => (
                       <SelectItem key={action.id} value={action.code}>
-                        {action.titre} - {action.prix}€
+                        {action.titre} - {freeTokenAvailable ? '0€ (offert)' : `${action.prix}€`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -615,9 +651,9 @@ export default function NouvelleDemarche() {
                   type="submit"
                   size="lg" 
                   disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0)}
-                  className="flex-1 bg-success hover:bg-success/90"
+                  className={`flex-1 ${freeTokenAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
                 >
-                  Payer {getTotalPrice()}€
+                  {freeTokenAvailable && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${getTotalPrice()}€`}
                 </Button>
               </div>
             </form>
@@ -625,9 +661,18 @@ export default function NouvelleDemarche() {
               <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
                 <DialogContent className="max-w-2xl">
                   <DialogHeader>
-                    <DialogTitle>Paiement de la démarche</DialogTitle>
+                    <DialogTitle>
+                      {freeTokenAvailable ? '🎁 Confirmation de votre démarche offerte' : 'Paiement de la démarche'}
+                    </DialogTitle>
                     <DialogDescription>
-                      Frais de dossier : {getFraisDossier()}€
+                      {freeTokenAvailable && (
+                        <span className="block text-green-600 font-medium mb-2">
+                          Votre jeton gratuit sera utilisé pour cette démarche.
+                        </span>
+                      )}
+                      Frais de dossier : {freeTokenAvailable ? (
+                        <><span className="line-through text-muted-foreground">{getOriginalFraisDossier()}€</span> <span className="text-green-600 font-bold">0€ (offert)</span></>
+                      ) : `${getFraisDossier()}€`}
                       {(formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice > 0 && ` + Prix carte grise : ${carteGrisePrice.toFixed(2)}€`}
                       {trackingServicePrice > 0 && ` + Service de suivi : ${trackingServicePrice.toFixed(2)}€`}
                       <br />
