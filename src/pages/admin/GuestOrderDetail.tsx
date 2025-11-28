@@ -303,7 +303,7 @@ export default function GuestOrderDetail() {
 
       // Envoyer email de confirmation de commande validée
       try {
-        await supabase.functions.invoke('send-email', {
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-email', {
           body: {
             type: 'order_confirmation',
             to: order.email,
@@ -316,9 +316,14 @@ export default function GuestOrderDetail() {
             }
           }
         });
-        console.log('Email de validation envoyé');
-      } catch (emailError) {
-        console.error('Erreur envoi email:', emailError);
+        
+        if (emailError) {
+          console.error('Erreur envoi email (error):', emailError);
+        } else {
+          console.log('Email de validation envoyé avec succès:', emailResult);
+        }
+      } catch (emailCatchError) {
+        console.error('Erreur envoi email (catch):', emailCatchError);
       }
 
       toast({

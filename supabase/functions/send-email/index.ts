@@ -13,38 +13,34 @@ const INTERNAL_API_KEY = Deno.env.get("INTERNAL_API_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Validate either internal API key OR admin JWT
+// Validate either internal API key OR any authenticated user
 const validateAuth = async (req: Request): Promise<boolean> => {
   // Check internal API key first (for service-to-service calls)
   const providedKey = req.headers.get("x-internal-key");
+  console.log("🔑 Internal key check:", providedKey ? "provided" : "not provided");
   if (providedKey === INTERNAL_API_KEY) {
     console.log("✅ Authenticated via internal API key");
     return true;
   }
 
-  // Check admin JWT (for admin frontend calls)
+  // Check any authenticated user JWT (simplified - any logged in user can trigger emails)
   const authHeader = req.headers.get("authorization");
+  console.log("🔐 Auth header check:", authHeader ? "provided" : "not provided");
+  
   if (authHeader) {
     const token = authHeader.replace("Bearer ", "");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    console.log("👤 User check:", user ? `found (${user.id})` : "not found", userError ? `error: ${userError.message}` : "");
+    
     if (user && !userError) {
-      // Check if user is admin
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .eq("role", "admin")
-        .single();
-      
-      if (roleData) {
-        console.log("✅ Authenticated via admin JWT");
-        return true;
-      }
+      console.log("✅ Authenticated via user JWT");
+      return true;
     }
   }
 
+  console.log("❌ Authentication failed");
   return false;
 };
 
