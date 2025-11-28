@@ -79,6 +79,23 @@ export default function ResultatCarteGrise() {
         setOrderId(orderIdParam);
         setDepartement(departementParam);
 
+        // Récupérer le tarif du département
+        const { data: tarifData } = await supabase
+          .from("department_tariffs")
+          .select("tarif")
+          .eq("code", departementParam)
+          .single();
+
+        if (!tarifData) {
+          toast({
+            title: "Erreur",
+            description: "Département non trouvé",
+            variant: "destructive",
+          });
+          navigate('/simulateur');
+          return;
+        }
+
         // Récupérer les infos véhicule via l'API
         if (plaqueParam) {
           const vehicleResponse = await getVehicleByPlate(plaqueParam);
@@ -89,7 +106,7 @@ export default function ResultatCarteGrise() {
 
         // Calculer le prix
         const calc = calculatePrice(
-          departementParam,
+          tarifData.tarif,
           vehicleData.chevauxFiscaux,
           vehicleData.dateMiseEnCirculation
         );

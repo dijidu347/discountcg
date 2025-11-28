@@ -197,6 +197,33 @@ export type Database = {
           },
         ]
       }
+      department_tariffs: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          label: string
+          tarif: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          label: string
+          tarif?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          label?: string
+          tarif?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       documents: {
         Row: {
           created_at: string

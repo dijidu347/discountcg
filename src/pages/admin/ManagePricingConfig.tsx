@@ -6,20 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowLeft, Save, Calculator, Plus, Trash2, Edit, GripVertical, FileText, Package, Euro } from "lucide-react";
+import { ArrowLeft, Save, Calculator, Plus, Trash2, Edit, GripVertical, FileText, Package, MapPin, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-
-interface PricingConfig {
-  id: string;
-  config_key: string;
-  config_value: number;
-  description: string;
-}
 
 interface DemarcheType {
   id: string;
@@ -42,12 +35,19 @@ type RequiredDocument = {
   demarche_type_code: string | null;
 };
 
+interface DepartmentTariff {
+  id: string;
+  code: string;
+  label: string;
+  tarif: number;
+}
+
 const ManagePricingConfig = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [configs, setConfigs] = useState<PricingConfig[]>([]);
   const [demarcheTypes, setDemarcheTypes] = useState<DemarcheType[]>([]);
   const [documents, setDocuments] = useState<RequiredDocument[]>([]);
+  const [departmentTariffs, setDepartmentTariffs] = useState<DepartmentTariff[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingDoc, setEditingDoc] = useState<RequiredDocument | null>(null);
@@ -55,6 +55,7 @@ const ManagePricingConfig = () => {
   const [showDocDialog, setShowDocDialog] = useState(false);
   const [showTypeDialog, setShowTypeDialog] = useState(false);
   const [selectedTypeFilter, setSelectedTypeFilter] = useState<string>("all");
+  const [departmentSearch, setDepartmentSearch] = useState("");
 
   useEffect(() => {
     loadData();
@@ -62,18 +63,18 @@ const ManagePricingConfig = () => {
 
   const loadData = async () => {
     try {
-      const [configsRes, typesRes, docsRes] = await Promise.all([
-        supabase.from("pricing_config").select("*").order("config_key"),
+      const [typesRes, docsRes, tariffsRes] = await Promise.all([
         supabase.from("guest_demarche_types").select("*").order("ordre"),
-        supabase.from("guest_order_required_documents").select("*").order("ordre")
+        supabase.from("guest_order_required_documents").select("*").order("ordre"),
+        supabase.from("department_tariffs").select("*").order("code")
       ]);
 
-      if (configsRes.error) throw configsRes.error;
       if (typesRes.error) throw typesRes.error;
+      if (tariffsRes.error) throw tariffsRes.error;
 
-      setConfigs(configsRes.data || []);
       setDemarcheTypes(typesRes.data || []);
       setDocuments(docsRes.data || []);
+      setDepartmentTariffs(tariffsRes.data || []);
     } catch (error) {
       console.error("Erreur lors du chargement:", error);
       toast({
@@ -86,21 +87,30 @@ const ManagePricingConfig = () => {
     }
   };
 
-  const handleSaveConfigs = async () => {
+  // === DEPARTMENT TARIFFS ===
+  const handleTariffChange = (id: string, value: number) => {
+    setDepartmentTariffs(
+      departmentTariffs.map((t) =>
+        t.id === id ? { ...t, tarif: value } : t
+      )
+    );
+  };
+
+  const handleSaveTariffs = async () => {
     setSaving(true);
     try {
-      for (const config of configs) {
+      for (const tariff of departmentTariffs) {
         const { error } = await supabase
-          .from("pricing_config")
-          .update({ config_value: config.config_value })
-          .eq("id", config.id);
+          .from("department_tariffs")
+          .update({ tarif: tariff.tarif })
+          .eq("id", tariff.id);
 
         if (error) throw error;
       }
 
       toast({
         title: "Succès",
-        description: "Les tarifs ont été mis à jour",
+        description: "Les tarifs départementaux ont été mis à jour",
       });
     } catch (error) {
       console.error("Erreur lors de la sauvegarde:", error);
@@ -114,27 +124,10 @@ const ManagePricingConfig = () => {
     }
   };
 
-  const handleValueChange = (id: string, value: string) => {
-    setConfigs(
-      configs.map((config) =>
-        config.id === id
-          ? { ...config, config_value: parseFloat(value) || 0 }
-          : config
-      )
-    );
-  };
-
-  const getConfigLabel = (key: string) => {
-    const labels: Record<string, string> = {
-      prix_par_cv: "Prix par CV fiscal (€)",
-      taxe_co2_seuil: "Seuil CO2 (g/km)",
-      taxe_co2_montant: "Taxe CO2 par g (€)",
-      frais_acheminement: "Frais d'acheminement (€)",
-      taxe_gestion: "Taxe de gestion (€)",
-      frais_dossier: "Frais de dossier par défaut (€)",
-    };
-    return labels[key] || key;
-  };
+  const filteredTariffs = departmentTariffs.filter(t => 
+    t.code.toLowerCase().includes(departmentSearch.toLowerCase()) ||
+    t.label.toLowerCase().includes(departmentSearch.toLowerCase())
+  );
 
   // === DEMARCHE TYPES ===
   const handleCreateType = () => {
@@ -448,8 +441,8 @@ const ManagePricingConfig = () => {
               Documents requis
             </TabsTrigger>
             <TabsTrigger value="tarifs" className="flex items-center gap-2">
-              <Euro className="h-4 w-4" />
-              Tarifs globaux
+              <MapPin className="h-4 w-4" />
+              Tarifs départementaux
             </TabsTrigger>
           </TabsList>
 
@@ -612,61 +605,72 @@ const ManagePricingConfig = () => {
             </Card>
           </TabsContent>
 
-          {/* TARIFS GLOBAUX */}
+          {/* TARIFS DEPARTEMENTAUX */}
           <TabsContent value="tarifs" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Tarifs globaux (calcul carte grise)</CardTitle>
-                <CardDescription>
-                  Ces tarifs sont utilisés pour calculer le prix de la carte grise régionale
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Tarifs départementaux (prix par CV fiscal)</CardTitle>
+                    <CardDescription>
+                      Ces tarifs sont utilisés pour calculer le prix de la carte grise en fonction du département
+                    </CardDescription>
+                  </div>
+                  <Button onClick={handleSaveTariffs} disabled={saving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {saving ? "Enregistrement..." : "Enregistrer"}
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-6">
-                  {configs.map((config) => (
-                    <div key={config.id} className="space-y-2">
-                      <Label htmlFor={config.config_key}>
-                        {getConfigLabel(config.config_key)}
-                      </Label>
+              <CardContent className="space-y-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher un département..."
+                    value={departmentSearch}
+                    onChange={(e) => setDepartmentSearch(e.target.value)}
+                    className="pl-10 max-w-sm"
+                  />
+                </div>
+
+                <div className="grid gap-2 max-h-[600px] overflow-y-auto">
+                  {filteredTariffs.map((tariff) => (
+                    <div key={tariff.id} className="flex items-center justify-between gap-4 p-3 border rounded-lg hover:bg-muted/50">
+                      <div className="flex items-center gap-3">
+                        <Badge variant="outline" className="font-mono w-12 justify-center">
+                          {tariff.code}
+                        </Badge>
+                        <span className="font-medium">{tariff.label}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <Input
-                          id={config.config_key}
                           type="number"
                           step="0.01"
-                          value={config.config_value}
-                          onChange={(e) =>
-                            handleValueChange(config.id, e.target.value)
-                          }
-                          className="max-w-xs"
+                          value={tariff.tarif}
+                          onChange={(e) => handleTariffChange(tariff.id, parseFloat(e.target.value) || 0)}
+                          className="w-24 text-right"
                         />
-                        {config.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {config.description}
-                          </p>
-                        )}
+                        <span className="text-muted-foreground text-sm">€/CV</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="flex justify-end pt-4">
-                  <Button onClick={handleSaveConfigs} disabled={saving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {saving ? "Enregistrement..." : "Enregistrer les tarifs"}
-                  </Button>
-                </div>
+                {filteredTariffs.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    Aucun département trouvé pour "{departmentSearch}"
+                  </p>
+                )}
               </CardContent>
             </Card>
 
             <Card className="bg-muted/50">
               <CardHeader>
-                <CardTitle className="text-sm">Comment sont calculés les prix ?</CardTitle>
+                <CardTitle className="text-sm">Comment fonctionne le calcul ?</CardTitle>
               </CardHeader>
               <CardContent className="text-sm space-y-2 text-muted-foreground">
-                <p>• <strong>Prix par CV fiscal :</strong> Multiplié par la puissance fiscale du véhicule</p>
-                <p>• <strong>Taxe CO2 :</strong> Si CO2 &gt; seuil, taxe = (CO2 - seuil) × montant par gramme</p>
-                <p>• <strong>Frais fixes :</strong> Acheminement + Taxe de gestion (ajoutés systématiquement)</p>
-                <p>• <strong>Prix de base démarche :</strong> Ajouté selon le type de démarche sélectionné</p>
+                <p>• <strong>Taxe régionale :</strong> Tarif du département × Puissance fiscale du véhicule</p>
+                <p>• <strong>Exemple :</strong> Pour un véhicule de 7CV dans le Rhône (43€/CV) = 7 × 43 = 301€</p>
               </CardContent>
             </Card>
           </TabsContent>

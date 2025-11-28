@@ -1,4 +1,3 @@
-import { departementsTarifs } from "@/data/departementsTarifs";
 import { getVehicleAge } from "./getVehicleAge";
 
 export interface PriceCalculation {
@@ -14,14 +13,12 @@ export interface PriceCalculation {
 }
 
 export const calculatePrice = (
-  departement: string,
+  tarifDepartement: number,
   chevauxFiscaux: number,
   dateMiseEnCirculation: string
 ): PriceCalculation => {
-  const tarifDepartement = departementsTarifs[departement];
-  
-  if (!tarifDepartement) {
-    throw new Error('Département invalide');
+  if (!tarifDepartement || tarifDepartement <= 0) {
+    throw new Error('Tarif département invalide');
   }
 
   const anciennete = getVehicleAge(dateMiseEnCirculation);
