@@ -154,7 +154,7 @@ export default function Dashboard() {
                     {action.titre}
                   </CardTitle>
                   <CardDescription className={`text-3xl font-bold text-${action.couleur} mt-2`}>
-                    {action.prix}€{action.code === 'CG' && ' + CG'}
+                    {action.prix}€ HT{action.code === 'CG' && ' + CG'}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
