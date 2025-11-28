@@ -241,11 +241,38 @@ export const SimulateurSection = () => {
           {/* Plaque d'immatriculation visuelle */}
           <div className="mb-10 flex justify-center">
             {showOldPlate ? (
-              // Ancienne plaque (format FNI: 1234 AB 75)
-              <div className="w-full max-w-lg h-20 md:h-24 rounded-lg border-[3px] border-foreground shadow-lg relative overflow-hidden bg-background">
-                <div className="absolute inset-[3px] rounded border border-foreground/30" />
-                <div className="absolute inset-0 flex items-center justify-center bg-background">
-                  <span className="text-2xl md:text-4xl font-black tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+              // Ancienne plaque (format FNI: 123 ABC 35) - fond jaune
+              <div className="w-full max-w-lg h-20 md:h-24 rounded-lg border-[3px] border-black shadow-lg relative overflow-hidden bg-[#F4C430]">
+                <div className="absolute inset-[3px] rounded border border-black/20" />
+                
+                {/* Bandeau bleu EU à gauche */}
+                <div className="absolute inset-y-0 left-0 w-12 md:w-14 bg-[#003399] flex flex-col items-center justify-between py-1.5 md:py-2 rounded-l">
+                  <div className="relative w-8 h-8 md:w-9 md:h-9">
+                    {[...Array(12)].map((_, i) => {
+                      const angle = (i * 30 - 90) * (Math.PI / 180);
+                      const x = 50 + 38 * Math.cos(angle);
+                      const y = 50 + 38 * Math.sin(angle);
+                      return (
+                        <span
+                          key={i}
+                          className="absolute text-[#FFCC00] text-[6px] md:text-[7px]"
+                          style={{
+                            left: `${x}%`,
+                            top: `${y}%`,
+                            transform: 'translate(-50%, -50%)'
+                          }}
+                        >
+                          ★
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <span className="text-white font-bold text-sm md:text-base">F</span>
+                </div>
+                
+                {/* Texte de la plaque */}
+                <div className="absolute inset-y-0 left-12 md:left-14 right-0 flex items-center justify-center bg-[#F4C430]">
+                  <span className="text-2xl md:text-4xl font-black tracking-wider text-black" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                     {displayPlate}
                   </span>
                 </div>
