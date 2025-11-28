@@ -327,6 +327,33 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "admin_new_demarche":
+      return {
+        subject: `🆕 Nouvelle demande à traiter - ${data.reference}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">Nouvelle demande à traiter</h1>
+            <p>Une nouvelle demande est disponible et nécessite votre attention.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Type :</strong> ${data.type}</p>
+              <p style="margin: 8px 0;"><strong>Référence :</strong> ${data.reference}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+              <p style="margin: 8px 0;"><strong>Client :</strong> ${data.client_name}</p>
+              <p style="margin: 8px 0;"><strong>Montant TTC :</strong> ${data.montant_ttc} €</p>
+              ${data.is_free_token ? '<p style="margin: 8px 0; color: #22c55e;"><strong>🎁 Démarche offerte (jeton gratuit)</strong></p>' : ''}
+            </div>
+
+            <a href="https://discountcg.fr/admin/demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accéder au tableau admin
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement.</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }

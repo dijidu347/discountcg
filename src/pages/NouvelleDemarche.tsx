@@ -373,6 +373,33 @@ export default function NouvelleDemarche() {
         .eq('id', garage.id);
       
       setFreeTokenAvailable(false);
+
+      // Envoyer notification admin pour démarche offerte
+      const { data: demarche } = await supabase
+        .from('demarches')
+        .select('*, vehicules(*)')
+        .eq('id', demarcheId)
+        .single();
+
+      if (demarche) {
+        const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com"];
+        for (const adminEmail of adminEmails) {
+          await supabase.functions.invoke("send-email", {
+            body: {
+              type: "admin_new_demarche",
+              to: adminEmail,
+              data: {
+                type: `Démarche garage - ${demarche.type}`,
+                reference: demarche.numero_demarche || demarcheId,
+                immatriculation: demarche.immatriculation,
+                client_name: garage.raison_sociale || "N/A",
+                montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+                is_free_token: true,
+              },
+            },
+          });
+        }
+      }
     }
 
     toast({

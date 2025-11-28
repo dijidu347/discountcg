@@ -543,6 +543,31 @@ serve(async (req) => {
           } else {
             console.log("ℹ️ Email notifications désactivées pour cette commande");
           }
+
+          // NOTIFICATION ADMIN - Nouvelle commande particulier
+          console.log("📧 Envoi notification admin pour nouvelle commande particulier");
+          try {
+            const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com"];
+            for (const adminEmail of adminEmails) {
+              await supabase.functions.invoke("send-email", {
+                body: {
+                  type: "admin_new_demarche",
+                  to: adminEmail,
+                  data: {
+                    type: "Commande particulier",
+                    reference: order.tracking_number,
+                    immatriculation: order.immatriculation,
+                    client_name: `${order.prenom} ${order.nom}`,
+                    montant_ttc: calculatedTTC.toFixed(2),
+                    is_free_token: false,
+                  },
+                },
+              });
+            }
+            console.log("✅ Notifications admin envoyées");
+          } catch (adminEmailError) {
+            console.error("❌ Erreur envoi notification admin:", adminEmailError);
+          }
         }
 
         console.log("✔️ guest order traité :", guestOrderId);
@@ -672,6 +697,31 @@ serve(async (req) => {
             }
           } else {
             console.log("ℹ️ Suivi email NON activé pour cette démarche - email non envoyé");
+          }
+
+          // NOTIFICATION ADMIN - Nouvelle démarche garage payée
+          console.log("📧 Envoi notification admin pour nouvelle démarche garage");
+          try {
+            const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com"];
+            for (const adminEmail of adminEmails) {
+              await supabase.functions.invoke("send-email", {
+                body: {
+                  type: "admin_new_demarche",
+                  to: adminEmail,
+                  data: {
+                    type: `Démarche garage - ${demarche.type}`,
+                    reference: demarche.numero_demarche || demarcheId,
+                    immatriculation: demarche.immatriculation,
+                    client_name: demarche.garages?.raison_sociale || "N/A",
+                    montant_ttc: (paymentIntent.amount / 100).toFixed(2),
+                    is_free_token: false,
+                  },
+                },
+              });
+            }
+            console.log("✅ Notifications admin envoyées");
+          } catch (adminEmailError) {
+            console.error("❌ Erreur envoi notification admin:", adminEmailError);
           }
         }
 
