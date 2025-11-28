@@ -547,7 +547,7 @@ serve(async (req) => {
           // NOTIFICATION ADMIN - Nouvelle commande particulier
           console.log("📧 Envoi notification admin pour nouvelle commande particulier");
           try {
-            const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com"];
+            const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com", "mathieugaillac4@gmail.com"];
             for (const adminEmail of adminEmails) {
               await supabase.functions.invoke("send-email", {
                 body: {
@@ -702,7 +702,7 @@ serve(async (req) => {
           // NOTIFICATION ADMIN - Nouvelle démarche garage payée
           console.log("📧 Envoi notification admin pour nouvelle démarche garage");
           try {
-            const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com"];
+            const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com", "mathieugaillac4@gmail.com"];
             for (const adminEmail of adminEmails) {
               await supabase.functions.invoke("send-email", {
                 body: {

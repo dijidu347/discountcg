@@ -382,7 +382,7 @@ export default function NouvelleDemarche() {
         .single();
 
       if (demarche) {
-        const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com"];
+        const adminEmails = ["Discountcg@gmail.com", "dijidu347@gmail.com", "mathieugaillac4@gmail.com"];
         for (const adminEmail of adminEmails) {
           await supabase.functions.invoke("send-email", {
             body: {
