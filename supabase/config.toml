@@ -38,3 +38,9 @@ verify_jwt = false
 
 [functions.download-file]
 verify_jwt = false
+
+[functions.send-auth-email]
+verify_jwt = false
+
+[functions.send-contact-email]
+verify_jwt = false
