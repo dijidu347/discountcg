@@ -9,8 +9,14 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { Car, Check, ChevronsUpDown } from "lucide-react";
-import { departementsLabels } from "@/data/departementsTarifs";
 import { cn } from "@/lib/utils";
+
+interface DepartmentTariff {
+  id: string;
+  code: string;
+  label: string;
+  tarif: number;
+}
 
 interface VehicleFormCGProps {
   garageId: string;
@@ -28,10 +34,38 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [immatriculation, setImmatriculation] = useState("");
   const [openDepartement, setOpenDepartement] = useState(false);
+  const [departments, setDepartments] = useState<DepartmentTariff[]>([]);
 
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      const { data } = await supabase
+        .from("department_tariffs")
+        .select("*")
+        .order("code");
+      if (data) {
+        const sorted = data.sort((a, b) => {
+          const aNum = a.code.length === 3 ? 1000 + parseInt(a.code) : parseInt(a.code) || 0;
+          const bNum = b.code.length === 3 ? 1000 + parseInt(b.code) : parseInt(b.code) || 0;
+          return aNum - bNum;
+        });
+        setDepartments(sorted);
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   const fetchVehicleDataAndPrice = async () => {
     if (!immatriculation || !departement) return;
+
+    const selectedDept = departments.find(d => d.code === departement);
+    if (!selectedDept) {
+      toast({
+        title: "Erreur",
+        description: "Département non trouvé",
+        variant: "destructive"
+      });
+      return;
+    }
 
     setFetchingVehicle(true);
     try {
@@ -46,7 +80,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
         if (data.puissance_fiscale && data.date_mec) {
           const { calculatePrice } = await import("@/utils/calculatePrice");
           const priceResult = calculatePrice(
-            departement,
+            selectedDept.tarif,
             data.puissance_fiscale,
             data.date_mec
           );
@@ -167,7 +201,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
                   disabled={priceCalculated}
                 >
                   {departement
-                    ? `${departement} - ${departementsLabels[departement]}`
+                    ? `${departement} - ${departments.find(d => d.code === departement)?.label || ""}`
                     : "Sélectionnez le département"}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
@@ -178,22 +212,22 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
                   <CommandList>
                     <CommandEmpty>Aucun département trouvé.</CommandEmpty>
                     <CommandGroup>
-                      {Object.entries(departementsLabels).map(([code, label]) => (
+                      {departments.map((dept) => (
                         <CommandItem
-                          key={code}
-                          value={`${code} ${label}`}
+                          key={dept.code}
+                          value={`${dept.code} ${dept.label}`}
                           onSelect={() => {
-                            setDepartement(code);
+                            setDepartement(dept.code);
                             setOpenDepartement(false);
                           }}
                         >
                           <Check
                             className={cn(
                               "mr-2 h-4 w-4",
-                              departement === code ? "opacity-100" : "opacity-0"
+                              departement === dept.code ? "opacity-100" : "opacity-0"
                             )}
                           />
-                          {code} - {label}
+                          {dept.code} - {dept.label}
                         </CommandItem>
                       ))}
                     </CommandGroup>
