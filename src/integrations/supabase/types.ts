@@ -102,6 +102,7 @@ export type Database = {
           id: string
           immatriculation: string
           is_draft: boolean | null
+          is_free_token: boolean | null
           montant_ht: number | null
           montant_ttc: number | null
           numero_demarche: string | null
@@ -128,6 +129,7 @@ export type Database = {
           id?: string
           immatriculation: string
           is_draft?: boolean | null
+          is_free_token?: boolean | null
           montant_ht?: number | null
           montant_ttc?: number | null
           numero_demarche?: string | null
@@ -154,6 +156,7 @@ export type Database = {
           id?: string
           immatriculation?: string
           is_draft?: boolean | null
+          is_free_token?: boolean | null
           montant_ht?: number | null
           montant_ttc?: number | null
           numero_demarche?: string | null

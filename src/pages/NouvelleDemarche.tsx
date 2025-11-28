@@ -214,7 +214,8 @@ export default function NouvelleDemarche() {
         status: 'en_saisie',
         is_draft: true,
         paye: false,
-        vehicule_id: selectedVehicleId
+        vehicule_id: selectedVehicleId,
+        is_free_token: freeTokenAvailable
       } as any)
       .select()
       .single();

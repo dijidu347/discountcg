@@ -2,7 +2,6 @@ import Navbar from "@/components/Navbar";
 import Hero from "@/components/Hero";
 import Process from "@/components/Process";
 import WhyUs from "@/components/WhyUs";
-import Pricing from "@/components/Pricing";
 import FAQ from "@/components/FAQ";
 import ContactForm from "@/components/ContactForm";
 import Footer from "@/components/Footer";
@@ -20,7 +19,6 @@ const Index = () => {
       <GoogleReviewsCarousel />
       <Process />
       <WhyUs />
-      <Pricing />
       <FAQ />
       <ContactForm />
       <Footer />

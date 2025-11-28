@@ -17,6 +17,42 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, FileText } from "lucide-react";
 
+const getStatusLabel = (demarche: any): string => {
+  // Si c'est une démarche offerte (free token) et non payée, afficher "Offert"
+  if (demarche.is_free_token && !demarche.paye) {
+    return "Offert";
+  }
+  
+  const statusLabels: Record<string, string> = {
+    en_saisie: "En saisie",
+    en_attente: "En attente",
+    paye: "Payé",
+    valide: "Validé",
+    finalise: "Finalisé",
+    refuse: "Refusé"
+  };
+  
+  return statusLabels[demarche.status] || demarche.status;
+};
+
+const getStatusColor = (demarche: any): string => {
+  // Si c'est une démarche offerte (free token), couleur verte spéciale
+  if (demarche.is_free_token && !demarche.paye) {
+    return "bg-emerald-500";
+  }
+  
+  const statusColors: Record<string, string> = {
+    en_saisie: "bg-gray-500",
+    en_attente: "bg-orange-500",
+    paye: "bg-blue-500",
+    valide: "bg-green-500",
+    finalise: "bg-green-700",
+    refuse: "bg-red-500"
+  };
+  
+  return statusColors[demarche.status] || "bg-gray-500";
+};
+
 const statusLabels: Record<string, string> = {
   en_saisie: "En saisie",
   en_attente: "En attente",
@@ -303,8 +339,8 @@ export default function MesDemarches() {
                       </TableCell>
                       <TableCell>{demarche.immatriculation}</TableCell>
                       <TableCell>
-                        <Badge className={statusColors[demarche.status]}>
-                          {statusLabels[demarche.status]}
+                        <Badge className={getStatusColor(demarche)}>
+                          {getStatusLabel(demarche)}
                         </Badge>
                       </TableCell>
                       <TableCell>{demarche.montant_ttc.toFixed(2)} €</TableCell>
