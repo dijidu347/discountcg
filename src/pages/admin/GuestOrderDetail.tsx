@@ -65,6 +65,7 @@ interface GuestOrder {
   vehicule_leasing?: boolean;
   is_mineur?: boolean;
   is_heberge?: boolean;
+  demarche_type?: string;
 }
 
 interface Document {
@@ -694,7 +695,16 @@ export default function GuestOrderDetail() {
               Créée le {new Date(order.created_at).toLocaleDateString("fr-FR")}
             </p>
           </div>
-          {getStatusBadge(order.status)}
+          <div className="flex items-center gap-2">
+            {order.demarche_type && order.demarche_type !== 'CG' && (
+              <Badge variant="outline" className="text-sm">
+                {order.demarche_type === 'DA' ? "Déclaration d'achat" : 
+                 order.demarche_type === 'DC' ? "Déclaration de cession" : 
+                 "Carte grise"}
+              </Badge>
+            )}
+            {getStatusBadge(order.status)}
+          </div>
         </div>
 
         {/* Informations client */}

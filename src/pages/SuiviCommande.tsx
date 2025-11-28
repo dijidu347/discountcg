@@ -340,7 +340,15 @@ const SuiviCommande = () => {
                   <StatusIcon className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{statusInfo.label}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-2xl font-bold">{statusInfo.label}</p>
+                    {order.demarche_type && order.demarche_type !== 'CG' && (
+                      <Badge variant="outline">
+                        {order.demarche_type === 'DA' ? "Déclaration d'achat" : 
+                         order.demarche_type === 'DC' ? "Déclaration de cession" : ""}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     Immatriculation: {order.immatriculation}
                   </p>

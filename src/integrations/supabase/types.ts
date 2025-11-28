@@ -535,6 +535,7 @@ export type Database = {
           cotitulaire_prenom: string | null
           created_at: string
           date_mec: string | null
+          demarche_type: string | null
           documents_complets: boolean
           dossier_prioritaire: boolean | null
           email: string
@@ -580,6 +581,7 @@ export type Database = {
           cotitulaire_prenom?: string | null
           created_at?: string
           date_mec?: string | null
+          demarche_type?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email: string
@@ -625,6 +627,7 @@ export type Database = {
           cotitulaire_prenom?: string | null
           created_at?: string
           date_mec?: string | null
+          demarche_type?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email?: string

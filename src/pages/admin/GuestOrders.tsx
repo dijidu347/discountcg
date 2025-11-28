@@ -29,6 +29,7 @@ interface GuestOrder {
   paye: boolean;
   documents_complets: boolean;
   created_at: string;
+  demarche_type?: string;
 }
 
 export default function GuestOrders() {
@@ -160,6 +161,7 @@ export default function GuestOrders() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>N° Commande</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Client</TableHead>
                     <TableHead>Immatriculation</TableHead>
                     <TableHead>Montant</TableHead>
@@ -173,7 +175,7 @@ export default function GuestOrders() {
                 <TableBody>
                   {filteredOrders.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center text-muted-foreground">
+                      <TableCell colSpan={10} className="text-center text-muted-foreground">
                         Aucune commande trouvée
                       </TableCell>
                     </TableRow>
@@ -182,6 +184,12 @@ export default function GuestOrders() {
                       <TableRow key={order.id}>
                         <TableCell className="font-mono font-medium">
                           {order.tracking_number}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {order.demarche_type === 'DA' ? "DA" : 
+                             order.demarche_type === 'DC' ? "DC" : "CG"}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div>
