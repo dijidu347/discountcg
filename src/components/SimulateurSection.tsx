@@ -64,8 +64,10 @@ export const SimulateurSection = () => {
   const currentDemarche = demarcheTypes[demarcheType];
 
   const validatePlate = (plate: string) => {
-    const newFormat = /^[A-Z]{2}-\d{3}-[A-Z]{2}$/i;
-    const oldFormat = /^\d{3,4}-[A-Z]{3}-\d{2}$/i;
+    // Nouveau format SIV (depuis 2009): AA-123-AA
+    const newFormat = /^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/i;
+    // Ancien format FNI: 123 ABC 75 ou 1234 AB 75
+    const oldFormat = /^\d{1,4}[\s-]?[A-Z]{2,3}[\s-]?\d{2}$/i;
     return newFormat.test(plate) || oldFormat.test(plate);
   };
 
@@ -79,6 +81,12 @@ export const SimulateurSection = () => {
 
   const formatPlateDisplay = (value: string) => {
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    // Détecte si c'est un ancien format (commence par des chiffres)
+    if (/^\d/.test(clean)) {
+      // Ancien format: affiche tel quel avec espaces
+      return value.toUpperCase();
+    }
+    // Nouveau format SIV
     if (clean.length <= 2) return clean;
     if (clean.length <= 5) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
     return `${clean.slice(0, 2)}-${clean.slice(2, 5)}-${clean.slice(5, 7)}`;
