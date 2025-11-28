@@ -254,9 +254,19 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
     );
   }
 
+  // Documents nécessitant recto + verso
+  const documentsWithVerso = [
+    "Carte d'identité",
+    "Permis",
+  ];
+
   // Build the list of documents to display
   const documentsToShow: Array<{ id: string; nom_document: string; rectoOnly?: boolean }> = [
-    ...requiredDocuments.map(doc => ({ id: doc.id, nom_document: doc.nom_document, rectoOnly: false }))
+    ...requiredDocuments.map(doc => ({ 
+      id: doc.id, 
+      nom_document: doc.nom_document, 
+      rectoOnly: !documentsWithVerso.includes(doc.nom_document)
+    }))
   ];
 
   // Add attestation de domicile if hébergé
@@ -268,12 +278,12 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
     });
   }
 
-  // Add co-titulaire ID if has_cotitulaire
+  // Add co-titulaire ID if has_cotitulaire (recto + verso)
   if (orderInfo?.has_cotitulaire) {
     documentsToShow.push({
       id: 'cotitulaire_id',
       nom_document: "Pièce d'identité du co-titulaire",
-      rectoOnly: false
+      rectoOnly: false // recto + verso requis
     });
   }
 

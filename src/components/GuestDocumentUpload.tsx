@@ -246,8 +246,8 @@ export function GuestDocumentUpload({
           {renderFileStatus(rectoFile, 'recto')}
         </div>
       ) : (
-        // Recto + Verso
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        // Recto + Verso (affichage vertical/portrait)
+        <div className="space-y-3">
           <div className="space-y-2">
             <Label className="text-xs text-muted-foreground">Recto</Label>
             <Input
