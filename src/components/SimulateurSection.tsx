@@ -111,7 +111,8 @@ export const SimulateurSection = () => {
 
   const handlePlateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
-    let formatted = value.replace(/[^A-Z0-9-]/g, '');
+    // Autoriser lettres, chiffres, tirets et espaces
+    let formatted = value.replace(/[^A-Z0-9\s-]/g, '');
     setPlaque(formatted);
   };
 
@@ -354,11 +355,11 @@ export const SimulateurSection = () => {
               <label className="text-sm font-medium text-foreground">Immatriculation</label>
               <Input
                 type="text"
-                placeholder="AA-123-AA"
+                placeholder="AA-123-AA ou 123 ABC 75"
                 value={plaque}
                 onChange={handlePlateChange}
                 className="text-center text-lg font-mono uppercase"
-                maxLength={9}
+                maxLength={12}
               />
             </div>
 
