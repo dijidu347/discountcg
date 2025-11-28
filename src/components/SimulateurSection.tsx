@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DepartmentSelect } from "@/components/simulateur/DepartmentSelect";
@@ -15,65 +15,72 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type DemarcheType = 'CG' | 'DA' | 'DC';
-
-interface DemarcheTypeInfo {
-  label: string;
-  description: string;
-  icon: typeof FileText;
-  prix: number;
-  needsVehicleApi: boolean;
-  needsDepartment: boolean;
+interface DemarcheType {
+  id: string;
+  code: string;
+  titre: string;
+  description: string | null;
+  prix_base: number;
+  actif: boolean;
+  ordre: number;
+  require_vehicle_info: boolean;
+  require_carte_grise_price: boolean;
 }
 
-const demarcheTypes: Record<DemarcheType, DemarcheTypeInfo> = {
-  CG: {
-    label: "Demande de carte grise",
-    description: "Changement de titulaire complet avec nouvelle carte grise",
-    icon: Car,
-    prix: 0, // Calculé selon le véhicule
-    needsVehicleApi: true,
-    needsDepartment: true,
-  },
-  DA: {
-    label: "Déclaration d'achat",
-    description: "Enregistrement de l'achat d'un véhicule",
-    icon: FileText,
-    prix: 10,
-    needsVehicleApi: false,
-    needsDepartment: false,
-  },
-  DC: {
-    label: "Déclaration de cession",
-    description: "Enregistrement de la vente d'un véhicule",
-    icon: FileCheck,
-    prix: 10,
-    needsVehicleApi: false,
-    needsDepartment: false,
-  },
+const getIconForCode = (code: string) => {
+  switch (code) {
+    case 'CG': return Car;
+    case 'DA': return FileText;
+    case 'DC': return FileCheck;
+    default: return FileText;
+  }
 };
 
 export const SimulateurSection = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [demarcheType, setDemarcheType] = useState<DemarcheType>("CG");
+  const [demarcheTypes, setDemarcheTypes] = useState<DemarcheType[]>([]);
+  const [selectedTypeCode, setSelectedTypeCode] = useState<string>("CG");
   const [departement, setDepartement] = useState("");
   const [plaque, setPlaque] = useState("");
   const [loading, setLoading] = useState(false);
+  const [loadingTypes, setLoadingTypes] = useState(true);
 
-  const currentDemarche = demarcheTypes[demarcheType];
+  useEffect(() => {
+    loadDemarcheTypes();
+  }, []);
+
+  const loadDemarcheTypes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('guest_demarche_types')
+        .select('*')
+        .eq('actif', true)
+        .order('ordre');
+
+      if (error) throw error;
+      setDemarcheTypes(data || []);
+      if (data && data.length > 0 && !data.find(t => t.code === selectedTypeCode)) {
+        setSelectedTypeCode(data[0].code);
+      }
+    } catch (error) {
+      console.error('Error loading demarche types:', error);
+    } finally {
+      setLoadingTypes(false);
+    }
+  };
+
+  const currentDemarche = demarcheTypes.find(t => t.code === selectedTypeCode);
 
   const validatePlate = (plate: string) => {
-    // Nouveau format SIV (depuis 2009): AA-123-AA
     const newFormat = /^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/i;
-    // Ancien format FNI: 123 ABC 75 ou 1234 AB 75
     const oldFormat = /^\d{1,4}[\s-]?[A-Z]{2,3}[\s-]?\d{2}$/i;
     return newFormat.test(plate) || oldFormat.test(plate);
   };
 
   const isFormValid = () => {
     const plateValid = plaque && validatePlate(plaque);
-    if (currentDemarche.needsDepartment) {
+    if (currentDemarche?.require_carte_grise_price) {
       return plateValid && departement;
     }
     return plateValid;
@@ -81,12 +88,9 @@ export const SimulateurSection = () => {
 
   const formatPlateDisplay = (value: string) => {
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    // Détecte si c'est un ancien format (commence par des chiffres)
     if (/^\d/.test(clean)) {
-      // Ancien format: affiche tel quel avec espaces
       return value.toUpperCase();
     }
-    // Nouveau format SIV
     if (clean.length <= 2) return clean;
     if (clean.length <= 5) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
     return `${clean.slice(0, 2)}-${clean.slice(2, 5)}-${clean.slice(5, 7)}`;
@@ -99,11 +103,11 @@ export const SimulateurSection = () => {
   };
 
   const handleCalculate = async () => {
-    if (!isFormValid()) return;
+    if (!isFormValid() || !currentDemarche) return;
 
     setLoading(true);
     try {
-      if (currentDemarche.needsVehicleApi) {
+      if (currentDemarche.require_carte_grise_price) {
         // Parcours carte grise - besoin de l'API véhicule
         const apiResponse = await getVehicleByPlate(plaque);
 
@@ -134,10 +138,10 @@ export const SimulateurSection = () => {
             ville: '',
             montant_ht: 0,
             montant_ttc: 0,
-            frais_dossier: 30,
+            frais_dossier: currentDemarche.prix_base,
             status: 'en_attente',
             paye: false,
-            demarche_type: 'CG',
+            demarche_type: selectedTypeCode,
           })
           .select()
           .single();
@@ -153,7 +157,7 @@ export const SimulateurSection = () => {
         });
       } else {
         // Parcours DA/DC - prix fixe
-        const prixHT = currentDemarche.prix;
+        const prixHT = currentDemarche.prix_base;
         const prixTTC = prixHT * 1.2;
 
         const { data: order, error } = await supabase
@@ -173,14 +177,14 @@ export const SimulateurSection = () => {
             frais_dossier: prixHT,
             status: 'en_attente',
             paye: false,
-            demarche_type: demarcheType,
+            demarche_type: selectedTypeCode,
           })
           .select()
           .single();
 
         if (error) throw error;
 
-        navigate(`/demarche-simple?orderId=${order.id}&type=${demarcheType}&plaque=${plaque}`);
+        navigate(`/demarche-simple?orderId=${order.id}&type=${selectedTypeCode}&plaque=${plaque}`);
       }
     } catch (error) {
       console.error('Error:', error);
@@ -196,6 +200,18 @@ export const SimulateurSection = () => {
 
   const displayPlate = plaque ? formatPlateDisplay(plaque) : "AA-123-AA";
   const displayDept = departement || "75";
+
+  if (loadingTypes) {
+    return (
+      <section className="py-20 bg-muted/30" id="simulateur">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-20 bg-muted/30" id="simulateur">
@@ -254,25 +270,30 @@ export const SimulateurSection = () => {
             {/* Type de démarche */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Type de démarche</label>
-              <Select value={demarcheType} onValueChange={(v) => setDemarcheType(v as DemarcheType)}>
+              <Select value={selectedTypeCode} onValueChange={setSelectedTypeCode}>
                 <SelectTrigger>
                   <SelectValue placeholder="Choisir une démarche" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Object.entries(demarcheTypes).map(([key, value]) => (
-                    <SelectItem key={key} value={key}>
-                      <div className="flex items-center gap-2">
-                        <value.icon className="h-4 w-4" />
-                        <span>{value.label}</span>
-                        {value.prix > 0 && (
-                          <span className="text-muted-foreground ml-2">({value.prix}€ HT)</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {demarcheTypes.map((type) => {
+                    const Icon = getIconForCode(type.code);
+                    return (
+                      <SelectItem key={type.code} value={type.code}>
+                        <div className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" />
+                          <span>{type.titre}</span>
+                          {!type.require_carte_grise_price && type.prix_base > 0 && (
+                            <span className="text-muted-foreground ml-2">({type.prix_base}€ HT)</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">{currentDemarche.description}</p>
+              {currentDemarche?.description && (
+                <p className="text-xs text-muted-foreground">{currentDemarche.description}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -287,7 +308,7 @@ export const SimulateurSection = () => {
               />
             </div>
 
-            {currentDemarche.needsDepartment && (
+            {currentDemarche?.require_carte_grise_price && (
               <DepartmentSelect
                 value={departement}
                 onChange={setDepartement}
@@ -298,9 +319,11 @@ export const SimulateurSection = () => {
             <div className="bg-muted/50 rounded-lg p-4 text-center">
               <p className="text-sm text-muted-foreground mb-1">Prix de la démarche</p>
               <p className="text-2xl font-bold text-primary">
-                {currentDemarche.prix > 0 
-                  ? `${(currentDemarche.prix * 1.2).toFixed(2)}€ TTC`
-                  : "Calcul après validation"
+                {currentDemarche?.require_carte_grise_price 
+                  ? "Calcul après validation"
+                  : currentDemarche?.prix_base 
+                    ? `${(currentDemarche.prix_base * 1.2).toFixed(2)}€ TTC`
+                    : "0€"
                 }
               </p>
             </div>
@@ -314,12 +337,12 @@ export const SimulateurSection = () => {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {currentDemarche.needsVehicleApi ? "Calcul en cours..." : "Traitement..."}
+                  {currentDemarche?.require_carte_grise_price ? "Calcul en cours..." : "Traitement..."}
                 </>
               ) : (
                 <>
                   <Calculator className="w-5 h-5 mr-2" />
-                  {currentDemarche.needsVehicleApi ? "Calculer le prix" : "Continuer"}
+                  {currentDemarche?.require_carte_grise_price ? "Calculer le prix" : "Continuer"}
                 </>
               )}
             </Button>

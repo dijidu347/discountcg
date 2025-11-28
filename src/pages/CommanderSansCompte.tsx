@@ -34,8 +34,13 @@ const CommanderSansCompte = () => {
 
   useEffect(() => {
     loadOrder();
-    loadRequiredDocuments();
   }, [orderId]);
+
+  useEffect(() => {
+    if (order?.demarche_type) {
+      loadRequiredDocuments(order.demarche_type);
+    }
+  }, [order?.demarche_type]);
 
   const loadOrder = async () => {
     if (!orderId) return;
@@ -74,12 +79,13 @@ const CommanderSansCompte = () => {
     }
   };
 
-  const loadRequiredDocuments = async () => {
-    // Load documents for guest orders from new table
+  const loadRequiredDocuments = async (demarcheType: string) => {
+    // Load documents for guest orders filtered by demarche type
     const { data: docsData } = await supabase
       .from("guest_order_required_documents")
       .select("*")
       .eq("actif", true)
+      .eq("demarche_type_code", demarcheType)
       .order("ordre");
 
     setDocuments(docsData || []);

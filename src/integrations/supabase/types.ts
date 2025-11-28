@@ -398,6 +398,48 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_demarche_types: {
+        Row: {
+          actif: boolean
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          ordre: number
+          prix_base: number
+          require_carte_grise_price: boolean
+          require_vehicle_info: boolean
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          ordre?: number
+          prix_base?: number
+          require_carte_grise_price?: boolean
+          require_vehicle_info?: boolean
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          ordre?: number
+          prix_base?: number
+          require_carte_grise_price?: boolean
+          require_vehicle_info?: boolean
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guest_order_admin_documents: {
         Row: {
           created_at: string
@@ -502,6 +544,7 @@ export type Database = {
         Row: {
           actif: boolean
           created_at: string | null
+          demarche_type_code: string | null
           id: string
           nom_document: string
           obligatoire: boolean
@@ -511,6 +554,7 @@ export type Database = {
         Insert: {
           actif?: boolean
           created_at?: string | null
+          demarche_type_code?: string | null
           id?: string
           nom_document: string
           obligatoire?: boolean
@@ -520,6 +564,7 @@ export type Database = {
         Update: {
           actif?: boolean
           created_at?: string | null
+          demarche_type_code?: string | null
           id?: string
           nom_document?: string
           obligatoire?: boolean

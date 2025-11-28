@@ -10,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 interface UploadListSimpleProps {
   orderId: string;
   isPaid: boolean;
-  demarcheType: "DA" | "DC";
+  demarcheType: string;
 }
 
 interface UploadedFile {
