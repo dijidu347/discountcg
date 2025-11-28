@@ -206,7 +206,7 @@ export default function Support() {
                   <strong>Temps de réponse moyen :</strong> 24h ouvrées
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Pour toute urgence, contactez-nous au <strong>01 23 45 67 89</strong>
+                  Vous pouvez aussi nous contacter par email : <strong>contact@discountcartegrise.fr</strong>
                 </p>
               </div>
             </CardContent>
