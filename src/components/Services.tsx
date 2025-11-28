@@ -95,7 +95,7 @@ const Services = () => {
                 <CardContent className="pt-2">
                   <div className="mb-4">
                     <p className="text-2xl font-bold text-primary">
-                      {action.prix}€ 
+                      {action.prix}€ <span className="text-base font-normal">HT</span>
                       <span className="text-sm font-normal text-muted-foreground ml-1">
                         {action.code.includes("CG") && "+ taxe régionale"}
                       </span>
