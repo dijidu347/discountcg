@@ -13,9 +13,10 @@ interface GuestOrderInfoFormProps {
   orderId: string;
   onComplete: () => void;
   isPaid: boolean;
+  showConditionalQuestions?: boolean;
 }
 
-export function GuestOrderInfoForm({ orderId, onComplete, isPaid }: GuestOrderInfoFormProps) {
+export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditionalQuestions = true }: GuestOrderInfoFormProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -243,113 +244,115 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid }: GuestOrderIn
                 </div>
               </div>
 
-              {/* Questions conditionnelles */}
-              <div className="space-y-6 pt-4 border-t">
-                <h3 className="font-semibold">Questions complémentaires</h3>
+              {/* Questions conditionnelles - uniquement pour carte grise */}
+              {showConditionalQuestions && (
+                <div className="space-y-6 pt-4 border-t">
+                  <h3 className="font-semibold">Questions complémentaires</h3>
 
-                {/* Cotitulaire - sans upload de documents ici */}
-                <div className="space-y-3">
-                  <Label>Inscrire un co-titulaire sur la carte grise ? *</Label>
-                  <RadioGroup value={hasCotitulaire} onValueChange={setHasCotitulaire} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="oui" id="cotitulaire-oui" />
-                      <Label htmlFor="cotitulaire-oui" className="cursor-pointer">Oui</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="non" id="cotitulaire-non" />
-                      <Label htmlFor="cotitulaire-non" className="cursor-pointer">Non</Label>
-                    </div>
-                  </RadioGroup>
-
-                  {hasCotitulaire === "oui" && (
-                    <div className="ml-4 p-4 bg-muted/50 rounded-lg space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="cotitulairePrenom">Prénom du co-titulaire *</Label>
-                          <Input
-                            id="cotitulairePrenom"
-                            value={cotitulairePrenom}
-                            onChange={(e) => setCotitulairePrenom(e.target.value)}
-                            required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="cotitulaireNom">Nom du co-titulaire *</Label>
-                          <Input
-                            id="cotitulaireNom"
-                            value={cotitulaireNom}
-                            onChange={(e) => setCotitulaireNom(e.target.value)}
-                            required
-                          />
-                        </div>
+                  {/* Cotitulaire - sans upload de documents ici */}
+                  <div className="space-y-3">
+                    <Label>Inscrire un co-titulaire sur la carte grise ? *</Label>
+                    <RadioGroup value={hasCotitulaire} onValueChange={setHasCotitulaire} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="oui" id="cotitulaire-oui" />
+                        <Label htmlFor="cotitulaire-oui" className="cursor-pointer">Oui</Label>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        La pièce d'identité du co-titulaire sera demandée à l'étape suivante (documents).
-                      </p>
-                    </div>
-                  )}
-                </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="non" id="cotitulaire-non" />
+                        <Label htmlFor="cotitulaire-non" className="cursor-pointer">Non</Label>
+                      </div>
+                    </RadioGroup>
 
-                {/* Véhicule professionnel */}
-                <div className="space-y-3">
-                  <Label>Véhicule acheté auprès d'un professionnel automobile ? *</Label>
-                  <RadioGroup value={vehiculePro} onValueChange={setVehiculePro} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="oui" id="vehicule-pro-oui" />
-                      <Label htmlFor="vehicule-pro-oui" className="cursor-pointer">Oui</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="non" id="vehicule-pro-non" />
-                      <Label htmlFor="vehicule-pro-non" className="cursor-pointer">Non</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                    {hasCotitulaire === "oui" && (
+                      <div className="ml-4 p-4 bg-muted/50 rounded-lg space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="cotitulairePrenom">Prénom du co-titulaire *</Label>
+                            <Input
+                              id="cotitulairePrenom"
+                              value={cotitulairePrenom}
+                              onChange={(e) => setCotitulairePrenom(e.target.value)}
+                              required
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="cotitulaireNom">Nom du co-titulaire *</Label>
+                            <Input
+                              id="cotitulaireNom"
+                              value={cotitulaireNom}
+                              onChange={(e) => setCotitulaireNom(e.target.value)}
+                              required
+                            />
+                          </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground">
+                          La pièce d'identité du co-titulaire sera demandée à l'étape suivante (documents).
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-                {/* Leasing */}
-                <div className="space-y-3">
-                  <Label>Véhicule en leasing, LLD ou LOA ? *</Label>
-                  <RadioGroup value={vehiculeLeasing} onValueChange={setVehiculeLeasing} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="oui" id="leasing-oui" />
-                      <Label htmlFor="leasing-oui" className="cursor-pointer">Oui</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="non" id="leasing-non" />
-                      <Label htmlFor="leasing-non" className="cursor-pointer">Non</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                  {/* Véhicule professionnel */}
+                  <div className="space-y-3">
+                    <Label>Véhicule acheté auprès d'un professionnel automobile ? *</Label>
+                    <RadioGroup value={vehiculePro} onValueChange={setVehiculePro} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="oui" id="vehicule-pro-oui" />
+                        <Label htmlFor="vehicule-pro-oui" className="cursor-pointer">Oui</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="non" id="vehicule-pro-non" />
+                        <Label htmlFor="vehicule-pro-non" className="cursor-pointer">Non</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
 
-                {/* Mineur */}
-                <div className="space-y-3">
-                  <Label>Je suis mineur (-18 ans) ? *</Label>
-                  <RadioGroup value={isMineur} onValueChange={setIsMineur} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="oui" id="mineur-oui" />
-                      <Label htmlFor="mineur-oui" className="cursor-pointer">Oui</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="non" id="mineur-non" />
-                      <Label htmlFor="mineur-non" className="cursor-pointer">Non</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
+                  {/* Leasing */}
+                  <div className="space-y-3">
+                    <Label>Véhicule en leasing, LLD ou LOA ? *</Label>
+                    <RadioGroup value={vehiculeLeasing} onValueChange={setVehiculeLeasing} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="oui" id="leasing-oui" />
+                        <Label htmlFor="leasing-oui" className="cursor-pointer">Oui</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="non" id="leasing-non" />
+                        <Label htmlFor="leasing-non" className="cursor-pointer">Non</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
 
-                {/* Hébergé */}
-                <div className="space-y-3">
-                  <Label>Je suis hébergé (famille, proche, etc...) ? *</Label>
-                  <RadioGroup value={isHeberge} onValueChange={setIsHeberge} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="oui" id="heberge-oui" />
-                      <Label htmlFor="heberge-oui" className="cursor-pointer">Oui</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="non" id="heberge-non" />
-                      <Label htmlFor="heberge-non" className="cursor-pointer">Non</Label>
-                    </div>
-                  </RadioGroup>
+                  {/* Mineur */}
+                  <div className="space-y-3">
+                    <Label>Je suis mineur (-18 ans) ? *</Label>
+                    <RadioGroup value={isMineur} onValueChange={setIsMineur} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="oui" id="mineur-oui" />
+                        <Label htmlFor="mineur-oui" className="cursor-pointer">Oui</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="non" id="mineur-non" />
+                        <Label htmlFor="mineur-non" className="cursor-pointer">Non</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
+
+                  {/* Hébergé */}
+                  <div className="space-y-3">
+                    <Label>Je suis hébergé (famille, proche, etc...) ? *</Label>
+                    <RadioGroup value={isHeberge} onValueChange={setIsHeberge} className="flex gap-4">
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="oui" id="heberge-oui" />
+                        <Label htmlFor="heberge-oui" className="cursor-pointer">Oui</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="non" id="heberge-non" />
+                        <Label htmlFor="heberge-non" className="cursor-pointer">Non</Label>
+                      </div>
+                    </RadioGroup>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <Button 
                 type="submit" 

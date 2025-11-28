@@ -215,6 +215,7 @@ export default function DemarcheSimple() {
               orderId={orderId}
               isPaid={isPaid}
               onComplete={handleInfoComplete}
+              showConditionalQuestions={false}
             />
           </div>
 
