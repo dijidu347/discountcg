@@ -347,6 +347,7 @@ export type Database = {
           code_postal: string
           created_at: string
           email: string
+          free_token_available: boolean | null
           id: string
           is_gold: boolean | null
           is_verified: boolean | null
@@ -363,6 +364,7 @@ export type Database = {
           code_postal: string
           created_at?: string
           email: string
+          free_token_available?: boolean | null
           id?: string
           is_gold?: boolean | null
           is_verified?: boolean | null
@@ -379,6 +381,7 @@ export type Database = {
           code_postal?: string
           created_at?: string
           email?: string
+          free_token_available?: boolean | null
           id?: string
           is_gold?: boolean | null
           is_verified?: boolean | null
