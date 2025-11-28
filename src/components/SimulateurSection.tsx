@@ -88,10 +88,18 @@ export const SimulateurSection = () => {
 
   const formatPlateDisplay = (value: string) => {
     const clean = value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    // Ancienne plaque (commence par un chiffre): 1234 AB 75
+    
+    // Ancienne plaque (commence par un chiffre): 123 ABC 35
     if (/^\d/.test(clean)) {
-      return value.toUpperCase().replace(/-/g, ' ');
+      // Extraire les parties: chiffres, lettres, département
+      const match = clean.match(/^(\d{1,4})([A-Z]{2,3})(\d{0,2})$/);
+      if (match) {
+        const [, numbers, letters, dept] = match;
+        return dept ? `${numbers} ${letters} ${dept}` : letters ? `${numbers} ${letters}` : numbers;
+      }
+      return clean;
     }
+    
     // Nouvelle plaque: AA-123-AA
     if (clean.length <= 2) return clean;
     if (clean.length <= 5) return `${clean.slice(0, 2)}-${clean.slice(2)}`;
