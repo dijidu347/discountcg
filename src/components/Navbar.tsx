@@ -53,22 +53,22 @@ const Navbar = () => {
           </div>
 
           {/* Navigation - Desktop */}
-          <div className="hidden md:flex items-center gap-6">
-            <button onClick={() => navigate("/")} className="text-sm text-foreground hover:text-primary transition-colors">
+          <div className="hidden md:flex items-center gap-4">
+            <button onClick={() => navigate("/")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Accueil
             </button>
-            <button onClick={() => scrollToSection("services")} className="text-sm text-foreground hover:text-primary transition-colors">
+            <button onClick={() => scrollToSection("services")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Services
             </button>
-            <button onClick={() => scrollToSection("tarifs")} className="text-sm text-foreground hover:text-primary transition-colors">
+            <button onClick={() => scrollToSection("tarifs")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Tarifs
             </button>
-            <button onClick={() => navigate("/recherche-suivi")} className="text-sm text-foreground hover:text-primary transition-colors">
+            <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
             </button>
-            <Button onClick={() => navigate("/login")} variant="default" size="sm" className="flex items-center gap-2">
+            <Button onClick={() => navigate("/login")} variant="default" size="default" className="flex items-center gap-2 font-semibold shadow-md">
               <LogIn className="h-4 w-4" />
-              Pro
+              Espace Pro
             </Button>
           </div>
 
