@@ -57,12 +57,6 @@ const Navbar = () => {
             <button onClick={() => navigate("/")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Accueil
             </button>
-            <button onClick={() => scrollToSection("services")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
-              Services
-            </button>
-            <button onClick={() => scrollToSection("tarifs")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
-              Tarifs
-            </button>
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
             </button>
@@ -99,12 +93,6 @@ const Navbar = () => {
           navigate("/");
         }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Accueil
-            </button>
-            <button onClick={() => scrollToSection("services")} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Services
-            </button>
-            <button onClick={() => scrollToSection("tarifs")} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Tarifs
             </button>
             <button onClick={() => {
           setIsOpen(false);
