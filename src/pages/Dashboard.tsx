@@ -64,12 +64,12 @@ export default function Dashboard() {
       setGarage(garageData);
       const {
         data: demarches
-      } = await supabase.from('demarches').select('*').eq('garage_id', garageData.id).order('created_at', {
+      } = await supabase.from('demarches').select('*').eq('garage_id', garageData.id).eq('paye', true).order('created_at', {
         ascending: false
       });
       setStats({
         totalDemarches: demarches?.length || 0,
-        enAttente: demarches?.filter(d => d.status === 'en_attente' || d.status === 'en_saisie').length || 0,
+        enAttente: demarches?.filter(d => d.status === 'en_attente' || d.status === 'paye').length || 0,
         validees: demarches?.filter(d => d.status === 'valide' || d.status === 'finalise').length || 0
       });
       setRecentDemarches(demarches?.slice(0, 5) || []);
