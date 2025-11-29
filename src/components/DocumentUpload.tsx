@@ -19,12 +19,13 @@ interface DocumentUploadProps {
   demarcheId: string;
   documentType: string;
   label: string;
+  customName?: string; // Nom personnalisé à afficher
   onUploadComplete?: () => void;
   isBlocked?: boolean;
   blockedMessage?: string;
 }
 
-export function DocumentUpload({ demarcheId, documentType, label, onUploadComplete, isBlocked = false, blockedMessage }: DocumentUploadProps) {
+export function DocumentUpload({ demarcheId, documentType, label, customName, onUploadComplete, isBlocked = false, blockedMessage }: DocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -112,7 +113,7 @@ export function DocumentUpload({ demarcheId, documentType, label, onUploadComple
         .insert({
           demarche_id: demarcheId,
           type_document: documentType,
-          document_type: documentType,
+          document_type: customName || documentType, // Utiliser le nom personnalisé si fourni
           nom_fichier: file.name,
           url: publicUrl,
           taille_octets: file.size

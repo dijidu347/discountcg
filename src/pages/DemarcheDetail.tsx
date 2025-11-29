@@ -561,7 +561,12 @@ export default function DemarcheDetail() {
                     <div key={doc.id} className="border rounded-lg p-4">
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          {documentLabels[doc.type_document] && (
+                          {/* Afficher le nom personnalisé pour les pièces supplémentaires ou le label standard */}
+                          {(doc.type_document?.startsWith('autre_piece') && doc.document_type) ? (
+                            <p className="text-xs font-semibold text-primary uppercase mb-1">
+                              {doc.document_type}
+                            </p>
+                          ) : documentLabels[doc.type_document] && (
                             <p className="text-xs font-semibold text-primary uppercase mb-1">
                               {documentLabels[doc.type_document]}
                             </p>

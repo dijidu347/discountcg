@@ -952,7 +952,12 @@ export default function DemarcheDetail() {
                               onCheckedChange={() => toggleDocSelection(doc.id)}
                             />
                             <div className="flex-1">
-                              {documentLabels[doc.type_document] && (
+                              {/* Afficher le nom personnalisé pour les pièces supplémentaires ou le label standard */}
+                              {(doc.type_document?.startsWith('autre_piece') && doc.document_type) ? (
+                                <p className="text-xs font-semibold text-primary uppercase mb-2">
+                                  {doc.document_type}
+                                </p>
+                              ) : documentLabels[doc.type_document] && (
                                 <p className="text-xs font-semibold text-primary uppercase mb-2">
                                   {documentLabels[doc.type_document]}
                                 </p>

@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,7 +35,13 @@ export default function NouvelleDemarche() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [selectedImmatriculation, setSelectedImmatriculation] = useState<string>("");
-  const [additionalDocs, setAdditionalDocs] = useState<number[]>([1, 2, 3, 4, 5]);
+  const [additionalDocs, setAdditionalDocs] = useState<{id: number; name: string}[]>([
+    { id: 1, name: "" },
+    { id: 2, name: "" },
+    { id: 3, name: "" },
+    { id: 4, name: "" },
+    { id: 5, name: "" }
+  ]);
   const [carteGrisePrice, setCarteGrisePrice] = useState<number>(0);
   const [trackingServicePrice, setTrackingServicePrice] = useState<number>(0);
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
@@ -672,20 +679,29 @@ export default function NouvelleDemarche() {
                   <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
                     <h3 className="font-semibold text-lg">Autres pièces justificatives <span className="text-muted-foreground text-sm font-normal">(optionnel)</span></h3>
                     
-                    <div className="space-y-3">
-                      {additionalDocs.map((docNum) => (
-                        <div key={docNum} className="flex items-center gap-4">
-                          <div className="flex-1">
-                            <Label className="text-sm font-medium">Autre pièce {docNum} <span className="text-muted-foreground text-xs">(optionnel)</span></Label>
-                          </div>
-                          <div className="w-[400px]">
-                            <DocumentUpload
-                              demarcheId={demarcheId}
-                              documentType={`autre_piece_${docNum}`}
-                              label=""
-                              onUploadComplete={() => handleDocumentUploadComplete(`autre_piece_${docNum}`)}
+                    <div className="space-y-4">
+                      {additionalDocs.map((doc, index) => (
+                        <div key={doc.id} className="p-3 border rounded-lg bg-background space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              placeholder={`Nom du document ${doc.id} (ex: Procuration, Justificatif...)`}
+                              value={doc.name}
+                              onChange={(e) => {
+                                const newDocs = [...additionalDocs];
+                                newDocs[index] = { ...doc, name: e.target.value };
+                                setAdditionalDocs(newDocs);
+                              }}
+                              className="flex-1 text-sm"
                             />
+                            <span className="text-xs text-muted-foreground whitespace-nowrap">(optionnel)</span>
                           </div>
+                          <DocumentUpload
+                            demarcheId={demarcheId}
+                            documentType={`autre_piece_${doc.id}`}
+                            customName={doc.name || `Autre pièce ${doc.id}`}
+                            label=""
+                            onUploadComplete={() => handleDocumentUploadComplete(`autre_piece_${doc.id}`)}
+                          />
                         </div>
                       ))}
                     </div>
@@ -693,7 +709,7 @@ export default function NouvelleDemarche() {
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => setAdditionalDocs([...additionalDocs, additionalDocs.length + 1])}
+                      onClick={() => setAdditionalDocs([...additionalDocs, { id: additionalDocs.length + 1, name: "" }])}
                       className="w-full"
                     >
                       <Plus className="mr-2 h-4 w-4" />
