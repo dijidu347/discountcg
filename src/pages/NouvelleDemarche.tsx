@@ -583,7 +583,7 @@ export default function NouvelleDemarche() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      <span className="text-destructive">*</span> = Document obligatoire
+                      <span className="text-destructive text-base font-bold">*</span> = Document obligatoire
                     </p>
                     
                     <div className="space-y-3">
@@ -606,9 +606,9 @@ export default function NouvelleDemarche() {
                                   <Label className="text-sm font-medium flex items-center gap-2">
                                     {doc.nom_document}
                                     {doc.obligatoire ? (
-                                      <span className="text-destructive text-xs">*</span>
+                                      <span className="text-destructive text-base font-bold">*</span>
                                     ) : (
-                                      <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                                      <span className="text-muted-foreground text-xs">(optionnel)</span>
                                     )}
                                   </Label>
                                 </div>
@@ -648,9 +648,9 @@ export default function NouvelleDemarche() {
                               <Label className="text-sm font-medium flex items-center gap-2">
                                 {doc.nom_document}
                                 {doc.obligatoire ? (
-                                  <span className="text-destructive text-xs">*</span>
+                                  <span className="text-destructive text-base font-bold">*</span>
                                 ) : (
-                                  <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                                  <span className="text-muted-foreground text-xs">(optionnel)</span>
                                 )}
                               </Label>
                             </div>
@@ -670,13 +670,13 @@ export default function NouvelleDemarche() {
 
                   {/* Autres pièces justificatives */}
                   <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
-                    <h3 className="font-semibold text-lg">Autres pièces justificatives</h3>
+                    <h3 className="font-semibold text-lg">Autres pièces justificatives <span className="text-muted-foreground text-sm font-normal">(optionnel)</span></h3>
                     
                     <div className="space-y-3">
                       {additionalDocs.map((docNum) => (
                         <div key={docNum} className="flex items-center gap-4">
                           <div className="flex-1">
-                            <Label className="text-sm font-medium">Autre pièce {docNum}</Label>
+                            <Label className="text-sm font-medium">Autre pièce {docNum} <span className="text-muted-foreground text-xs">(optionnel)</span></Label>
                           </div>
                           <div className="w-[400px]">
                             <DocumentUpload
@@ -721,7 +721,7 @@ export default function NouvelleDemarche() {
                   disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0)}
                   className={`flex-1 ${freeTokenAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
                 >
-                  {freeTokenAvailable && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${getTotalPrice()}€`}
+                  {freeTokenAvailable && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${getTotalPrice()}€ HT`}
                 </Button>
               </div>
             </form>

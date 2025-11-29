@@ -62,6 +62,17 @@ export default function CompleteProfile() {
     e.preventDefault();
     if (!user) return;
     
+    // Validation SIRET : exactement 14 chiffres
+    const siretClean = formData.siret.replace(/\s/g, '');
+    if (!/^\d{14}$/.test(siretClean)) {
+      toast({
+        title: "Erreur",
+        description: "Le numéro SIRET doit contenir exactement 14 chiffres",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -78,7 +89,7 @@ export default function CompleteProfile() {
           .from("garages")
           .update({
             raison_sociale: formData.raison_sociale,
-            siret: formData.siret,
+            siret: siretClean,
             adresse: formData.adresse,
             code_postal: formData.code_postal,
             ville: formData.ville,
@@ -89,13 +100,13 @@ export default function CompleteProfile() {
 
         if (garageError) throw garageError;
       } else {
-        // Create new garage profile
+        // Create new garage profile (trigger will auto-assign 'garage' role)
         const { error: garageError } = await supabase
           .from("garages")
           .insert({
             user_id: user.id,
             raison_sociale: formData.raison_sociale,
-            siret: formData.siret,
+            siret: siretClean,
             adresse: formData.adresse,
             code_postal: formData.code_postal,
             ville: formData.ville,
@@ -104,18 +115,6 @@ export default function CompleteProfile() {
           });
 
         if (garageError) throw garageError;
-      }
-
-      // Assign garage role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: user.id,
-          role: "garage"
-        });
-
-      if (roleError && !roleError.message.includes("duplicate")) {
-        throw roleError;
       }
 
       toast({
@@ -173,13 +172,14 @@ export default function CompleteProfile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="siret">Numéro SIRET *</Label>
+                <Label htmlFor="siret">Numéro SIRET * (14 chiffres)</Label>
                 <Input
                   id="siret"
                   name="siret"
-                  placeholder="123 456 789 00012"
+                  placeholder="12345678900012"
                   value={formData.siret}
-                  onChange={handleChange}
+                  onChange={(e) => setFormData(prev => ({ ...prev, siret: e.target.value.replace(/[^\d]/g, '') }))}
+                  maxLength={14}
                   required
                 />
               </div>

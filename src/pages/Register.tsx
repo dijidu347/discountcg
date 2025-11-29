@@ -35,6 +35,17 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation SIRET : exactement 14 chiffres
+    const siretClean = formData.siret.replace(/\s/g, '');
+    if (!/^\d{14}$/.test(siretClean)) {
+      toast({
+        title: "Erreur",
+        description: "Le numéro SIRET doit contenir exactement 14 chiffres",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Erreur",
@@ -167,12 +178,13 @@ export default function Register() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="siret">SIRET *</Label>
+                    <Label htmlFor="siret">SIRET * (14 chiffres)</Label>
                     <Input
                       id="siret"
-                      placeholder="123 456 789 00012"
+                      placeholder="12345678900012"
                       value={formData.siret}
-                      onChange={(e) => handleChange("siret", e.target.value)}
+                      onChange={(e) => handleChange("siret", e.target.value.replace(/[^\d\s]/g, ''))}
+                      maxLength={17}
                       required
                     />
                   </div>

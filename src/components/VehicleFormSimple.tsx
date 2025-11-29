@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Car, Plus } from "lucide-react";
+import { Car, Plus, Search, Loader2 } from "lucide-react";
+import { getVehicleByPlate } from "@/lib/vehicle-api";
 
 interface VehicleFormSimpleProps {
   garageId: string;
@@ -21,6 +22,8 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fetchingVehicle, setFetchingVehicle] = useState(false);
+  const [vehicleData, setVehicleData] = useState<any>(null);
   const [formData, setFormData] = useState({
     immatriculation: "",
     marque: "",
@@ -55,6 +58,50 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
     if (data) {
       setVehicles(data);
       setFilteredVehicles(data);
+    }
+  };
+
+  const handleFetchVehicle = async () => {
+    if (!formData.immatriculation.trim()) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer une immatriculation",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setFetchingVehicle(true);
+    try {
+      const result = await getVehicleByPlate(formData.immatriculation);
+
+      if (result.success && result.data) {
+        setVehicleData(result.data);
+        setFormData(prev => ({
+          ...prev,
+          marque: result.data?.marque || "",
+          modele: result.data?.modele || ""
+        }));
+        toast({
+          title: "Véhicule trouvé",
+          description: `${result.data.marque} ${result.data.modele}`
+        });
+      } else {
+        toast({
+          title: "Véhicule non trouvé",
+          description: "Vous pouvez remplir les informations manuellement",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Erreur API:", error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de récupérer les données du véhicule",
+        variant: "destructive"
+      });
+    } finally {
+      setFetchingVehicle(false);
     }
   };
 
@@ -96,6 +143,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
         modele: "",
         vin: ""
       });
+      setVehicleData(null);
       setShowForm(false);
       await loadVehicles();
       
@@ -123,35 +171,65 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center">
-            <Car className="mr-2 h-5 w-5" />
-            Véhicule
-          </span>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-3">
+          <Car className="h-5 w-5" />
+          <span>Véhicule</span>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setShowForm(!showForm)}
+            className="ml-2"
           >
-            <Plus className="h-4 w-4 mr-2" />
-            {showForm ? "Annuler" : "Nouveau véhicule"}
+            <Plus className="h-4 w-4 mr-1" />
+            {showForm ? "Annuler" : "Nouveau"}
           </Button>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {showForm ? (
           <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
+              <p className="font-medium mb-1">Formats d'immatriculation acceptés :</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>Nouveau format (SIV)</strong> : AA-123-AA</li>
+                <li><strong>Ancien format (FNI)</strong> : 1234 ABC 45</li>
+              </ul>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="immatriculation">Immatriculation *</Label>
-              <Input
-                id="immatriculation"
-                placeholder="AA-123-AA"
-                value={formData.immatriculation}
-                onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="immatriculation"
+                  placeholder="AA-123-AA ou 1234 ABC 45"
+                  value={formData.immatriculation}
+                  onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleFetchVehicle}
+                  disabled={fetchingVehicle || !formData.immatriculation.trim()}
+                >
+                  {fetchingVehicle ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
+
+            {vehicleData && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-md text-sm">
+                <p className="font-medium text-green-900 mb-1">Véhicule identifié :</p>
+                <p className="text-green-800">{vehicleData.marque} {vehicleData.modele}</p>
+                {vehicleData.energie && <p className="text-green-700 text-xs">Énergie : {vehicleData.energie}</p>}
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="marque">Marque</Label>
@@ -229,7 +307,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
 
             {vehicles.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">
-                Aucun véhicule enregistré. Cliquez sur "Nouveau véhicule" pour en ajouter un.
+                Aucun véhicule enregistré. Cliquez sur "Nouveau" pour en ajouter un.
               </p>
             )}
           </>
