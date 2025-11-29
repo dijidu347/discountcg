@@ -77,8 +77,9 @@ const StripeCardForm = ({ amount, orderId, onSuccess }: { amount: number; orderI
           .eq("id", orderId);
 
         toast({
-          title: "Paiement réussi",
-          description: "Votre commande a été payée avec succès",
+          title: "✅ Paiement accepté !",
+          description: "Votre paiement a été validé avec succès.",
+          variant: "success" as any,
         });
 
         onSuccess();
@@ -86,8 +87,8 @@ const StripeCardForm = ({ amount, orderId, onSuccess }: { amount: number; orderI
     } catch (error: any) {
       console.error("Payment error:", error);
       toast({
-        title: "Erreur de paiement",
-        description: error.message || "Une erreur est survenue",
+        title: "❌ Paiement refusé",
+        description: error.message || "Votre paiement n'a pas pu être traité.",
         variant: "destructive",
       });
     } finally {
@@ -190,6 +191,14 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
     onPaymentSuccess();
   };
 
+  const handleWalletError = (error: string) => {
+    toast({
+      title: "❌ Paiement refusé",
+      description: error,
+      variant: "destructive",
+    });
+  };
+
   if (isPaid) {
     return (
       <Card className="border-green-500/50 bg-green-50">
@@ -287,6 +296,8 @@ export const PaymentMethods = ({ amount, orderId, onPaymentSuccess }: PaymentMet
               <StripeWalletPayment
                 amount={amount}
                 onSuccess={handleInternalSuccess}
+                onError={handleWalletError}
+                metadata={{ order_id: orderId, type: "guest_order" }}
               />
             </Elements>
           </div>

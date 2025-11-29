@@ -82,8 +82,9 @@ export default function DevisCarteGrise() {
       if (error) throw error;
 
       toast({
-        title: "Paiement réussi",
-        description: "Votre commande a été payée avec succès",
+        title: "✅ Paiement accepté !",
+        description: "Votre paiement a été validé avec succès.",
+        variant: "success" as any,
       });
 
       navigate(`/commander/${orderId}`);
@@ -120,19 +121,28 @@ export default function DevisCarteGrise() {
       if (error) throw error;
 
       toast({
-        title: "Paiement réussi",
-        description: "Votre commande a été payée avec succès",
+        title: "✅ Paiement accepté !",
+        description: "Votre paiement a été validé avec succès.",
+        variant: "success" as any,
       });
 
       navigate(`/commander/${orderId}`);
     } catch (error) {
       console.error("Error updating order:", error);
       toast({
-        title: "Erreur",
+        title: "❌ Erreur",
         description: "Erreur lors de la mise à jour de la commande",
         variant: "destructive",
       });
     }
+  };
+  
+  const handleWalletError = (error: string) => {
+    toast({
+      title: "❌ Paiement refusé",
+      description: error,
+      variant: "destructive",
+    });
   };
 
   if (isLoading) {
@@ -289,6 +299,8 @@ export default function DevisCarteGrise() {
                       <StripeWalletPayment
                         amount={order.montant_ttc}
                         onSuccess={handleWalletSuccess}
+                        onError={handleWalletError}
+                        metadata={{ order_id: orderId || "", type: "guest_order" }}
                       />
                     </Elements>
                   </div>

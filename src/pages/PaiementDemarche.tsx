@@ -319,6 +319,14 @@ const PaiementDemarche = () => {
                     <StripeWalletPayment 
                       amount={finalAmount} 
                       onSuccess={handlePaymentSuccess}
+                      onError={(error) => {
+                        toast({
+                          title: "❌ Paiement refusé",
+                          description: error,
+                          variant: "destructive",
+                        });
+                      }}
+                      metadata={{ demarche_id: demarcheId || "", type: "demarche" }}
                     />
                   </Elements>
                 </div>
