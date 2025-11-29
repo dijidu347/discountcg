@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { ArrowLeft, Plus, Trash2, Edit, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -363,9 +363,11 @@ export default function ManageActions() {
                       {action.prix}€
                     </CardDescription>
                   </div>
-                  <Badge variant="outline" className="capitalize">
-                    {action.couleur}
-                  </Badge>
+                  <div 
+                    className="h-6 w-6 rounded-full border border-border shadow-sm" 
+                    style={{ backgroundColor: action.couleur.startsWith('#') ? action.couleur : '#3b82f6' }}
+                    title={action.couleur}
+                  />
                 </div>
               </CardHeader>
               <CardContent>
@@ -473,20 +475,21 @@ export default function ManageActions() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="couleur">Couleur</Label>
-                    <Select
-                      value={editingAction.couleur}
-                      onValueChange={(value) => setEditingAction({ ...editingAction, couleur: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="primary">Primary</SelectItem>
-                        <SelectItem value="accent">Accent</SelectItem>
-                        <SelectItem value="success">Success</SelectItem>
-                        <SelectItem value="warning">Warning</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        id="couleur"
+                        value={editingAction.couleur.startsWith('#') ? editingAction.couleur : '#3b82f6'}
+                        onChange={(e) => setEditingAction({ ...editingAction, couleur: e.target.value })}
+                        className="h-10 w-16 cursor-pointer rounded border border-input bg-background"
+                      />
+                      <Input
+                        value={editingAction.couleur}
+                        onChange={(e) => setEditingAction({ ...editingAction, couleur: e.target.value })}
+                        placeholder="#3b82f6"
+                        className="flex-1"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-2">
