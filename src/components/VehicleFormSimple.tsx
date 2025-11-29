@@ -123,9 +123,13 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
         .insert({
           garage_id: garageId,
           immatriculation: formData.immatriculation.toUpperCase(),
-          marque: formData.marque || null,
-          modele: formData.modele || null,
-          vin: formData.vin || null
+          marque: vehicleData?.marque || null,
+          modele: vehicleData?.modele || null,
+          vin: vehicleData?.vin || null,
+          energie: vehicleData?.energie || null,
+          puiss_fisc: vehicleData?.puissance_fiscale || null,
+          date_mec: vehicleData?.date_mec || null,
+          couleur: vehicleData?.couleur || null
         })
         .select()
         .single();
@@ -190,80 +194,80 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       <CardContent className="space-y-4">
         {showForm ? (
           <div className="space-y-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
-              <p className="font-medium mb-1">Formats d'immatriculation acceptés :</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li><strong>Nouveau format (SIV)</strong> : AA-123-AA</li>
-                <li><strong>Ancien format (FNI)</strong> : 1234 ABC 45</li>
-              </ul>
-            </div>
+            {!vehicleData ? (
+              <>
+                <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-900">
+                  <p className="font-medium mb-1">Formats d'immatriculation acceptés :</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li><strong>Nouveau format (SIV)</strong> : AA-123-AA</li>
+                    <li><strong>Ancien format (FNI)</strong> : 1234 ABC 45</li>
+                  </ul>
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="immatriculation">Immatriculation *</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="immatriculation"
-                  placeholder="AA-123-AA ou 1234 ABC 45"
-                  value={formData.immatriculation}
-                  onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
-                  className="flex-1"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleFetchVehicle}
-                  disabled={fetchingVehicle || !formData.immatriculation.trim()}
-                >
-                  {fetchingVehicle ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Search className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="immatriculation">Immatriculation *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="immatriculation"
+                      placeholder="AA-123-AA ou 1234 ABC 45"
+                      value={formData.immatriculation}
+                      onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleFetchVehicle}
+                      disabled={fetchingVehicle || !formData.immatriculation.trim()}
+                    >
+                      {fetchingVehicle ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-md">
+                  <h4 className="font-semibold text-green-900 mb-2">Informations du véhicule</h4>
+                  <div className="space-y-1 text-sm text-green-800">
+                    <p><strong>Immatriculation:</strong> {formData.immatriculation}</p>
+                    <p><strong>Marque:</strong> {vehicleData.marque}</p>
+                    <p><strong>Modèle:</strong> {vehicleData.modele}</p>
+                    {vehicleData.date_mec && <p><strong>Date MEC:</strong> {vehicleData.date_mec}</p>}
+                    {vehicleData.puissance_fiscale && <p><strong>Puissance fiscale:</strong> {vehicleData.puissance_fiscale} CV</p>}
+                    {vehicleData.energie && <p><strong>Énergie:</strong> {vehicleData.energie}</p>}
+                    {vehicleData.couleur && <p><strong>Couleur:</strong> {vehicleData.couleur}</p>}
+                    {vehicleData.vin && <p><strong>VIN:</strong> {vehicleData.vin}</p>}
+                  </div>
+                </div>
 
-            {vehicleData && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-md text-sm">
-                <p className="font-medium text-green-900 mb-1">Véhicule identifié :</p>
-                <p className="text-green-800">{vehicleData.marque} {vehicleData.modele}</p>
-                {vehicleData.energie && <p className="text-green-700 text-xs">Énergie : {vehicleData.energie}</p>}
-              </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setVehicleData(null);
+                      setFormData({ immatriculation: "", marque: "", modele: "", vin: "" });
+                    }}
+                    className="flex-1"
+                  >
+                    Modifier
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    className="flex-1"
+                  >
+                    {loading ? "Enregistrement..." : "Valider"}
+                  </Button>
+                </div>
+              </>
             )}
-
-            <div className="space-y-2">
-              <Label htmlFor="marque">Marque</Label>
-              <Input
-                id="marque"
-                placeholder="Renault, Peugeot..."
-                value={formData.marque}
-                onChange={(e) => setFormData({ ...formData, marque: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="modele">Modèle</Label>
-              <Input
-                id="modele"
-                placeholder="Clio, 308..."
-                value={formData.modele}
-                onChange={(e) => setFormData({ ...formData, modele: e.target.value })}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vin">VIN (optionnel)</Label>
-              <Input
-                id="vin"
-                placeholder="Numéro de série du véhicule"
-                value={formData.vin}
-                onChange={(e) => setFormData({ ...formData, vin: e.target.value.toUpperCase() })}
-              />
-            </div>
-
-            <Button type="button" onClick={handleSubmit} disabled={loading} className="w-full">
-              {loading ? "Enregistrement..." : "Enregistrer le véhicule"}
-            </Button>
           </div>
         ) : (
           <div className="space-y-4">
