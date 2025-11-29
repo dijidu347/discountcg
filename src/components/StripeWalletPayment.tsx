@@ -134,46 +134,61 @@ export const StripeWalletPayment = ({
     pr.on("paymentmethod", async (e) => {
       console.log("[StripeWallet] Payment method received:", e.paymentMethod.id);
       console.log("[StripeWallet] Payment method type:", e.paymentMethod.type);
-      console.log("[StripeWallet] Using clientSecret:", clientSecret ? "yes" : "no");
+      console.log("[StripeWallet] Client secret available:", clientSecret ? "yes" : "no");
       
       try {
-        // Use confirmPayment for wallet payments (Google Pay, Apple Pay)
-        // This works with automatic_payment_methods enabled on the payment intent
-        const { error, paymentIntent } = await stripe.confirmPayment({
-          clientSecret: clientSecret,
-          confirmParams: {
-            payment_method: e.paymentMethod.id,
-            return_url: `${window.location.origin}/paiement-succes`,
-          },
-          redirect: "if_required",
-        });
+        // Step 1: Confirm the payment with the payment method from Google Pay/Apple Pay
+        // Using handleActions: false because we'll handle any required actions ourselves
+        const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(
+          clientSecret,
+          { payment_method: e.paymentMethod.id },
+          { handleActions: false }
+        );
 
-        if (error) {
-          console.error("[StripeWallet] Payment confirmation error:", error);
-          console.error("[StripeWallet] Error type:", error.type);
-          console.error("[StripeWallet] Error code:", error.code);
+        if (confirmError) {
+          console.error("[StripeWallet] Payment confirmation error:", confirmError);
+          console.error("[StripeWallet] Error type:", confirmError.type);
+          console.error("[StripeWallet] Error code:", confirmError.code);
+          console.error("[StripeWallet] Error decline_code:", (confirmError as any).decline_code);
           e.complete("fail");
-          onError?.(error.message || "Erreur lors du paiement");
+          onError?.(confirmError.message || "Erreur lors du paiement");
           return;
         }
 
+        console.log("[StripeWallet] Initial payment status:", paymentIntent?.status);
+
         if (paymentIntent?.status === "requires_action") {
+          // Step 2: Let Stripe.js handle the required action (3DS, etc.)
           console.log("[StripeWallet] Payment requires action, handling...");
-          e.complete("fail");
-          onError?.("Authentification supplémentaire requise. Veuillez utiliser le paiement par carte.");
-          return;
+          e.complete("success"); // Complete the Payment Request UI first
+          
+          const { error: actionError, paymentIntent: confirmedIntent } = await stripe.confirmCardPayment(clientSecret);
+          
+          if (actionError) {
+            console.error("[StripeWallet] Action error:", actionError);
+            onError?.(actionError.message || "Authentification échouée");
+            return;
+          }
+
+          if (confirmedIntent?.status === "succeeded") {
+            console.log("[StripeWallet] Payment succeeded after action:", confirmedIntent.id);
+            onSuccess();
+          } else {
+            console.log("[StripeWallet] Payment status after action:", confirmedIntent?.status);
+            onError?.("Le paiement n'a pas pu être complété");
+          }
         } else if (paymentIntent?.status === "succeeded") {
           e.complete("success");
-          console.log("[StripeWallet] Payment succeeded:", paymentIntent.id);
+          console.log("[StripeWallet] Payment succeeded immediately:", paymentIntent.id);
           onSuccess();
         } else {
           console.log("[StripeWallet] Unexpected payment status:", paymentIntent?.status);
           e.complete("fail");
-          onError?.("Le paiement n'a pas pu être complété");
+          onError?.(`Statut inattendu: ${paymentIntent?.status}`);
         }
       } catch (err: any) {
         console.error("[StripeWallet] Payment error:", err);
-        console.error("[StripeWallet] Error details:", JSON.stringify(err));
+        console.error("[StripeWallet] Error stack:", err.stack);
         e.complete("fail");
         onError?.(err.message || "Erreur lors du paiement");
       }
