@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileCheck, Save, Plus, Gift } from "lucide-react";
+import { ArrowLeft, FileCheck, Save, Plus, Gift, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -676,45 +676,65 @@ export default function NouvelleDemarche() {
                   </div>
 
                   {/* Autres pièces justificatives */}
-                  <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
-                    <h3 className="font-semibold text-lg">Autres pièces justificatives <span className="text-muted-foreground text-sm font-normal">(optionnel)</span></h3>
-                    
-                    <div className="space-y-4">
-                      {additionalDocs.map((doc, index) => (
-                        <div key={doc.id} className="p-3 border rounded-lg bg-background space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Input
-                              placeholder={`Nom du document ${doc.id} (ex: Procuration, Justificatif...)`}
-                              value={doc.name}
-                              onChange={(e) => {
-                                const newDocs = [...additionalDocs];
-                                newDocs[index] = { ...doc, name: e.target.value };
-                                setAdditionalDocs(newDocs);
-                              }}
-                              className="flex-1 text-sm"
-                            />
-                            <span className="text-xs text-muted-foreground whitespace-nowrap">(optionnel)</span>
-                          </div>
-                          <DocumentUpload
-                            demarcheId={demarcheId}
-                            documentType={`autre_piece_${doc.id}`}
-                            customName={doc.name || `Autre pièce ${doc.id}`}
-                            label=""
-                            onUploadComplete={() => handleDocumentUploadComplete(`autre_piece_${doc.id}`)}
-                          />
-                        </div>
-                      ))}
+                  <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        Pièces supplémentaires
+                        <span className="text-xs bg-muted px-2 py-0.5 rounded">Optionnel</span>
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setAdditionalDocs([...additionalDocs, { id: Date.now(), name: "" }])}
+                        className="h-8 text-xs"
+                      >
+                        <Plus className="mr-1 h-3 w-3" />
+                        Ajouter
+                      </Button>
                     </div>
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setAdditionalDocs([...additionalDocs, { id: additionalDocs.length + 1, name: "" }])}
-                      className="w-full"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Ajouter une pièce supplémentaire
-                    </Button>
+                    
+                    {additionalDocs.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        Aucune pièce supplémentaire ajoutée
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {additionalDocs.map((doc, index) => (
+                          <div key={doc.id} className="flex items-start gap-2 p-3 border rounded-md bg-background">
+                            <div className="flex-1 space-y-2">
+                              <Input
+                                placeholder="Nom du document (ex: Procuration, Mandat...)"
+                                value={doc.name}
+                                onChange={(e) => {
+                                  const newDocs = [...additionalDocs];
+                                  newDocs[index] = { ...doc, name: e.target.value };
+                                  setAdditionalDocs(newDocs);
+                                }}
+                                className="h-8 text-sm"
+                              />
+                              <DocumentUpload
+                                demarcheId={demarcheId}
+                                documentType={`autre_piece_${doc.id}`}
+                                customName={doc.name || `Pièce ${index + 1}`}
+                                label=""
+                                onUploadComplete={() => handleDocumentUploadComplete(`autre_piece_${doc.id}`)}
+                              />
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setAdditionalDocs(additionalDocs.filter((_, i) => i !== index))}
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
