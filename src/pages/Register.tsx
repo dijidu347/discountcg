@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -270,6 +271,7 @@ export default function Register() {
                       onChange={(e) => handleChange("password", e.target.value)}
                       required
                     />
+                    <PasswordStrengthIndicator password={formData.password} />
                   </div>
 
                   <div className="space-y-2">

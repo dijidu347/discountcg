@@ -266,51 +266,60 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
             </Button>
           </div>
         ) : (
-          <>
-            <div className="space-y-2">
-              <Label htmlFor="search">Rechercher un véhicule existant</Label>
+          <div className="space-y-4">
+            {/* Barre de recherche améliorée */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 id="search"
-                placeholder="Immatriculation, marque, modèle..."
+                placeholder="Rechercher par immatriculation, marque ou modèle..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
               />
             </div>
 
-            {filteredVehicles.length > 0 && (
-              <div className="space-y-2">
-                <Label htmlFor="vehicle-select">Sélectionner un véhicule</Label>
-                <Select
-                  value={selectedVehicleId || ""}
-                  onValueChange={handleVehicleSelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Choisissez un véhicule" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {filteredVehicles.map((vehicle) => (
-                      <SelectItem key={vehicle.id} value={vehicle.id}>
+            {/* Liste des véhicules */}
+            {filteredVehicles.length > 0 ? (
+              <div className="border rounded-lg divide-y max-h-64 overflow-y-auto">
+                {filteredVehicles.map((vehicle) => (
+                  <button
+                    key={vehicle.id}
+                    type="button"
+                    onClick={() => handleVehicleSelect(vehicle.id)}
+                    className={`w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors flex items-center justify-between ${
+                      selectedVehicleId === vehicle.id ? 'bg-primary/10 border-l-4 border-l-primary' : ''
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="bg-muted rounded-md px-2 py-1 font-mono text-sm font-medium">
                         {vehicle.immatriculation}
-                        {vehicle.marque && vehicle.modele && ` - ${vehicle.marque} ${vehicle.modele}`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      </div>
+                      {vehicle.marque && (
+                        <span className="text-sm text-muted-foreground">
+                          {vehicle.marque} {vehicle.modele}
+                        </span>
+                      )}
+                    </div>
+                    {selectedVehicleId === vehicle.id && (
+                      <div className="h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            ) : vehicles.length > 0 ? (
+              <div className="text-center py-6 text-muted-foreground border rounded-lg bg-muted/20">
+                <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Aucun véhicule trouvé</p>
+              </div>
+            ) : (
+              <div className="text-center py-6 text-muted-foreground border rounded-lg bg-muted/20">
+                <Car className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">Aucun véhicule enregistré</p>
+                <p className="text-xs mt-1">Cliquez sur "Nouveau" pour en ajouter un</p>
               </div>
             )}
-
-            {filteredVehicles.length === 0 && vehicles.length > 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Aucun véhicule trouvé
-              </p>
-            )}
-
-            {vehicles.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                Aucun véhicule enregistré. Cliquez sur "Nouveau" pour en ajouter un.
-              </p>
-            )}
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
