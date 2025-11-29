@@ -86,8 +86,15 @@ async function hasEmailTracking(supabaseClient: SupabaseClient, demarcheId: stri
   return data !== null && data.length > 0;
 }
 
-async function sendEmail(supabaseClient: SupabaseClient, emailData: Record<string, unknown>): Promise<void> {
+async function sendEmail(
+  type: string, 
+  to: string, 
+  data: Record<string, unknown>
+): Promise<void> {
   try {
+    console.log(`📧 Sending email type: ${type} to: ${to}`);
+    console.log("📧 Email data:", JSON.stringify(data));
+    
     const response = await fetch(
       `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`,
       {
@@ -96,7 +103,7 @@ async function sendEmail(supabaseClient: SupabaseClient, emailData: Record<strin
           "Content-Type": "application/json",
           "x-internal-key": Deno.env.get("INTERNAL_API_KEY") || "",
         },
-        body: JSON.stringify(emailData),
+        body: JSON.stringify({ type, to, data }),
       }
     );
     
@@ -104,7 +111,7 @@ async function sendEmail(supabaseClient: SupabaseClient, emailData: Record<strin
       const errorText = await response.text();
       console.error("❌ Email send failed:", errorText);
     } else {
-      console.log("✅ Email sent successfully");
+      console.log("✅ Email sent successfully to", to);
     }
   } catch (error) {
     console.error("❌ Error sending email:", error);
@@ -369,14 +376,13 @@ async function handleDemarchePayment(
 
   // Send admin notification email
   for (const adminEmail of ADMIN_EMAILS) {
-    await sendEmail(supabase, {
-      type: "admin_new_demarche",
-      to: adminEmail,
-      numeroDemarche: demarche.numero_demarche,
+    await sendEmail("admin_new_demarche", adminEmail, {
+      type: demarche.type,
+      reference: demarche.numero_demarche,
       immatriculation: demarche.immatriculation,
-      garageName: garage?.raison_sociale || "N/A",
-      typeDemarche: demarche.type,
-      montantTTC: demarche.montant_ttc?.toFixed(2) || "0.00",
+      client_name: garage?.raison_sociale || "N/A",
+      montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+      is_free_token: demarche.is_free_token || false,
     });
   }
 
@@ -384,13 +390,13 @@ async function handleDemarchePayment(
 
   // Send client confirmation email if tracking enabled
   if (hasTracking && garage?.email) {
-    await sendEmail(supabase, {
-      type: "demarche_payment_confirmation",
-      to: garage.email,
-      numeroDemarche: demarche.numero_demarche,
+    await sendEmail("garage_demarche_confirmation", garage.email, {
+      type: demarche.type,
+      reference: demarche.numero_demarche,
       immatriculation: demarche.immatriculation,
-      montantTTC: demarche.montant_ttc?.toFixed(2) || "0.00",
-      garageName: garage.raison_sociale,
+      garage_name: garage.raison_sociale,
+      montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+      is_free_token: demarche.is_free_token || false,
     });
 
     console.log("✅ Client confirmation email sent");
@@ -469,15 +475,13 @@ async function handleGuestOrderPayment(
 
   // Send admin notification emails
   for (const adminEmail of ADMIN_EMAILS) {
-    await sendEmail(supabase, {
-      type: "admin_new_guest_order",
-      to: adminEmail,
-      trackingNumber: order.tracking_number,
-      customerName: `${order.prenom} ${order.nom}`,
-      customerEmail: order.email,
+    await sendEmail("admin_new_demarche", adminEmail, {
+      type: order.demarche_type || "CG",
+      reference: order.tracking_number,
       immatriculation: order.immatriculation,
-      demarcheType: order.demarche_type || "CG",
-      montantTTC: order.montant_ttc?.toFixed(2) || "0.00",
+      client_name: `${order.prenom} ${order.nom}`,
+      montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
+      is_free_token: false,
     });
   }
 
@@ -485,13 +489,12 @@ async function handleGuestOrderPayment(
 
   // Send client confirmation email
   if (order.email) {
-    await sendEmail(supabase, {
-      type: "guest_order_payment_confirmation",
-      to: order.email,
-      trackingNumber: order.tracking_number,
-      customerName: `${order.prenom} ${order.nom}`,
+    await sendEmail("payment_confirmed", order.email, {
+      tracking_number: order.tracking_number,
+      prenom: order.prenom,
+      nom: order.nom,
       immatriculation: order.immatriculation,
-      montantTTC: order.montant_ttc?.toFixed(2) || "0.00",
+      montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
     });
 
     console.log("✅ Client confirmation email sent");
