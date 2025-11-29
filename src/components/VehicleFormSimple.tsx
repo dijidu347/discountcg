@@ -163,7 +163,8 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
           puiss_fisc: vehicleData?.puissance_fiscale ? Number(vehicleData.puissance_fiscale) : null,
           date_mec: formatDateForDB(vehicleData?.date_mec),
           couleur: vehicleData?.couleur || null,
-          co2: vehicleData?.co2 ? Number(vehicleData.co2) : null
+          co2: vehicleData?.co2 ? Number(vehicleData.co2) : null,
+          vin: vehicleData?.vin || null
         })
         .select()
         .single();
