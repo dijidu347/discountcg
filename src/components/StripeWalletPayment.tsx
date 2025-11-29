@@ -133,46 +133,35 @@ export const StripeWalletPayment = ({
 
     pr.on("paymentmethod", async (e) => {
       console.log("[StripeWallet] Payment method received:", e.paymentMethod.id);
+      console.log("[StripeWallet] Payment method type:", e.paymentMethod.type);
+      console.log("[StripeWallet] Using clientSecret:", clientSecret ? "yes" : "no");
       
       try {
-        // Confirm the payment with Stripe
-        const { error, paymentIntent } = await stripe.confirmCardPayment(
-          clientSecret,
-          {
+        // Use confirmPayment for wallet payments (Google Pay, Apple Pay)
+        // This works with automatic_payment_methods enabled on the payment intent
+        const { error, paymentIntent } = await stripe.confirmPayment({
+          clientSecret: clientSecret,
+          confirmParams: {
             payment_method: e.paymentMethod.id,
+            return_url: `${window.location.origin}/paiement-succes`,
           },
-          {
-            handleActions: false,
-          }
-        );
+          redirect: "if_required",
+        });
 
         if (error) {
           console.error("[StripeWallet] Payment confirmation error:", error);
+          console.error("[StripeWallet] Error type:", error.type);
+          console.error("[StripeWallet] Error code:", error.code);
           e.complete("fail");
           onError?.(error.message || "Erreur lors du paiement");
           return;
         }
 
         if (paymentIntent?.status === "requires_action") {
-          console.log("[StripeWallet] Payment requires 3DS action");
-          // Handle 3DS authentication
-          const { error: actionError, paymentIntent: confirmedIntent } = await stripe.confirmCardPayment(clientSecret);
-          
-          if (actionError) {
-            console.error("[StripeWallet] 3DS action error:", actionError);
-            e.complete("fail");
-            onError?.(actionError.message || "Authentification échouée");
-            return;
-          }
-
-          if (confirmedIntent?.status === "succeeded") {
-            e.complete("success");
-            console.log("[StripeWallet] Payment succeeded after 3DS:", confirmedIntent.id);
-            onSuccess();
-          } else {
-            e.complete("fail");
-            onError?.("Le paiement n'a pas pu être complété");
-          }
+          console.log("[StripeWallet] Payment requires action, handling...");
+          e.complete("fail");
+          onError?.("Authentification supplémentaire requise. Veuillez utiliser le paiement par carte.");
+          return;
         } else if (paymentIntent?.status === "succeeded") {
           e.complete("success");
           console.log("[StripeWallet] Payment succeeded:", paymentIntent.id);
@@ -184,6 +173,7 @@ export const StripeWalletPayment = ({
         }
       } catch (err: any) {
         console.error("[StripeWallet] Payment error:", err);
+        console.error("[StripeWallet] Error details:", JSON.stringify(err));
         e.complete("fail");
         onError?.(err.message || "Erreur lors du paiement");
       }
