@@ -304,7 +304,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       )}
 
       {!selectedVehicleId && (
-        <>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Bloc Historique des véhicules */}
           <Card>
             <CardHeader className="pb-3">
@@ -558,7 +558,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
               )}
             </CardContent>
           </Card>
-        </>
+        </div>
       )}
     </div>
   );
