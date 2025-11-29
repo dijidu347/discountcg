@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileCheck, Save, Plus, Gift, FileText, X } from "lucide-react";
+import { ArrowLeft, FileCheck, Plus, Gift, FileText, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -292,35 +292,6 @@ export default function NouvelleDemarche() {
     setCarteGrisePrice(price);
   };
 
-  const handleSaveDraft = async () => {
-    if (!garage || !demarcheId) return;
-
-    setLoading(true);
-
-    const { error } = await supabase
-      .from('demarches')
-      .update({
-        immatriculation: selectedImmatriculation,
-        commentaire: formData.commentaire,
-        vehicule_id: selectedVehicleId
-      })
-      .eq('id', demarcheId);
-
-    setLoading(false);
-
-    if (error) {
-      toast({
-        title: "Erreur",
-        description: "Impossible d'enregistrer le brouillon",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Brouillon enregistré",
-        description: "Vos modifications ont été sauvegardées"
-      });
-    }
-  };
 
   const getFraisDossier = () => {
     // Si jeton gratuit disponible, le prix de l'action est 0
@@ -793,27 +764,14 @@ export default function NouvelleDemarche() {
                 </div>
               )}
 
-              <div className="flex gap-4">
-                <Button 
-                  type="button"
-                  variant="outline" 
-                  size="lg" 
-                  onClick={handleSaveDraft}
-                  disabled={loading || !demarcheId}
-                  className="flex-1"
-                >
-                  <Save className="mr-2 h-4 w-4" />
-                  Enregistrer le brouillon
-                </Button>
-                <Button 
-                  type="submit"
-                  size="lg" 
-                  disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0)}
-                  className={`flex-1 ${freeTokenAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
-                >
-                  {freeTokenAvailable && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${getTotalPrice()}€ HT`}
-                </Button>
-              </div>
+              <Button 
+                type="submit"
+                size="lg" 
+                disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0)}
+                className={`w-full ${freeTokenAvailable ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
+              >
+                {freeTokenAvailable && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${getTotalPrice()}€ HT`}
+              </Button>
             </form>
 
               <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
