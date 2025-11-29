@@ -13,24 +13,39 @@ const INTERNAL_API_KEY = Deno.env.get("INTERNAL_API_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Validate either internal API key OR any authenticated user
+// Validate either internal API key, service role key, OR any authenticated user
 const validateAuth = async (req: Request): Promise<boolean> => {
   // Check internal API key first (for service-to-service calls)
   const providedKey = req.headers.get("x-internal-key");
   console.log("🔑 Internal key check:", providedKey ? "provided" : "not provided");
-  if (providedKey === INTERNAL_API_KEY) {
+  if (providedKey && INTERNAL_API_KEY && providedKey === INTERNAL_API_KEY) {
     console.log("✅ Authenticated via internal API key");
     return true;
   }
 
-  // Check any authenticated user JWT (simplified - any logged in user can trigger emails)
+  // Check for service role key (for edge-to-edge calls)
   const authHeader = req.headers.get("authorization");
+  const apiKey = req.headers.get("apikey");
   console.log("🔐 Auth header check:", authHeader ? "provided" : "not provided");
+  console.log("🔑 API key check:", apiKey ? "provided" : "not provided");
+  
+  // Accept service role key directly
+  if (apiKey === supabaseServiceKey) {
+    console.log("✅ Authenticated via service role key (apikey header)");
+    return true;
+  }
   
   if (authHeader) {
     const token = authHeader.replace("Bearer ", "");
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
+    // Check if token is the service role key itself
+    if (token === supabaseServiceKey) {
+      console.log("✅ Authenticated via service role key (bearer)");
+      return true;
+    }
+    
+    // Check any authenticated user JWT
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     console.log("👤 User check:", user ? `found (${user.id})` : "not found", userError ? `error: ${userError.message}` : "");
     

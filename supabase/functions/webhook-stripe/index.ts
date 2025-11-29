@@ -95,13 +95,17 @@ async function sendEmail(
     console.log(`📧 Sending email type: ${type} to: ${to}`);
     console.log("📧 Email data:", JSON.stringify(data));
     
+    // Use service role key for internal service-to-service authentication
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
     const response = await fetch(
       `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-internal-key": Deno.env.get("INTERNAL_API_KEY") || "",
+          "Authorization": `Bearer ${serviceRoleKey}`,
+          "apikey": serviceRoleKey,
         },
         body: JSON.stringify({ type, to, data }),
       }
