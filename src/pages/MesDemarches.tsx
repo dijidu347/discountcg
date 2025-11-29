@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, FileText, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, CheckCircle, XCircle, Clock, AlertCircle, Edit, Trash2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const getStatusLabel = (demarche: any): string => {
   // Si c'est une démarche offerte (free token) et non payée, afficher "Offert"
@@ -83,8 +84,10 @@ const typeLabels: Record<string, string> = {
 export default function MesDemarches() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
+  const [brouillons, setBrouillons] = useState<any[]>([]);
   const [filteredDemarches, setFilteredDemarches] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -176,9 +179,46 @@ export default function MesDemarches() {
         setDemarches(demarchesData);
         setFilteredDemarches(demarchesData);
       }
+
+      // Load brouillons (drafts that are not paid)
+      const { data: brouillonsData } = await supabase
+        .from('demarches')
+        .select('*')
+        .eq('garage_id', garageData.id)
+        .eq('is_draft', true)
+        .eq('paye', false)
+        .eq('is_free_token', false)
+        .order('created_at', { ascending: false });
+
+      if (brouillonsData) {
+        setBrouillons(brouillonsData);
+      }
     }
 
     setLoading(false);
+  };
+
+  const handleDeleteBrouillon = async (brouillonId: string) => {
+    const { error } = await supabase
+      .from('demarches')
+      .delete()
+      .eq('id', brouillonId)
+      .eq('is_draft', true)
+      .eq('paye', false);
+
+    if (!error) {
+      setBrouillons(prev => prev.filter(b => b.id !== brouillonId));
+      toast({
+        title: "Brouillon supprimé",
+        description: "Le brouillon a été supprimé avec succès",
+      });
+    } else {
+      toast({
+        title: "Erreur",
+        description: "Impossible de supprimer le brouillon",
+        variant: "destructive",
+      });
+    }
   };
 
   if (authLoading || loading) {
@@ -208,6 +248,55 @@ export default function MesDemarches() {
             Nouvelle démarche
           </Button>
         </div>
+
+        {/* Section Brouillons */}
+        {brouillons.length > 0 && (
+          <Card className="p-6 mb-6 border-dashed border-2 border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/20">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                <Edit className="h-5 w-5" />
+                Brouillons en cours ({brouillons.length})
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                Ces démarches n'ont pas encore été payées. Vous pouvez les reprendre ou les supprimer.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {brouillons.map((brouillon) => (
+                <div 
+                  key={brouillon.id} 
+                  className="flex items-center justify-between p-4 bg-background rounded-lg border"
+                >
+                  <div className="flex items-center gap-4">
+                    <Badge variant="outline" className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400">
+                      {typeLabels[brouillon.type] || brouillon.type}
+                    </Badge>
+                    <span className="font-mono text-sm">{brouillon.immatriculation}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Créé le {new Date(brouillon.created_at).toLocaleDateString('fr-FR')}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button 
+                      size="sm"
+                      onClick={() => navigate(`/paiement-demarche/${brouillon.id}`)}
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      Reprendre
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => handleDeleteBrouillon(brouillon.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <Card className="p-6">
           <div className="mb-6">

@@ -247,7 +247,8 @@ const PaiementDemarche = () => {
     } catch (error) {
       console.error("Error in handlePaymentSuccess:", error);
     } finally {
-      navigate("/mes-demarches");
+      // Rediriger vers la page de succès
+      navigate(`/paiement-succes/${demarcheId}`);
     }
   };
 
