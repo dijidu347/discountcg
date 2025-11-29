@@ -76,6 +76,11 @@ const ADMIN_EMAILS = [
 // HELPER FUNCTIONS
 // -----------------------------
 
+// Delay function to avoid Resend rate limiting (2 req/sec)
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function hasEmailTracking(supabaseClient: SupabaseClient, demarcheId: string): Promise<boolean> {
   const { data } = await supabaseClient
     .from("tracking_services")
@@ -375,12 +380,25 @@ async function handleDemarchePayment(
       .eq("id", demarcheId);
   }
 
-  // Check if garage has email tracking enabled
-  const hasTracking = await hasEmailTracking(supabase, demarcheId);
+  // Send client confirmation email FIRST (always send to garage)
+  if (garage?.email) {
+    await sendEmail("garage_demarche_confirmation", garage.email, {
+      type: demarche.type,
+      reference: demarche.numero_demarche,
+      immatriculation: demarche.immatriculation,
+      garage_name: garage.raison_sociale,
+      montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+      is_free_token: demarche.is_free_token || false,
+    });
+    console.log("✅ Client confirmation email sent");
+  }
 
-  // Send admin notification email
-  for (const adminEmail of ADMIN_EMAILS) {
-    await sendEmail("admin_new_demarche", adminEmail, {
+  // Send admin notification emails with delays to avoid rate limiting
+  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+    // Wait 600ms between each email to stay under 2 req/sec limit
+    await delay(600);
+    
+    await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
       type: demarche.type,
       reference: demarche.numero_demarche,
       immatriculation: demarche.immatriculation,
@@ -391,20 +409,6 @@ async function handleDemarchePayment(
   }
 
   console.log("✅ Admin notification emails sent");
-
-  // Send client confirmation email if tracking enabled
-  if (hasTracking && garage?.email) {
-    await sendEmail("garage_demarche_confirmation", garage.email, {
-      type: demarche.type,
-      reference: demarche.numero_demarche,
-      immatriculation: demarche.immatriculation,
-      garage_name: garage.raison_sociale,
-      montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
-      is_free_token: demarche.is_free_token || false,
-    });
-
-    console.log("✅ Client confirmation email sent");
-  }
 }
 
 // -----------------------------
@@ -477,9 +481,24 @@ async function handleGuestOrderPayment(
     console.log("✅ Facture created:", facture?.numero);
   }
 
-  // Send admin notification emails
-  for (const adminEmail of ADMIN_EMAILS) {
-    await sendEmail("admin_new_demarche", adminEmail, {
+  // Send client confirmation email FIRST
+  if (order.email) {
+    await sendEmail("payment_confirmed", order.email, {
+      tracking_number: order.tracking_number,
+      prenom: order.prenom,
+      nom: order.nom,
+      immatriculation: order.immatriculation,
+      montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
+    });
+    console.log("✅ Client confirmation email sent");
+  }
+
+  // Send admin notification emails with delays to avoid rate limiting
+  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+    // Wait 600ms between each email to stay under 2 req/sec limit
+    await delay(600);
+    
+    await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
       type: order.demarche_type || "CG",
       reference: order.tracking_number,
       immatriculation: order.immatriculation,
@@ -490,19 +509,6 @@ async function handleGuestOrderPayment(
   }
 
   console.log("✅ Admin notification emails sent");
-
-  // Send client confirmation email
-  if (order.email) {
-    await sendEmail("payment_confirmed", order.email, {
-      tracking_number: order.tracking_number,
-      prenom: order.prenom,
-      nom: order.nom,
-      immatriculation: order.immatriculation,
-      montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
-    });
-
-    console.log("✅ Client confirmation email sent");
-  }
 }
 
 // -----------------------------
