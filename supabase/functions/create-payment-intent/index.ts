@@ -36,7 +36,7 @@ serve(async (req) => {
         });
       }
 
-      // Create Stripe payment intent
+      // Create Stripe payment intent with automatic payment methods for wallet support
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
         headers: {
@@ -46,6 +46,7 @@ serve(async (req) => {
         body: new URLSearchParams({
           amount: amount.toString(),
           currency: 'eur',
+          'automatic_payment_methods[enabled]': 'true',
           'metadata[order_id]': metadata.order_id || '',
           'metadata[guest_order_id]': metadata.order_id || '',
           'metadata[tracking_number]': metadata.tracking_number || '',
@@ -135,7 +136,7 @@ serve(async (req) => {
     console.log('Payment amount (in cents):', paymentAmount, 'from TTC:', demarche.montant_ttc);
 
     console.log('Creating Stripe payment intent...');
-    // Create Stripe payment intent
+    // Create Stripe payment intent with automatic payment methods for wallet support
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
       headers: {
@@ -145,6 +146,7 @@ serve(async (req) => {
       body: new URLSearchParams({
         amount: paymentAmount.toString(),
         currency: 'eur',
+        'automatic_payment_methods[enabled]': 'true',
         'metadata[demarche_id]': demarcheId,
         'metadata[garage_id]': demarche.garage_id,
         'metadata[payment_type]': paymentType || 'full',
