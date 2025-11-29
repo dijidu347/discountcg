@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,9 @@ export default function NouvelleDemarche() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
+  const { draftId } = useParams();
   const [garage, setGarage] = useState<any>(null);
+  const [draftLoaded, setDraftLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [demarcheId, setDemarcheId] = useState<string | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -67,6 +69,37 @@ export default function NouvelleDemarche() {
   // Ne plus supprimer automatiquement les brouillons
   // Les garages peuvent les reprendre plus tard
 
+  // Charger le brouillon si draftId est fourni
+  useEffect(() => {
+    const loadDraft = async () => {
+      if (!draftId || !garage || draftLoaded) return;
+      
+      const { data: draft } = await supabase
+        .from('demarches')
+        .select('*')
+        .eq('id', draftId)
+        .eq('garage_id', garage.id)
+        .eq('is_draft', true)
+        .single();
+
+      if (draft) {
+        setDemarcheId(draft.id);
+        setFormData({
+          type: draft.type,
+          commentaire: draft.commentaire || ""
+        });
+        setSelectedImmatriculation(draft.immatriculation || "");
+        setSelectedVehicleId(draft.vehicule_id);
+        setCarteGrisePrice(draft.prix_carte_grise || 0);
+        setDraftLoaded(true);
+      }
+    };
+
+    if (garage && draftId) {
+      loadDraft();
+    }
+  }, [draftId, garage, draftLoaded]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/login");
@@ -87,11 +120,11 @@ export default function NouvelleDemarche() {
   }, [formData.type]);
 
   useEffect(() => {
-    // Auto-create draft when type is selected
-    if (formData.type && !demarcheId && garage && actionDetails) {
+    // Auto-create draft when type is selected (seulement si pas de brouillon existant)
+    if (formData.type && !demarcheId && garage && actionDetails && !draftId) {
       handleAutoCreateDraft();
     }
-  }, [formData.type, garage, actionDetails]);
+  }, [formData.type, garage, actionDetails, draftId]);
 
   useEffect(() => {
     // Load existing documents when demarcheId changes

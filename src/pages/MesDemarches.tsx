@@ -288,7 +288,7 @@ export default function MesDemarches() {
                     <Button 
                       size="sm"
                       variant="outline"
-                      onClick={() => navigate(`/paiement-demarche/${brouillon.id}`)}
+                      onClick={() => navigate(`/nouvelle-demarche/${brouillon.id}`)}
                       className="h-7 text-xs"
                     >
                       Reprendre

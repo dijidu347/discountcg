@@ -68,6 +68,7 @@ const App = () => (
         <Route path="/suivi/:trackingNumber" element={<SuiviCommande />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/nouvelle-demarche" element={<NouvelleDemarche />} />
+            <Route path="/nouvelle-demarche/:draftId" element={<NouvelleDemarche />} />
             <Route path="/mes-demarches" element={<MesDemarches />} />
             <Route path="/mes-factures" element={<MesFactures />} />
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
