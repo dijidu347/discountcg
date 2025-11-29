@@ -62,25 +62,14 @@ export default function NouvelleDemarche() {
     paymentCompletedRef.current = paymentCompleted;
   }, [paymentCompleted]);
 
-  // Cleanup: delete draft demarche if user leaves without completing payment
+  // Cleanup: delete draft demarche only on page unload (browser close/refresh)
+  // NOT on navigation (which includes going to payment page)
   useEffect(() => {
-    const deleteDraft = async () => {
-      const draftId = demarcheIdRef.current;
-      if (draftId && !paymentCompletedRef.current) {
-        console.log("[NouvelleDemarche] Cleaning up unpaid draft:", draftId);
-        await supabase
-          .from('demarches')
-          .delete()
-          .eq('id', draftId)
-          .eq('is_draft', true)
-          .eq('paye', false);
-      }
-    };
-
-    // Handle page unload
+    // Handle page unload (browser close, refresh, external navigation)
     const handleBeforeUnload = () => {
+      // Only delete if not going to payment
       if (demarcheIdRef.current && !paymentCompletedRef.current) {
-        // Use fetch with keepalive for page unload
+        console.log("[NouvelleDemarche] Browser unload - cleaning up draft:", demarcheIdRef.current);
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/demarches?id=eq.${demarcheIdRef.current}&is_draft=eq.true&paye=eq.false`;
         fetch(url, {
           method: 'DELETE',
@@ -97,7 +86,8 @@ export default function NouvelleDemarche() {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      deleteDraft();
+      // Don't delete on component unmount - only on beforeunload
+      // This prevents deletion when navigating to payment page
     };
   }, []);
 
