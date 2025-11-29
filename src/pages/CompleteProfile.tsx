@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseErrorMessage } from "@/lib/error-messages";
 
 export default function CompleteProfile() {
   const navigate = useNavigate();
@@ -126,7 +127,7 @@ export default function CompleteProfile() {
     } catch (error: any) {
       toast({
         title: "Erreur",
-        description: error.message,
+        description: getSupabaseErrorMessage(error),
         variant: "destructive"
       });
     } finally {

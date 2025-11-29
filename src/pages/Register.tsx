@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
+import { getSupabaseErrorMessage } from "@/lib/error-messages";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -71,7 +72,7 @@ export default function Register() {
     if (error) {
       toast({
         title: "Erreur d'inscription",
-        description: error.message,
+        description: getSupabaseErrorMessage(error),
         variant: "destructive"
       });
     } else {
@@ -95,7 +96,7 @@ export default function Register() {
     if (error) {
       toast({
         title: "Erreur de connexion Google",
-        description: error.message,
+        description: getSupabaseErrorMessage(error),
         variant: "destructive"
       });
       setGoogleLoading(false);
