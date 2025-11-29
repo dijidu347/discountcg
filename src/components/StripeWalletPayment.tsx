@@ -85,12 +85,19 @@ export const StripeWalletPayment = ({
 
   // Setup PaymentRequest when stripe and clientSecret are ready
   useEffect(() => {
-    if (!stripe || !clientSecret) return;
+    if (!stripe || !clientSecret) {
+      console.log("[StripeWallet] Waiting for stripe or clientSecret", { stripe: !!stripe, clientSecret: !!clientSecret });
+      return;
+    }
     
     // Don't recreate if already exists
-    if (paymentRequestRef.current) return;
+    if (paymentRequestRef.current) {
+      console.log("[StripeWallet] PaymentRequest already exists");
+      return;
+    }
 
     console.log("[StripeWallet] Setting up PaymentRequest with amount:", amountInCents);
+    console.log("[StripeWallet] Current origin:", window.location.origin);
 
     const pr = stripe.paymentRequest({
       country: "FR",
@@ -107,10 +114,16 @@ export const StripeWalletPayment = ({
 
     pr.canMakePayment().then((result) => {
       console.log("[StripeWallet] canMakePayment result:", result);
+      console.log("[StripeWallet] Available wallets:", {
+        applePay: result?.applePay,
+        googlePay: result?.googlePay,
+        link: result?.link,
+      });
       if (result) {
         setPaymentRequest(pr);
         setCanMakePayment(true);
       } else {
+        console.log("[StripeWallet] No payment methods available - this is normal in preview/localhost or if wallets are not configured");
         setShowNotAvailable(true);
       }
     }).catch((err) => {
