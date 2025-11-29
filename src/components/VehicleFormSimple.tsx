@@ -336,15 +336,20 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
                   </div>
                 </div>
 
+                <div className="flex items-center gap-3 pt-2">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">ou</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
                 <Button
                   type="button"
-                  variant="ghost"
-                  size="sm"
+                  variant="outline"
                   onClick={() => setManualMode(true)}
-                  className="text-muted-foreground"
+                  className="w-full"
                 >
-                  <Edit className="h-4 w-4 mr-1" />
-                  Saisie manuelle
+                  <Edit className="h-4 w-4 mr-2" />
+                  Saisie manuelle (si véhicule non trouvé)
                 </Button>
               </>
             )}
