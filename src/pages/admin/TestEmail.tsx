@@ -57,7 +57,21 @@ export default function TestEmail() {
 
     setLoading(true);
     try {
-      console.log('Sending test email to:', email);
+      // Force session refresh to get a valid token
+      const { data: { session }, error: sessionError } = await supabase.auth.refreshSession();
+      
+      if (sessionError || !session) {
+        console.error('Session refresh failed:', sessionError);
+        toast({
+          title: "Session expirée",
+          description: "Veuillez vous reconnecter",
+          variant: "destructive"
+        });
+        navigate("/login");
+        return;
+      }
+      
+      console.log('Sending test email to:', email, 'with fresh session');
       
       const { data, error } = await supabase.functions.invoke('send-email', {
         body: {
