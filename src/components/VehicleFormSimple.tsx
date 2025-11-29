@@ -154,7 +154,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
     try {
       const { data, error } = await supabase
         .from('vehicules')
-        .insert({
+        .upsert({
           garage_id: garageId,
           immatriculation: vehicleData.immatriculation.toUpperCase(),
           marque: vehicleData?.marque || null,
@@ -165,7 +165,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
           couleur: vehicleData?.couleur || null,
           co2: vehicleData?.co2 ? Number(vehicleData.co2) : null,
           vin: vehicleData?.vin || null
-        })
+        }, { onConflict: 'garage_id,immatriculation' })
         .select()
         .single();
 
@@ -212,13 +212,13 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
     try {
       const { data, error } = await supabase
         .from('vehicules')
-        .insert({
+        .upsert({
           garage_id: garageId,
           immatriculation: manualData.immatriculation.toUpperCase(),
           marque: manualData.marque.trim() || null,
           modele: manualData.modele.trim() || null,
           vin: manualData.vin.trim() || null
-        })
+        }, { onConflict: 'garage_id,immatriculation' })
         .select()
         .single();
 

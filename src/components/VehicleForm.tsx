@@ -77,13 +77,13 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
 
       const { data, error } = await supabase
         .from('vehicules')
-        .insert({
+        .upsert({
           garage_id: garageId,
           immatriculation: validatedData.immatriculation,
           marque: validatedData.marque || null,
           modele: validatedData.modele || null,
           vin: validatedData.vin
-        })
+        }, { onConflict: 'garage_id,immatriculation' })
         .select()
         .single();
 
