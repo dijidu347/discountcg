@@ -8,6 +8,49 @@ import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
+// Fonction pour traduire les erreurs Supabase en français
+const getErrorMessage = (error: { message: string; status?: number }): string => {
+  const errorMessage = error.message?.toLowerCase() || '';
+  
+  // Erreurs d'authentification
+  if (errorMessage.includes('invalid login credentials') || errorMessage.includes('invalid credentials')) {
+    return "Email ou mot de passe incorrect. Veuillez vérifier vos identifiants.";
+  }
+  if (errorMessage.includes('email not confirmed')) {
+    return "Votre email n'a pas encore été confirmé. Veuillez vérifier votre boîte de réception.";
+  }
+  if (errorMessage.includes('user not found')) {
+    return "Aucun compte n'existe avec cet email. Veuillez créer un compte.";
+  }
+  if (errorMessage.includes('invalid email')) {
+    return "L'adresse email saisie n'est pas valide.";
+  }
+  if (errorMessage.includes('password') && errorMessage.includes('too short')) {
+    return "Le mot de passe doit contenir au moins 6 caractères.";
+  }
+  if (errorMessage.includes('email rate limit exceeded') || errorMessage.includes('rate limit')) {
+    return "Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.";
+  }
+  if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+    return "Erreur de connexion au serveur. Veuillez vérifier votre connexion internet.";
+  }
+  if (errorMessage.includes('popup closed') || errorMessage.includes('popup_closed')) {
+    return "La fenêtre de connexion a été fermée. Veuillez réessayer.";
+  }
+  if (errorMessage.includes('access denied') || errorMessage.includes('unauthorized')) {
+    return "Accès refusé. Veuillez réessayer ou contacter le support.";
+  }
+  if (errorMessage.includes('session') && errorMessage.includes('expired')) {
+    return "Votre session a expiré. Veuillez vous reconnecter.";
+  }
+  if (errorMessage.includes('too many requests')) {
+    return "Trop de requêtes. Veuillez patienter quelques minutes.";
+  }
+  
+  // Message par défaut
+  return "Une erreur est survenue lors de la connexion. Veuillez réessayer.";
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const { signIn, signInWithGoogle, user } = useAuth();
@@ -25,6 +68,26 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validation côté client
+    if (!email.trim()) {
+      toast({
+        title: "Email requis",
+        description: "Veuillez saisir votre adresse email.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!password) {
+      toast({
+        title: "Mot de passe requis",
+        description: "Veuillez saisir votre mot de passe.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setLoading(true);
 
     const { error } = await signIn(email, password);
@@ -32,7 +95,7 @@ export default function Login() {
     if (error) {
       toast({
         title: "Erreur de connexion",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive"
       });
     } else {
@@ -52,7 +115,7 @@ export default function Login() {
     if (error) {
       toast({
         title: "Erreur de connexion Google",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive"
       });
       setGoogleLoading(false);
