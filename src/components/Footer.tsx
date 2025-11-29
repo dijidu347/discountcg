@@ -83,15 +83,6 @@ const Footer = () => {
           </div>
         </div>
       </div>
-
-      {/* Floating Chat Button */}
-      <a
-        href="#contact"
-        className="fixed bottom-6 right-6 w-14 h-14 bg-primary rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform z-50"
-        aria-label="Chat avec nous"
-      >
-        <Mail className="w-6 h-6 text-primary-foreground" />
-      </a>
     </footer>
   );
 };
