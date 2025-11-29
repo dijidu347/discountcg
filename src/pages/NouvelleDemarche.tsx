@@ -64,34 +64,8 @@ export default function NouvelleDemarche() {
     paymentCompletedRef.current = paymentCompleted;
   }, [paymentCompleted]);
 
-  // Cleanup: delete draft demarche only on page unload (browser close/refresh)
-  // NOT on navigation (which includes going to payment page)
-  useEffect(() => {
-    // Handle page unload (browser close, refresh, external navigation)
-    const handleBeforeUnload = () => {
-      // Only delete if not going to payment
-      if (demarcheIdRef.current && !paymentCompletedRef.current) {
-        console.log("[NouvelleDemarche] Browser unload - cleaning up draft:", demarcheIdRef.current);
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/demarches?id=eq.${demarcheIdRef.current}&is_draft=eq.true&paye=eq.false`;
-        fetch(url, {
-          method: 'DELETE',
-          headers: {
-            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            'Content-Type': 'application/json',
-          },
-          keepalive: true,
-        });
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      // Don't delete on component unmount - only on beforeunload
-      // This prevents deletion when navigating to payment page
-    };
-  }, []);
+  // Ne plus supprimer automatiquement les brouillons
+  // Les garages peuvent les reprendre plus tard
 
   useEffect(() => {
     if (!authLoading && !user) {
