@@ -95,8 +95,9 @@ const CheckoutForm = ({ order }: { order: any }) => {
           .eq("id", order.id);
 
         toast({
-          title: "Paiement réussi",
-          description: "Votre commande a été confirmée",
+          title: "✅ Paiement accepté !",
+          description: "Votre paiement a été validé avec succès. Votre commande est en cours de traitement.",
+          variant: "success" as any,
         });
 
         navigate(`/suivi/${order.tracking_number}`);
@@ -104,8 +105,8 @@ const CheckoutForm = ({ order }: { order: any }) => {
     } catch (error: any) {
       console.error("Payment error:", error);
       toast({
-        title: "Erreur de paiement",
-        description: error.message || "Une erreur est survenue",
+        title: "❌ Paiement refusé",
+        description: error.message || "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {

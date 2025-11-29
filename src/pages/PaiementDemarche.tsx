@@ -48,16 +48,17 @@ const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onS
 
       if (paymentIntent?.status === "succeeded") {
         toast({
-          title: "Paiement réussi",
-          description: "Votre démarche a été payée avec succès",
+          title: "✅ Paiement accepté !",
+          description: "Votre paiement a été validé avec succès. Votre démarche est en cours de traitement.",
+          variant: "success" as any,
         });
         onSuccess();
       }
     } catch (error: any) {
       console.error("Payment error:", error);
       toast({
-        title: "Erreur de paiement",
-        description: error.message || "Une erreur est survenue",
+        title: "❌ Paiement refusé",
+        description: error.message || "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
