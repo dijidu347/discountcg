@@ -206,15 +206,6 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       return;
     }
 
-    if (!manualData.marque.trim() || !manualData.modele.trim()) {
-      toast({
-        title: "Erreur",
-        description: "La marque et le modèle sont obligatoires",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -223,8 +214,8 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
         .insert({
           garage_id: garageId,
           immatriculation: manualData.immatriculation.toUpperCase(),
-          marque: manualData.marque.trim(),
-          modele: manualData.modele.trim(),
+          marque: manualData.marque.trim() || null,
+          modele: manualData.modele.trim() || null,
           vin: manualData.vin.trim() || null
         })
         .select()
@@ -416,7 +407,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label htmlFor="manual-marque">Marque *</Label>
+                      <Label htmlFor="manual-marque">Marque (optionnel)</Label>
                       <Input
                         id="manual-marque"
                         placeholder="RENAULT"
@@ -425,7 +416,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="manual-modele">Modèle *</Label>
+                      <Label htmlFor="manual-modele">Modèle (optionnel)</Label>
                       <Input
                         id="manual-modele"
                         placeholder="CLIO"
@@ -461,7 +452,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
                   <Button
                     type="button"
                     onClick={handleSubmitManual}
-                    disabled={loading || !manualData.immatriculation.trim() || !manualData.marque.trim() || !manualData.modele.trim()}
+                    disabled={loading || !manualData.immatriculation.trim()}
                     className="flex-1"
                   >
                     {loading ? "Enregistrement..." : "Valider"}
