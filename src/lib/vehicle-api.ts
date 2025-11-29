@@ -7,6 +7,7 @@ interface VehicleData {
   AWN_date_mise_en_circulation?: string;
   AWN_emission_co_2?: number;
   AWN_immat?: string;
+  AWN_vin?: string;
   [key: string]: any;
 }
 
@@ -20,6 +21,7 @@ export interface NormalizedVehicleData {
   date_mec?: string;
   co2?: number;
   immatriculation?: string;
+  vin?: string;
 }
 
 interface VehicleApiResponse {
@@ -65,6 +67,7 @@ export async function getVehicleByPlate(plate: string): Promise<VehicleApiRespon
       date_mec: vehicleData?.AWN_date_mise_en_circulation,
       co2: vehicleData?.AWN_emission_co_2,
       immatriculation: vehicleData?.AWN_immat,
+      vin: vehicleData?.AWN_vin,
     };
     
     return {
