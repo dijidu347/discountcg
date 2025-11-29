@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { PaymentRequestButtonElement, useStripe } from "@stripe/react-stripe-js";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Smartphone, Loader2 } from "lucide-react";
@@ -19,51 +19,80 @@ export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata, dema
   const [showNotAvailable, setShowNotAvailable] = useState(false);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [isCreatingIntent, setIsCreatingIntent] = useState(false);
+  const hasCreatedIntent = useRef(false);
+  const paymentRequestRef = useRef<any>(null);
 
-  // Create payment intent on mount
+  // Stable metadata string for dependency
+  const metadataString = useMemo(() => JSON.stringify(metadata || {}), [metadata]);
+  const amountInCents = useMemo(() => Math.round(amount * 100), [amount]);
+
+  // Create payment intent on mount - only once
   useEffect(() => {
     const createPaymentIntent = async () => {
-      if (isCreatingIntent || clientSecret) return;
+      if (hasCreatedIntent.current || isCreatingIntent || clientSecret) return;
       
+      hasCreatedIntent.current = true;
       setIsCreatingIntent(true);
+      
       try {
+        console.log("[StripeWallet] Creating payment intent:", { amountInCents, demarcheId, metadata });
+        
         const { data, error } = await supabase.functions.invoke("create-payment-intent", {
           body: {
-            amount: Math.round(amount * 100),
+            amount: amountInCents,
             metadata: metadata || {},
             demarcheId: demarcheId || undefined,
           },
         });
 
-        if (error) throw error;
-        if (data?.clientSecret) {
-          setClientSecret(data.clientSecret);
+        if (error) {
+          console.error("[StripeWallet] Error creating payment intent:", error);
+          throw error;
         }
-      } catch (err) {
-        console.error("Error creating payment intent for wallet:", err);
+        
+        if (data?.clientSecret) {
+          console.log("[StripeWallet] Payment intent created successfully");
+          setClientSecret(data.clientSecret);
+        } else {
+          console.error("[StripeWallet] No client secret returned");
+          throw new Error("No client secret returned");
+        }
+      } catch (err: any) {
+        console.error("[StripeWallet] Error creating payment intent:", err);
+        hasCreatedIntent.current = false; // Allow retry
+        onError?.(err.message || "Erreur lors de la création du paiement");
       } finally {
         setIsCreatingIntent(false);
       }
     };
 
     createPaymentIntent();
-  }, [amount, metadata, demarcheId]);
+  }, [amountInCents, metadataString, demarcheId]);
 
+  // Setup PaymentRequest when stripe and clientSecret are ready
   useEffect(() => {
     if (!stripe || !clientSecret) return;
+    
+    // Don't recreate if already exists
+    if (paymentRequestRef.current) return;
+
+    console.log("[StripeWallet] Setting up PaymentRequest with amount:", amountInCents);
 
     const pr = stripe.paymentRequest({
       country: "FR",
       currency: "eur",
       total: {
         label: "Total",
-        amount: Math.round(amount * 100),
+        amount: amountInCents,
       },
       requestPayerName: true,
       requestPayerEmail: true,
     });
 
+    paymentRequestRef.current = pr;
+
     pr.canMakePayment().then((result) => {
+      console.log("[StripeWallet] canMakePayment result:", result);
       if (result) {
         setPaymentRequest(pr);
         setCanMakePayment(true);
@@ -73,6 +102,8 @@ export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata, dema
     });
 
     pr.on("paymentmethod", async (e) => {
+      console.log("[StripeWallet] Payment method received:", e.paymentMethod.id);
+      
       try {
         // Confirm the payment with Stripe using the clientSecret
         const { error, paymentIntent } = await stripe.confirmCardPayment(
@@ -84,19 +115,18 @@ export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata, dema
         );
 
         if (error) {
-          // Report to the browser that the payment failed
+          console.error("[StripeWallet] Payment confirmation error:", error);
           e.complete("fail");
-          console.error("Payment confirmation error:", error);
           onError?.(error.message || "Erreur lors du paiement");
           return;
         }
 
         if (paymentIntent?.status === "requires_action") {
-          // If additional authentication is required
+          console.log("[StripeWallet] Payment requires action");
           const { error: confirmError } = await stripe.confirmCardPayment(clientSecret);
           if (confirmError) {
+            console.error("[StripeWallet] Payment action error:", confirmError);
             e.complete("fail");
-            console.error("Payment action error:", confirmError);
             onError?.(confirmError.message || "Authentification requise échouée");
             return;
           }
@@ -104,20 +134,22 @@ export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata, dema
 
         // Payment succeeded
         e.complete("success");
-        console.log("Apple Pay / Google Pay payment succeeded:", paymentIntent?.id);
+        console.log("[StripeWallet] Payment succeeded:", paymentIntent?.id);
         onSuccess();
       } catch (err: any) {
+        console.error("[StripeWallet] Payment error:", err);
         e.complete("fail");
-        console.error("Payment error:", err);
         onError?.(err.message || "Erreur lors du paiement");
       }
     });
 
     return () => {
-      // Cleanup - remove event listener
-      pr.off("paymentmethod");
+      // Cleanup
+      if (paymentRequestRef.current) {
+        paymentRequestRef.current.off("paymentmethod");
+      }
     };
-  }, [stripe, amount, clientSecret, onSuccess, onError]);
+  }, [stripe, clientSecret, amountInCents, onSuccess, onError]);
 
   if (isCreatingIntent) {
     return (
