@@ -9,9 +9,10 @@ interface StripeWalletPaymentProps {
   onSuccess: () => void;
   onError?: (error: string) => void;
   metadata?: Record<string, string>;
+  demarcheId?: string;
 }
 
-export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata }: StripeWalletPaymentProps) => {
+export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata, demarcheId }: StripeWalletPaymentProps) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState<any>(null);
   const [canMakePayment, setCanMakePayment] = useState(false);
@@ -30,6 +31,7 @@ export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata }: St
           body: {
             amount: Math.round(amount * 100),
             metadata: metadata || {},
+            demarcheId: demarcheId || undefined,
           },
         });
 
@@ -45,7 +47,7 @@ export const StripeWalletPayment = ({ amount, onSuccess, onError, metadata }: St
     };
 
     createPaymentIntent();
-  }, [amount, metadata]);
+  }, [amount, metadata, demarcheId]);
 
   useEffect(() => {
     if (!stripe || !clientSecret) return;

@@ -327,6 +327,7 @@ const PaiementDemarche = () => {
                         });
                       }}
                       metadata={{ demarche_id: demarcheId || "", type: "demarche" }}
+                      demarcheId={demarcheId || undefined}
                     />
                   </Elements>
                 </div>
