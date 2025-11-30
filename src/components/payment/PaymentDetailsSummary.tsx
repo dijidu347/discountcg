@@ -19,11 +19,11 @@ export const SERVICE_LABELS: Record<string, string> = {
 
 interface PaymentDetailsSummaryProps {
   demarcheType: string;
-  fraisDossier: number;           // Prix HT des frais de dossier (prix de l'action)
+  fraisDossier: number;           // Prix des frais de dossier (prix de l'action)
   montantTtc: number;             // Montant total stocké en BD (fallback)
   trackingServices: TrackingService[];
   actionRapideTitre?: string;
-  prixCarteGrise?: number;        // Prix carte grise (taxe régionale, exonérée TVA)
+  prixCarteGrise?: number;        // Prix carte grise (taxe régionale)
   onCalculated?: (result: PaymentCalculationResult) => void;
 }
 
@@ -39,11 +39,11 @@ export interface PaymentCalculationResult {
 /**
  * Composant d'affichage du récapitulatif de paiement
  * 
- * RÈGLES D'AFFICHAGE :
+ * RÈGLES D'AFFICHAGE (TVA désactivée) :
  * 1. Chaque ligne est affichée séparément (pas d'addition dans cette zone)
- * 2. Carte grise = exonérée TVA
- * 3. Services = prix HT uniquement (TVA calculée à la fin)
- * 4. Totaux en bas : Total HT, TVA 20%, Total TTC
+ * 2. Carte grise = taxe régionale
+ * 3. Services = prix uniquement
+ * 4. Total = somme de tout
  */
 export const PaymentDetailsSummary = ({
   demarcheType,
@@ -60,20 +60,20 @@ export const PaymentDetailsSummary = ({
   // Prix carte grise (taxe régionale) - passé en prop ou 0 pour non-CG
   const prixCarteGrise = isCG ? (prixCarteGriseProp || 0) : 0;
   
-  // Frais de dossier HT (prix de l'action)
+  // Frais de dossier (prix de l'action)
   const fraisDossierHT = fraisDossier || 0;
   
-  // Options HT
+  // Options
   const optionsTotal = trackingServices.reduce((sum, s) => sum + s.price, 0);
   
-  // Total services HT (soumis à TVA)
+  // Total services
   const totalServicesHT = fraisDossierHT + optionsTotal;
   
-  // TVA 20% sur les services uniquement
-  const tva = totalServicesHT * 0.20;
+  // Pas de TVA
+  const tva = 0;
   
-  // Total TTC = carte grise (exonérée) + services HT + TVA
-  const totalTTC = prixCarteGrise + totalServicesHT + tva;
+  // Total = carte grise + services (pas de TVA)
+  const totalTTC = prixCarteGrise + totalServicesHT;
 
   // Créer le résultat du calcul
   const result: PaymentCalculationResult = {
@@ -96,7 +96,7 @@ export const PaymentDetailsSummary = ({
   if (isCG) {
     return (
       <div className="space-y-4">
-        {/* BLOC 1 : Carte grise (exonérée TVA) */}
+        {/* BLOC 1 : Carte grise */}
         {prixCarteGrise > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
@@ -106,7 +106,6 @@ export const PaymentDetailsSummary = ({
               <span className="text-muted-foreground">Taxe régionale</span>
               <div className="text-right">
                 <span className="font-medium">{formatPrice(prixCarteGrise)} €</span>
-                <span className="text-xs text-muted-foreground ml-1">(exonéré TVA)</span>
               </div>
             </div>
           </div>
@@ -114,11 +113,11 @@ export const PaymentDetailsSummary = ({
 
         {(prixCarteGrise > 0 && totalServicesHT > 0) && <Separator />}
 
-        {/* BLOC 2 : Services (HT) - chaque ligne séparément */}
+        {/* BLOC 2 : Services - chaque ligne séparément */}
         {totalServicesHT > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Services (HT)
+              Services
             </p>
 
             {/* Frais de dossier */}
@@ -148,18 +147,14 @@ export const PaymentDetailsSummary = ({
           {totalServicesHT > 0 && (
             <>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Total HT (services)</span>
+                <span className="text-muted-foreground">Total services</span>
                 <span>{formatPrice(totalServicesHT)} €</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">TVA (20%)</span>
-                <span>{formatPrice(tva)} €</span>
               </div>
               <Separator className="my-2" />
             </>
           )}
           <div className="flex justify-between items-center font-semibold">
-            <span>Total TTC</span>
+            <span>Total</span>
             <span className="text-lg text-primary">{formatPrice(totalTTC)} €</span>
           </div>
         </div>
@@ -172,10 +167,10 @@ export const PaymentDetailsSummary = ({
   // ==============================
   return (
     <div className="space-y-4">
-      {/* Services (HT) - chaque ligne séparément */}
+      {/* Services - chaque ligne séparément */}
       <div className="space-y-2">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-          Services (HT)
+          Services
         </p>
 
         {/* Frais de dossier / Action rapide */}
@@ -204,16 +199,12 @@ export const PaymentDetailsSummary = ({
       {/* Totaux */}
       <div className="space-y-2">
         <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">Total HT</span>
+          <span className="text-muted-foreground">Total</span>
           <span>{formatPrice(totalServicesHT)} €</span>
-        </div>
-        <div className="flex justify-between items-center text-sm">
-          <span className="text-muted-foreground">TVA (20%)</span>
-          <span>{formatPrice(tva)} €</span>
         </div>
         <Separator className="my-2" />
         <div className="flex justify-between items-center font-semibold">
-          <span>Total TTC</span>
+          <span>Total à payer</span>
           <span className="text-lg text-primary">{formatPrice(totalTTC)} €</span>
         </div>
       </div>

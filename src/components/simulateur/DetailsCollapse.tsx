@@ -54,9 +54,6 @@ export const DetailsCollapse = ({
                   <span>Total carte grise</span>
                   <span className="text-primary">{formatPrice(calculation.prixTotal)} €</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Exonéré de TVA (taxe régionale)
-                </p>
               </div>
             </div>
           </CardContent>

@@ -46,7 +46,7 @@ export const PriceSummary = ({
   const dossierPrioritairePrix = 5;
   const certificatNonGagePrix = 10;
 
-  // Calcul TVA comme pour les garages
+  // Calcul sans TVA
   const prixCarteGrise = calculation.prixTotal;
   let optionsPrix = 0;
   if (selectedOptions?.packNotifications) {
@@ -58,9 +58,9 @@ export const PriceSummary = ({
   if (selectedOptions?.dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
   if (selectedOptions?.certificatNonGage) optionsPrix += certificatNonGagePrix;
   
-  const totalServicesHT = fraisDossier + optionsPrix;
-  const tva = totalServicesHT * 0.20;
-  const totalTTC = prixCarteGrise + totalServicesHT + tva;
+  const totalServices = fraisDossier + optionsPrix;
+  // Pas de TVA - total = carte grise + services
+  const total = prixCarteGrise + totalServices;
 
   // Si payé, ne pas afficher le bloc prix
   if (isPaid) {
@@ -108,11 +108,11 @@ export const PriceSummary = ({
             </div>
           )}
 
-          {/* Total TTC - Visible only when collapsed */}
+          {/* Total - Visible only when collapsed */}
           {!isOpen && (
             <div className="flex justify-between items-center text-xl font-bold">
-              <span>Total TTC</span>
-              <span className="text-primary">{formatPrice(totalTTC)} €</span>
+              <span>Total</span>
+              <span className="text-primary">{formatPrice(total)} €</span>
             </div>
           )}
 
@@ -140,10 +140,10 @@ export const PriceSummary = ({
             <CollapsibleContent className="space-y-4 pt-4">
               <Separator />
               
-              {/* Prix Carte Grise (exonérée TVA) */}
+              {/* Prix Carte Grise */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Carte grise (exonérée TVA)
+                  Carte grise
                 </p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Taxe régionale</span>
@@ -151,10 +151,10 @@ export const PriceSummary = ({
                 </div>
               </div>
 
-              {/* Services (soumis à TVA) */}
+              {/* Services */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                  Services (HT)
+                  Services
                 </p>
                 <div className="flex justify-between items-center text-sm">
                   <span>Frais de dossier</span>
@@ -197,25 +197,21 @@ export const PriceSummary = ({
               {/* Totaux */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Carte grise (exonérée)</span>
+                  <span>Carte grise</span>
                   <span>{formatPrice(prixCarteGrise)} €</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
-                  <span>Total HT (services)</span>
-                  <span>{formatPrice(totalServicesHT)} €</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span>TVA (20%)</span>
-                  <span>{formatPrice(tva)} €</span>
+                  <span>Total services</span>
+                  <span>{formatPrice(totalServices)} €</span>
                 </div>
               </div>
 
               <Separator />
 
-              {/* Total TTC - At bottom when expanded */}
+              {/* Total - At bottom when expanded */}
               <div className="flex justify-between items-center text-xl font-bold pt-2">
-                <span>Total TTC</span>
-                <span className="text-primary">{formatPrice(totalTTC)} €</span>
+                <span>Total</span>
+                <span className="text-primary">{formatPrice(total)} €</span>
               </div>
 
               {calculation.abattement && (

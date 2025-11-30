@@ -19,14 +19,11 @@ export const GuestPaymentDetailsSummary = ({
   // Options pricing
   const smsPrix = smsNotifications ? 5 : 0;
   
-  // Total services HT (frais dossier + options - tout soumis à TVA 20%)
+  // Total services HT (frais dossier + options)
   const totalServicesHT = fraisDossier + smsPrix;
   
-  // TVA 20% sur les services uniquement
-  const tva = totalServicesHT * 0.20;
-  
-  // Total TTC = carte grise (exonérée) + services HT + TVA
-  const totalTTC = prixCarteGrise + totalServicesHT + tva;
+  // Total = carte grise + services HT (pas de TVA)
+  const total = prixCarteGrise + totalServicesHT;
 
   return (
     <Card className="border-2 border-primary">
@@ -37,11 +34,11 @@ export const GuestPaymentDetailsSummary = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-6 space-y-4">
-        {/* Section Carte Grise (exonérée TVA) */}
+        {/* Section Carte Grise */}
         {prixCarteGrise > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-              Carte grise (exonérée TVA)
+              Carte grise
             </p>
             <div className="flex justify-between items-center">
               <span className="text-sm">Taxe régionale</span>
@@ -50,10 +47,10 @@ export const GuestPaymentDetailsSummary = ({
           </div>
         )}
 
-        {/* Section Services (soumis à TVA) */}
+        {/* Section Services */}
         <div className="space-y-2">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            Services (HT)
+            Services
           </p>
           
           {/* Frais de dossier */}
@@ -85,26 +82,21 @@ export const GuestPaymentDetailsSummary = ({
           {/* Récap carte grise si applicable */}
           {prixCarteGrise > 0 && (
             <div className="flex justify-between items-center text-sm text-muted-foreground">
-              <span>Carte grise (exonérée TVA)</span>
+              <span>Carte grise</span>
               <span>{formatPrice(prixCarteGrise)} €</span>
             </div>
           )}
           
           <div className="flex justify-between items-center text-sm">
-            <span>Total HT (services)</span>
+            <span>Total services</span>
             <span>{formatPrice(totalServicesHT)} €</span>
-          </div>
-          
-          <div className="flex justify-between items-center text-sm">
-            <span>TVA (20%)</span>
-            <span>{formatPrice(tva)} €</span>
           </div>
           
           <Separator />
           
           <div className="flex justify-between items-center text-xl font-bold pt-2">
-            <span>Total TTC</span>
-            <span className="text-primary">{formatPrice(totalTTC)} €</span>
+            <span>Total</span>
+            <span className="text-primary">{formatPrice(total)} €</span>
           </div>
         </div>
       </CardContent>
@@ -119,6 +111,6 @@ export const calculateGuestOrderTTC = (
 ): number => {
   const smsPrix = smsNotifications ? 5 : 0;
   const totalServicesHT = fraisDossier + smsPrix;
-  const tva = totalServicesHT * 0.20;
-  return prixCarteGrise + totalServicesHT + tva;
+  // Pas de TVA - total = carte grise + services
+  return prixCarteGrise + totalServicesHT;
 };

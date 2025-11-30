@@ -17,6 +17,8 @@ interface Demarche {
   is_free_token?: boolean;
 }
 
+// Note: TVA désactivée - tous les prix sont HT
+
 interface Garage {
   id: string;
   raison_sociale: string;
@@ -233,11 +235,7 @@ async function generateDemarcheFacturePDF(
   page.drawText(`${facture.montant_ht.toFixed(2)} €`, { x: col2 + 10, y: y + 8, size: 10, font: fontRegular, color: black });
   page.drawLine({ start: { x: col1, y }, end: { x: width - margin, y }, thickness: 0.5, color: lightGray });
 
-  // TVA
-  y -= rowHeight;
-  page.drawText("TVA (20%)", { x: col1 + 10, y: y + 8, size: 10, font: fontRegular, color: black });
-  page.drawText(`${facture.tva.toFixed(2)} €`, { x: col2 + 10, y: y + 8, size: 10, font: fontRegular, color: black });
-  page.drawLine({ start: { x: col1, y }, end: { x: width - margin, y }, thickness: 0.5, color: lightGray });
+  // TVA désactivée - ne pas afficher
 
   // Total TTC
   y -= rowHeight;
@@ -321,7 +319,7 @@ async function handleDemarchePayment(
   // Generate facture number
   const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
 
-  // Create facture
+  // Create facture (sans TVA)
   const { data: facture, error: factureError } = await supabase
     .from("factures")
     .insert({
@@ -330,7 +328,7 @@ async function handleDemarchePayment(
       garage_id: demarche.garage_id,
       montant_ht: demarche.montant_ht || 0,
       montant_ttc: demarche.montant_ttc || 0,
-      tva: (demarche.montant_ht || 0) * 0.2,
+      tva: 0,
     })
     .select()
     .single();
@@ -462,7 +460,7 @@ async function handleGuestOrderPayment(
   // Generate facture number
   const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
 
-  // Create facture
+  // Create facture (sans TVA)
   const { data: facture, error: factureError } = await supabase
     .from("factures")
     .insert({
@@ -470,7 +468,7 @@ async function handleGuestOrderPayment(
       guest_order_id: orderId,
       montant_ht: order.montant_ht || 0,
       montant_ttc: order.montant_ttc || 0,
-      tva: (order.montant_ht || 0) * 0.2,
+      tva: 0,
     })
     .select()
     .single();
