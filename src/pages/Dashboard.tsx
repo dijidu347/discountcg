@@ -184,7 +184,7 @@ export default function Dashboard() {
                       style={{ color: isFreeTokenEligible ? '#22c55e' : actionColor }}
                     >
                       {isFreeTokenEligible && action.prix > 0 && <span className="text-lg line-through text-muted-foreground mr-2">{action.prix}€</span>}
-                      {mainPrice}<span className="text-sm font-normal ml-1">HT</span>{cgSuffix}
+                      {mainPrice}{cgSuffix}
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
