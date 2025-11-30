@@ -132,8 +132,24 @@ serve(async (req) => {
     }
 
     console.log('Ownership check passed, calculating amount');
-    const paymentAmount = Math.round(demarche.montant_ttc * 100);
-    console.log('Payment amount (in cents):', paymentAmount, 'from TTC:', demarche.montant_ttc);
+    
+    // Fetch tracking services for the demarche
+    const { data: trackingServices } = await supabaseClient
+      .from('tracking_services')
+      .select('price')
+      .eq('demarche_id', demarcheId);
+    
+    const optionsTotal = (trackingServices || []).reduce((sum: number, s: any) => sum + Number(s.price || 0), 0);
+    
+    // Calculate amount without TVA
+    const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
+    const fraisDossier = Number(demarche.frais_dossier) || 0;
+    const totalServices = fraisDossier + optionsTotal;
+    const calculatedTotal = prixCarteGrise + totalServices;
+    
+    // Use calculated total (sans TVA)
+    const paymentAmount = Math.round(calculatedTotal * 100);
+    console.log('Payment amount (in cents):', paymentAmount, 'Calculated total (sans TVA):', calculatedTotal);
 
     console.log('Creating Stripe payment intent...');
     // Create Stripe payment intent with automatic payment methods for wallet support

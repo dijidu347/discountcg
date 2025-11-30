@@ -118,8 +118,8 @@ const PaiementDemarche = () => {
   const [actionRapide, setActionRapide] = useState<any>(null);
   const [stripePromise, setStripePromise] = useState<any>(null);
   
-  // Montant TTC calculé correctement
-  const [calculatedTTC, setCalculatedTTC] = useState<number>(0);
+  // Montant calculé (sans TVA)
+  const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null);
 
   useEffect(() => {
     loadDemarche();
@@ -219,9 +219,9 @@ const PaiementDemarche = () => {
     }
   };
 
-  // Callback pour récupérer le montant TTC calculé
+  // Callback pour récupérer le montant calculé
   const handlePaymentCalculated = useCallback((result: PaymentCalculationResult) => {
-    setCalculatedTTC(result.totalTTC);
+    setCalculatedTotal(result.totalTTC);
   }, []);
 
   const handlePaymentSuccess = async () => {
@@ -262,8 +262,14 @@ const PaiementDemarche = () => {
 
   if (!demarche || !clientSecret || !stripePromise) return null;
 
-  // Utiliser le montant calculé ou le montant stocké si pas encore calculé
-  const finalAmount = calculatedTTC > 0 ? calculatedTTC : demarche.montant_ttc;
+  // Calculer le montant correct sans TVA directement
+  const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
+  const fraisDossier = Number(demarche.frais_dossier) || 0;
+  const optionsTotal = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
+  const totalServices = fraisDossier + optionsTotal;
+  
+  // Utiliser le montant calculé correctement (sans TVA)
+  const finalAmount = calculatedTotal !== null ? calculatedTotal : (prixCarteGrise + totalServices);
   
   // PayPal 4x désactivé si montant < 30€
   const canUsePayPal4x = finalAmount >= 30;
@@ -459,7 +465,7 @@ const PaiementDemarche = () => {
 
                 <div className="pt-4 border-t">
                   <div className="flex justify-between items-center">
-                    <span className="text-base font-semibold">Total TTC</span>
+                    <span className="text-base font-semibold">Total</span>
                     <span className="text-2xl font-bold text-primary">
                       {formatPrice(finalAmount)}€
                     </span>
