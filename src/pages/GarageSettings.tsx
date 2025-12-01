@@ -17,6 +17,7 @@ export default function GarageSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
+  const [activeTab, setActiveTab] = useState("info");
   const [formData, setFormData] = useState({
     raison_sociale: "",
     siret: "",
@@ -40,6 +41,13 @@ export default function GarageSettings() {
 
   useEffect(() => {
     if (user) loadGarage();
+    
+    // Check URL params for tab
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    if (tab === 'verification') {
+      setActiveTab('verification');
+    }
   }, [user]);
 
   const loadGarage = async () => {
@@ -121,7 +129,7 @@ export default function GarageSettings() {
       <div className="container mx-auto px-4 py-8">
         <Button variant="ghost" onClick={() => navigate("/dashboard")} className="mb-6"><ArrowLeft className="mr-2 h-4 w-4" />Retour</Button>
         <h1 className="text-2xl font-bold mb-6">Paramètres du compte</h1>
-        <Tabs defaultValue="info">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="info">Informations</TabsTrigger>
             <TabsTrigger value="verification">Vérification</TabsTrigger>
@@ -192,12 +200,12 @@ export default function GarageSettings() {
                   </div>
                 ) : (
                   <>
-                    {['kbis', 'id_card', 'mandate'].map(type => {
+                    {['kbis', 'carte_identite', 'mandat'].map(type => {
                       const status = getDocStatus(type);
                       return (
                         <div key={type} className="border rounded-lg p-4">
                           <div className="flex justify-between mb-2">
-                            <h3 className="font-medium">{type === 'kbis' ? 'KBIS' : type === 'id_card' ? 'Pièce d\'identité' : 'Mandat'}</h3>
+                            <h3 className="font-medium">{type === 'kbis' ? 'KBIS' : type === 'carte_identite' ? "Carte d'identité" : 'Mandat pré-rempli'}</h3>
                             {status.badge}
                           </div>
                           {status.status === 'rejected' && <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm">{status.reason}</div>}

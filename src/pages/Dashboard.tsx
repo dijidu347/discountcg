@@ -139,6 +139,27 @@ export default function Dashboard() {
           <p className="text-muted-foreground">Bienvenue sur votre espace professionnel</p>
         </div>
 
+        {/* Verification Alert */}
+        {garage && !garage.is_verified && !garage.verification_requested_at && (
+          <Alert className="mb-8 border-2 border-primary bg-primary/10">
+            <AlertCircle className="h-5 w-5 text-primary" />
+            <AlertTitle className="text-primary font-bold">
+              Bienvenue sur DiscountCarteGrise !
+            </AlertTitle>
+            <AlertDescription className="text-primary">
+              Pour valider votre compte et bénéficier de tous les avantages, veuillez envoyer vos documents de vérification (KBIS, Carte d'identité, Mandat).
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 ml-0 border-primary text-primary hover:bg-primary hover:text-white"
+                onClick={() => navigate("/garage-settings?tab=verification")}
+              >
+                Envoyer mes documents
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Free Token Alert */}
         {garage?.free_token_available && <Alert className="mb-8 border-2 border-green-500 bg-green-500/10">
             <Gift className="h-5 w-5 text-green-500" />
