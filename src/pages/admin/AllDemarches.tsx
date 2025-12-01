@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Bell, CheckCircle, Clock, Gift } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle, Clock, Gift, CreditCard } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export default function AllDemarches() {
@@ -52,9 +52,14 @@ export default function AllDemarches() {
       .order('created_at', { ascending: false });
 
     if (data) {
-      // Séparer les démarches : à traiter (payées ou jeton offert) vs en saisie
-      const aTraiter = data.filter(d => d.paye === true || d.is_free_token === true);
-      const enSaisie = data.filter(d => d.paye !== true && d.is_free_token !== true);
+      // À TRAITER: Non-brouillon ET (payé OU jeton gratuit utilisé)
+      // Ce sont les démarches finalisées et soumises
+      const aTraiter = data.filter(d => 
+        d.is_draft === false && (d.paye === true || d.is_free_token === true)
+      );
+      
+      // EN SAISIE: Tous les brouillons (non finalisés)
+      const enSaisie = data.filter(d => d.is_draft === true);
       
       setDemarchesATraiter(aTraiter);
       setDemarchesEnSaisie(enSaisie);
@@ -65,7 +70,7 @@ export default function AllDemarches() {
 
   const handleViewDemarche = async (demarche: any) => {
     // Marquer comme vue si pas encore vue
-    if (!demarche.admin_viewed && (demarche.paye || demarche.is_free_token)) {
+    if (!demarche.admin_viewed) {
       await supabase
         .from('demarches')
         .update({ admin_viewed: true })
@@ -80,14 +85,24 @@ export default function AllDemarches() {
     navigate(`/admin/demarche/${demarche.id}`);
   };
 
-  const getStatusBadge = (demarche: any) => {
+  const getPaymentStatusBadge = (demarche: any) => {
     if (demarche.is_free_token) {
-      return <Badge className="bg-green-500">Jeton offert</Badge>;
+      return (
+        <Badge className="bg-green-500 text-white">
+          <Gift className="h-3 w-3 mr-1" />
+          Jeton gratuit
+        </Badge>
+      );
     }
     if (demarche.paye) {
-      return <Badge className="bg-blue-500">Payé</Badge>;
+      return (
+        <Badge className="bg-blue-500 text-white">
+          <CreditCard className="h-3 w-3 mr-1" />
+          Payé
+        </Badge>
+      );
     }
-    return <Badge variant="secondary">En saisie</Badge>;
+    return <Badge variant="outline" className="text-muted-foreground">Non payé</Badge>;
   };
 
   const unviewedCount = demarchesATraiter.filter(d => !d.admin_viewed).length;
@@ -108,11 +123,12 @@ export default function AllDemarches() {
           Retour
         </Button>
 
-        {/* Section À TRAITER - Payées ou Jeton offert */}
+        {/* Section À TRAITER - Finalisées (payées ou jeton gratuit) */}
         <Card className="p-6 mb-8 border-2 border-primary/20">
           <div className="flex items-center gap-3 mb-6">
             <CheckCircle className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Démarches à traiter</h1>
+            <Badge variant="outline">{demarchesATraiter.length}</Badge>
             {unviewedCount > 0 && (
               <Badge className="bg-red-500 text-white animate-pulse">
                 <Bell className="h-3 w-3 mr-1" />
@@ -127,12 +143,12 @@ export default function AllDemarches() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead></TableHead>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>N° Démarche</TableHead>
                   <TableHead>Immatriculation</TableHead>
                   <TableHead>Garage</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Statut</TableHead>
+                  <TableHead>Paiement</TableHead>
                   <TableHead>Montant</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead></TableHead>
@@ -142,7 +158,7 @@ export default function AllDemarches() {
                 {demarchesATraiter.map((d: any) => (
                   <TableRow 
                     key={d.id} 
-                    className={!d.admin_viewed ? "bg-red-50 dark:bg-red-950/20" : ""}
+                    className={!d.admin_viewed ? "bg-red-50 dark:bg-red-950/20 border-l-4 border-l-red-500" : ""}
                   >
                     <TableCell>
                       {!d.admin_viewed && (
@@ -165,12 +181,7 @@ export default function AllDemarches() {
                       </div>
                     </TableCell>
                     <TableCell>{d.type}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(d)}
-                        {d.is_free_token && <Gift className="h-4 w-4 text-green-500" />}
-                      </div>
-                    </TableCell>
+                    <TableCell>{getPaymentStatusBadge(d)}</TableCell>
                     <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
@@ -189,16 +200,16 @@ export default function AllDemarches() {
           )}
         </Card>
 
-        {/* Section EN SAISIE - Non payées */}
+        {/* Section EN SAISIE - Brouillons non finalisés */}
         <Card className="p-6 opacity-70">
           <div className="flex items-center gap-3 mb-6">
             <Clock className="h-6 w-6 text-muted-foreground" />
-            <h1 className="text-xl font-bold text-muted-foreground">En cours de saisie (non payées)</h1>
+            <h1 className="text-xl font-bold text-muted-foreground">Brouillons en cours de saisie</h1>
             <Badge variant="outline">{demarchesEnSaisie.length}</Badge>
           </div>
           
           {demarchesEnSaisie.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">Aucune démarche en saisie</p>
+            <p className="text-muted-foreground text-center py-4">Aucun brouillon</p>
           ) : (
             <Table>
               <TableHeader>

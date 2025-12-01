@@ -856,7 +856,13 @@ export default function DemarcheDetail() {
                   </div>
                   <div>
                     <Label>Paiement</Label>
-                    <p className="text-sm font-medium mt-1">{demarche.paye ? "✅ Payé" : "❌ Non payé"}</p>
+                    <p className="text-sm font-medium mt-1">
+                      {demarche.is_free_token 
+                        ? "🎁 Jeton gratuit" 
+                        : demarche.paye 
+                          ? "✅ Payé" 
+                          : "❌ Non payé"}
+                    </p>
                   </div>
                 </div>
 
