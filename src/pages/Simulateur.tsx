@@ -179,9 +179,6 @@ export default function Simulateur() {
                         <div className="flex items-center gap-2">
                           {info.icon}
                           <span>{info.label}</span>
-                          <span className="text-muted-foreground text-sm">
-                            ({info.prix}€ HT)
-                          </span>
                         </div>
                       </SelectItem>
                     ))}
