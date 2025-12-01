@@ -48,8 +48,7 @@ export default function DemarcheSimple() {
   const [isInfoCompleted, setIsInfoCompleted] = useState(false);
 
   const fraisHT = demarcheTypeInfo?.prix_base || 0;
-  const tva = fraisHT * 0.20;
-  const totalTTC = fraisHT + tva;
+  const totalTTC = fraisHT; // Pas de TVA pour DA/DC
 
   useEffect(() => {
     const loadData = async () => {
@@ -169,9 +168,8 @@ export default function DemarcheSimple() {
                 <p className="font-medium">{plaque}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Prix TTC :</span>
+                <span className="text-muted-foreground">Prix :</span>
                 <p className="font-bold text-primary text-lg">{formatPrice(totalTTC)}€</p>
-                <p className="text-xs text-muted-foreground">({fraisHT}€ HT + {formatPrice(tva)}€ TVA)</p>
               </div>
             </div>
             {demarcheTypeInfo?.description && (

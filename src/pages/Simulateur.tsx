@@ -105,7 +105,7 @@ export default function Simulateur() {
           code_postal: '',
           ville: '',
           montant_ht: 0,
-          montant_ttc: currentDemarche.prix * 1.2, // Prix TTC avec TVA
+          montant_ttc: currentDemarche.prix, // Prix sans TVA pour DA/DC
           frais_dossier: currentDemarche.prix,
           status: 'en_attente',
           paye: false,
@@ -209,15 +209,10 @@ export default function Simulateur() {
                   <span className="text-lg font-bold text-primary">
                     {demarcheType === "CG" 
                       ? "Calcul après validation" 
-                      : `${(currentDemarche.prix * 1.2).toFixed(2)}€ TTC`
+                      : `${currentDemarche.prix}€`
                     }
                   </span>
                 </div>
-                {demarcheType !== "CG" && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    ({currentDemarche.prix}€ HT + TVA 20%)
-                  </p>
-                )}
               </div>
 
               <Button

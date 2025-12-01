@@ -170,9 +170,8 @@ export const SimulateurSection = () => {
           },
         });
       } else {
-        // Parcours DA/DC - prix fixe
+        // Parcours DA/DC - prix fixe sans TVA
         const prixHT = currentDemarche.prix_base;
-        const prixTTC = prixHT * 1.2;
 
         const { data: order, error } = await supabase
           .from('guest_orders')
@@ -187,7 +186,7 @@ export const SimulateurSection = () => {
             code_postal: '',
             ville: '',
             montant_ht: prixHT,
-            montant_ttc: prixTTC,
+            montant_ttc: prixHT, // Pas de TVA pour DA/DC
             frais_dossier: prixHT,
             status: 'en_attente',
             paye: false,
