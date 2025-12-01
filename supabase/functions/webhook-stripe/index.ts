@@ -69,8 +69,7 @@ const corsHeaders = {
 
 // Admin emails for notifications
 const ADMIN_EMAILS = [
-  "Discountcg@gmail.com",
-  "dijidu347@gmail.com", 
+  "contact@discountcartegrise.fr",
   "mathieugaillac4@gmail.com"
 ];
 
