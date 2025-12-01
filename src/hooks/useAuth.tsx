@@ -49,7 +49,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: userData
+        data: {
+          ...userData,
+          reseau: userData.reseau || null
+        }
       }
     });
 

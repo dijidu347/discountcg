@@ -45,6 +45,7 @@ export default function CompleteProfile() {
   
   const [formData, setFormData] = useState({
     raison_sociale: "",
+    reseau: "",
     siret: "",
     adresse: "",
     code_postal: "",
@@ -90,6 +91,7 @@ export default function CompleteProfile() {
           .from("garages")
           .update({
             raison_sociale: formData.raison_sociale,
+            reseau: formData.reseau || null,
             siret: siretClean,
             adresse: formData.adresse,
             code_postal: formData.code_postal,
@@ -107,6 +109,7 @@ export default function CompleteProfile() {
           .insert({
             user_id: user.id,
             raison_sociale: formData.raison_sociale,
+            reseau: formData.reseau || null,
             siret: siretClean,
             adresse: formData.adresse,
             code_postal: formData.code_postal,
@@ -169,6 +172,17 @@ export default function CompleteProfile() {
                   value={formData.raison_sociale}
                   onChange={handleChange}
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reseau">Réseau</Label>
+                <Input
+                  id="reseau"
+                  name="reseau"
+                  placeholder="Nom du réseau (optionnel)"
+                  value={formData.reseau}
+                  onChange={handleChange}
                 />
               </div>
 

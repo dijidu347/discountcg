@@ -385,6 +385,7 @@ export type Database = {
           is_gold: boolean | null
           is_verified: boolean | null
           raison_sociale: string
+          reseau: string | null
           siret: string
           telephone: string
           updated_at: string
@@ -402,6 +403,7 @@ export type Database = {
           is_gold?: boolean | null
           is_verified?: boolean | null
           raison_sociale: string
+          reseau?: string | null
           siret: string
           telephone: string
           updated_at?: string
@@ -419,6 +421,7 @@ export type Database = {
           is_gold?: boolean | null
           is_verified?: boolean | null
           raison_sociale?: string
+          reseau?: string | null
           siret?: string
           telephone?: string
           updated_at?: string

@@ -18,6 +18,7 @@ export default function Register() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [formData, setFormData] = useState({
     raisonSociale: "",
+    reseau: "",
     siret: "",
     email: "",
     telephone: "",
@@ -50,6 +51,7 @@ export default function Register() {
 
     const { error } = await signUp(formData.email, formData.password, {
       raison_sociale: formData.raisonSociale,
+      reseau: formData.reseau || null,
       siret: formData.siret,
       adresse: formData.adresse,
       code_postal: formData.codePostal,
@@ -156,18 +158,28 @@ export default function Register() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg">Informations de l'entreprise</h3>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="raisonSociale">Raison sociale *</Label>
-                    <Input
-                      id="raisonSociale"
-                      placeholder="Garage Martin SARL"
-                      value={formData.raisonSociale}
-                      onChange={(e) => handleChange("raisonSociale", e.target.value)}
-                      required
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label htmlFor="raisonSociale">Raison sociale *</Label>
+                  <Input
+                    id="raisonSociale"
+                    placeholder="Garage Martin SARL"
+                    value={formData.raisonSociale}
+                    onChange={(e) => handleChange("raisonSociale", e.target.value)}
+                    required
+                  />
+                </div>
 
+                <div className="space-y-2">
+                  <Label htmlFor="reseau">Réseau</Label>
+                  <Input
+                    id="reseau"
+                    placeholder="Nom du réseau (optionnel)"
+                    value={formData.reseau}
+                    onChange={(e) => handleChange("reseau", e.target.value)}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="siret">SIRET * (14 chiffres)</Label>
                     <Input
