@@ -93,6 +93,7 @@ export type Database = {
       }
       demarches: {
         Row: {
+          admin_viewed: boolean | null
           commentaire: string | null
           created_at: string
           documents_complets: boolean | null
@@ -120,6 +121,7 @@ export type Database = {
           vehicule_id: string | null
         }
         Insert: {
+          admin_viewed?: boolean | null
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
@@ -147,6 +149,7 @@ export type Database = {
           vehicule_id?: string | null
         }
         Update: {
+          admin_viewed?: boolean | null
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
