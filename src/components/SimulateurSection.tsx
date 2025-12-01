@@ -367,19 +367,6 @@ export const SimulateurSection = () => {
               />
             )}
 
-            {/* Prix affiché */}
-            <div className="bg-muted/50 rounded-lg p-4 text-center">
-              <p className="text-sm text-muted-foreground mb-1">Prix de la démarche</p>
-              <p className="text-2xl font-bold text-primary">
-                {currentDemarche?.require_carte_grise_price 
-                  ? "Calcul après validation"
-                  : currentDemarche?.prix_base 
-                    ? `${(currentDemarche.prix_base * 1.2).toFixed(2)}€ TTC`
-                    : "0€"
-                }
-              </p>
-            </div>
-
             <Button
               onClick={handleCalculate}
               disabled={!isFormValid() || loading}
