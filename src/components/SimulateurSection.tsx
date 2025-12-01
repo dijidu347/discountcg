@@ -337,9 +337,6 @@ export const SimulateurSection = () => {
                         <div className="flex items-center gap-2">
                           <Icon className="h-4 w-4" />
                           <span>{type.titre}</span>
-                          {!type.require_carte_grise_price && type.prix_base > 0 && (
-                            <span className="text-muted-foreground ml-2">({type.prix_base}€ HT)</span>
-                          )}
                         </div>
                       </SelectItem>
                     );
