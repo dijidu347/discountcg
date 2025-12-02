@@ -42,6 +42,7 @@ import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
 import ManageEmailTemplates from "./pages/admin/ManageEmailTemplates";
 import ManagePricingConfig from "./pages/admin/ManagePricingConfig";
 import TestEmail from "./pages/admin/TestEmail";
+import AcheterJetons from "./pages/AcheterJetons";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
             <Route path="/mes-factures" element={<MesFactures />} />
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
+            <Route path="/acheter-jetons" element={<AcheterJetons />} />
             <Route path="/support" element={<Support />} />
             <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />

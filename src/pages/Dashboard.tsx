@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -170,6 +170,33 @@ export default function Dashboard() {
             </AlertDescription>
           </Alert>}
 
+        {/* Token Balance Card */}
+        {garage && (
+          <Card className="mb-8 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                    <Coins className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Solde de jetons</p>
+                    <p className="text-2xl font-bold">{garage.token_balance || 0} jetons</p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={() => navigate("/acheter-jetons")}
+                  variant="default"
+                  size="lg"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Recharger
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Actions rapides</h2>
@@ -178,6 +205,7 @@ export default function Dashboard() {
             // Free token only applies to DA and DC, not CG
             const isFreeTokenEligible = garage?.free_token_available && (action.code === 'DA' || action.code === 'DC');
             const mainPrice = isFreeTokenEligible ? '0€' : `${action.prix}€`;
+            const tokenPrice = `${action.prix / 5} jeton${action.prix / 5 > 1 ? 's' : ''}`;
             const cgSuffix = action.code === 'CG' ? ' + CG' : '';
             const actionColor = action.couleur.startsWith('#') ? action.couleur : '#3b82f6';
             return <Card 
@@ -200,131 +228,130 @@ export default function Dashboard() {
                       {action.titre}
                       {isFreeTokenEligible && <Badge className="bg-green-500 text-white ml-2">GRATUIT</Badge>}
                     </CardTitle>
-                    <CardDescription 
-                      className="text-3xl font-bold mt-2"
-                      style={{ color: isFreeTokenEligible ? '#22c55e' : actionColor }}
-                    >
-                      {isFreeTokenEligible && action.prix > 0 && <span className="text-lg line-through text-muted-foreground mr-2">{action.prix}€</span>}
-                      {mainPrice}{cgSuffix}
-                    </CardDescription>
+                    <CardDescription>{action.description}</CardDescription>
+                    <div className="mt-2 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold">{mainPrice}</span>
+                        <span className="text-sm text-muted-foreground">{cgSuffix}</span>
+                      </div>
+                      {!isFreeTokenEligible && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Coins className="w-3 h-3" />
+                          <span>ou {tokenPrice}</span>
+                        </div>
+                      )}
+                    </div>
                   </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">{action.description}</p>
-                    <Button 
-                      className="w-full mt-4 text-white hover:opacity-90"
-                      style={{ backgroundColor: isFreeTokenEligible ? '#22c55e' : actionColor }}
-                      size="sm"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      {isFreeTokenEligible ? 'Utiliser mon offre' : 'Créer'}
-                    </Button>
-                  </CardContent>
                 </Card>;
-          })}
+            })}
           </div>
         </div>
 
-        {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="border-l-4 border-l-primary">
             <CardHeader className="pb-3">
-              <CardDescription className="flex items-center gap-2 text-xs">
-                <FileText className="h-3 w-3" />
-                Total des démarches
-              </CardDescription>
-              <CardTitle className="text-2xl font-bold">{stats.totalDemarches}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="border-l-4 border-l-warning">
-            <CardHeader className="pb-3">
-              <CardDescription className="flex items-center gap-2 text-xs">
-                <Clock className="h-3 w-3" />
-                En attente
-              </CardDescription>
-              <CardTitle className="text-2xl font-bold text-warning">{stats.enAttente}</CardTitle>
-            </CardHeader>
-          </Card>
-          <Card className="border-l-4 border-l-success">
-            <CardHeader className="pb-3">
-              <CardDescription className="flex items-center gap-2 text-xs">
-                <CheckCircle className="h-3 w-3" />
-                Validées
-              </CardDescription>
-              <CardTitle className="text-2xl font-bold text-success">{stats.validees}</CardTitle>
-            </CardHeader>
-          </Card>
-        </div>
-
-        {/* Bottom Section: Garage Info + Recent Demarches */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Garage Info */}
-          {garage && <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <UserCircle className="h-5 w-5 text-primary" />
-                    Informations de l'entreprise
-                  </CardTitle>
-                  <Button variant="outline" size="sm" onClick={() => navigate("/garage-settings")}>
-                    <Settings className="h-4 w-4 mr-2" />
-                    Modifier
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div>
-                    <p className="text-muted-foreground">Raison sociale</p>
-                    <p className="font-medium">{garage.raison_sociale}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">SIRET</p>
-                    <p className="font-medium">{garage.siret}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Email</p>
-                    <p className="font-medium">{garage.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Téléphone</p>
-                    <p className="font-medium">{garage.telephone}</p>
-                  </div>
-                  <div>
-                    <p className="text-muted-foreground">Adresse</p>
-                    <p className="font-medium">{garage.adresse}, {garage.code_postal} {garage.ville}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>}
-
-          {/* Recent Demarches */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5 text-primary" />
-                  Dernières démarches
-                </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => navigate("/mes-demarches")}>
-                  Voir tout
-                </Button>
-              </div>
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Total Démarches
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              {recentDemarches.length > 0 ? <div className="space-y-3">
-                  {recentDemarches.map(d => <div key={d.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate(`/demarche/${d.id}`)}>
-                      <div>
-                        <p className="font-medium">{d.immatriculation}</p>
-                        <p className="text-sm text-muted-foreground">{d.type}</p>
-                      </div>
-                      <Badge variant={d.status === 'valide' || d.status === 'finalise' ? 'default' : 'secondary'} className={d.status === 'valide' || d.status === 'finalise' ? 'bg-success text-success-foreground' : d.status === 'en_attente' ? 'bg-warning text-warning-foreground' : ''}>
-                        {d.status}
-                      </Badge>
-                    </div>)}
-                </div> : <p className="text-center text-muted-foreground py-8">Aucune démarche pour le moment</p>}
+              <div className="text-3xl font-bold">{stats.totalDemarches}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-orange-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4 text-orange-500" />
+                En attente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.enAttente}</div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-green-500">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-500" />
+                Validées
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.validees}</div>
             </CardContent>
           </Card>
         </div>
+
+        {/* Recent Demarches */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Dernières démarches</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => navigate("/mes-demarches")}>
+                Voir tout
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {recentDemarches.length === 0 ? <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Aucune démarche pour le moment</p>
+                <p className="text-sm mt-2">Créez votre première démarche pour commencer</p>
+              </div> : <div className="space-y-4">
+                {recentDemarches.map(demarche => {
+              const statusConfig: Record<string, {
+                label: string;
+                color: string;
+                icon: any;
+              }> = {
+                en_saisie: {
+                  label: "En saisie",
+                  color: "text-gray-500",
+                  icon: UserCircle
+                },
+                en_attente: {
+                  label: "En attente",
+                  color: "text-orange-500",
+                  icon: Clock
+                },
+                paye: {
+                  label: "Payée",
+                  color: "text-blue-500",
+                  icon: CheckCircle
+                },
+                valide: {
+                  label: "Validée",
+                  color: "text-green-500",
+                  icon: CheckCircle
+                },
+                finalise: {
+                  label: "Finalisée",
+                  color: "text-primary",
+                  icon: CheckCircle
+                }
+              };
+              const config = statusConfig[demarche.status] || statusConfig.en_attente;
+              const StatusIcon = config.icon;
+              return <div key={demarche.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate(`/demarche/${demarche.id}`)}>
+                    <div className="flex items-center gap-4">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${config.color.includes('blue') ? 'bg-blue-100' : config.color.includes('green') ? 'bg-green-100' : config.color.includes('orange') ? 'bg-orange-100' : 'bg-gray-100'}`}>
+                        <StatusIcon className={`h-5 w-5 ${config.color}`} />
+                      </div>
+                      <div>
+                        <div className="font-medium">{demarche.immatriculation}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {demarche.type === 'CG' ? 'Carte Grise' : demarche.type === 'DA' ? 'Déclaration d\'Achat' : demarche.type === 'DC' ? 'Déclaration de Cession' : demarche.type}
+                        </div>
+                      </div>
+                    </div>
+                    <Badge className={config.color}>{config.label}</Badge>
+                  </div>;
+            })}
+              </div>}
+          </CardContent>
+        </Card>
       </div>
     </div>;
 }

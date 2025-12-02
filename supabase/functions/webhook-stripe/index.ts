@@ -509,6 +509,83 @@ async function handleGuestOrderPayment(
 }
 
 // -----------------------------
+// TOKEN PURCHASE HANDLER
+// -----------------------------
+
+async function handleTokenPurchase(
+  supabase: SupabaseClient,
+  paymentIntent: Stripe.PaymentIntent
+): Promise<void> {
+  const garageId = paymentIntent.metadata?.garage_id;
+  const quantity = parseInt(paymentIntent.metadata?.quantity || "0");
+  
+  if (!garageId || !quantity) {
+    console.log("⚠️ Missing garage_id or quantity in metadata");
+    return;
+  }
+
+  console.log(`📋 Processing token purchase: ${quantity} tokens for garage ${garageId}`);
+
+  // Fetch garage data
+  const { data: garage, error: garageError } = await supabase
+    .from("garages")
+    .select("*")
+    .eq("id", garageId)
+    .single();
+
+  if (garageError || !garage) {
+    console.error("❌ Garage not found:", garageError);
+    return;
+  }
+
+  // Update garage token balance
+  const newBalance = (garage.token_balance || 0) + quantity;
+  const { error: updateError } = await supabase
+    .from("garages")
+    .update({ 
+      token_balance: newBalance,
+      updated_at: new Date().toISOString()
+    })
+    .eq("id", garageId);
+
+  if (updateError) {
+    console.error("❌ Failed to update token balance:", updateError);
+    return;
+  }
+
+  console.log(`✅ Token balance updated: ${newBalance} tokens`);
+
+  // Record token purchase
+  const { error: purchaseError } = await supabase
+    .from("token_purchases")
+    .insert({
+      garage_id: garageId,
+      quantity: quantity,
+      amount: paymentIntent.amount / 100,
+      stripe_payment_id: paymentIntent.id,
+    });
+
+  if (purchaseError) {
+    console.error("❌ Failed to record token purchase:", purchaseError);
+  } else {
+    console.log("✅ Token purchase recorded");
+  }
+
+  // Send confirmation email to garage (optional)
+  const { data: userData } = await supabase.auth.admin.getUserById(garage.user_id);
+  if (userData?.user?.email) {
+    await sendEmail("payment_confirmed", userData.user.email, {
+      prenom: garage.raison_sociale,
+      nom: "",
+      tracking_number: `Achat de ${quantity} jetons`,
+      immatriculation: "-",
+      montant_ttc: (paymentIntent.amount / 100).toFixed(2),
+    });
+    console.log("✅ Token purchase confirmation email sent");
+  }
+}
+
+// -----------------------------
 // RESUBMISSION PAYMENT HANDLER
 // -----------------------------
 
@@ -600,6 +677,10 @@ serve(async (req: Request): Promise<Response> => {
         // Check if it's a resubmission payment
         if (paymentIntent.metadata?.is_resubmission === "true") {
           await handleResubmissionPayment(supabase, paymentIntent);
+        }
+        // Check if it's a token purchase
+        else if (paymentIntent.metadata?.type === "token_purchase") {
+          await handleTokenPurchase(supabase, paymentIntent);
         }
         // Check if it's a demarche payment
         else if (paymentIntent.metadata?.demarche_id) {

@@ -107,6 +107,7 @@ export type Database = {
           montant_ht: number | null
           montant_ttc: number | null
           numero_demarche: string | null
+          paid_with_tokens: boolean | null
           paye: boolean | null
           prix_carte_grise: number | null
           requires_resubmission_payment: boolean | null
@@ -135,6 +136,7 @@ export type Database = {
           montant_ht?: number | null
           montant_ttc?: number | null
           numero_demarche?: string | null
+          paid_with_tokens?: boolean | null
           paye?: boolean | null
           prix_carte_grise?: number | null
           requires_resubmission_payment?: boolean | null
@@ -163,6 +165,7 @@ export type Database = {
           montant_ht?: number | null
           montant_ttc?: number | null
           numero_demarche?: string | null
+          paid_with_tokens?: boolean | null
           paye?: boolean | null
           prix_carte_grise?: number | null
           requires_resubmission_payment?: boolean | null
@@ -388,6 +391,7 @@ export type Database = {
           reseau: string | null
           siret: string
           telephone: string
+          token_balance: number
           unlimited_free_tokens: boolean | null
           updated_at: string
           user_id: string
@@ -407,6 +411,7 @@ export type Database = {
           reseau?: string | null
           siret: string
           telephone: string
+          token_balance?: number
           unlimited_free_tokens?: boolean | null
           updated_at?: string
           user_id: string
@@ -426,6 +431,7 @@ export type Database = {
           reseau?: string | null
           siret?: string
           telephone?: string
+          token_balance?: number
           unlimited_free_tokens?: boolean | null
           updated_at?: string
           user_id?: string
@@ -916,6 +922,74 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "subscriptions_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_pricing: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          ordre: number
+          price: number
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          ordre?: number
+          price: number
+          quantity: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          ordre?: number
+          price?: number
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      token_purchases: {
+        Row: {
+          amount: number
+          created_at: string
+          garage_id: string
+          id: string
+          quantity: number
+          stripe_payment_id: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          garage_id: string
+          id?: string
+          quantity: number
+          stripe_payment_id?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          garage_id?: string
+          id?: string
+          quantity?: number
+          stripe_payment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_purchases_garage_id_fkey"
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
