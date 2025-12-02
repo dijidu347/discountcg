@@ -390,6 +390,7 @@ export default function AcheterJetons() {
                         amount={selectedPack.price}
                         onSuccess={handlePaymentSuccess}
                         onError={handleWalletError}
+                        edgeFunctionName="create-token-payment-intent"
                         metadata={{
                           type: "token_purchase",
                           garage_id: garage.id,

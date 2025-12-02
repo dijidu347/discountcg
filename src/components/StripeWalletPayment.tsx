@@ -12,6 +12,8 @@ interface StripeWalletPaymentProps {
   clientSecret?: string;
   metadata?: Record<string, string>;
   demarcheId?: string;
+  // Allow specifying which edge function to use for creating payment intent
+  edgeFunctionName?: string;
 }
 
 export const StripeWalletPayment = ({ 
@@ -20,7 +22,8 @@ export const StripeWalletPayment = ({
   onError, 
   clientSecret: providedClientSecret,
   metadata, 
-  demarcheId 
+  demarcheId,
+  edgeFunctionName = "create-payment-intent"
 }: StripeWalletPaymentProps) => {
   const stripe = useStripe();
   const [paymentRequest, setPaymentRequest] = useState<any>(null);
@@ -90,9 +93,9 @@ export const StripeWalletPayment = ({
       setIsCreatingIntent(true);
       
       try {
-        console.log("[StripeWallet] Creating payment intent:", { amountInCents, demarcheId, metadata, retryCount });
+        console.log("[StripeWallet] Creating payment intent:", { amountInCents, demarcheId, metadata, retryCount, edgeFunctionName });
         
-        const { data, error } = await supabase.functions.invoke("create-payment-intent", {
+        const { data, error } = await supabase.functions.invoke(edgeFunctionName, {
           body: {
             amount: amountInCents,
             metadata: metadata || {},
@@ -122,7 +125,7 @@ export const StripeWalletPayment = ({
     };
 
     createPaymentIntent();
-  }, [providedClientSecret, amountInCents, metadata, demarcheId, isCreatingIntent, clientSecret, onError, retryCount]);
+  }, [providedClientSecret, amountInCents, metadata, demarcheId, isCreatingIntent, clientSecret, onError, retryCount, edgeFunctionName]);
 
   // Setup PaymentRequest when stripe and clientSecret are ready
   useEffect(() => {
