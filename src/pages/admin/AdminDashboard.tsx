@@ -64,9 +64,9 @@ export default function AdminDashboard() {
       .from('paiements')
       .select('montant, status');
 
-    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit)
+    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées
     const demarchesATraiter = demarches?.filter(d => 
-      d.is_draft === false && (d.paye === true || d.is_free_token === true)
+      d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise'
     ) || [];
 
     // Démarches non vues par l'admin
