@@ -44,6 +44,8 @@ import ManagePricingConfig from "./pages/admin/ManagePricingConfig";
 import TestEmail from "./pages/admin/TestEmail";
 import AcheterJetons from "./pages/AcheterJetons";
 import PaiementRecharge from "./pages/PaiementRecharge";
+import PaiementRechargeSucces from "./pages/PaiementRechargeSucces";
+import PaiementSoldeSucces from "./pages/PaiementSoldeSucces";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -81,6 +83,8 @@ const App = () => (
             <Route path="/garage-settings" element={<GarageSettings />} />
             <Route path="/acheter-jetons" element={<AcheterJetons />} />
             <Route path="/paiement-recharge" element={<PaiementRecharge />} />
+            <Route path="/paiement-recharge-succes" element={<PaiementRechargeSucces />} />
+            <Route path="/paiement-solde-succes/:demarcheId" element={<PaiementSoldeSucces />} />
             <Route path="/support" element={<Support />} />
             <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />

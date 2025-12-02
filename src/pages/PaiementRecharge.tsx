@@ -205,12 +205,34 @@ export default function PaiementRecharge() {
   };
 
   const handlePaymentSuccess = async () => {
+    // Envoyer l'email de confirmation
+    try {
+      const newBalance = (garage?.token_balance || 0) + creditAmount;
+      
+      await supabase.functions.invoke("send-email", {
+        body: {
+          type: "recharge_confirmed",
+          to: garage?.email,
+          data: {
+            garage_name: garage?.raison_sociale,
+            amount: creditAmount,
+            price: price,
+            new_balance: newBalance,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("Error sending recharge email:", error);
+    }
+
     toast({
       title: "✅ Recharge effectuée !",
       description: `${creditAmount}€ ont été ajoutés à votre solde.`,
       variant: "success" as any,
     });
-    navigate("/dashboard");
+    
+    const newBalance = (garage?.token_balance || 0) + creditAmount;
+    navigate(`/paiement-recharge-succes?amount=${creditAmount}&balance=${newBalance}`);
   };
 
   const handleLogout = async () => {
