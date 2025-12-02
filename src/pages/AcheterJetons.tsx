@@ -4,19 +4,18 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Euro, CheckCircle, Loader2, CreditCard, Wallet, Percent } from "lucide-react";
+import { ArrowLeft, Euro, CheckCircle, Loader2, CreditCard, Wallet, Percent, LogOut, Settings, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { formatPrice } from "@/lib/utils";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface CreditPack {
   id: string;
-  quantity: number; // Montant crédité en euros
-  price: number; // Prix à payer
+  quantity: number;
+  price: number;
   description: string;
   ordre: number;
 }
@@ -47,13 +46,12 @@ const StripeCardForm = ({
     setIsProcessing(true);
 
     try {
-      // Create payment intent pour le solde
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         "create-token-payment-intent",
         {
           body: {
             amount: Math.round(amount * 100),
-            quantity: creditAmount, // Montant à créditer
+            quantity: creditAmount,
             garage_id: garageId,
           },
         }
@@ -137,7 +135,7 @@ const StripeCardForm = ({
 };
 
 export default function AcheterJetons() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
@@ -147,6 +145,7 @@ export default function AcheterJetons() {
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet" | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -159,8 +158,20 @@ export default function AcheterJetons() {
       loadGarageData();
       loadCreditPacks();
       initStripe();
+      checkAdmin();
     }
   }, [user]);
+
+  const checkAdmin = async () => {
+    if (!user) return;
+    const { data: roleData } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    setIsAdmin(!!roleData);
+  };
 
   const loadGarageData = async () => {
     if (!user) return;
@@ -173,11 +184,6 @@ export default function AcheterJetons() {
 
     if (error) {
       console.error("Error loading garage:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les données du garage.",
-        variant: "destructive",
-      });
       return;
     }
 
@@ -194,11 +200,6 @@ export default function AcheterJetons() {
 
     if (error) {
       console.error("Error loading credit packs:", error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de charger les packs.",
-        variant: "destructive",
-      });
     } else {
       setCreditPacks(data || []);
     }
@@ -225,7 +226,7 @@ export default function AcheterJetons() {
     setShowPaymentDialog(false);
     setPaymentMethod(null);
     setSelectedPack(null);
-    loadGarageData(); // Reload pour mettre à jour le solde
+    loadGarageData();
     navigate("/dashboard");
   };
 
@@ -235,6 +236,11 @@ export default function AcheterJetons() {
       description: error,
       variant: "destructive",
     });
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/");
   };
 
   const getDiscount = (creditAmount: number, price: number) => {
@@ -251,9 +257,49 @@ export default function AcheterJetons() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Navbar />
-      <main className="flex-1 container mx-auto px-4 py-8 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      {/* Header - Same as Dashboard */}
+      <div className="bg-card border-b sticky top-0 z-10 shadow-sm">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                DiscountCarteGrise
+              </h1>
+              <nav className="hidden md:flex items-center gap-2">
+                <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")}>
+                  Tableau de bord
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/mes-demarches")}>
+                  Mes démarches
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/mes-factures")}>
+                  <Receipt className="mr-2 h-4 w-4" />
+                  Mes factures
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/support")}>
+                  Support
+                </Button>
+                {isAdmin && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/admin")}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    Administration
+                  </Button>
+                )}
+              </nav>
+            </div>
+            <div className="flex items-center gap-2">
+              {garage && <NotificationBell garageId={garage.id} />}
+              <Button variant="outline" size="sm" onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
         <Button
           variant="ghost"
           onClick={() => navigate("/dashboard")}
@@ -443,8 +489,7 @@ export default function AcheterJetons() {
             </Card>
           </div>
         )}
-      </main>
-      <Footer />
+      </div>
     </div>
   );
 }
