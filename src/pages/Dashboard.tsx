@@ -198,7 +198,7 @@ export default function Dashboard() {
           </Alert>
         )}
 
-        {/* Token Banner */}
+        {/* Solde Banner */}
         {garage && (
           <Card className="mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-primary/20">
             <CardContent className="py-4">
@@ -208,8 +208,8 @@ export default function Dashboard() {
                     <Coins className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Solde de jetons</p>
-                    <p className="text-3xl font-bold">{garage.token_balance || 0} <span className="text-base font-normal text-muted-foreground">jetons</span></p>
+                    <p className="text-sm text-muted-foreground">Solde disponible</p>
+                    <p className="text-3xl font-bold">{garage.token_balance || 0}€</p>
                   </div>
                 </div>
                 <Button onClick={() => navigate("/acheter-jetons")} variant="default">
@@ -229,7 +229,6 @@ export default function Dashboard() {
               const isFreeTokenEligible = garage?.free_token_available && (action.code === 'DA' || action.code === 'DC');
               const actionColor = action.couleur.startsWith('#') ? action.couleur : '#3b82f6';
               const priceDisplay = action.code === 'CG' ? `${action.prix}€ + CG` : `${action.prix}€`;
-              const tokenCount = Math.ceil(action.prix / 5);
 
               return (
                 <Card
@@ -261,8 +260,7 @@ export default function Dashboard() {
                       </div>
                       {!isFreeTokenEligible && (
                         <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                          <Coins className="w-3 h-3" />
-                          <span>ou {tokenCount} jeton{tokenCount > 1 ? 's' : ''}</span>
+                          <span>Payable avec le solde</span>
                         </div>
                       )}
                     </div>
