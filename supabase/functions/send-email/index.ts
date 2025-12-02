@@ -454,6 +454,66 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // === RECHARGE & BALANCE PAYMENT EMAILS ===
+    case "recharge_confirmed":
+      return {
+        subject: `💰 Recharge confirmée - ${data.amount}€ ajoutés à votre solde`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Recharge confirmée !</h1>
+            <p>Bonjour ${data.garage_name},</p>
+            <p>Votre recharge de solde a été effectuée avec succès.</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>💰 Montant rechargé :</strong> ${data.amount} €</p>
+              <p style="margin: 8px 0;"><strong>💳 Montant payé :</strong> ${data.price} €</p>
+              <p style="margin: 8px 0;"><strong>📊 Nouveau solde :</strong> ${data.new_balance} €</p>
+            </div>
+
+            <p>Vous pouvez utiliser ce solde pour payer vos prochaines démarches.</p>
+
+            <a href="https://discountcg.fr/dashboard" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accéder au tableau de bord
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "balance_payment_confirmed":
+      return {
+        subject: `✅ Paiement par solde confirmé - ${data.demarche_id}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Paiement validé !</h1>
+            <p>Bonjour ${data.garage_name},</p>
+            <p>Votre démarche a été payée avec succès en utilisant votre solde.</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Type :</strong> ${data.type}</p>
+              <p style="margin: 8px 0;"><strong>Référence :</strong> ${data.demarche_id}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+            </div>
+
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>💰 Montant débité :</strong> ${data.amount} €</p>
+              <p style="margin: 8px 0;"><strong>📊 Solde restant :</strong> ${data.new_balance} €</p>
+            </div>
+
+            <p>Le traitement de votre démarche va commencer.</p>
+
+            <a href="https://discountcg.fr/mes-demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir mes démarches
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }

@@ -117,6 +117,9 @@ const PaiementDemarche = () => {
   const [trackingServices, setTrackingServices] = useState<any[]>([]);
   const [actionRapide, setActionRapide] = useState<any>(null);
   const [stripePromise, setStripePromise] = useState<any>(null);
+  const [garage, setGarage] = useState<any>(null);
+  const [showBalanceConfirm, setShowBalanceConfirm] = useState(false);
+  const [isProcessingBalance, setIsProcessingBalance] = useState(false);
   
   // Montant calculé (sans TVA)
   const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null);
@@ -159,6 +162,17 @@ const PaiementDemarche = () => {
       }
 
       setDemarche(demarcheData);
+
+      // Charger les infos du garage pour le solde
+      const { data: garageData } = await supabase
+        .from("garages")
+        .select("*")
+        .eq("id", demarcheData.garage_id)
+        .single();
+
+      if (garageData) {
+        setGarage(garageData);
+      }
 
       // Charger tous les services de suivi
       const { data: trackingData } = await supabase
@@ -223,6 +237,100 @@ const PaiementDemarche = () => {
   const handlePaymentCalculated = useCallback((result: PaymentCalculationResult) => {
     setCalculatedTotal(result.totalTTC);
   }, []);
+
+  // Vérifier si le paiement par solde est possible
+  const canPayWithBalance = garage && calculatedTotal !== null && garage.token_balance >= calculatedTotal;
+
+  // Gérer le paiement par solde
+  const handleBalancePayment = async () => {
+    if (!garage || !demarcheId || calculatedTotal === null) return;
+
+    setIsProcessingBalance(true);
+
+    try {
+      const newBalance = garage.token_balance - calculatedTotal;
+
+      // Déduire du solde
+      const { error: balanceError } = await supabase
+        .from("garages")
+        .update({ token_balance: newBalance })
+        .eq("id", garage.id);
+
+      if (balanceError) throw balanceError;
+
+      // Marquer la démarche comme payée
+      const { error: demarcheError } = await supabase
+        .from("demarches")
+        .update({
+          paye: true,
+          paid_with_tokens: true,
+          status: 'en_attente',
+          is_draft: false
+        })
+        .eq("id", demarcheId);
+
+      if (demarcheError) throw demarcheError;
+
+      // Envoyer les emails
+      try {
+        // Email au garage
+        await supabase.functions.invoke("send-email", {
+          body: {
+            type: "balance_payment_confirmed",
+            to: garage.email,
+            data: {
+              garage_name: garage.raison_sociale,
+              demarche_id: demarche.numero_demarche,
+              immatriculation: demarche.immatriculation,
+              amount: calculatedTotal,
+              new_balance: newBalance,
+              type: demarche.type,
+            },
+          },
+        });
+
+        // Emails aux admins
+        const adminEmails = ["contact@discountcartegrise.fr", "mathieugaillac4@gmail.com"];
+        for (const adminEmail of adminEmails) {
+          await new Promise(resolve => setTimeout(resolve, 600));
+          await supabase.functions.invoke("send-email", {
+            body: {
+              type: "admin_new_demarche",
+              to: adminEmail,
+              data: {
+                type: demarche.type,
+                reference: demarche.numero_demarche,
+                immatriculation: demarche.immatriculation,
+                client_name: garage.raison_sociale,
+                montant_ttc: calculatedTotal,
+                is_free_token: false,
+              },
+            },
+          });
+        }
+      } catch (emailError) {
+        console.error("Error sending emails:", emailError);
+      }
+
+      toast({
+        title: "✅ Paiement validé !",
+        description: "Votre démarche a été payée avec votre solde.",
+        variant: "success" as any,
+      });
+
+      navigate(`/paiement-solde-succes/${demarcheId}?amount=${calculatedTotal}&balance=${newBalance}`);
+    } catch (error: any) {
+      console.error("Balance payment error:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du paiement",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessingBalance(false);
+      setShowBalanceConfirm(false);
+    }
+  };
 
   const handlePaymentSuccess = async () => {
     try {
@@ -297,6 +405,88 @@ const PaiementDemarche = () => {
                 <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* 0. Paiement par solde */}
+                {garage && garage.token_balance > 0 && (
+                  <div className={`border-2 rounded-lg p-6 space-y-4 ${canPayWithBalance ? 'border-green-500 bg-green-50 dark:bg-green-950/30' : 'border-muted'}`}>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-base">Payer avec mon solde</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Solde disponible : <span className="font-bold text-green-600">{formatPrice(garage.token_balance)}€</span>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {canPayWithBalance ? (
+                      showBalanceConfirm ? (
+                        <div className="space-y-3 bg-background p-4 rounded-lg border">
+                          <p className="text-sm font-medium">
+                            Souhaitez-vous utiliser votre solde pour payer cette démarche ?
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            <span className="font-bold">{formatPrice(finalAmount)}€</span> seront débités de votre solde.
+                          </p>
+                          <div className="flex gap-3">
+                            <Button 
+                              onClick={handleBalancePayment}
+                              disabled={isProcessingBalance}
+                              className="flex-1 bg-green-600 hover:bg-green-700"
+                            >
+                              {isProcessingBalance ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                  Traitement...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Oui, payer avec mon solde
+                                </>
+                              )}
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              onClick={() => setShowBalanceConfirm(false)}
+                              disabled={isProcessingBalance}
+                            >
+                              Non, autre moyen
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button 
+                          onClick={() => setShowBalanceConfirm(true)}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          size="lg"
+                        >
+                          <CheckCircle className="w-5 h-5 mr-2" />
+                          Utiliser mon solde ({formatPrice(finalAmount)}€)
+                        </Button>
+                      )
+                    ) : (
+                      <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                        ⚠️ Solde insuffisant. Il vous manque <span className="font-bold">{formatPrice(finalAmount - garage.token_balance)}€</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {garage && garage.token_balance > 0 && (
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Ou payez par</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. Formulaire de carte Stripe */}
                 <div className="space-y-3">
                   <h3 className="font-semibold text-base">Carte bancaire</h3>
