@@ -112,9 +112,17 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                DiscountCarteGrise
-              </h1>
+              {user?.email === 'test@test.com' ? (
+                <img 
+                  src="/assets/auto-transfert-logo.png" 
+                  alt="Auto Transfert" 
+                  className="h-10 w-auto"
+                />
+              ) : (
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  DiscountCarteGrise
+                </h1>
+              )}
               <nav className="hidden md:flex items-center gap-2">
                 <Button variant="default" size="sm">
                   Tableau de bord
