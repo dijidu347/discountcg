@@ -4,11 +4,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Euro, CheckCircle, Loader2, CreditCard, Wallet, Percent, LogOut, Settings, Receipt } from "lucide-react";
+import { ArrowLeft, Euro, Loader2, Percent, LogOut, Settings, Receipt } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { formatPrice } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
 
@@ -20,131 +17,13 @@ interface CreditPack {
   ordre: number;
 }
 
-const StripeCardForm = ({ 
-  amount, 
-  creditAmount, 
-  garageId, 
-  onSuccess 
-}: { 
-  amount: number; 
-  creditAmount: number;
-  garageId: string;
-  onSuccess: () => void;
-}) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
-        "create-token-payment-intent",
-        {
-          body: {
-            amount: Math.round(amount * 100),
-            quantity: creditAmount,
-            garage_id: garageId,
-          },
-        }
-      );
-
-      if (paymentError) throw paymentError;
-
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error("Élément de carte introuvable");
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(
-        paymentData.clientSecret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (paymentIntent?.status === "succeeded") {
-        toast({
-          title: "✅ Paiement accepté !",
-          description: `${creditAmount}€ ont été ajoutés à votre solde.`,
-          variant: "success" as any,
-        });
-        onSuccess();
-      }
-    } catch (error: any) {
-      console.error("Payment error:", error);
-      toast({
-        title: "❌ Paiement refusé",
-        description: error.message || "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 border rounded-lg bg-background">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: "16px",
-                color: "hsl(var(--foreground))",
-                "::placeholder": {
-                  color: "hsl(var(--muted-foreground))",
-                },
-              },
-            },
-          }}
-        />
-      </div>
-      <Button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        size="lg"
-        className="w-full text-lg h-12"
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Traitement en cours...
-          </>
-        ) : (
-          <>
-            <CheckCircle className="w-5 h-5 mr-2" />
-            Confirmer le paiement
-          </>
-        )}
-      </Button>
-    </form>
-  );
-};
-
 export default function AcheterJetons() {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
   const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
-  const [selectedPack, setSelectedPack] = useState<CreditPack | null>(null);
   const [loading, setLoading] = useState(true);
-  const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "wallet" | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
@@ -157,7 +36,6 @@ export default function AcheterJetons() {
     if (user) {
       loadGarageData();
       loadCreditPacks();
-      initStripe();
       checkAdmin();
     }
   }, [user]);
@@ -206,36 +84,9 @@ export default function AcheterJetons() {
     setLoading(false);
   };
 
-  const initStripe = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("get-stripe-key");
-      if (error) throw error;
-      const stripe = await loadStripe(data.publishableKey);
-      setStripePromise(Promise.resolve(stripe));
-    } catch (error) {
-      console.error("Error initializing Stripe:", error);
-    }
-  };
-
   const handleSelectPack = (pack: CreditPack) => {
-    setSelectedPack(pack);
-    setShowPaymentDialog(true);
-  };
-
-  const handlePaymentSuccess = () => {
-    setShowPaymentDialog(false);
-    setPaymentMethod(null);
-    setSelectedPack(null);
-    loadGarageData();
-    navigate("/dashboard");
-  };
-
-  const handleWalletError = (error: string) => {
-    toast({
-      title: "❌ Erreur de paiement",
-      description: error,
-      variant: "destructive",
-    });
+    // Redirect to payment page with pack details
+    navigate(`/paiement-recharge?amount=${pack.quantity}&price=${pack.price}`);
   };
 
   const handleLogout = async () => {
@@ -389,106 +240,6 @@ export default function AcheterJetons() {
             );
           })}
         </div>
-
-        {/* Payment Dialog */}
-        {showPaymentDialog && selectedPack && stripePromise && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <CardHeader>
-                <CardTitle>Recharger {selectedPack.quantity}€</CardTitle>
-                <CardDescription>
-                  Montant à payer : {formatPrice(selectedPack.price)}€ (économisez {formatPrice(selectedPack.quantity - selectedPack.price)}€)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {!paymentMethod ? (
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      Sélectionnez votre méthode de paiement :
-                    </p>
-                    <div className="grid gap-4">
-                      <Button
-                        onClick={() => setPaymentMethod("wallet")}
-                        variant="outline"
-                        size="lg"
-                        className="w-full h-16 text-left justify-start"
-                      >
-                        <Wallet className="w-5 h-5 mr-3" />
-                        <div>
-                          <div className="font-semibold">Apple Pay / Google Pay</div>
-                          <div className="text-xs text-muted-foreground">Paiement rapide avec votre wallet</div>
-                        </div>
-                      </Button>
-                      <Button
-                        onClick={() => setPaymentMethod("card")}
-                        variant="outline"
-                        size="lg"
-                        className="w-full h-16 text-left justify-start"
-                      >
-                        <CreditCard className="w-5 h-5 mr-3" />
-                        <div>
-                          <div className="font-semibold">Carte bancaire</div>
-                          <div className="text-xs text-muted-foreground">Visa, Mastercard, etc.</div>
-                        </div>
-                      </Button>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setShowPaymentDialog(false);
-                        setSelectedPack(null);
-                      }}
-                      className="w-full"
-                    >
-                      Annuler
-                    </Button>
-                  </div>
-                ) : paymentMethod === "wallet" && garage ? (
-                  <Elements stripe={stripePromise}>
-                    <div className="space-y-4">
-                      <StripeWalletPayment
-                        amount={selectedPack.price}
-                        onSuccess={handlePaymentSuccess}
-                        onError={handleWalletError}
-                        edgeFunctionName="create-token-payment-intent"
-                        metadata={{
-                          type: "token_purchase",
-                          garage_id: garage.id,
-                          quantity: selectedPack.quantity.toString(),
-                        }}
-                      />
-                      <Button
-                        variant="ghost"
-                        onClick={() => setPaymentMethod(null)}
-                        className="w-full"
-                      >
-                        Choisir une autre méthode
-                      </Button>
-                    </div>
-                  </Elements>
-                ) : (
-                  <Elements stripe={stripePromise}>
-                    <div className="space-y-4">
-                      <StripeCardForm
-                        amount={selectedPack.price}
-                        creditAmount={selectedPack.quantity}
-                        garageId={garage?.id}
-                        onSuccess={handlePaymentSuccess}
-                      />
-                      <Button
-                        variant="ghost"
-                        onClick={() => setPaymentMethod(null)}
-                        className="w-full"
-                      >
-                        Choisir une autre méthode
-                      </Button>
-                    </div>
-                  </Elements>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
     </div>
   );
