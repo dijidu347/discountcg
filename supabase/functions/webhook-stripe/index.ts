@@ -572,14 +572,13 @@ async function handleTokenPurchase(
   }
 
   // Send confirmation email to garage
-  const { data: userData } = await supabase.auth.admin.getUserById(garage.user_id);
-  if (userData?.user?.email) {
-    await sendEmail("payment_confirmed", userData.user.email, {
-      prenom: garage.raison_sociale,
-      nom: "",
-      tracking_number: `Recharge de ${creditAmount}€`,
-      immatriculation: "-",
-      montant_ttc: (paymentIntent.amount / 100).toFixed(2),
+  if (garage.email) {
+    const pricePaid = paymentIntent.amount / 100;
+    await sendEmail("recharge_confirmed", garage.email, {
+      garage_name: garage.raison_sociale,
+      amount: creditAmount,
+      price: pricePaid,
+      new_balance: newBalance,
     });
     console.log("✅ Balance recharge confirmation email sent");
   }
