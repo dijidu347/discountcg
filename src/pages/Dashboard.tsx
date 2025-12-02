@@ -229,6 +229,7 @@ export default function Dashboard() {
               const isFreeTokenEligible = garage?.free_token_available && (action.code === 'DA' || action.code === 'DC');
               const actionColor = action.couleur.startsWith('#') ? action.couleur : '#3b82f6';
               const priceDisplay = action.code === 'CG' ? `${action.prix}€ + CG` : `${action.prix}€`;
+              const tokenCount = Math.ceil(action.prix / 5);
 
               return (
                 <Card
@@ -250,11 +251,19 @@ export default function Dashboard() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="text-2xl font-bold" style={{ color: actionColor }}>
-                      {isFreeTokenEligible ? (
-                        <span className="text-green-500">Offert</span>
-                      ) : (
-                        priceDisplay
+                    <div>
+                      <div className="text-2xl font-bold" style={{ color: actionColor }}>
+                        {isFreeTokenEligible ? (
+                          <span className="text-green-500">Offert</span>
+                        ) : (
+                          priceDisplay
+                        )}
+                      </div>
+                      {!isFreeTokenEligible && (
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
+                          <Coins className="w-3 h-3" />
+                          <span>ou {tokenCount} jeton{tokenCount > 1 ? 's' : ''}</span>
+                        </div>
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{action.description}</p>

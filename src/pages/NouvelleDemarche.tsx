@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileCheck, Plus, Gift, FileText, X, Download } from "lucide-react";
+import { ArrowLeft, FileCheck, Plus, Gift, FileText, X, Download, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -50,6 +50,8 @@ export default function NouvelleDemarche() {
   const [trackingServicePrice, setTrackingServicePrice] = useState<number>(0);
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
+  const [tokenBalance, setTokenBalance] = useState<number>(0);
+  const [payingWithTokens, setPayingWithTokens] = useState(false);
   const demarcheIdRef = useRef<string | null>(null);
   const paymentCompletedRef = useRef(false);
   const [formData, setFormData] = useState({
@@ -206,6 +208,7 @@ export default function NouvelleDemarche() {
     if (data) {
       setGarage(data);
       setFreeTokenAvailable(data.free_token_available === true || data.unlimited_free_tokens === true);
+      setTokenBalance(data.token_balance || 0);
     }
   };
 
@@ -309,6 +312,74 @@ export default function NouvelleDemarche() {
     const basePrice = getFraisDossier();
     const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
     return basePrice + vehiclePrice + trackingServicePrice;
+  };
+
+  // Calcul du coût en jetons (1 jeton = 5€, arrondi au supérieur)
+  const getTokenCost = () => {
+    // Pour les CG, le calcul est basé sur les frais de dossier uniquement (pas la carte grise)
+    const fraisToConvert = getFraisDossier() + trackingServicePrice;
+    return Math.ceil(fraisToConvert / 5);
+  };
+
+  const canPayWithTokens = () => {
+    const tokenCost = getTokenCost();
+    return tokenCost > 0 && tokenBalance >= tokenCost;
+  };
+
+  const handleTokenPayment = async () => {
+    if (!demarcheId || !garage) return;
+    
+    const tokenCost = getTokenCost();
+    
+    if (tokenBalance < tokenCost) {
+      toast({
+        title: "Solde insuffisant",
+        description: `Vous avez ${tokenBalance} jeton(s), mais ${tokenCost} sont nécessaires.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPayingWithTokens(true);
+
+    try {
+      // Déduire les jetons du solde
+      const newBalance = tokenBalance - tokenCost;
+      const { error: updateError } = await supabase
+        .from('garages')
+        .update({ token_balance: newBalance })
+        .eq('id', garage.id);
+
+      if (updateError) throw updateError;
+
+      // Marquer la démarche comme payée avec jetons
+      await supabase
+        .from('demarches')
+        .update({
+          paye: true,
+          paid_with_tokens: true,
+          is_draft: false,
+          documents_complets: true,
+        })
+        .eq('id', demarcheId);
+
+      // Mettre à jour le solde local
+      setTokenBalance(newBalance);
+
+      // Fermer le dialog et traiter comme un succès
+      setShowPaymentDialog(false);
+      await handlePaymentSuccess();
+
+    } catch (error) {
+      console.error("Error processing token payment:", error);
+      toast({
+        title: "Erreur",
+        description: "Une erreur est survenue lors du paiement par jetons",
+        variant: "destructive"
+      });
+    } finally {
+      setPayingWithTokens(false);
+    }
   };
 
   const handleTrackingServiceChange = (price: number) => {
@@ -839,14 +910,57 @@ export default function NouvelleDemarche() {
                       Montant total : {formatPrice(getTotalPrice())}€
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="py-4">
+                  <div className="py-4 space-y-6">
+                    {/* Token Payment Option */}
+                    {!isFreeTokenEligible && getTokenCost() > 0 && (
+                      <Card className={`border-2 ${canPayWithTokens() ? 'border-primary bg-primary/5' : 'border-muted bg-muted/30'}`}>
+                        <CardContent className="pt-4">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+                                <Coins className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-semibold">Payer avec vos jetons</p>
+                                <p className="text-sm text-muted-foreground">
+                                  Coût : {getTokenCost()} jeton{getTokenCost() > 1 ? 's' : ''} • Votre solde : {tokenBalance} jeton{tokenBalance > 1 ? 's' : ''}
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              onClick={handleTokenPayment}
+                              disabled={!canPayWithTokens() || payingWithTokens}
+                              className="bg-primary hover:bg-primary/90"
+                            >
+                              {payingWithTokens ? 'Paiement...' : canPayWithTokens() ? 'Utiliser mes jetons' : 'Solde insuffisant'}
+                            </Button>
+                          </div>
+                          {!canPayWithTokens() && tokenBalance > 0 && (
+                            <p className="text-sm text-destructive mt-2">
+                              Il vous manque {getTokenCost() - tokenBalance} jeton{getTokenCost() - tokenBalance > 1 ? 's' : ''} pour cette démarche.
+                            </p>
+                          )}
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {/* Stripe Payment Option */}
                     {demarcheId && (
-                      <StripePayment
-                        demarcheId={demarcheId}
-                        amount={getTotalPrice()}
-                        onSuccess={handlePaymentSuccess}
-                        onCancel={handlePaymentCancel}
-                      />
+                      <div>
+                        {!isFreeTokenEligible && getTokenCost() > 0 && (
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="flex-1 h-px bg-border"></div>
+                            <span className="text-sm text-muted-foreground">ou</span>
+                            <div className="flex-1 h-px bg-border"></div>
+                          </div>
+                        )}
+                        <StripePayment
+                          demarcheId={demarcheId}
+                          amount={getTotalPrice()}
+                          onSuccess={handlePaymentSuccess}
+                          onCancel={handlePaymentCancel}
+                        />
+                      </div>
                     )}
                   </div>
                 </DialogContent>
