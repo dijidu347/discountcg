@@ -517,14 +517,14 @@ async function handleTokenPurchase(
   paymentIntent: Stripe.PaymentIntent
 ): Promise<void> {
   const garageId = paymentIntent.metadata?.garage_id;
-  const quantity = parseInt(paymentIntent.metadata?.quantity || "0");
+  const creditAmount = parseInt(paymentIntent.metadata?.quantity || "0"); // Montant à créditer en euros
   
-  if (!garageId || !quantity) {
+  if (!garageId || !creditAmount) {
     console.log("⚠️ Missing garage_id or quantity in metadata");
     return;
   }
 
-  console.log(`📋 Processing token purchase: ${quantity} tokens for garage ${garageId}`);
+  console.log(`📋 Processing balance recharge: ${creditAmount}€ for garage ${garageId}`);
 
   // Fetch garage data
   const { data: garage, error: garageError } = await supabase
@@ -538,8 +538,8 @@ async function handleTokenPurchase(
     return;
   }
 
-  // Update garage token balance
-  const newBalance = (garage.token_balance || 0) + quantity;
+  // Update garage balance (token_balance stores euros now)
+  const newBalance = (garage.token_balance || 0) + creditAmount;
   const { error: updateError } = await supabase
     .from("garages")
     .update({ 
@@ -549,39 +549,39 @@ async function handleTokenPurchase(
     .eq("id", garageId);
 
   if (updateError) {
-    console.error("❌ Failed to update token balance:", updateError);
+    console.error("❌ Failed to update balance:", updateError);
     return;
   }
 
-  console.log(`✅ Token balance updated: ${newBalance} tokens`);
+  console.log(`✅ Balance updated: ${newBalance}€`);
 
-  // Record token purchase
+  // Record purchase
   const { error: purchaseError } = await supabase
     .from("token_purchases")
     .insert({
       garage_id: garageId,
-      quantity: quantity,
+      quantity: creditAmount,
       amount: paymentIntent.amount / 100,
       stripe_payment_id: paymentIntent.id,
     });
 
   if (purchaseError) {
-    console.error("❌ Failed to record token purchase:", purchaseError);
+    console.error("❌ Failed to record purchase:", purchaseError);
   } else {
-    console.log("✅ Token purchase recorded");
+    console.log("✅ Balance recharge recorded");
   }
 
-  // Send confirmation email to garage (optional)
+  // Send confirmation email to garage
   const { data: userData } = await supabase.auth.admin.getUserById(garage.user_id);
   if (userData?.user?.email) {
     await sendEmail("payment_confirmed", userData.user.email, {
       prenom: garage.raison_sociale,
       nom: "",
-      tracking_number: `Achat de ${quantity} jetons`,
+      tracking_number: `Recharge de ${creditAmount}€`,
       immatriculation: "-",
       montant_ttc: (paymentIntent.amount / 100).toFixed(2),
     });
-    console.log("✅ Token purchase confirmation email sent");
+    console.log("✅ Balance recharge confirmation email sent");
   }
 }
 

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Coins, CheckCircle, Loader2, CreditCard, Wallet } from "lucide-react";
+import { ArrowLeft, Euro, CheckCircle, Loader2, CreditCard, Wallet, Percent } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -13,22 +13,22 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { formatPrice } from "@/lib/utils";
 
-interface TokenPack {
+interface CreditPack {
   id: string;
-  quantity: number;
-  price: number;
+  quantity: number; // Montant crédité en euros
+  price: number; // Prix à payer
   description: string;
   ordre: number;
 }
 
 const StripeCardForm = ({ 
   amount, 
-  quantity, 
+  creditAmount, 
   garageId, 
   onSuccess 
 }: { 
   amount: number; 
-  quantity: number;
+  creditAmount: number;
   garageId: string;
   onSuccess: () => void;
 }) => {
@@ -47,13 +47,13 @@ const StripeCardForm = ({
     setIsProcessing(true);
 
     try {
-      // Create payment intent pour les jetons
+      // Create payment intent pour le solde
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         "create-token-payment-intent",
         {
           body: {
             amount: Math.round(amount * 100),
-            quantity,
+            quantity: creditAmount, // Montant à créditer
             garage_id: garageId,
           },
         }
@@ -80,7 +80,7 @@ const StripeCardForm = ({
       if (paymentIntent?.status === "succeeded") {
         toast({
           title: "✅ Paiement accepté !",
-          description: `${quantity} jetons ont été ajoutés à votre compte.`,
+          description: `${creditAmount}€ ont été ajoutés à votre solde.`,
           variant: "success" as any,
         });
         onSuccess();
@@ -141,8 +141,8 @@ export default function AcheterJetons() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
-  const [tokenPacks, setTokenPacks] = useState<TokenPack[]>([]);
-  const [selectedPack, setSelectedPack] = useState<TokenPack | null>(null);
+  const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
+  const [selectedPack, setSelectedPack] = useState<CreditPack | null>(null);
   const [loading, setLoading] = useState(true);
   const [stripePromise, setStripePromise] = useState<Promise<any> | null>(null);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -157,7 +157,7 @@ export default function AcheterJetons() {
   useEffect(() => {
     if (user) {
       loadGarageData();
-      loadTokenPacks();
+      loadCreditPacks();
       initStripe();
     }
   }, [user]);
@@ -184,7 +184,7 @@ export default function AcheterJetons() {
     setGarage(garageData);
   };
 
-  const loadTokenPacks = async () => {
+  const loadCreditPacks = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("token_pricing")
@@ -193,14 +193,14 @@ export default function AcheterJetons() {
       .order("ordre", { ascending: true });
 
     if (error) {
-      console.error("Error loading token packs:", error);
+      console.error("Error loading credit packs:", error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les packs de jetons.",
+        description: "Impossible de charger les packs.",
         variant: "destructive",
       });
     } else {
-      setTokenPacks(data || []);
+      setCreditPacks(data || []);
     }
     setLoading(false);
   };
@@ -216,7 +216,7 @@ export default function AcheterJetons() {
     }
   };
 
-  const handleSelectPack = (pack: TokenPack) => {
+  const handleSelectPack = (pack: CreditPack) => {
     setSelectedPack(pack);
     setShowPaymentDialog(true);
   };
@@ -235,6 +235,11 @@ export default function AcheterJetons() {
       description: error,
       variant: "destructive",
     });
+  };
+
+  const getDiscount = (creditAmount: number, price: number) => {
+    const discount = ((creditAmount - price) / creditAmount) * 100;
+    return Math.round(discount);
   };
 
   if (authLoading || loading) {
@@ -260,11 +265,11 @@ export default function AcheterJetons() {
 
         <div className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Coins className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Acheter des jetons</h1>
+            <Euro className="w-8 h-8 text-primary" />
+            <h1 className="text-3xl font-bold">Recharger mon compte</h1>
           </div>
           <p className="text-muted-foreground">
-            Rechargez votre compte en jetons pour faciliter vos démarches
+            Rechargez votre solde et profitez de remises exclusives
           </p>
         </div>
 
@@ -274,11 +279,11 @@ export default function AcheterJetons() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Coins className="w-6 h-6 text-primary" />
+                    <Euro className="w-6 h-6 text-primary" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Solde actuel</p>
-                    <p className="text-2xl font-bold">{garage.token_balance || 0} jetons</p>
+                    <p className="text-2xl font-bold">{formatPrice(garage.token_balance || 0)}€</p>
                   </div>
                 </div>
               </div>
@@ -287,9 +292,9 @@ export default function AcheterJetons() {
         )}
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {tokenPacks.map((pack) => {
-            const pricePerToken = pack.price / pack.quantity;
-            const isPopular = pack.quantity === 100;
+          {creditPacks.map((pack) => {
+            const discount = getDiscount(pack.quantity, pack.price);
+            const isPopular = pack.quantity === 200;
 
             return (
               <Card 
@@ -301,19 +306,28 @@ export default function AcheterJetons() {
                     Populaire
                   </div>
                 )}
-                <CardHeader>
+                <div className="absolute top-3 right-3">
+                  <div className="flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                    <Percent className="w-3 h-3" />
+                    -{discount}%
+                  </div>
+                </div>
+                <CardHeader className="pt-10">
                   <CardTitle className="flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-primary" />
-                    {pack.quantity} jetons
+                    <Euro className="w-5 h-5 text-primary" />
+                    {pack.quantity}€ de crédit
                   </CardTitle>
                   <CardDescription>{pack.description}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-3xl font-bold">{formatPrice(pack.price)}€</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {formatPrice(pricePerToken)}€ par jeton
+                      <p className="text-sm text-muted-foreground line-through">
+                        {formatPrice(pack.quantity)}€
+                      </p>
+                      <p className="text-3xl font-bold text-green-600">{formatPrice(pack.price)}€</p>
+                      <p className="text-sm text-green-600 mt-1">
+                        Économisez {formatPrice(pack.quantity - pack.price)}€
                       </p>
                     </div>
                     <Button 
@@ -321,7 +335,7 @@ export default function AcheterJetons() {
                       className="w-full"
                       variant={isPopular ? "default" : "outline"}
                     >
-                      Acheter
+                      Recharger
                     </Button>
                   </div>
                 </CardContent>
@@ -335,9 +349,9 @@ export default function AcheterJetons() {
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <Card className="w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <CardHeader>
-                <CardTitle>Paiement - {selectedPack.quantity} jetons</CardTitle>
+                <CardTitle>Recharger {selectedPack.quantity}€</CardTitle>
                 <CardDescription>
-                  Montant à payer : {formatPrice(selectedPack.price)}€
+                  Montant à payer : {formatPrice(selectedPack.price)}€ (économisez {formatPrice(selectedPack.quantity - selectedPack.price)}€)
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -411,7 +425,7 @@ export default function AcheterJetons() {
                     <div className="space-y-4">
                       <StripeCardForm
                         amount={selectedPack.price}
-                        quantity={selectedPack.quantity}
+                        creditAmount={selectedPack.quantity}
                         garageId={garage?.id}
                         onSuccess={handlePaymentSuccess}
                       />
