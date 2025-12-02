@@ -572,8 +572,8 @@ async function handleTokenPurchase(
   }
 
   // Send confirmation email to garage
+  const pricePaid = paymentIntent.amount / 100;
   if (garage.email) {
-    const pricePaid = paymentIntent.amount / 100;
     await sendEmail("recharge_confirmed", garage.email, {
       garage_name: garage.raison_sociale,
       amount: creditAmount,
@@ -583,19 +583,19 @@ async function handleTokenPurchase(
     console.log("✅ Balance recharge confirmation email sent");
   }
 
-  // Send admin notification emails
-  const pricePaid = paymentIntent.amount / 100;
-  for (const adminEmail of ADMIN_EMAILS) {
-    await delay(600);
-    await sendEmail("admin_balance_recharge", adminEmail, {
+  // Send admin notification emails with proper delays to avoid Resend rate limits (2 req/sec)
+  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+    await delay(1000); // Wait 1 second between each email to stay under rate limit
+    await sendEmail("admin_balance_recharge", ADMIN_EMAILS[i], {
       garage_name: garage.raison_sociale,
       garage_email: garage.email,
       amount: creditAmount,
       price: pricePaid,
       new_balance: newBalance,
     });
+    console.log(`✅ Admin notification email sent to ${ADMIN_EMAILS[i]}`);
   }
-  console.log("✅ Admin notification emails sent for balance recharge");
+  console.log("✅ All admin notification emails sent for balance recharge");
 }
 
 // -----------------------------
