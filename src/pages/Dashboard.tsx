@@ -152,7 +152,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
-            {user?.email === 'test@test.com' && (
+            {user?.email === 'contact@autotransfert.fr' && (
               <div className="bg-black rounded-lg p-2 shadow-sm">
                 <img 
                   src="/assets/auto-transfert-logo.png" 
