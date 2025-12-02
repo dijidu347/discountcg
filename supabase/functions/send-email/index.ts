@@ -514,6 +514,31 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "admin_balance_recharge":
+      return {
+        subject: `💰 [ADMIN] Nouvelle recharge de solde - ${data.garage_name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">Nouvelle recharge de solde</h1>
+            <p>Un garage vient de recharger son compte.</p>
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>🏢 Garage :</strong> ${data.garage_name}</p>
+              <p style="margin: 8px 0;"><strong>📧 Email :</strong> ${data.garage_email}</p>
+            </div>
+
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>💳 Montant payé :</strong> ${data.price} €</p>
+              <p style="margin: 8px 0;"><strong>💰 Crédit ajouté :</strong> ${data.amount} €</p>
+              <p style="margin: 8px 0;"><strong>📊 Nouveau solde :</strong> ${data.new_balance} €</p>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Notification automatique - DiscountCarteGrise</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }

@@ -582,6 +582,20 @@ async function handleTokenPurchase(
     });
     console.log("✅ Balance recharge confirmation email sent");
   }
+
+  // Send admin notification emails
+  const pricePaid = paymentIntent.amount / 100;
+  for (const adminEmail of ADMIN_EMAILS) {
+    await delay(600);
+    await sendEmail("admin_balance_recharge", adminEmail, {
+      garage_name: garage.raison_sociale,
+      garage_email: garage.email,
+      amount: creditAmount,
+      price: pricePaid,
+      new_balance: newBalance,
+    });
+  }
+  console.log("✅ Admin notification emails sent for balance recharge");
 }
 
 // -----------------------------
