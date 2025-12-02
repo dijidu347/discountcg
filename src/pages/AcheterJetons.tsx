@@ -384,25 +384,27 @@ export default function AcheterJetons() {
                     </Button>
                   </div>
                 ) : paymentMethod === "wallet" && garage ? (
-                  <div className="space-y-4">
-                    <StripeWalletPayment
-                      amount={selectedPack.price}
-                      onSuccess={handlePaymentSuccess}
-                      onError={handleWalletError}
-                      metadata={{
-                        type: "token_purchase",
-                        garage_id: garage.id,
-                        quantity: selectedPack.quantity.toString(),
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      onClick={() => setPaymentMethod(null)}
-                      className="w-full"
-                    >
-                      Choisir une autre méthode
-                    </Button>
-                  </div>
+                  <Elements stripe={stripePromise}>
+                    <div className="space-y-4">
+                      <StripeWalletPayment
+                        amount={selectedPack.price}
+                        onSuccess={handlePaymentSuccess}
+                        onError={handleWalletError}
+                        metadata={{
+                          type: "token_purchase",
+                          garage_id: garage.id,
+                          quantity: selectedPack.quantity.toString(),
+                        }}
+                      />
+                      <Button
+                        variant="ghost"
+                        onClick={() => setPaymentMethod(null)}
+                        className="w-full"
+                      >
+                        Choisir une autre méthode
+                      </Button>
+                    </div>
+                  </Elements>
                 ) : (
                   <Elements stripe={stripePromise}>
                     <div className="space-y-4">
