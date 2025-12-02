@@ -539,6 +539,31 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "admin_verification_request":
+      return {
+        subject: `🔍 [ADMIN] Nouveau garage à vérifier - ${data.garage_name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">Nouvelle demande de vérification</h1>
+            <p>Un garage vient de soumettre ses documents de vérification.</p>
+            
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>🏢 Garage :</strong> ${data.garage_name}</p>
+              <p style="margin: 8px 0;"><strong>📧 Email :</strong> ${data.garage_email}</p>
+            </div>
+
+            <p>Veuillez vérifier les documents soumis dans l'interface d'administration.</p>
+
+            <a href="https://discountcg.fr/admin/manage-garages" style="display: inline-block; background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Vérifier le garage
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Notification automatique - DiscountCarteGrise</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }

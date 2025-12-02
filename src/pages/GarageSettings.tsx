@@ -102,6 +102,19 @@ export default function GarageSettings() {
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('demarche-documents').getPublicUrl(fileName);
       await supabase.from('verification_documents').insert({ garage_id: garage.id, document_type: documentType, url: publicUrl, nom_fichier: file.name, status: 'pending' });
+      
+      // Set verification_requested_at if not already set
+      if (!garage.verification_requested_at) {
+        await supabase.from('garages').update({ verification_requested_at: new Date().toISOString() }).eq('id', garage.id);
+        // Send admin notification
+        await supabase.functions.invoke('send-email', {
+          body: { type: 'admin_verification_request', to: 'mathieugaillac4@gmail.com', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
+        });
+        await supabase.functions.invoke('send-email', {
+          body: { type: 'admin_verification_request', to: 'contact@discountcartegrise.fr', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
+        });
+      }
+      
       toast({ title: "Document envoyé", description: "Votre document a été soumis" });
       loadGarage();
     } catch (error: any) {

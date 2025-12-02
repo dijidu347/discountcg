@@ -17,7 +17,8 @@ export default function AdminDashboard() {
     totalDemarches: 0,
     demarchesATraiter: 0,
     demarchesNonVues: 0,
-    totalPaiements: 0
+    totalPaiements: 0,
+    garagesAVerifier: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -54,7 +55,7 @@ export default function AdminDashboard() {
     // Load admin statistics
     const { data: garages } = await supabase
       .from('garages')
-      .select('id');
+      .select('id, verification_requested_at, is_verified');
 
     const { data: demarches } = await supabase
       .from('demarches')
@@ -72,12 +73,18 @@ export default function AdminDashboard() {
     // Démarches non vues par l'admin
     const demarchesNonVues = demarchesATraiter.filter(d => !d.admin_viewed);
 
+    // Garages à vérifier = verification_requested_at not null ET is_verified false
+    const garagesAVerifier = garages?.filter(g => 
+      g.verification_requested_at && !g.is_verified
+    ) || [];
+
     setStats({
       totalGarages: garages?.length || 0,
       totalDemarches: demarches?.length || 0,
       demarchesATraiter: demarchesATraiter.length,
       demarchesNonVues: demarchesNonVues.length,
-      totalPaiements: paiements?.filter(p => p.status === 'valide').reduce((sum, p) => sum + Number(p.montant), 0) || 0
+      totalPaiements: paiements?.filter(p => p.status === 'valide').reduce((sum, p) => sum + Number(p.montant), 0) || 0,
+      garagesAVerifier: garagesAVerifier.length
     });
 
     setLoading(false);
@@ -143,6 +150,38 @@ export default function AdminDashboard() {
                 <Button className="bg-red-500 hover:bg-red-600">
                   <Bell className="h-4 w-4 mr-2" />
                   Voir maintenant
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Alerte garages à vérifier */}
+        {stats.garagesAVerifier > 0 && (
+          <Card className="mb-6 border-2 border-orange-500 bg-orange-50 dark:bg-orange-950/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors"
+                onClick={() => navigate("/admin/manage-garages")}>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <Building2 className="h-8 w-8 text-orange-500" />
+                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500"></span>
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-bold text-orange-700 dark:text-orange-400">
+                      {stats.garagesAVerifier} garage{stats.garagesAVerifier > 1 ? 's' : ''} à vérifier !
+                    </p>
+                    <p className="text-sm text-orange-600 dark:text-orange-500">
+                      Cliquez pour vérifier les documents soumis
+                    </p>
+                  </div>
+                </div>
+                <Button className="bg-orange-500 hover:bg-orange-600">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Vérifier
                 </Button>
               </div>
             </CardContent>
