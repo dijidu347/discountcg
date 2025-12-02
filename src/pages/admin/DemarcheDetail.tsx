@@ -342,6 +342,15 @@ export default function DemarcheDetail() {
         title: "Statut mis à jour",
         description: "Le statut de la démarche a été modifié"
       });
+      
+      // Si le statut est "finalisé", marquer admin_viewed comme true pour enlever de "à traiter"
+      if (newStatus === 'finalise') {
+        await supabase
+          .from('demarches')
+          .update({ admin_viewed: true })
+          .eq('id', id);
+      }
+      
       loadDemarcheData();
     }
   };
@@ -1042,11 +1051,20 @@ export default function DemarcheDetail() {
                         demarcheId={demarche.id}
                         documentType="admin_document"
                         label={`Pièce jointe ${idx + 1}`}
-                        onUploadComplete={() => {
+                        onUploadComplete={async () => {
+                          // Mettre le statut à "finalisé" et marquer comme vu automatiquement
+                          await supabase
+                            .from('demarches')
+                            .update({ 
+                              status: 'finalise',
+                              admin_viewed: true 
+                            })
+                            .eq('id', demarche.id);
+                          
                           loadDemarcheData();
                           toast({
-                            title: "Document envoyé",
-                            description: "Le document a été mis à disposition du client"
+                            title: "Document envoyé et dossier clôturé",
+                            description: "Le document a été envoyé au client et le dossier a été finalisé"
                           });
                         }}
                       />
