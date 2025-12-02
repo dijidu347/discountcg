@@ -398,6 +398,62 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // === GARAGE NOTIFICATION EMAILS ===
+    case "garage_document_received":
+      return {
+        subject: `📄 Nouveau document disponible - ${data.reference}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">Nouveau document disponible</h1>
+            <p>Bonjour ${data.garage_name},</p>
+            <p>Un nouveau document est disponible pour votre démarche <strong>${data.reference}</strong> (${data.immatriculation}).</p>
+            
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>📄 ${data.document_name}</strong></p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+            </div>
+
+            <p>Vous pouvez consulter et télécharger ce document depuis votre espace garage :</p>
+
+            <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accéder à ma démarche
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
+    case "garage_demarche_completed":
+      return {
+        subject: `🎉 Votre démarche est terminée ! - ${data.reference}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Votre démarche est terminée !</h1>
+            <p>Bonjour ${data.garage_name},</p>
+            <p>Excellente nouvelle ! Votre démarche <strong>${data.reference}</strong> pour le véhicule <strong>${data.immatriculation}</strong> a été traitée avec succès.</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Type :</strong> ${data.type}</p>
+              <p style="margin: 8px 0;"><strong>Référence :</strong> ${data.reference}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+            </div>
+
+            <p>Les documents finaux sont disponibles dans votre espace garage. Vous pouvez les télécharger dès maintenant.</p>
+
+            <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Télécharger mes documents
+            </a>
+
+            <p style="margin-top: 20px;">Merci de votre confiance !</p>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }

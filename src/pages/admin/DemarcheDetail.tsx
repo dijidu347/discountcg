@@ -1051,7 +1051,7 @@ export default function DemarcheDetail() {
                         demarcheId={demarche.id}
                         documentType="admin_document"
                         label={`Pièce jointe ${idx + 1}`}
-                        onUploadComplete={async () => {
+                        onUploadComplete={async (uploadedFileName?: string) => {
                           // Mettre le statut à "finalisé" et marquer comme vu automatiquement
                           await supabase
                             .from('demarches')
@@ -1061,10 +1061,55 @@ export default function DemarcheDetail() {
                             })
                             .eq('id', demarche.id);
                           
+                          // Envoyer les emails au garage
+                          if (garage) {
+                            try {
+                              // Email pour le document reçu
+                              await supabase.functions.invoke('send-email', {
+                                body: {
+                                  type: 'garage_document_received',
+                                  to: garage.email,
+                                  data: {
+                                    garage_name: garage.raison_sociale,
+                                    reference: demarche.numero_demarche || demarche.id,
+                                    immatriculation: demarche.immatriculation,
+                                    document_name: uploadedFileName || `Pièce jointe ${idx + 1}`,
+                                    demarche_id: demarche.id
+                                  }
+                                }
+                              });
+                              console.log('Email document reçu envoyé au garage');
+
+                              // Email pour la démarche finalisée (avec délai pour éviter rate limiting)
+                              setTimeout(async () => {
+                                try {
+                                  await supabase.functions.invoke('send-email', {
+                                    body: {
+                                      type: 'garage_demarche_completed',
+                                      to: garage.email,
+                                      data: {
+                                        garage_name: garage.raison_sociale,
+                                        reference: demarche.numero_demarche || demarche.id,
+                                        immatriculation: demarche.immatriculation,
+                                        type: demarche.type,
+                                        demarche_id: demarche.id
+                                      }
+                                    }
+                                  });
+                                  console.log('Email démarche finalisée envoyé au garage');
+                                } catch (emailError) {
+                                  console.error('Erreur envoi email finalisé:', emailError);
+                                }
+                              }, 600);
+                            } catch (emailError) {
+                              console.error('Erreur envoi email document:', emailError);
+                            }
+                          }
+                          
                           loadDemarcheData();
                           toast({
                             title: "Document envoyé et dossier clôturé",
-                            description: "Le document a été envoyé au client et le dossier a été finalisé"
+                            description: "Le document a été envoyé au client et le garage a été notifié par email"
                           });
                         }}
                       />
