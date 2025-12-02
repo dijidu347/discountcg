@@ -170,31 +170,85 @@ export default function Dashboard() {
             </AlertDescription>
           </Alert>}
 
-        {/* Token Balance Card */}
+        {/* Company Info & Token Balance */}
         {garage && (
-          <Card className="mb-8 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Coins className="w-6 h-6 text-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Company Information Card */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <UserCircle className="h-5 w-5" />
+                    Informations de l'entreprise
+                  </CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/garage-settings")}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div>
+                  <p className="text-sm text-muted-foreground">Raison sociale</p>
+                  <p className="font-medium">{garage.raison_sociale}</p>
+                </div>
+                {garage.reseau && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Réseau</p>
+                    <p className="font-medium">{garage.reseau}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">SIRET</p>
+                  <p className="font-medium">{garage.siret}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Adresse</p>
+                  <p className="font-medium">{garage.adresse}</p>
+                  <p className="font-medium">{garage.code_postal} {garage.ville}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Email</p>
+                    <p className="font-medium text-sm">{garage.email}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Solde de jetons</p>
-                    <p className="text-2xl font-bold">{garage.token_balance || 0} jetons</p>
+                    <p className="text-sm text-muted-foreground">Téléphone</p>
+                    <p className="font-medium">{garage.telephone}</p>
                   </div>
                 </div>
-                <Button 
-                  onClick={() => navigate("/acheter-jetons")}
-                  variant="default"
-                  size="lg"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Recharger
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+
+            {/* Token Balance Card */}
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Coins className="h-5 w-5" />
+                  Solde de jetons
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-4xl font-bold mb-2">{garage.token_balance || 0}</p>
+                    <p className="text-sm text-muted-foreground">jetons disponibles</p>
+                  </div>
+                  <Button 
+                    onClick={() => navigate("/acheter-jetons")}
+                    variant="default"
+                    size="lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Recharger
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         {/* Quick Actions */}
