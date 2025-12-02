@@ -94,9 +94,9 @@ export default function AcheterJetons() {
     navigate("/");
   };
 
-  const getDiscount = (creditAmount: number, price: number) => {
-    const discount = ((creditAmount - price) / creditAmount) * 100;
-    return Math.round(discount);
+  const getBonus = (creditAmount: number, price: number) => {
+    const bonus = ((creditAmount - price) / price) * 100;
+    return Math.round(bonus);
   };
 
   if (authLoading || loading) {
@@ -166,7 +166,7 @@ export default function AcheterJetons() {
             <h1 className="text-3xl font-bold">Recharger mon compte</h1>
           </div>
           <p className="text-muted-foreground">
-            Rechargez votre solde et profitez de remises exclusives
+            Rechargez votre solde et profitez de bonus exclusifs
           </p>
         </div>
 
@@ -190,8 +190,9 @@ export default function AcheterJetons() {
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {creditPacks.map((pack) => {
-            const discount = getDiscount(pack.quantity, pack.price);
-            const isPopular = pack.quantity === 200;
+            const bonus = getBonus(pack.quantity, pack.price);
+            const isPopular = pack.price === 200;
+            const bonusAmount = pack.quantity - pack.price;
 
             return (
               <Card 
@@ -206,25 +207,22 @@ export default function AcheterJetons() {
                 <div className="absolute top-3 right-3">
                   <div className="flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
                     <Percent className="w-3 h-3" />
-                    -{discount}%
+                    +{bonus}%
                   </div>
                 </div>
                 <CardHeader className="pt-10">
                   <CardTitle className="flex items-center gap-2">
                     <Euro className="w-5 h-5 text-primary" />
-                    {pack.quantity}€ de crédit
+                    {formatPrice(pack.quantity)}€ de crédit
                   </CardTitle>
-                  <CardDescription>{pack.description}</CardDescription>
+                  <CardDescription>Pour seulement {formatPrice(pack.price)}€</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     <div>
-                      <p className="text-sm text-muted-foreground line-through">
-                        {formatPrice(pack.quantity)}€
-                      </p>
-                      <p className="text-3xl font-bold text-green-600">{formatPrice(pack.price)}€</p>
-                      <p className="text-sm text-green-600 mt-1">
-                        Économisez {formatPrice(pack.quantity - pack.price)}€
+                      <p className="text-3xl font-bold">{formatPrice(pack.price)}€</p>
+                      <p className="text-sm text-green-600 mt-1 font-medium">
+                        +{formatPrice(bonusAmount)}€ offerts
                       </p>
                     </div>
                     <Button 
