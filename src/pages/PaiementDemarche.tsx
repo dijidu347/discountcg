@@ -238,8 +238,7 @@ const PaiementDemarche = () => {
     setCalculatedTotal(result.totalTTC);
   }, []);
 
-  // Vérifier si le paiement par solde est possible
-  const canPayWithBalance = garage && calculatedTotal !== null && garage.token_balance >= calculatedTotal;
+  // canPayWithBalance est calculé plus bas après le calcul de finalAmount
 
   // Gérer le paiement par solde
   const handleBalancePayment = async () => {
@@ -378,6 +377,9 @@ const PaiementDemarche = () => {
   
   // Utiliser le montant calculé correctement (sans TVA)
   const finalAmount = calculatedTotal !== null ? calculatedTotal : (prixCarteGrise + totalServices);
+  
+  // Vérifier si le paiement par solde est possible (utiliser finalAmount au lieu de calculatedTotal)
+  const canPayWithBalance = garage && finalAmount > 0 && garage.token_balance >= finalAmount;
   
   // PayPal 4x désactivé si montant < 30€
   const canUsePayPal4x = finalAmount >= 30;
