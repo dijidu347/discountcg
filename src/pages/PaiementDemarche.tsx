@@ -242,12 +242,20 @@ const PaiementDemarche = () => {
 
   // Gérer le paiement par solde
   const handleBalancePayment = async () => {
-    if (!garage || !demarcheId || calculatedTotal === null) return;
+    if (!garage || !demarcheId || !demarche) return;
+    
+    // Calculer le montant à débiter directement
+    const prixCG = Number(demarche.prix_carte_grise) || 0;
+    const frais = Number(demarche.frais_dossier) || 0;
+    const optionsSum = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
+    const amountToPay = prixCG + frais + optionsSum;
+    
+    if (amountToPay <= 0 || garage.token_balance < amountToPay) return;
 
     setIsProcessingBalance(true);
 
     try {
-      const newBalance = garage.token_balance - calculatedTotal;
+      const newBalance = garage.token_balance - amountToPay;
 
       // Déduire du solde
       const { error: balanceError } = await supabase
@@ -281,7 +289,7 @@ const PaiementDemarche = () => {
               garage_name: garage.raison_sociale,
               demarche_id: demarche.numero_demarche,
               immatriculation: demarche.immatriculation,
-              amount: calculatedTotal,
+              amount: amountToPay,
               new_balance: newBalance,
               type: demarche.type,
             },
@@ -301,7 +309,7 @@ const PaiementDemarche = () => {
                 reference: demarche.numero_demarche,
                 immatriculation: demarche.immatriculation,
                 client_name: garage.raison_sociale,
-                montant_ttc: calculatedTotal,
+                montant_ttc: amountToPay,
                 is_free_token: false,
               },
             },
@@ -317,7 +325,7 @@ const PaiementDemarche = () => {
         variant: "success" as any,
       });
 
-      navigate(`/paiement-solde-succes/${demarcheId}?amount=${calculatedTotal}&balance=${newBalance}`);
+      navigate(`/paiement-solde-succes/${demarcheId}?amount=${amountToPay}&balance=${newBalance}`);
     } catch (error: any) {
       console.error("Balance payment error:", error);
       toast({
