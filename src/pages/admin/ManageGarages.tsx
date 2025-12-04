@@ -207,6 +207,11 @@ export default function ManageGarages() {
 
       if (updateError) throw updateError;
 
+      // Mise à jour optimiste de l'état local pour feedback immédiat
+      const updatedGarage = { ...selectedGarage, is_verified: true };
+      setGaragesAVerifier(prev => prev.filter(g => g.id !== selectedGarage.id));
+      setGaragesVerifies(prev => [updatedGarage, ...prev]);
+
       // Envoyer email de vérification
       await supabase.functions.invoke('send-email', {
         body: {
@@ -225,7 +230,6 @@ export default function ManageGarages() {
 
       setShowVerifyDialog(false);
       setShowDocsDialog(false);
-      await loadGarages();
     } catch (error) {
       console.error('Error:', error);
       toast({
@@ -233,6 +237,8 @@ export default function ManageGarages() {
         description: "Impossible de vérifier le garage",
         variant: "destructive"
       });
+      // En cas d'erreur, recharger les données depuis la DB
+      await loadGarages();
     } finally {
       setProcessingGarage(false);
     }
