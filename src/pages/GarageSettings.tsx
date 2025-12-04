@@ -218,7 +218,21 @@ export default function GarageSettings() {
                       return (
                         <div key={type} className="border rounded-lg p-4">
                           <div className="flex justify-between mb-2">
-                            <h3 className="font-medium">{type === 'kbis' ? 'KBIS' : type === 'carte_identite' ? "Carte d'identité" : 'Mandat pré-rempli'}</h3>
+                            <h3 className="font-medium">
+                              {type === 'kbis' ? 'KBIS' : type === 'carte_identite' ? "Carte d'identité" : (
+                                <>
+                                  Mandat pré-rempli{' '}
+                                  <a 
+                                    href="/cerfas/cerfa_13757_03.pdf" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline font-normal"
+                                  >
+                                    (CERFA 13757)
+                                  </a>
+                                </>
+                              )}
+                            </h3>
                             {status.badge}
                           </div>
                           {status.status === 'rejected' && <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded text-sm">{status.reason}</div>}
