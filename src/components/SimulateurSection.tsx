@@ -59,9 +59,11 @@ export const SimulateurSection = () => {
         .order('ordre');
 
       if (error) throw error;
-      setDemarcheTypes(data || []);
-      if (data && data.length > 0 && !data.find(t => t.code === selectedTypeCode)) {
-        setSelectedTypeCode(data[0].code);
+      // Filtrer DA pour les particuliers (uniquement CG et DC disponibles)
+      const filteredData = (data || []).filter(t => t.code !== 'DA');
+      setDemarcheTypes(filteredData);
+      if (filteredData.length > 0 && !filteredData.find(t => t.code === selectedTypeCode)) {
+        setSelectedTypeCode(filteredData[0].code);
       }
     } catch (error) {
       console.error('Error loading demarche types:', error);
