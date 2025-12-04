@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
+  const [missingDocsCount, setMissingDocsCount] = useState(3);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -85,6 +86,20 @@ export default function Dashboard() {
         validees: demarches?.filter(d => d.status === 'valide' || d.status === 'finalise').length || 0
       });
       setRecentDemarches(demarches?.slice(0, 5) || []);
+
+      // Count missing verification documents
+      if (!garageData.is_verified) {
+        const { data: verificationDocs } = await supabase
+          .from('verification_documents')
+          .select('document_type')
+          .eq('garage_id', garageData.id)
+          .in('status', ['pending', 'approved']);
+        
+        const uploadedTypes = new Set(verificationDocs?.map(d => d.document_type) || []);
+        const requiredDocs = ['kbis', 'carte_identite', 'mandat'];
+        const missing = requiredDocs.filter(doc => !uploadedTypes.has(doc)).length;
+        setMissingDocsCount(missing);
+      }
     }
     setLoading(false);
   };
@@ -173,21 +188,24 @@ export default function Dashboard() {
         </div>
 
         {/* Verification Alert */}
-        {garage && !garage.is_verified && !garage.verification_requested_at && (
+        {garage && !garage.is_verified && missingDocsCount > 0 && (
           <Alert className="mb-8 border-2 border-primary bg-primary/10">
             <AlertCircle className="h-5 w-5 text-primary" />
             <AlertTitle className="text-primary font-bold">
-              Bienvenue sur DiscountCarteGrise !
+              {missingDocsCount === 3 ? "Bienvenue sur DiscountCarteGrise !" : `Il manque ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''}`}
             </AlertTitle>
             <AlertDescription className="text-primary">
-              Pour valider votre compte et bénéficier de tous les avantages, veuillez envoyer vos documents de vérification (KBIS, Carte d'identité, Mandat).
+              {missingDocsCount === 3 
+                ? "Pour valider votre compte et bénéficier de tous les avantages, veuillez envoyer vos documents de vérification (KBIS, Carte d'identité, Mandat)."
+                : `Il vous reste ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''} à envoyer pour compléter votre demande de vérification.`
+              }
               <Button
                 variant="outline"
                 size="sm"
                 className="mt-2 ml-0 border-primary text-primary hover:bg-primary hover:text-white"
                 onClick={() => navigate("/garage-settings?tab=verification")}
               >
-                Envoyer mes documents
+                {missingDocsCount === 3 ? "Envoyer mes documents" : "Compléter mes documents"}
               </Button>
             </AlertDescription>
           </Alert>

@@ -103,8 +103,21 @@ export default function GarageSettings() {
       const { data: { publicUrl } } = supabase.storage.from('demarche-documents').getPublicUrl(fileName);
       await supabase.from('verification_documents').insert({ garage_id: garage.id, document_type: documentType, url: publicUrl, nom_fichier: file.name, status: 'pending' });
       
-      // Set verification_requested_at if not already set
-      if (!garage.verification_requested_at) {
+      // Check if all 3 documents are now uploaded
+      const { data: allDocs } = await supabase
+        .from('verification_documents')
+        .select('document_type')
+        .eq('garage_id', garage.id)
+        .in('status', ['pending', 'approved']);
+      
+      const uploadedTypes = new Set(allDocs?.map(d => d.document_type) || []);
+      uploadedTypes.add(documentType); // Include the one just uploaded
+      
+      const requiredDocs = ['kbis', 'carte_identite', 'mandat'];
+      const allDocsUploaded = requiredDocs.every(doc => uploadedTypes.has(doc));
+      
+      // Set verification_requested_at and send notification only when all 3 docs are uploaded
+      if (allDocsUploaded && !garage.verification_requested_at) {
         await supabase.from('garages').update({ verification_requested_at: new Date().toISOString() }).eq('id', garage.id);
         // Send admin notification
         await supabase.functions.invoke('send-email', {
@@ -203,16 +216,17 @@ export default function GarageSettings() {
                       Vous bénéficiez maintenant du badge "Compte Vérifié"
                     </p>
                   </div>
-                ) : garage?.verification_requested_at ? (
-                  <div className="text-center py-8">
-                    <AlertCircle className="h-16 w-16 text-yellow-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Vérification en cours</h3>
-                    <p className="text-muted-foreground">
-                      Votre demande est en cours d'examen par notre équipe
-                    </p>
-                  </div>
                 ) : (
                   <>
+                    {garage?.verification_requested_at && (
+                      <div className="text-center py-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                        <h3 className="text-lg font-semibold mb-1">Vérification en cours</h3>
+                        <p className="text-muted-foreground text-sm">
+                          Votre demande est en cours d'examen par notre équipe
+                        </p>
+                      </div>
+                    )}
                     {['kbis', 'carte_identite', 'mandat'].map(type => {
                       const status = getDocStatus(type);
                       return (
