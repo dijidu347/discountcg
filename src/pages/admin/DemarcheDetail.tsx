@@ -638,28 +638,53 @@ export default function DemarcheDetail() {
   const sendNotification = async () => {
     if (!notificationMessage || !garage || !id) return;
 
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        garage_id: garage.id,
-        demarche_id: id,
-        type: notificationType,
-        message: notificationMessage,
-        created_by: user?.id
+    try {
+      // Insert notification in database
+      const { error } = await supabase
+        .from('notifications')
+        .insert({
+          garage_id: garage.id,
+          demarche_id: id,
+          type: notificationType,
+          message: notificationMessage,
+          created_by: user?.id
+        });
+
+      if (error) throw error;
+
+      // Get subject based on notification type
+      const subjectMap: Record<string, string> = {
+        'info': `📬 Information - Démarche ${demarche?.numero_demarche || id}`,
+        'document_request': `📄 Documents requis - ${demarche?.immatriculation || 'Démarche'}`,
+        'document_ready': `✅ Documents disponibles - ${demarche?.immatriculation || 'Démarche'}`,
+        'review_request': `📝 Action requise - ${demarche?.immatriculation || 'Démarche'}`
+      };
+
+      // Send email notification
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom_notification',
+          to: garage.email,
+          data: {
+            customerName: garage.raison_sociale,
+            subject: subjectMap[notificationType] || subjectMap['info'],
+            message: notificationMessage
+          }
+        }
       });
 
-    if (error) {
+      toast({
+        title: "Notification envoyée",
+        description: "Le garage a été notifié par email"
+      });
+      setNotificationMessage("");
+    } catch (err) {
+      console.error('Error sending notification:', err);
       toast({
         title: "Erreur",
         description: "Impossible d'envoyer la notification",
         variant: "destructive"
       });
-    } else {
-      toast({
-        title: "Notification envoyée",
-        description: "Le garage a été notifié"
-      });
-      setNotificationMessage("");
     }
   };
 

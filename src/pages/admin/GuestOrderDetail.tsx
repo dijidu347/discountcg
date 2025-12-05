@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban, Loader2 } from "lucide-react";
 import { Textarea as TextareaInput } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -216,6 +216,8 @@ export default function GuestOrderDetail() {
   const [adminDocDescription, setAdminDocDescription] = useState("");
   const [isSendingAdminDoc, setIsSendingAdminDoc] = useState(false);
   const [sentAdminDocs, setSentAdminDocs] = useState<any[]>([]);
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [isSendingNotification, setIsSendingNotification] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -281,6 +283,40 @@ export default function GuestOrderDetail() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const sendNotificationToClient = async () => {
+    if (!notificationMessage || !order) return;
+
+    setIsSendingNotification(true);
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom_notification',
+          to: order.email,
+          data: {
+            customerName: `${order.prenom} ${order.nom}`,
+            subject: `📬 Information - Commande ${order.tracking_number}`,
+            message: notificationMessage
+          }
+        }
+      });
+
+      toast({
+        title: "Notification envoyée",
+        description: "Le client a été notifié par email"
+      });
+      setNotificationMessage("");
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la notification",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingNotification(false);
     }
   };
 
@@ -1075,6 +1111,44 @@ export default function GuestOrderDetail() {
               placeholder="Ajoutez un commentaire..."
               rows={4}
             />
+          </CardContent>
+        </Card>
+
+        {/* Envoyer une notification */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Send className="h-5 w-5" />
+              Envoyer une notification
+            </CardTitle>
+            <CardDescription>
+              Envoyer un email personnalisé au client
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              value={notificationMessage}
+              onChange={(e) => setNotificationMessage(e.target.value)}
+              placeholder="Écrivez votre message..."
+              rows={4}
+            />
+            <Button 
+              onClick={sendNotificationToClient} 
+              className="w-full" 
+              disabled={!notificationMessage || isSendingNotification}
+            >
+              {isSendingNotification ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Envoi en cours...
+                </>
+              ) : (
+                <>
+                  <Send className="mr-2 h-4 w-4" />
+                  Envoyer
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
 

@@ -564,6 +564,25 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "custom_notification":
+      return {
+        subject: data.subject || `📬 Notification - DiscountCarteGrise`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">📬 Notification</h1>
+            <p>Bonjour ${data.customerName || 'Client'},</p>
+            
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0; white-space: pre-wrap;">
+              ${data.message}
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">L'équipe DiscountCarteGrise</p>
+            <p style="color: #6b7280; font-size: 12px;">contact@discountcartegrise.fr</p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }

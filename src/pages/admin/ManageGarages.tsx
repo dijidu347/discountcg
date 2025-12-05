@@ -7,7 +7,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -50,6 +52,10 @@ export default function ManageGarages() {
   const [rejectAccountReason, setRejectAccountReason] = useState("");
   const [processingGarage, setProcessingGarage] = useState(false);
   const [viewerDoc, setViewerDoc] = useState<any>(null);
+  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+  const [notificationSubject, setNotificationSubject] = useState("");
+  const [notificationMessage, setNotificationMessage] = useState("");
+  const [sendingNotification, setSendingNotification] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -295,6 +301,43 @@ export default function ManageGarages() {
   const allDocsApproved = verificationDocs.length >= 3 && 
     verificationDocs.every(doc => doc.status === 'approved');
 
+  const handleSendNotification = async () => {
+    if (!selectedGarage || !notificationSubject.trim() || !notificationMessage.trim()) return;
+
+    setSendingNotification(true);
+    try {
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom_notification',
+          to: selectedGarage.email,
+          data: {
+            customerName: selectedGarage.raison_sociale,
+            subject: notificationSubject,
+            message: notificationMessage
+          }
+        }
+      });
+
+      toast({
+        title: "Notification envoyée",
+        description: `Email envoyé à ${selectedGarage.email}`,
+      });
+
+      setShowNotificationDialog(false);
+      setNotificationSubject("");
+      setNotificationMessage("");
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'envoyer la notification",
+        variant: "destructive"
+      });
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
   if (authLoading || loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -534,7 +577,11 @@ export default function ManageGarages() {
               )}
             </div>
 
-            <DialogFooter className="flex gap-2">
+            <DialogFooter className="flex gap-2 flex-wrap">
+              <Button variant="outline" onClick={() => setShowNotificationDialog(true)}>
+                <Send className="mr-2 h-4 w-4" />
+                Envoyer une notification
+              </Button>
               {allDocsApproved && !selectedGarage?.is_verified && (
                 <>
                   <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
@@ -612,6 +659,60 @@ export default function ManageGarages() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Send Notification Dialog */}
+        <Dialog open={showNotificationDialog} onOpenChange={setShowNotificationDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Envoyer une notification</DialogTitle>
+              <DialogDescription>
+                Envoyer un email personnalisé à {selectedGarage?.raison_sociale}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="subject">Objet</Label>
+                <Input
+                  id="subject"
+                  placeholder="Objet de l'email..."
+                  value={notificationSubject}
+                  onChange={(e) => setNotificationSubject(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message">Message</Label>
+                <Textarea
+                  id="message"
+                  placeholder="Votre message..."
+                  value={notificationMessage}
+                  onChange={(e) => setNotificationMessage(e.target.value)}
+                  rows={6}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowNotificationDialog(false)}>
+                Annuler
+              </Button>
+              <Button 
+                onClick={handleSendNotification}
+                disabled={!notificationSubject.trim() || !notificationMessage.trim() || sendingNotification}
+              >
+                {sendingNotification ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Envoi...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-2 h-4 w-4" />
+                    Envoyer
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
