@@ -1,15 +1,4 @@
-interface VehicleData {
-  AWN_marque?: string;
-  AWN_modele?: string;
-  AWN_couleur?: string;
-  AWN_puissance_fiscale?: number;
-  AWN_energie?: string;
-  AWN_date_mise_en_circulation?: string;
-  AWN_emission_co_2?: number;
-  AWN_immat?: string;
-  AWN_vin?: string;
-  [key: string]: any;
-}
+import { supabase } from "@/integrations/supabase/client";
 
 // Interface normalisée pour l'utilisation dans l'app
 export interface NormalizedVehicleData {
@@ -30,49 +19,33 @@ interface VehicleApiResponse {
   error?: string;
 }
 
-const RAPIDAPI_KEY = '29f486f281msh5fd7364cad32da7p1b6afajsn9b2eeb4e02ed';
-const RAPIDAPI_HOST = 'api-de-plaque-d-immatriculation-france.p.rapidapi.com';
-
 export async function getVehicleByPlate(plate: string): Promise<VehicleApiResponse> {
   // Nettoyer la plaque (enlever les espaces et tirets)
   const cleanPlate = plate.replace(/[-\s]/g, '');
   
   try {
-    const response = await fetch(
-      `https://${RAPIDAPI_HOST}/?plaque=${cleanPlate}`,
-      {
-        method: 'GET',
-        headers: {
-          'plaque': cleanPlate,
-          'x-rapidapi-host': RAPIDAPI_HOST,
-          'x-rapidapi-key': RAPIDAPI_KEY,
-        },
-      }
-    );
+    const { data, error } = await supabase.functions.invoke('vehicle-lookup', {
+      body: { plate: cleanPlate }
+    });
 
-    if (!response.ok) {
-      throw new Error(`Erreur API: ${response.status}`);
+    if (error) {
+      console.error('Erreur lors de la récupération des données:', error);
+      return {
+        success: false,
+        error: error.message || 'Erreur de connexion au service',
+      };
     }
 
-    const apiResponse = await response.json();
-    
-    // Normaliser les données de l'API
-    const vehicleData = apiResponse.data;
-    const normalizedData: NormalizedVehicleData = {
-      marque: vehicleData?.AWN_marque,
-      modele: vehicleData?.AWN_modele,
-      couleur: vehicleData?.AWN_couleur,
-      puissance_fiscale: vehicleData?.AWN_puissance_fiscale,
-      energie: vehicleData?.AWN_energie,
-      date_mec: vehicleData?.AWN_date_mise_en_circulation,
-      co2: vehicleData?.AWN_emission_co_2,
-      immatriculation: vehicleData?.AWN_immat,
-      vin: vehicleData?.AWN_vin,
-    };
-    
+    if (!data.success) {
+      return {
+        success: false,
+        error: data.error || 'Erreur inconnue',
+      };
+    }
+
     return {
       success: true,
-      data: normalizedData,
+      data: data.data,
     };
   } catch (error) {
     console.error('Erreur lors de la récupération des données:', error);
@@ -94,8 +67,6 @@ interface PricingConfig {
 
 // Récupérer la configuration des prix depuis la base de données
 export async function getPricingConfig(): Promise<PricingConfig> {
-  const { supabase } = await import("@/integrations/supabase/client");
-  
   const { data, error } = await supabase
     .from("pricing_config")
     .select("config_key, config_value");
@@ -113,12 +84,18 @@ export async function getPricingConfig(): Promise<PricingConfig> {
   }
   
   // Convertir le tableau en objet
-  const config: any = {};
+  const config: Record<string, number> = {};
   data.forEach((item) => {
     config[item.config_key] = item.config_value;
   });
   
-  return config as PricingConfig;
+  return {
+    prix_par_cv: config.prix_par_cv ?? 42,
+    taxe_co2_seuil: config.taxe_co2_seuil ?? 200,
+    taxe_co2_montant: config.taxe_co2_montant ?? 20,
+    frais_acheminement: config.frais_acheminement ?? 2.76,
+    taxe_gestion: config.taxe_gestion ?? 11,
+  };
 }
 
 // Calcul du prix de la carte grise
@@ -145,8 +122,6 @@ export async function calculateCarteGrisePrice(vehicleData: NormalizedVehicleDat
 
 // Récupérer les frais de dossier depuis la base de données
 export async function getFraisDossier(): Promise<number> {
-  const { supabase } = await import("@/integrations/supabase/client");
-  
   const { data, error } = await supabase
     .from("pricing_config")
     .select("config_value")

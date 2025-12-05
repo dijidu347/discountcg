@@ -69,46 +69,55 @@ const SuiviCommande = () => {
   const loadOrder = async () => {
     if (!trackingNumber) return;
 
-    const { data, error } = await supabase
-      .from("guest_orders")
-      .select("*")
-      .eq("tracking_number", trackingNumber)
-      .single();
+    try {
+      // Use secure edge function to fetch order by tracking number
+      const { data: response, error } = await supabase.functions.invoke('get-guest-order', {
+        body: { tracking_number: trackingNumber }
+      });
 
-    if (error || !data) {
+      if (error || !response?.success || !response?.data?.order) {
+        toast({
+          title: "Commande introuvable",
+          description: "Vérifiez votre numéro de suivi",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const orderData = response.data.order;
+      setOrder(orderData);
+      setDocuments(response.data.documents || []);
+      setAdminSentDocuments(response.data.adminDocuments || []);
+      setIsLoading(false);
+
+      // Check for carte grise finale in the documents
+      const carteGriseDoc = (response.data.documents || []).find(
+        (doc: any) => doc.type_document === 'carte_grise_finale'
+      );
+      
+      if (carteGriseDoc) {
+        setCarteGriseUrl(carteGriseDoc.url);
+      }
+
+      // Get facture from factures table (public read with order_id)
+      const { data: facture } = await supabase
+        .from('factures')
+        .select('pdf_url')
+        .eq('guest_order_id', orderData.id)
+        .single();
+      
+      if (facture?.pdf_url) {
+        setFactureUrl(facture.pdf_url);
+      }
+    } catch (err) {
+      console.error('Error loading order:', err);
       toast({
-        title: "Commande introuvable",
-        description: "Vérifiez votre numéro de suivi",
+        title: "Erreur",
+        description: "Impossible de charger la commande",
         variant: "destructive",
       });
       setIsLoading(false);
-      return;
-    }
-
-    setOrder(data);
-    setIsLoading(false);
-
-    // Check for carte grise finale (même si pas encore finalisé)
-    const { data: carteGriseDoc } = await supabase
-      .from('guest_order_documents')
-      .select('url')
-      .eq('order_id', data.id)
-      .eq('type_document', 'carte_grise_finale')
-      .single();
-    
-    if (carteGriseDoc) {
-      setCarteGriseUrl(carteGriseDoc.url);
-    }
-
-    // Get facture from factures table
-    const { data: facture } = await supabase
-      .from('factures')
-      .select('pdf_url')
-      .eq('guest_order_id', data.id)
-      .single();
-    
-    if (facture?.pdf_url) {
-      setFactureUrl(facture.pdf_url);
     }
   };
 
@@ -142,51 +151,36 @@ const SuiviCommande = () => {
   };
 
   const loadDocuments = async () => {
-    if (!trackingNumber) return;
+    if (!trackingNumber || !order) return;
 
-    // Get order first to get the ID
-    const { data: orderData } = await supabase
-      .from("guest_orders")
-      .select("id")
-      .eq("tracking_number", trackingNumber)
-      .single();
+    // Use the edge function to get documents securely
+    try {
+      const { data: response, error } = await supabase.functions.invoke('get-guest-order', {
+        body: { tracking_number: trackingNumber }
+      });
 
-    if (!orderData) return;
+      if (error || !response?.success) return;
 
-    // Load customer documents (exclude carte_grise_finale and admin documents)
-    const { data: docsData } = await supabase
-      .from("guest_order_documents")
-      .select("*")
-      .eq("order_id", orderData.id)
-      .neq("type_document", "carte_grise_finale")
-      .not("type_document", "like", "admin_%")
-      .order("created_at", { ascending: false });
+      const allDocs = response.data.documents || [];
+      
+      // Filter customer documents (exclude carte_grise_finale and admin documents)
+      const customerDocs = allDocs.filter((doc: any) => 
+        doc.type_document !== 'carte_grise_finale' && 
+        !doc.type_document?.startsWith('admin_')
+      );
 
-    if (docsData) {
-      setDocuments(docsData);
-    }
+      setDocuments(customerDocs);
 
-    // Load admin documents separately (from guest_order_documents)
-    const { data: adminDocs } = await supabase
-      .from("guest_order_documents")
-      .select("*")
-      .eq("order_id", orderData.id)
-      .like("type_document", "admin_%")
-      .order("created_at", { ascending: false });
-
-    if (adminDocs) {
+      // Filter admin documents
+      const adminDocs = allDocs.filter((doc: any) => 
+        doc.type_document?.startsWith('admin_')
+      );
       setAdminDocuments(adminDocs);
-    }
 
-    // Load admin sent documents (from new table)
-    const { data: adminSentDocs } = await supabase
-      .from("guest_order_admin_documents")
-      .select("*")
-      .eq("order_id", orderData.id)
-      .order("created_at", { ascending: false });
-
-    if (adminSentDocs) {
-      setAdminSentDocuments(adminSentDocs);
+      // Admin sent documents from the response
+      setAdminSentDocuments(response.data.adminDocuments || []);
+    } catch (err) {
+      console.error('Error loading documents:', err);
     }
   };
 
