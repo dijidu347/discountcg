@@ -228,9 +228,7 @@ export default function DemarcheDetail() {
         .eq('id', demarcheData.garage_id)
         .single();
 
-      if (garageData) {
-        setGarage(garageData);
-      }
+      setGarage(garageData || null);
 
       // Load vehicule data
       if (demarcheData.vehicule_id) {
@@ -1126,7 +1124,19 @@ export default function DemarcheDetail() {
             {garage && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Informations garage</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>Informations garage</CardTitle>
+                    {garage.is_verified ? (
+                      <Badge className="bg-green-500">
+                        <CheckCircle className="h-3 w-3 mr-1" />
+                        Vérifié
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">
+                        Non vérifié
+                      </Badge>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <div>

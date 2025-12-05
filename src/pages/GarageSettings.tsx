@@ -234,17 +234,22 @@ export default function GarageSettings() {
                           <div className="flex justify-between mb-2">
                             <h3 className="font-medium">
                               {type === 'kbis' ? 'KBIS' : type === 'carte_identite' ? "Carte d'identité" : (
-                                <>
-                                  Mandat pré-rempli{' '}
-                                  <a 
-                                    href="/cerfas/cerfa_13757_03.pdf" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    className="text-primary hover:underline"
-                                  >
-                                    (CERFA 13757)
-                                  </a>
-                                </>
+                                <div>
+                                  <div className="flex items-center gap-1">
+                                    Mandat pré-rempli{' '}
+                                    <a 
+                                      href="/cerfas/cerfa_13757_03.pdf" 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="text-primary hover:underline"
+                                    >
+                                      (CERFA 13757)
+                                    </a>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground font-normal mt-1">
+                                    (Remplir uniquement : raison sociale, SIRET, adresse. Tamponner et signer en bas)
+                                  </p>
+                                </div>
                               )}
                             </h3>
                             {status.badge}
