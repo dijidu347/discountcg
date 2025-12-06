@@ -194,18 +194,35 @@ export default function GarageSettings() {
       // Upload all selected files
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const fileName = `${garage.id}/${documentType}-${Date.now()}-${i}.${file.name.split('.').pop()}`;
-        const { error: uploadError } = await supabase.storage.from('demarche-documents').upload(fileName, file);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from('demarche-documents').getPublicUrl(fileName);
+        const timestamp = Date.now();
+        const randomSuffix = Math.random().toString(36).substring(2, 8);
+        const fileName = `${garage.id}/${documentType}-${timestamp}-${randomSuffix}.${file.name.split('.').pop()}`;
         
-        await supabase.from('verification_documents').insert({ 
+        const { error: uploadError } = await supabase.storage
+          .from('demarche-documents')
+          .upload(fileName, file);
+        
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          throw uploadError;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('demarche-documents')
+          .getPublicUrl(fileName);
+        
+        const { error: insertError } = await supabase.from('verification_documents').insert({ 
           garage_id: garage.id, 
           document_type: documentType, 
           url: publicUrl, 
           nom_fichier: file.name, 
           status: 'pending' 
         });
+        
+        if (insertError) {
+          console.error('Insert error:', insertError);
+          throw insertError;
+        }
       }
       
       // Remettre le garage dans "À vérifier" (nouveau document envoyé)
@@ -545,21 +562,30 @@ export default function GarageSettings() {
                             )}
                             
                             {status.canUpload && (
-                              <div className="relative">
-                                <Input 
-                                  type="file" 
-                                  accept=".pdf,.jpg,.jpeg,.png" 
-                                  multiple
-                                  onChange={(e) => e.target.files && e.target.files.length > 0 && handleFileUpload(reqDoc.code, e.target.files)} 
-                                  disabled={uploadingDoc === reqDoc.code}
-                                  className="cursor-pointer"
-                                />
-                                <p className="text-xs text-muted-foreground mt-1">
-                                  Vous pouvez sélectionner plusieurs fichiers
-                                </p>
+                              <div className="space-y-2">
+                                {[1, 2, 3].map((inputIndex) => (
+                                  <div key={inputIndex} className="relative">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-sm text-muted-foreground w-20">Fichier {inputIndex}:</span>
+                                      <Input 
+                                        type="file" 
+                                        accept=".pdf,.jpg,.jpeg,.png" 
+                                        onChange={(e) => {
+                                          if (e.target.files && e.target.files.length > 0) {
+                                            handleFileUpload(reqDoc.code, e.target.files);
+                                            e.target.value = ''; // Reset input after upload
+                                          }
+                                        }} 
+                                        disabled={uploadingDoc === reqDoc.code}
+                                        className="cursor-pointer flex-1"
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
                                 {uploadingDoc === reqDoc.code && (
-                                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">
-                                    <Loader2 className="h-5 w-5 animate-spin" />
+                                  <div className="flex items-center justify-center py-2">
+                                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                    <span className="text-sm">Envoi en cours...</span>
                                   </div>
                                 )}
                               </div>
