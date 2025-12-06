@@ -277,7 +277,7 @@ export default function GarageSettings() {
         <h1 className="text-2xl font-bold mb-6">Paramètres du compte</h1>
         
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="info">Informations</TabsTrigger>
             <TabsTrigger value="verification" className="relative">
               Vérification
@@ -286,9 +286,6 @@ export default function GarageSettings() {
                   {missingDocs}
                 </Badge>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="relative">
-              Notifications
               {notifications.length > 0 && (
                 <Badge variant="secondary" className="ml-2">{notifications.length}</Badge>
               )}
@@ -518,49 +515,38 @@ export default function GarageSettings() {
                         );
                       })}
                     </div>
+                    
+                    {/* Historique des notifications */}
+                    {notifications.length > 0 && (
+                      <div className="mt-8 pt-6 border-t">
+                        <div className="flex items-center gap-2 mb-4">
+                          <History className="h-5 w-5 text-muted-foreground" />
+                          <h3 className="font-semibold">Historique des notifications</h3>
+                          <Badge variant="secondary">{notifications.length}</Badge>
+                        </div>
+                        <ScrollArea className="h-[300px] pr-4">
+                          <div className="space-y-3">
+                            {notifications.map((notif) => (
+                              <Card key={notif.id} className="p-4">
+                                <div className="flex items-start justify-between mb-2">
+                                  <h4 className="font-medium">{notif.subject}</h4>
+                                  <span className="text-xs text-muted-foreground">
+                                    {format(new Date(notif.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notif.message}</p>
+                              </Card>
+                            ))}
+                          </div>
+                        </ScrollArea>
+                      </div>
+                    )}
                   </>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
           
-          <TabsContent value="notifications" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  <CardTitle>Historique des notifications</CardTitle>
-                </div>
-                <CardDescription>
-                  Messages reçus de l'équipe de vérification
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {notifications.length === 0 ? (
-                  <div className="text-center py-8">
-                    <Send className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">Aucune notification</p>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[400px] pr-4">
-                    <div className="space-y-4">
-                      {notifications.map((notif) => (
-                        <Card key={notif.id} className="p-4">
-                          <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-medium">{notif.subject}</h4>
-                            <span className="text-xs text-muted-foreground">
-                              {format(new Date(notif.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
-                            </span>
-                          </div>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">{notif.message}</p>
-                        </Card>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>
