@@ -148,13 +148,15 @@ export default function ManageGarages() {
       !g.verification_admin_viewed
     );
     
-    // EN ATTENTE: Garages qui ont été ouverts par admin OU qui ont au moins 1 document (mais pas tous)
+    // EN ATTENTE: Garages ouverts par admin OU avec au moins 1 document (mais pas "À vérifier")
+    // Exclure ceux qui sont dans "À vérifier"
     const enAttente = allGarages.filter(g => 
-      !g.is_verified && (
+      !g.is_verified && 
+      !aVerifier.some(av => av.id === g.id) && (
         // Garages ouverts par admin mais pas encore vérifiés
         (g.verification_admin_viewed === true) ||
-        // OU garages avec au moins 1 document mais pas encore tous les documents requis
-        (garagesWithDocs.has(g.id) && !g.verification_requested_at)
+        // OU garages avec au moins 1 document
+        garagesWithDocs.has(g.id)
       )
     );
     

@@ -178,6 +178,12 @@ export default function GarageSettings() {
         status: 'pending' 
       });
       
+      // Remettre le garage dans "À vérifier" (nouveau document envoyé)
+      // Reset verification_admin_viewed pour qu'il apparaisse dans la section "À vérifier"
+      await supabase.from('garages').update({ 
+        verification_admin_viewed: false
+      }).eq('id', garage.id);
+      
       // Check if all required documents are now uploaded
       const { data: allDocs } = await supabase
         .from('verification_documents')
