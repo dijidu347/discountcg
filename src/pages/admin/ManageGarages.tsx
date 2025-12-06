@@ -311,6 +311,41 @@ export default function ManageGarages() {
     }
   };
 
+  const handleSingleReject = async (docId: string, reason: string) => {
+    try {
+      const { error } = await supabase
+        .from('verification_documents')
+        .update({
+          status: 'rejected',
+          rejection_reason: reason,
+          validated_by: user?.id,
+          validated_at: new Date().toISOString()
+        })
+        .eq('id', docId);
+
+      if (error) throw error;
+
+      // Send rejection email with reason
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom_notification',
+          to: selectedGarage.email,
+          data: {
+            customerName: selectedGarage.raison_sociale,
+            subject: 'Document refusé - Action requise',
+            message: `Un document a été refusé.\n\nRaison: ${reason}\n\nVeuillez renvoyer le document corrigé dans votre espace "Paramètres > Vérification".`
+          }
+        }
+      });
+
+      toast({ title: "Document refusé", description: "Email envoyé au garage" });
+      await loadVerificationDocs(selectedGarage.id);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
   const handleVerifyGarage = async () => {
     if (!selectedGarage) return;
 
@@ -750,43 +785,49 @@ export default function ManageGarages() {
                             <p className="text-sm text-muted-foreground italic">Aucun document soumis</p>
                           ) : (
                             <div className="space-y-2">
-                              {docs.map((doc) => (
-                                <div key={doc.id} className={`flex items-center justify-between p-2 rounded border ${
-                                  doc.status === 'rejected' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
-                                  doc.status === 'approved' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
-                                  'bg-muted/50'
-                                }`}>
-                                  <div className="flex items-center gap-3">
-                                    {doc.status === 'pending' && (
-                                      <Checkbox
-                                        checked={selectedDocs.includes(doc.id)}
-                                        onCheckedChange={() => toggleDocSelection(doc.id)}
-                                      />
-                                    )}
-                                    <div>
-                                      <p className="text-sm font-medium">{doc.nom_fichier}</p>
-                                      <p className="text-xs text-muted-foreground">
-                                        {format(new Date(doc.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
-                                      </p>
-                                      {doc.rejection_reason && (
-                                        <p className="text-xs text-destructive mt-1">
-                                          Refus: {doc.rejection_reason}
+                              {docs.map((doc) => {
+                                const canAction = doc.status === 'pending' || doc.status === 'rejected';
+                                return (
+                                  <div key={doc.id} className={`flex items-center justify-between p-2 rounded border ${
+                                    doc.status === 'rejected' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
+                                    doc.status === 'approved' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
+                                    'bg-muted/50'
+                                  }`}>
+                                    <div className="flex items-center gap-3">
+                                      {canAction && (
+                                        <Checkbox
+                                          checked={selectedDocs.includes(doc.id)}
+                                          onCheckedChange={() => toggleDocSelection(doc.id)}
+                                        />
+                                      )}
+                                      <div>
+                                        <p className="text-sm font-medium">{doc.nom_fichier}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {format(new Date(doc.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
                                         </p>
+                                        {doc.rejection_reason && (
+                                          <p className="text-xs text-destructive mt-1">
+                                            Refus: {doc.rejection_reason}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      <Button size="sm" variant="outline" onClick={() => setViewerDoc(doc)}>
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      {canAction && (
+                                        <>
+                                          <Button size="sm" onClick={() => handleSingleApprove(doc.id)} className="bg-green-600 hover:bg-green-700">
+                                            <CheckCircle className="h-4 w-4" />
+                                          </Button>
+                                          <SingleRejectButton doc={doc} onReject={handleSingleReject} />
+                                        </>
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex gap-2">
-                                    <Button size="sm" variant="outline" onClick={() => setViewerDoc(doc)}>
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                    {doc.status === 'pending' && (
-                                      <Button size="sm" onClick={() => handleSingleApprove(doc.id)}>
-                                        <CheckCircle className="h-4 w-4" />
-                                      </Button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                );
+                              })}
                             </div>
                           )}
                         </Card>
@@ -1107,6 +1148,60 @@ function BulkRejectDialog({
           <AlertDialogAction 
             onClick={handleReject}
             disabled={!rejectionReason.trim()}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Confirmer le refus
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// Single Reject Button Component
+function SingleRejectButton({ 
+  doc, 
+  onReject 
+}: { 
+  doc: any;
+  onReject: (docId: string, reason: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [reason, setReason] = useState("");
+
+  const handleReject = () => {
+    if (reason.trim()) {
+      onReject(doc.id, reason);
+      setOpen(false);
+      setReason("");
+    }
+  };
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="destructive">
+          <XCircle className="h-4 w-4" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Refuser ce document</AlertDialogTitle>
+          <AlertDialogDescription>
+            Indiquez la raison du refus. Le garage sera notifié par email.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <Textarea
+          placeholder="Raison du refus..."
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          rows={4}
+        />
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={handleReject}
+            disabled={!reason.trim()}
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Confirmer le refus
