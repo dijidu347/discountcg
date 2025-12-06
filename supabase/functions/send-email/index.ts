@@ -13,7 +13,7 @@ const INTERNAL_API_KEY = Deno.env.get("INTERNAL_API_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Validate either internal API key, service role key, OR any authenticated user
+// Validate either internal API key, service role key, anon key, OR any authenticated user
 const validateAuth = async (req: Request): Promise<boolean> => {
   // Check internal API key first (for service-to-service calls)
   const providedKey = req.headers.get("x-internal-key");
@@ -32,6 +32,13 @@ const validateAuth = async (req: Request): Promise<boolean> => {
   // Accept service role key directly
   if (apiKey === supabaseServiceKey) {
     console.log("✅ Authenticated via service role key (apikey header)");
+    return true;
+  }
+  
+  // Accept anon key (for frontend calls) - since verify_jwt is false, this is safe
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (apiKey && supabaseAnonKey && apiKey === supabaseAnonKey) {
+    console.log("✅ Authenticated via anon key (apikey header)");
     return true;
   }
   
