@@ -485,7 +485,7 @@ export default function ManageGarages() {
 
     setSendingNotification(true);
     try {
-      // Save to history
+      // Save notification to database - will appear on client's notification bell
       await supabase.from('garage_verification_notifications').insert({
         garage_id: selectedGarage.id,
         sent_by: user?.id,
@@ -493,22 +493,9 @@ export default function ManageGarages() {
         message: notificationMessage
       });
 
-      // Send email
-      await supabase.functions.invoke('send-email', {
-        body: {
-          type: 'custom_notification',
-          to: selectedGarage.email,
-          data: {
-            customerName: selectedGarage.raison_sociale,
-            subject: notificationSubject,
-            message: notificationMessage
-          }
-        }
-      });
-
       toast({
         title: "Notification envoyée",
-        description: `Email envoyé à ${selectedGarage.email}`,
+        description: `Le garage verra cette notification dans son espace`,
       });
 
       setShowNotificationDialog(false);
