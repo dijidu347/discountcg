@@ -377,6 +377,77 @@ export type Database = {
           },
         ]
       }
+      garage_verification_notifications: {
+        Row: {
+          created_at: string
+          garage_id: string
+          id: string
+          message: string
+          sent_by: string | null
+          subject: string
+        }
+        Insert: {
+          created_at?: string
+          garage_id: string
+          id?: string
+          message: string
+          sent_by?: string | null
+          subject: string
+        }
+        Update: {
+          created_at?: string
+          garage_id?: string
+          id?: string
+          message?: string
+          sent_by?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "garage_verification_notifications_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      garage_verification_required_documents: {
+        Row: {
+          actif: boolean
+          code: string
+          created_at: string
+          description: string | null
+          id: string
+          nom_document: string
+          obligatoire: boolean
+          ordre: number
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom_document: string
+          obligatoire?: boolean
+          ordre?: number
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom_document?: string
+          obligatoire?: boolean
+          ordre?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       garages: {
         Row: {
           adresse: string
@@ -395,6 +466,7 @@ export type Database = {
           unlimited_free_tokens: boolean | null
           updated_at: string
           user_id: string
+          verification_admin_viewed: boolean | null
           verification_requested_at: string | null
           ville: string
         }
@@ -415,6 +487,7 @@ export type Database = {
           unlimited_free_tokens?: boolean | null
           updated_at?: string
           user_id: string
+          verification_admin_viewed?: boolean | null
           verification_requested_at?: string | null
           ville: string
         }
@@ -435,6 +508,7 @@ export type Database = {
           unlimited_free_tokens?: boolean | null
           updated_at?: string
           user_id?: string
+          verification_admin_viewed?: boolean | null
           verification_requested_at?: string | null
           ville?: string
         }

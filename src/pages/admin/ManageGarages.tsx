@@ -7,10 +7,11 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, Clock, History, Plus, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,27 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+
+interface RequiredDocument {
+  id: string;
+  code: string;
+  nom_document: string;
+  description: string;
+  obligatoire: boolean;
+  ordre: number;
+  actif: boolean;
+}
+
+interface Notification {
+  id: string;
+  subject: string;
+  message: string;
+  created_at: string;
+  sent_by: string;
+}
 
 export default function ManageGarages() {
   const { user, loading: authLoading } = useAuth();
@@ -44,6 +66,7 @@ export default function ManageGarages() {
   const [loading, setLoading] = useState(true);
   const [selectedGarage, setSelectedGarage] = useState<any>(null);
   const [verificationDocs, setVerificationDocs] = useState<any[]>([]);
+  const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showDocsDialog, setShowDocsDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
@@ -56,6 +79,12 @@ export default function ManageGarages() {
   const [notificationSubject, setNotificationSubject] = useState("");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationHistory, setNotificationHistory] = useState<Notification[]>([]);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState("documents");
+  const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
+  const [newDocForm, setNewDocForm] = useState({ nom_document: "", code: "", description: "", obligatoire: true });
+  const [savingDoc, setSavingDoc] = useState(false);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -76,6 +105,15 @@ export default function ManageGarages() {
     }
 
     loadGarages();
+    loadRequiredDocs();
+  };
+
+  const loadRequiredDocs = async () => {
+    const { data } = await supabase
+      .from('garage_verification_required_documents')
+      .select('*')
+      .order('ordre', { ascending: true });
+    setRequiredDocs(data || []);
   };
 
   const loadGarages = async () => {
@@ -120,10 +158,35 @@ export default function ManageGarages() {
     setVerificationDocs(data || []);
   };
 
+  const loadNotificationHistory = async (garageId: string) => {
+    const { data } = await supabase
+      .from('garage_verification_notifications')
+      .select('*')
+      .eq('garage_id', garageId)
+      .order('created_at', { ascending: false });
+    setNotificationHistory(data || []);
+  };
+
   const handleViewDocs = async (garage: any) => {
     setSelectedGarage(garage);
     await loadVerificationDocs(garage.id);
+    await loadNotificationHistory(garage.id);
+    
+    // Mark as viewed when opening
+    if (!garage.verification_admin_viewed && garage.verification_requested_at) {
+      await supabase
+        .from('garages')
+        .update({ verification_admin_viewed: true })
+        .eq('id', garage.id);
+      
+      // Update local state
+      setGaragesAVerifier(prev => prev.map(g => 
+        g.id === garage.id ? { ...g, verification_admin_viewed: true } : g
+      ));
+    }
+    
     setShowDocsDialog(true);
+    setActiveTab("documents");
   };
 
   const toggleDocSelection = (docId: string) => {
@@ -149,6 +212,19 @@ export default function ManageGarages() {
         .in('id', selectedDocs);
 
       if (error) throw error;
+
+      // Send notification email for approval
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom_notification',
+          to: selectedGarage.email,
+          data: {
+            customerName: selectedGarage.raison_sociale,
+            subject: 'Documents approuvés',
+            message: `Vos documents de vérification ont été approuvés. ${selectedDocs.length} document(s) validé(s).`
+          }
+        }
+      });
 
       toast({
         title: "Documents approuvés",
@@ -183,9 +259,22 @@ export default function ManageGarages() {
 
       if (error) throw error;
 
+      // Send rejection email with reason
+      await supabase.functions.invoke('send-email', {
+        body: {
+          type: 'custom_notification',
+          to: selectedGarage.email,
+          data: {
+            customerName: selectedGarage.raison_sociale,
+            subject: 'Documents refusés - Action requise',
+            message: `${selectedDocs.length} document(s) ont été refusés.\n\nRaison: ${rejectionReason}\n\nVeuillez renvoyer les documents corrigés dans votre espace "Paramètres > Vérification".`
+          }
+        }
+      });
+
       toast({
         title: "Documents refusés",
-        description: `${selectedDocs.length} document(s) refusé(s)`,
+        description: `${selectedDocs.length} document(s) refusé(s) - Email envoyé`,
       });
 
       setSelectedDocs([]);
@@ -201,6 +290,27 @@ export default function ManageGarages() {
     }
   };
 
+  const handleSingleApprove = async (docId: string) => {
+    try {
+      const { error } = await supabase
+        .from('verification_documents')
+        .update({
+          status: 'approved',
+          validated_by: user?.id,
+          validated_at: new Date().toISOString(),
+          rejection_reason: null
+        })
+        .eq('id', docId);
+
+      if (error) throw error;
+
+      toast({ title: "Document approuvé" });
+      await loadVerificationDocs(selectedGarage.id);
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
   const handleVerifyGarage = async () => {
     if (!selectedGarage) return;
 
@@ -213,12 +323,10 @@ export default function ManageGarages() {
 
       if (updateError) throw updateError;
 
-      // Mise à jour optimiste de l'état local pour feedback immédiat
       const updatedGarage = { ...selectedGarage, is_verified: true };
       setGaragesAVerifier(prev => prev.filter(g => g.id !== selectedGarage.id));
       setGaragesVerifies(prev => [updatedGarage, ...prev]);
 
-      // Envoyer email de vérification
       await supabase.functions.invoke('send-email', {
         body: {
           type: 'account_verified',
@@ -243,7 +351,6 @@ export default function ManageGarages() {
         description: "Impossible de vérifier le garage",
         variant: "destructive"
       });
-      // En cas d'erreur, recharger les données depuis la DB
       await loadGarages();
     } finally {
       setProcessingGarage(false);
@@ -265,7 +372,6 @@ export default function ManageGarages() {
 
       if (updateError) throw updateError;
 
-      // Envoyer email de refus
       await supabase.functions.invoke('send-email', {
         body: {
           type: 'account_rejected',
@@ -298,14 +404,29 @@ export default function ManageGarages() {
     }
   };
 
-  const allDocsApproved = verificationDocs.length >= 3 && 
-    verificationDocs.every(doc => doc.status === 'approved');
+  // Check if all required documents are approved
+  const allRequiredDocsApproved = () => {
+    const requiredCodes = requiredDocs.filter(d => d.obligatoire && d.actif).map(d => d.code);
+    const approvedCodes = verificationDocs
+      .filter(d => d.status === 'approved')
+      .map(d => d.document_type);
+    return requiredCodes.every(code => approvedCodes.includes(code));
+  };
 
   const handleSendNotification = async () => {
     if (!selectedGarage || !notificationSubject.trim() || !notificationMessage.trim()) return;
 
     setSendingNotification(true);
     try {
+      // Save to history
+      await supabase.from('garage_verification_notifications').insert({
+        garage_id: selectedGarage.id,
+        sent_by: user?.id,
+        subject: notificationSubject,
+        message: notificationMessage
+      });
+
+      // Send email
       await supabase.functions.invoke('send-email', {
         body: {
           type: 'custom_notification',
@@ -326,6 +447,7 @@ export default function ManageGarages() {
       setShowNotificationDialog(false);
       setNotificationSubject("");
       setNotificationMessage("");
+      await loadNotificationHistory(selectedGarage.id);
     } catch (error) {
       console.error('Error sending notification:', error);
       toast({
@@ -338,6 +460,47 @@ export default function ManageGarages() {
     }
   };
 
+  const handleAddRequiredDoc = async () => {
+    if (!newDocForm.nom_document.trim() || !newDocForm.code.trim()) return;
+    setSavingDoc(true);
+    try {
+      const maxOrdre = Math.max(...requiredDocs.map(d => d.ordre), 0);
+      const { error } = await supabase.from('garage_verification_required_documents').insert({
+        nom_document: newDocForm.nom_document,
+        code: newDocForm.code.toLowerCase().replace(/\s+/g, '_'),
+        description: newDocForm.description,
+        obligatoire: newDocForm.obligatoire,
+        ordre: maxOrdre + 1
+      });
+      if (error) throw error;
+      toast({ title: "Document ajouté" });
+      setNewDocForm({ nom_document: "", code: "", description: "", obligatoire: true });
+      await loadRequiredDocs();
+    } catch (error: any) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+    } finally {
+      setSavingDoc(false);
+    }
+  };
+
+  const handleToggleDocActive = async (doc: RequiredDocument) => {
+    await supabase.from('garage_verification_required_documents')
+      .update({ actif: !doc.actif })
+      .eq('id', doc.id);
+    await loadRequiredDocs();
+  };
+
+  const handleToggleDocRequired = async (doc: RequiredDocument) => {
+    await supabase.from('garage_verification_required_documents')
+      .update({ obligatoire: !doc.obligatoire })
+      .eq('id', doc.id);
+    await loadRequiredDocs();
+  };
+
+  const getDocumentsByType = (docType: string) => {
+    return verificationDocs.filter(d => d.document_type === docType);
+  };
+
   if (authLoading || loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
@@ -345,12 +508,18 @@ export default function ManageGarages() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
       <div className="container mx-auto px-4 py-8">
-        <Button variant="ghost" onClick={() => navigate("/admin")} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Button>
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" onClick={() => navigate("/admin")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+          <Button variant="outline" onClick={() => setShowManageDocsDialog(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Gérer les documents requis
+          </Button>
+        </div>
 
-        {/* Section À VÉRIFIER - Garages avec documents soumis */}
+        {/* Section À VÉRIFIER */}
         <Card className="p-6 mb-8 border-2 border-orange-500/20 bg-orange-50/5">
           <div className="flex items-center gap-3 mb-6">
             <Eye className="h-6 w-6 text-orange-600" />
@@ -374,14 +543,16 @@ export default function ManageGarages() {
               </TableHeader>
               <TableBody>
                 {garagesAVerifier.map((garage) => (
-                  <TableRow key={garage.id} className="bg-orange-50/50 dark:bg-orange-950/10">
+                  <TableRow key={garage.id} className={!garage.verification_admin_viewed ? "bg-red-50 dark:bg-red-950/20" : "bg-orange-50/50 dark:bg-orange-950/10"}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {garage.raison_sociale}
-                        <Badge variant="secondary" className="bg-orange-100 text-orange-700">
-                          <Eye className="h-3 w-3 mr-1" />
-                          À vérifier
-                        </Badge>
+                        {!garage.verification_admin_viewed && (
+                          <Badge variant="destructive" className="animate-pulse">
+                            <AlertCircle className="h-3 w-3 mr-1" />
+                            Nouveau
+                          </Badge>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>{garage.siret}</TableCell>
@@ -394,6 +565,49 @@ export default function ManageGarages() {
                       <Button size="sm" onClick={() => handleViewDocs(garage)} className="bg-orange-600 hover:bg-orange-700">
                         <Eye className="h-4 w-4 mr-2" />
                         Vérifier
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+
+        {/* Section EN ATTENTE (nouveau : vue après ouverture) */}
+        <Card className="p-6 mb-8 border-2 border-yellow-500/20 bg-yellow-50/5">
+          <div className="flex items-center gap-3 mb-6">
+            <Clock className="h-6 w-6 text-yellow-600" />
+            <h1 className="text-2xl font-bold text-yellow-700 dark:text-yellow-500">En attente de documents</h1>
+            <Badge variant="outline" className="border-yellow-500 text-yellow-600">{garagesEnAttente.length}</Badge>
+          </div>
+
+          {garagesEnAttente.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Aucun garage en attente</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Raison sociale</TableHead>
+                  <TableHead>SIRET</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Téléphone</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {garagesEnAttente.map((garage) => (
+                  <TableRow key={garage.id}>
+                    <TableCell className="font-medium text-muted-foreground">
+                      {garage.raison_sociale}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">{garage.siret}</TableCell>
+                    <TableCell className="text-muted-foreground">{garage.email}</TableCell>
+                    <TableCell className="text-muted-foreground">{garage.telephone}</TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="outline" onClick={() => handleViewDocs(garage)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        Voir
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -452,55 +666,12 @@ export default function ManageGarages() {
           )}
         </Card>
 
-        {/* Section EN ATTENTE */}
-        <Card className="p-6 opacity-70">
-          <div className="flex items-center gap-3 mb-6">
-            <XCircle className="h-6 w-6 text-muted-foreground" />
-            <h1 className="text-xl font-bold text-muted-foreground">En attente de documents</h1>
-            <Badge variant="outline">{garagesEnAttente.length}</Badge>
-          </div>
-
-          {garagesEnAttente.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucun garage en attente</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Raison sociale</TableHead>
-                  <TableHead>SIRET</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {garagesEnAttente.map((garage) => (
-                  <TableRow key={garage.id}>
-                    <TableCell className="font-medium text-muted-foreground">
-                      {garage.raison_sociale}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{garage.siret}</TableCell>
-                    <TableCell className="text-muted-foreground">{garage.email}</TableCell>
-                    <TableCell className="text-muted-foreground">{garage.telephone}</TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="outline" onClick={() => handleViewDocs(garage)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-
-        {/* Dialog Documents */}
+        {/* Dialog Documents avec onglets */}
         <Dialog open={showDocsDialog} onOpenChange={setShowDocsDialog}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                Documents de vérification - {selectedGarage?.raison_sociale}
+                {selectedGarage?.raison_sociale}
                 {selectedGarage?.is_verified && (
                   <Badge className="bg-green-500">
                     <ShieldCheck className="h-3 w-3 mr-1" />
@@ -509,80 +680,160 @@ export default function ManageGarages() {
                 )}
               </DialogTitle>
               <DialogDescription>
-                Vérifiez et validez les documents du garage
+                Gérer la vérification et les notifications
               </DialogDescription>
             </DialogHeader>
 
-            <div className="space-y-4">
-              {selectedDocs.length > 0 && (
-                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                  <Badge variant="secondary">{selectedDocs.length} sélectionné(s)</Badge>
-                  <Button size="sm" onClick={handleBulkApprove}>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Approuver la sélection
-                  </Button>
-                  <BulkRejectDialog
-                    onReject={handleBulkReject}
-                    rejectionReason={rejectionReason}
-                    setRejectionReason={setRejectionReason}
-                    count={selectedDocs.length}
-                  />
-                </div>
-              )}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center gap-2">
+                  Notifications
+                  {notificationHistory.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">{notificationHistory.length}</Badge>
+                  )}
+                </TabsTrigger>
+              </TabsList>
 
-              {verificationDocs.length === 0 ? (
-                <p className="text-muted-foreground text-center py-8">
-                  Aucun document soumis pour vérification
-                </p>
-              ) : (
-                verificationDocs.map((doc) => (
-                  <Card key={doc.id} className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3 flex-1">
-                        <Checkbox
-                          checked={selectedDocs.includes(doc.id)}
-                          onCheckedChange={() => toggleDocSelection(doc.id)}
-                          disabled={doc.status !== 'pending'}
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-medium mb-2 flex items-center gap-2">
-                            {doc.document_type === 'kbis' && 'KBIS'}
-                            {doc.document_type === 'carte_identite' && "Carte d'identité"}
-                            {doc.document_type === 'mandat' && 'Mandat pré-rempli'}
-                            <Badge variant={
-                              doc.status === 'approved' ? 'default' :
-                              doc.status === 'rejected' ? 'destructive' : 'secondary'
-                            }>
-                              {doc.status === 'pending' && 'En attente'}
-                              {doc.status === 'approved' && 'Approuvé'}
-                              {doc.status === 'rejected' && 'Refusé'}
-                            </Badge>
-                          </h3>
-                          <p className="text-sm text-muted-foreground mb-2">{doc.nom_fichier}</p>
-                          {doc.rejection_reason && (
-                            <p className="text-sm text-destructive bg-destructive/10 p-2 rounded">
-                              Raison du refus: {doc.rejection_reason}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => setViewerDoc(doc)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </div>
+              <TabsContent value="documents" className="flex-1 overflow-auto mt-4">
+                <div className="space-y-4">
+                  {selectedDocs.length > 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-muted rounded-lg sticky top-0 z-10">
+                      <Badge variant="secondary">{selectedDocs.length} sélectionné(s)</Badge>
+                      <Button size="sm" onClick={handleBulkApprove}>
+                        <CheckCircle className="h-4 w-4 mr-2" />
+                        Approuver
+                      </Button>
+                      <BulkRejectDialog
+                        onReject={handleBulkReject}
+                        rejectionReason={rejectionReason}
+                        setRejectionReason={setRejectionReason}
+                        count={selectedDocs.length}
+                      />
                     </div>
-                  </Card>
-                ))
-              )}
-            </div>
+                  )}
 
-            <DialogFooter className="flex gap-2 flex-wrap">
-              <Button variant="outline" onClick={() => setShowNotificationDialog(true)}>
-                <Send className="mr-2 h-4 w-4" />
-                Envoyer une notification
-              </Button>
-              {allDocsApproved && !selectedGarage?.is_verified && (
+                  <ScrollArea className="h-[400px] pr-4">
+                    {requiredDocs.filter(d => d.actif).map((reqDoc) => {
+                      const docs = getDocumentsByType(reqDoc.code);
+                      const latestDoc = docs[0];
+                      
+                      return (
+                        <Card key={reqDoc.id} className="p-4 mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <h3 className="font-medium flex items-center gap-2">
+                                {reqDoc.nom_document}
+                                {reqDoc.obligatoire ? (
+                                  <Badge variant="outline" className="text-xs">Obligatoire</Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="text-xs">Optionnel</Badge>
+                                )}
+                              </h3>
+                              {reqDoc.description && (
+                                <p className="text-sm text-muted-foreground">{reqDoc.description}</p>
+                              )}
+                            </div>
+                            {latestDoc && (
+                              <Badge variant={
+                                latestDoc.status === 'approved' ? 'default' :
+                                latestDoc.status === 'rejected' ? 'destructive' : 'secondary'
+                              } className={latestDoc.status === 'approved' ? 'bg-green-500' : ''}>
+                                {latestDoc.status === 'pending' && 'En attente'}
+                                {latestDoc.status === 'approved' && 'Approuvé'}
+                                {latestDoc.status === 'rejected' && 'Refusé'}
+                              </Badge>
+                            )}
+                          </div>
+
+                          {docs.length === 0 ? (
+                            <p className="text-sm text-muted-foreground italic">Aucun document soumis</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {docs.map((doc) => (
+                                <div key={doc.id} className={`flex items-center justify-between p-2 rounded border ${
+                                  doc.status === 'rejected' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
+                                  doc.status === 'approved' ? 'bg-green-50 border-green-200 dark:bg-green-950/20' :
+                                  'bg-muted/50'
+                                }`}>
+                                  <div className="flex items-center gap-3">
+                                    {doc.status === 'pending' && (
+                                      <Checkbox
+                                        checked={selectedDocs.includes(doc.id)}
+                                        onCheckedChange={() => toggleDocSelection(doc.id)}
+                                      />
+                                    )}
+                                    <div>
+                                      <p className="text-sm font-medium">{doc.nom_fichier}</p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {format(new Date(doc.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                                      </p>
+                                      {doc.rejection_reason && (
+                                        <p className="text-xs text-destructive mt-1">
+                                          Refus: {doc.rejection_reason}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button size="sm" variant="outline" onClick={() => setViewerDoc(doc)}>
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    {doc.status === 'pending' && (
+                                      <Button size="sm" onClick={() => handleSingleApprove(doc.id)}>
+                                        <CheckCircle className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </Card>
+                      );
+                    })}
+                  </ScrollArea>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="notifications" className="flex-1 overflow-auto mt-4">
+                <div className="space-y-4">
+                  <Button onClick={() => setShowNotificationDialog(true)} className="w-full">
+                    <Send className="mr-2 h-4 w-4" />
+                    Envoyer une notification
+                  </Button>
+
+                  <ScrollArea className="h-[350px] pr-4">
+                    <h3 className="font-medium mb-3 flex items-center gap-2">
+                      <History className="h-4 w-4" />
+                      Historique des notifications
+                    </h3>
+                    {notificationHistory.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Aucune notification envoyée</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {notificationHistory.map((notif) => (
+                          <Card key={notif.id} className="p-3">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-sm">{notif.subject}</h4>
+                                <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{notif.message}</p>
+                              </div>
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(notif.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
+                              </span>
+                            </div>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
+              </TabsContent>
+            </Tabs>
+
+            <DialogFooter className="flex gap-2 flex-wrap border-t pt-4">
+              {allRequiredDocsApproved() && !selectedGarage?.is_verified && (
                 <>
                   <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
                     <XCircle className="mr-2 h-4 w-4" />
@@ -713,6 +964,97 @@ export default function ManageGarages() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Manage Required Documents Dialog */}
+        <Dialog open={showManageDocsDialog} onOpenChange={setShowManageDocsDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Documents requis pour la vérification</DialogTitle>
+              <DialogDescription>
+                Gérer les documents obligatoires et optionnels
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <Card className="p-4">
+                <h4 className="font-medium mb-3">Ajouter un document</h4>
+                <div className="grid gap-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Nom du document</Label>
+                      <Input
+                        placeholder="Ex: Attestation d'assurance"
+                        value={newDocForm.nom_document}
+                        onChange={(e) => setNewDocForm({ ...newDocForm, nom_document: e.target.value })}
+                      />
+                    </div>
+                    <div>
+                      <Label>Code unique</Label>
+                      <Input
+                        placeholder="Ex: attestation_assurance"
+                        value={newDocForm.code}
+                        onChange={(e) => setNewDocForm({ ...newDocForm, code: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Description (optionnel)</Label>
+                    <Input
+                      placeholder="Instructions pour le garage"
+                      value={newDocForm.description}
+                      onChange={(e) => setNewDocForm({ ...newDocForm, description: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={newDocForm.obligatoire}
+                      onCheckedChange={(checked) => setNewDocForm({ ...newDocForm, obligatoire: !!checked })}
+                    />
+                    <Label>Document obligatoire</Label>
+                  </div>
+                  <Button onClick={handleAddRequiredDoc} disabled={savingDoc}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </div>
+              </Card>
+
+              <ScrollArea className="h-[300px]">
+                <div className="space-y-2">
+                  {requiredDocs.map((doc) => (
+                    <Card key={doc.id} className={`p-3 ${!doc.actif ? 'opacity-50' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="font-medium">{doc.nom_document}</h4>
+                          <p className="text-sm text-muted-foreground">{doc.code}</p>
+                          {doc.description && (
+                            <p className="text-xs text-muted-foreground">{doc.description}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant={doc.obligatoire ? "default" : "outline"}
+                            onClick={() => handleToggleDocRequired(doc)}
+                          >
+                            {doc.obligatoire ? "Obligatoire" : "Optionnel"}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={doc.actif ? "outline" : "destructive"}
+                            onClick={() => handleToggleDocActive(doc)}
+                          >
+                            {doc.actif ? "Actif" : "Inactif"}
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
@@ -744,14 +1086,14 @@ function BulkRejectDialog({
       <AlertDialogTrigger asChild>
         <Button variant="destructive" size="sm">
           <XCircle className="mr-2 h-4 w-4" />
-          Refuser la sélection
+          Refuser
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Refuser {count} document(s)</AlertDialogTitle>
           <AlertDialogDescription>
-            Indiquez la raison du refus pour tous les documents sélectionnés.
+            Indiquez la raison du refus. Le garage sera notifié par email.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <Textarea
