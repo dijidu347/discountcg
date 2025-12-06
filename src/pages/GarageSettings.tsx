@@ -261,33 +261,40 @@ export default function GarageSettings() {
     const docs = verificationDocs.filter(d => d.document_type === docCode);
     if (docs.length === 0) return { status: 'missing', canUpload: true };
     
-    const latestDoc = docs[0];
-    switch (latestDoc.status) {
-      case 'approved':
-        return { 
-          status: 'approved', 
-          badge: <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approuvé</Badge>,
-          canUpload: false,
-          doc: latestDoc
-        };
-      case 'rejected':
-        return { 
-          status: 'rejected', 
-          badge: <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Refusé</Badge>,
-          canUpload: true,
-          reason: latestDoc.rejection_reason,
-          doc: latestDoc
-        };
-      case 'pending':
-        return { 
-          status: 'pending', 
-          badge: <Badge variant="secondary"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>,
-          canUpload: false,
-          doc: latestDoc
-        };
-      default:
-        return { status: 'missing', canUpload: true };
+    // Priority: approved > pending > rejected
+    // Check for approved first
+    const approvedDoc = docs.find(d => d.status === 'approved');
+    if (approvedDoc) {
+      return { 
+        status: 'approved', 
+        badge: <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approuvé</Badge>,
+        canUpload: false,
+        doc: approvedDoc
+      };
     }
+    
+    // Check for pending (new document sent after rejection)
+    const pendingDocs = docs.filter(d => d.status === 'pending');
+    if (pendingDocs.length > 0) {
+      const latestPending = pendingDocs[0]; // Already sorted by created_at desc
+      return { 
+        status: 'pending', 
+        badge: <Badge variant="secondary"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>,
+        canUpload: true,
+        doc: latestPending,
+        allPendingDocs: pendingDocs
+      };
+    }
+    
+    // All remaining are rejected
+    const latestRejected = docs[0];
+    return { 
+      status: 'rejected', 
+      badge: <Badge variant="destructive"><XCircle className="h-3 w-3 mr-1" />Refusé</Badge>,
+      canUpload: true,
+      reason: latestRejected.rejection_reason,
+      doc: latestRejected
+    };
   };
 
   const getMissingDocsCount = () => {
