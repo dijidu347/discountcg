@@ -83,6 +83,32 @@ export default function GarageSettings() {
     }
   }, [user]);
 
+  // Subscribe to realtime updates for verification documents
+  useEffect(() => {
+    if (!garage?.id) return;
+
+    const channel = supabase
+      .channel(`verification-docs-${garage.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'verification_documents',
+          filter: `garage_id=eq.${garage.id}`
+        },
+        () => {
+          // Reload documents when any change happens
+          loadGarage();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [garage?.id]);
+
   const loadRequiredDocs = async () => {
     const { data } = await supabase
       .from('garage_verification_required_documents')
