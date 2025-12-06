@@ -191,6 +191,37 @@ export default function GarageSettings() {
     if (!garage || files.length === 0) return;
     setUploadingDoc(documentType);
     try {
+      // Delete any rejected documents of this type before uploading new ones
+      const { data: rejectedDocs } = await supabase
+        .from('verification_documents')
+        .select('id, url')
+        .eq('garage_id', garage.id)
+        .eq('document_type', documentType)
+        .eq('status', 'rejected');
+      
+      if (rejectedDocs && rejectedDocs.length > 0) {
+        // Delete from storage first
+        for (const doc of rejectedDocs) {
+          try {
+            const urlParts = doc.url.split('/demarche-documents/');
+            if (urlParts.length > 1) {
+              const filePath = urlParts[1];
+              await supabase.storage.from('demarche-documents').remove([filePath]);
+            }
+          } catch (e) {
+            console.error('Error deleting file from storage:', e);
+          }
+        }
+        
+        // Delete from database
+        await supabase
+          .from('verification_documents')
+          .delete()
+          .eq('garage_id', garage.id)
+          .eq('document_type', documentType)
+          .eq('status', 'rejected');
+      }
+      
       // Upload all selected files
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -224,7 +255,6 @@ export default function GarageSettings() {
           throw insertError;
         }
       }
-      
       // Remettre le garage dans "À vérifier" (nouveau document envoyé)
       // Reset verification_admin_viewed pour qu'il apparaisse dans la section "À vérifier"
       await supabase.from('garages').update({ 
