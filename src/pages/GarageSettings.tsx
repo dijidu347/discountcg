@@ -187,22 +187,26 @@ export default function GarageSettings() {
     setSaving(false);
   };
 
-  const handleFileUpload = async (documentType: string, file: File) => {
-    if (!garage) return;
+  const handleFileUpload = async (documentType: string, files: FileList) => {
+    if (!garage || files.length === 0) return;
     setUploadingDoc(documentType);
     try {
-      const fileName = `${garage.id}/${documentType}-${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage.from('demarche-documents').upload(fileName, file);
-      if (uploadError) throw uploadError;
-      const { data: { publicUrl } } = supabase.storage.from('demarche-documents').getPublicUrl(fileName);
-      
-      await supabase.from('verification_documents').insert({ 
-        garage_id: garage.id, 
-        document_type: documentType, 
-        url: publicUrl, 
-        nom_fichier: file.name, 
-        status: 'pending' 
-      });
+      // Upload all selected files
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = `${garage.id}/${documentType}-${Date.now()}-${i}.${file.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('demarche-documents').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data: { publicUrl } } = supabase.storage.from('demarche-documents').getPublicUrl(fileName);
+        
+        await supabase.from('verification_documents').insert({ 
+          garage_id: garage.id, 
+          document_type: documentType, 
+          url: publicUrl, 
+          nom_fichier: file.name, 
+          status: 'pending' 
+        });
+      }
       
       // Remettre le garage dans "À vérifier" (nouveau document envoyé)
       // Reset verification_admin_viewed pour qu'il apparaisse dans la section "À vérifier"
@@ -238,7 +242,13 @@ export default function GarageSettings() {
         });
       }
       
-      toast({ title: "Document envoyé", description: "Votre document a été soumis pour vérification" });
+      const fileCount = files.length;
+      toast({ 
+        title: fileCount > 1 ? "Documents envoyés" : "Document envoyé", 
+        description: fileCount > 1 
+          ? `${fileCount} documents ont été soumis pour vérification` 
+          : "Votre document a été soumis pour vérification" 
+      });
       loadGarage();
     } catch (error: any) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -532,10 +542,14 @@ export default function GarageSettings() {
                                 <Input 
                                   type="file" 
                                   accept=".pdf,.jpg,.jpeg,.png" 
-                                  onChange={(e) => e.target.files?.[0] && handleFileUpload(reqDoc.code, e.target.files[0])} 
+                                  multiple
+                                  onChange={(e) => e.target.files && e.target.files.length > 0 && handleFileUpload(reqDoc.code, e.target.files)} 
                                   disabled={uploadingDoc === reqDoc.code}
                                   className="cursor-pointer"
                                 />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  Vous pouvez sélectionner plusieurs fichiers
+                                </p>
                                 {uploadingDoc === reqDoc.code && (
                                   <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded">
                                     <Loader2 className="h-5 w-5 animate-spin" />
