@@ -275,6 +275,14 @@ export default function ManageGarages() {
 
       if (error) throw error;
 
+      // Create notification for the garage client to see in their dashboard
+      await supabase.from('garage_verification_notifications').insert({
+        garage_id: selectedGarage.id,
+        sent_by: user?.id,
+        subject: 'Documents refusés - Action requise',
+        message: `${selectedDocs.length} document(s) ont été refusés.\n\nRaison: ${rejectionReason}\n\nVeuillez renvoyer les documents corrigés.`
+      });
+
       // Send rejection email with reason
       await supabase.functions.invoke('send-email', {
         body: {
@@ -340,6 +348,14 @@ export default function ManageGarages() {
         .eq('id', docId);
 
       if (error) throw error;
+
+      // Create notification for the garage client to see in their dashboard
+      await supabase.from('garage_verification_notifications').insert({
+        garage_id: selectedGarage.id,
+        sent_by: user?.id,
+        subject: 'Document refusé - Action requise',
+        message: `Un document a été refusé.\n\nRaison: ${reason}\n\nVeuillez renvoyer le document corrigé.`
+      });
 
       // Send rejection email with reason
       await supabase.functions.invoke('send-email', {
