@@ -159,17 +159,14 @@ export default function NouvelleDemarche() {
     // Prix carte grise (taxe régionale, exonérée TVA) - 0 pour DA/DC
     const prixCarteGrise = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
     
-    // Options (soumises à TVA)
+    // Options
     const optionsHT = trackingServicePrice;
     
-    // Total des services soumis à TVA
+    // Total des services
     const totalServicesHT = fraisDossierHT + optionsHT;
     
-    // TVA 20% sur les services uniquement
-    const tva = totalServicesHT * 0.20;
-    
-    // Total TTC = carte grise (exonérée) + services HT + TVA
-    const totalTTC = prixCarteGrise + totalServicesHT + tva;
+    // Total TTC = carte grise + services (pas de TVA)
+    const totalTTC = prixCarteGrise + totalServicesHT;
 
     await supabase
       .from('demarches')
@@ -254,14 +251,11 @@ export default function NouvelleDemarche() {
     // Prix carte grise (taxe régionale, exonérée TVA) - 0 pour DA/DC
     const prixCarteGrise = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
     
-    // Total des services soumis à TVA (pas d'options au début)
+    // Total des services (pas d'options au début)
     const totalServicesHT = fraisDossierHT;
     
-    // TVA 20% sur les services uniquement
-    const tva = totalServicesHT * 0.20;
-    
-    // Total TTC = carte grise (exonérée) + services HT + TVA
-    const totalTTC = prixCarteGrise + totalServicesHT + tva;
+    // Total TTC = carte grise + services (pas de TVA)
+    const totalTTC = prixCarteGrise + totalServicesHT;
 
     const { data, error } = await supabase
       .from('demarches')
