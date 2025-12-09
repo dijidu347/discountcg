@@ -893,17 +893,15 @@ export default function ManageGarages() {
             </Tabs>
 
             <DialogFooter className="flex gap-2 flex-wrap border-t pt-4">
-              {allRequiredDocsApproved() && !selectedGarage?.is_verified && (
-                <>
-                  <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
-                    <XCircle className="mr-2 h-4 w-4" />
-                    Refuser la vérification
-                  </Button>
-                  <Button onClick={() => setShowVerifyDialog(true)}>
-                    <ShieldCheck className="mr-2 h-4 w-4" />
-                    Vérifier ce garage
-                  </Button>
-                </>
+              <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
+                <XCircle className="mr-2 h-4 w-4" />
+                {selectedGarage?.is_verified ? "Retirer la vérification" : "Refuser la vérification"}
+              </Button>
+              {!selectedGarage?.is_verified && (
+                <Button onClick={() => setShowVerifyDialog(true)} className="bg-green-600 hover:bg-green-700">
+                  <ShieldCheck className="mr-2 h-4 w-4" />
+                  Vérifier ce garage
+                </Button>
               )}
             </DialogFooter>
           </DialogContent>
