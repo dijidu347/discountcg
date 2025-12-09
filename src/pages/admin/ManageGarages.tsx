@@ -733,8 +733,28 @@ export default function ManageGarages() {
                   </Badge>
                 )}
               </DialogTitle>
-              <DialogDescription>
-                Gérer la vérification et les notifications
+              <DialogDescription className="flex items-center justify-between">
+                <span>Gérer la vérification et les notifications</span>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => setShowRejectDialog(true)}
+                  >
+                    <XCircle className="mr-2 h-4 w-4" />
+                    {selectedGarage?.is_verified ? "Retirer la vérification" : "Refuser"}
+                  </Button>
+                  {!selectedGarage?.is_verified && (
+                    <Button 
+                      size="sm"
+                      onClick={() => setShowVerifyDialog(true)} 
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      Vérifier
+                    </Button>
+                  )}
+                </div>
               </DialogDescription>
             </DialogHeader>
 
@@ -892,18 +912,6 @@ export default function ManageGarages() {
               </TabsContent>
             </Tabs>
 
-            <DialogFooter className="flex gap-2 flex-wrap border-t pt-4">
-              <Button variant="destructive" onClick={() => setShowRejectDialog(true)}>
-                <XCircle className="mr-2 h-4 w-4" />
-                {selectedGarage?.is_verified ? "Retirer la vérification" : "Refuser la vérification"}
-              </Button>
-              {!selectedGarage?.is_verified && (
-                <Button onClick={() => setShowVerifyDialog(true)} className="bg-green-600 hover:bg-green-700">
-                  <ShieldCheck className="mr-2 h-4 w-4" />
-                  Vérifier ce garage
-                </Button>
-              )}
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
