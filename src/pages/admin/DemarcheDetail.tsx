@@ -865,11 +865,34 @@ export default function DemarcheDetail() {
                       Créée le {new Date(demarche.created_at).toLocaleDateString('fr-FR')} • {demarche.immatriculation}
                     </CardDescription>
                   </div>
-                  <FactureButton 
-                    demarcheId={demarche.id}
-                    existingFactureId={demarche.facture_id}
-                    onFactureGenerated={loadDemarcheData}
-                  />
+                  <div className="flex gap-2">
+                    <FactureButton 
+                      demarcheId={demarche.id}
+                      existingFactureId={demarche.facture_id}
+                      onFactureGenerated={loadDemarcheData}
+                    />
+                    {demarche.facture_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            toast({ title: "Régénération en cours..." });
+                            const { error } = await supabase.functions.invoke('regenerate-facture', {
+                              body: { factureId: demarche.facture_id }
+                            });
+                            if (error) throw error;
+                            toast({ title: "Facture régénérée avec succès" });
+                          } catch (err) {
+                            console.error('Error regenerating:', err);
+                            toast({ title: "Erreur lors de la régénération", variant: "destructive" });
+                          }
+                        }}
+                      >
+                        Régénérer
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">

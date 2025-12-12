@@ -7,17 +7,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-interface GenerateFactureRequest {
-  demarcheId: string;
-}
-
-// UUID validation regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function isValidUUID(uuid: string): boolean {
-  return UUID_REGEX.test(uuid);
-}
-
 async function generateFacturePDF(
   facture: any, 
   demarche: any, 
@@ -34,7 +23,7 @@ async function generateFacturePDF(
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   
-  const blue = rgb(0.145, 0.388, 0.922); // #2563eb
+  const blue = rgb(0.145, 0.388, 0.922);
   const black = rgb(0, 0, 0);
   const gray = rgb(0.4, 0.4, 0.4);
   const lightGray = rgb(0.95, 0.96, 0.98);
@@ -43,7 +32,7 @@ async function generateFacturePDF(
   const margin = 50;
   let y = height - margin;
   
-  // Header
+  // Header - DISCOUNT AUTO PARE BRISE
   page.drawText("DISCOUNT AUTO PARE BRISE", { x: margin, y, size: 20, font: fontBold, color: blue });
   
   const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
@@ -51,11 +40,9 @@ async function generateFacturePDF(
   y -= 20;
   page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
   
-  // Blue line
   y -= 30;
   page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
   
-  // Parties
   y -= 40;
   page.drawText("EMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
   page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
@@ -79,7 +66,6 @@ async function generateFacturePDF(
   y -= 12;
   page.drawText(garage?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
   
-  // Détails box
   y -= 40;
   page.drawRectangle({ x: margin, y: y - 70, width: width - 2 * margin, height: 80, color: lightGray });
   
@@ -98,9 +84,6 @@ async function generateFacturePDF(
   page.drawText("Type :", { x: margin + 15, y, size: 10, font: fontRegular, color: gray });
   page.drawText(demarche?.type || "N/A", { x: margin + 150, y, size: 10, font: fontBold, color: black });
   
-  // =============================================
-  // SECTION 1: CARTE GRISE
-  // =============================================
   if (prixCarteGrise > 0) {
     y -= 40;
     page.drawText("CARTE GRISE", { x: margin, y, size: 11, font: fontBold, color: blue });
@@ -118,9 +101,6 @@ async function generateFacturePDF(
     page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
   }
   
-  // =============================================
-  // SECTION 2: SERVICES
-  // =============================================
   const hasServices = fraisDossier > 0 || trackingServices.length > 0;
   
   if (hasServices) {
@@ -132,7 +112,6 @@ async function generateFacturePDF(
     page.drawText("Description", { x: margin + 10, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
     page.drawText("Prix", { x: width - margin - 70, y: y, size: 10, font: fontBold, color: rgb(1, 1, 1) });
     
-    // Frais de dossier
     if (fraisDossier > 0) {
       y -= 25;
       page.drawText(actionTitre, { x: margin + 10, y, size: 10, font: fontRegular, color: black });
@@ -142,7 +121,6 @@ async function generateFacturePDF(
       page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 0.5, color: rgb(0.9, 0.9, 0.9) });
     }
     
-    // Options / Tracking services
     for (const service of trackingServices) {
       const serviceLabels: Record<string, string> = {
         'priority': 'Dossier prioritaire',
@@ -166,9 +144,6 @@ async function generateFacturePDF(
     }
   }
   
-  // =============================================
-  // SECTION 3: TOTAUX (sans TVA)
-  // =============================================
   const totalServices = fraisDossier + trackingServices.reduce((sum, s) => sum + Number(s.price), 0);
   const montantTotal = prixCarteGrise + totalServices;
   
@@ -192,7 +167,6 @@ async function generateFacturePDF(
   page.drawText("TOTAL", { x: width - margin - 210, y, size: 14, font: fontBold, color: blue });
   page.drawText(`${montantTotal.toFixed(2)} EUR`, { x: width - margin - 70, y, size: 14, font: fontBold, color: blue });
   
-  // Payment info
   y -= 50;
   page.drawRectangle({ x: margin, y: y - 25, width: width - 2 * margin, height: 40, color: rgb(0.93, 0.99, 0.96) });
   y -= 5;
@@ -200,7 +174,6 @@ async function generateFacturePDF(
   y -= 15;
   page.drawText("Paiement effectue par carte bancaire via Stripe", { x: margin + 15, y, size: 9, font: fontRegular, color: gray });
   
-  // Footer
   y = margin + 40;
   page.drawLine({ start: { x: margin, y }, end: { x: width - margin, y }, thickness: 1, color: rgb(0.9, 0.9, 0.9) });
   y -= 15;
@@ -221,7 +194,6 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get user from auth header
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       throw new Error('Missing authorization header');
@@ -235,9 +207,6 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error('Unauthorized');
     }
 
-    console.log('User authenticated:', user.id);
-
-    // Check if user is admin
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
@@ -245,64 +214,40 @@ serve(async (req: Request): Promise<Response> => {
       .single();
 
     if (!roles || roles.role !== 'admin') {
-      console.log('User is not admin');
-      throw new Error('Only admins can generate invoices');
+      throw new Error('Only admins can regenerate invoices');
     }
 
-    console.log('Admin access confirmed');
+    const { factureId } = await req.json();
 
-    const { demarcheId }: GenerateFactureRequest = await req.json();
+    console.log('Regenerating facture:', factureId);
 
-    // Validate demarcheId format
-    if (!demarcheId || typeof demarcheId !== 'string' || !isValidUUID(demarcheId)) {
-      console.error('Invalid demarcheId format:', demarcheId);
-      throw new Error('Invalid demarcheId format - must be a valid UUID');
-    }
-
-    console.log('Generating facture for demarche:', demarcheId);
-
-    // Get demarche details with garage info
-    const { data: demarche, error: demarcheError } = await supabase
-      .from('demarches')
-      .select(`
-        *,
-        garages (*)
-      `)
-      .eq('id', demarcheId)
+    // Get facture with demarche
+    const { data: facture, error: factureError } = await supabase
+      .from('factures')
+      .select('*, demarches(*)')
+      .eq('id', factureId)
       .single();
 
-    if (demarcheError || !demarche) {
-      throw new Error('Demarche not found');
+    if (factureError || !facture) {
+      throw new Error('Facture not found');
     }
 
-    // Check if facture already exists
-    const { data: existingFacture } = await supabase
-      .from('factures')
+    const demarche = facture.demarches;
+    
+    // Get garage
+    const { data: garage } = await supabase
+      .from('garages')
       .select('*')
-      .eq('demarche_id', demarcheId)
-      .maybeSingle();
+      .eq('id', demarche.garage_id)
+      .single();
 
-    if (existingFacture) {
-      return new Response(
-        JSON.stringify({ 
-          success: true, 
-          facture: existingFacture,
-          message: 'Facture already exists'
-        }),
-        { 
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
-      );
-    }
-
-    // Fetch tracking services for the demarche
+    // Get tracking services
     const { data: trackingServices } = await supabase
       .from('tracking_services')
       .select('*')
-      .eq('demarche_id', demarcheId);
+      .eq('demarche_id', demarche.id);
 
-    // Fetch action rapide to get base action price and title
+    // Get action
     const { data: actionRapide } = await supabase
       .from('actions_rapides')
       .select('prix, titre')
@@ -310,74 +255,22 @@ serve(async (req: Request): Promise<Response> => {
       .single();
 
     const actionTitre = actionRapide?.titre || demarche.type;
-    const optionsTotal = (trackingServices || []).reduce((sum: number, s: any) => sum + Number(s.price), 0);
-
-    // Determine if it's a CG demarche
     const isCG = demarche.type === 'CG' || demarche.type === 'CG_DA' || demarche.type === 'CG_IMPORT';
-    
-    // Use the stored values from the database
     const prixCarteGrise = isCG ? (Number(demarche.prix_carte_grise) || 0) : 0;
     const fraisDossierHT = Number(demarche.frais_dossier) || Number(actionRapide?.prix) || 0;
-    
-    // Total services = frais de dossier + options
-    const totalServices = fraisDossierHT + optionsTotal;
-    
-    // Total = carte grise + services (pas de TVA)
-    const totalAmount = prixCarteGrise + totalServices;
 
-    console.log('Invoice calculation (no TVA):', {
-      prixCarteGrise,
-      fraisDossierHT,
-      optionsTotal,
-      totalServices,
-      totalAmount,
-      isCG
-    });
-
-    // Generate facture number
-    const { data: numeroData, error: numeroError } = await supabase
-      .rpc('generate_facture_numero');
-
-    if (numeroError) {
-      throw new Error('Failed to generate facture number: ' + numeroError.message);
-    }
-
-    const numero = numeroData as string;
-
-    // Create facture record (sans TVA)
-    // montant_ht = total services
-    // montant_ttc = carte grise + services (identique car pas de TVA)
-    const { data: facture, error: factureError } = await supabase
-      .from('factures')
-      .insert({
-        numero,
-        demarche_id: demarcheId,
-        garage_id: demarche.garage_id,
-        montant_ht: totalServices,
-        montant_ttc: totalAmount,
-        tva: 0,
-      })
-      .select()
-      .single();
-
-    if (factureError) {
-      throw new Error('Failed to create facture: ' + factureError.message);
-    }
-
-    console.log('Facture created:', facture);
-
-    // Generate PDF with detailed line items
+    // Generate PDF
     const pdfBytes = await generateFacturePDF(
       facture, 
       demarche, 
-      demarche.garages, 
+      garage, 
       trackingServices || [],
       prixCarteGrise,
       fraisDossierHT,
       actionTitre
     );
 
-    // Store the PDF
+    // Upload PDF
     const fileName = `${demarche.garage_id}/${facture.numero}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from('factures')
@@ -390,44 +283,24 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error('Failed to upload facture: ' + uploadError.message);
     }
 
-    // Store the path for later signed URL generation (bucket is private)
-    const pdfPath = fileName;
-
-    // Update facture with PDF path (not public URL since bucket is private)
-    const { error: updateError } = await supabase
-      .from('factures')
-      .update({ pdf_url: pdfPath })
-      .eq('id', facture.id);
-
-    if (updateError) {
-      console.error('Failed to update facture URL:', updateError);
-    }
-
-    // Update demarche with facture_id
+    // Update facture with path
     await supabase
-      .from('demarches')
-      .update({ facture_id: facture.id })
-      .eq('id', demarcheId);
+      .from('factures')
+      .update({ pdf_url: fileName })
+      .eq('id', factureId);
+
+    console.log('Facture regenerated successfully:', factureId);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        facture: { ...facture, pdf_url: pdfPath }
-      }),
-      { 
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({ success: true, message: 'Facture regenerated' }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: any) {
-    console.error('Error generating facture:', error);
+    console.error('Error regenerating facture:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { 
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

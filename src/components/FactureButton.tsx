@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { downloadPrivateFile } from "@/lib/storage-utils";
+
 
 interface FactureButtonProps {
   demarcheId: string;
@@ -61,8 +61,29 @@ export const FactureButton = ({
         throw new Error('Facture URL not found');
       }
 
-      // Download via signed URL
-      await downloadPrivateFile(facture.pdf_url, `facture-${facture.numero}.pdf`);
+      // pdf_url contains the path in the bucket (e.g. "garage_id/2025-00001.pdf")
+      const pdfPath = facture.pdf_url.includes('factures/') 
+        ? facture.pdf_url.split('factures/').pop() || facture.pdf_url
+        : facture.pdf_url;
+      
+      // Get signed URL directly from storage
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from('factures')
+        .createSignedUrl(pdfPath, 3600);
+
+      if (signedError || !signedData?.signedUrl) {
+        console.error('Error getting signed URL:', signedError);
+        throw new Error('Unable to get download URL');
+      }
+
+      // Trigger download
+      const link = document.createElement("a");
+      link.href = signedData.signedUrl;
+      link.download = `facture-${facture.numero}.pdf`;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       toast({
         title: "Facture téléchargée",
