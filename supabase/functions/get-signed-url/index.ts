@@ -27,7 +27,20 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization");
     const trackingNumber = req.headers.get("x-tracking-number");
     
-    const { bucket, path, trackingNumber: bodyTrackingNumber }: SignedUrlRequest = await req.json();
+    // Parse request body safely
+    let requestBody: SignedUrlRequest;
+    try {
+      const bodyText = await req.text();
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error("❌ JSON parsing error:", parseError);
+      return new Response(
+        JSON.stringify({ error: "Invalid JSON in request body" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+    
+    const { bucket, path, trackingNumber: bodyTrackingNumber } = requestBody;
     const effectiveTrackingNumber = trackingNumber || bodyTrackingNumber;
 
     console.log(`📁 Signed URL request for bucket: ${bucket}, path: ${path}`);

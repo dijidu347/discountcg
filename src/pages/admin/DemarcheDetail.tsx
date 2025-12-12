@@ -879,10 +879,6 @@ export default function DemarcheDetail() {
                     <p className="text-sm font-medium mt-1">{demarche.type}</p>
                   </div>
                   <div>
-                    <Label>Montant TTC</Label>
-                    <p className="text-sm font-medium mt-1">{demarche.montant_ttc.toFixed(2)}€</p>
-                  </div>
-                  <div>
                     <Label>Statut actuel</Label>
                     <p className="text-sm font-medium mt-1">{demarche.status}</p>
                   </div>
@@ -891,10 +887,51 @@ export default function DemarcheDetail() {
                     <p className="text-sm font-medium mt-1">
                       {demarche.is_free_token 
                         ? "🎁 Jeton gratuit" 
-                        : demarche.paye 
-                          ? "✅ Payé" 
-                          : "❌ Non payé"}
+                        : demarche.paid_with_tokens
+                          ? "💳 Payé avec solde"
+                          : demarche.paye 
+                            ? "✅ Payé" 
+                            : "❌ Non payé"}
                     </p>
+                  </div>
+                </div>
+
+                {/* Détails des prix */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h4 className="font-medium text-sm mb-3">Détails des prix</h4>
+                  <div className="space-y-2 text-sm">
+                    {demarche.prix_carte_grise && demarche.prix_carte_grise > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Taxe régionale (carte grise)</span>
+                        <span className="font-medium">{demarche.prix_carte_grise.toFixed(2)} €</span>
+                      </div>
+                    )}
+                    {demarche.frais_dossier && demarche.frais_dossier > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Frais de dossier HT</span>
+                        <span className="font-medium">{demarche.frais_dossier.toFixed(2)} €</span>
+                      </div>
+                    )}
+                    {trackingServices.length > 0 && (
+                      <>
+                        {trackingServices.map((service) => (
+                          <div key={service.id} className="flex justify-between">
+                            <span className="text-muted-foreground">
+                              {service.service_type === 'dossier_prioritaire' && 'Dossier prioritaire'}
+                              {service.service_type === 'certificat_non_gage' && 'Certificat de non-gage'}
+                              {service.service_type === 'suivi_email' && 'Suivi par email'}
+                              {service.service_type === 'suivi_sms' && 'Suivi par SMS'}
+                              {service.service_type === 'suivi_complet' && 'Suivi complet'}
+                            </span>
+                            <span className="font-medium">{service.price.toFixed(2)} € HT</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
+                      <span>Total TTC</span>
+                      <span className="text-primary">{demarche.montant_ttc?.toFixed(2) || '0.00'} €</span>
+                    </div>
                   </div>
                 </div>
 
