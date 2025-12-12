@@ -908,7 +908,7 @@ export default function DemarcheDetail() {
                     )}
                     {demarche.frais_dossier && demarche.frais_dossier > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Frais de dossier HT</span>
+                        <span className="text-muted-foreground">Frais de dossier</span>
                         <span className="font-medium">{demarche.frais_dossier.toFixed(2)} €</span>
                       </div>
                     )}
