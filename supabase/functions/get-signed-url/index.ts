@@ -27,11 +27,25 @@ serve(async (req) => {
     const authHeader = req.headers.get("authorization");
     const trackingNumber = req.headers.get("x-tracking-number");
     
-    // Parse request body safely
+    // Parse request body safely - handle both raw JSON and already parsed objects
     let requestBody: SignedUrlRequest;
     try {
-      const bodyText = await req.text();
-      requestBody = JSON.parse(bodyText);
+      const contentType = req.headers.get("content-type") || "";
+      
+      if (contentType.includes("application/json")) {
+        requestBody = await req.json();
+      } else {
+        const bodyText = await req.text();
+        // Check if body is already an object string like "[object Object]"
+        if (bodyText === "[object Object]" || !bodyText) {
+          console.error("❌ Invalid body received:", bodyText);
+          return new Response(
+            JSON.stringify({ error: "Invalid request body format" }),
+            { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+          );
+        }
+        requestBody = JSON.parse(bodyText);
+      }
     } catch (parseError) {
       console.error("❌ JSON parsing error:", parseError);
       return new Response(
