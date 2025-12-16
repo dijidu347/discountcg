@@ -187,7 +187,7 @@ export default function GarageSettings() {
     setSaving(false);
   };
 
-  const handleFileUpload = async (documentType: string, files: FileList) => {
+  const handleFileUpload = async (documentType: string, files: File[]) => {
     if (!garage || files.length === 0) return;
     setUploadingDoc(documentType);
     try {
@@ -616,11 +616,14 @@ export default function GarageSettings() {
                                         type="file" 
                                         accept=".pdf,.jpg,.jpeg,.png" 
                                         onChange={(e) => {
-                                          if (e.target.files && e.target.files.length > 0) {
-                                            handleFileUpload(reqDoc.code, e.target.files);
+                                          const selected = e.target.files;
+                                          if (selected && selected.length > 0) {
+                                            // Important: copy files before clearing the input value
+                                            const filesArray = Array.from(selected);
+                                            handleFileUpload(reqDoc.code, filesArray);
                                             e.target.value = '';
                                           }
-                                        }} 
+                                        }}
                                         disabled={uploadingDoc === reqDoc.code}
                                         className="cursor-pointer flex-1"
                                       />
