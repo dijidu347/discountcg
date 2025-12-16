@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, Clock, History, Plus, AlertCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, Clock, History, Plus, AlertCircle, Upload } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -85,6 +85,8 @@ export default function ManageGarages() {
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
   const [newDocForm, setNewDocForm] = useState({ nom_document: "", code: "", description: "", obligatoire: true });
   const [savingDoc, setSavingDoc] = useState(false);
+  const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
+  const adminFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -375,6 +377,62 @@ export default function ManageGarages() {
     } catch (error) {
       console.error('Error:', error);
       toast({ title: "Erreur", variant: "destructive" });
+    }
+  };
+
+  const handleAdminUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedGarage || !uploadingDocType) return;
+
+    try {
+      // Upload to storage
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${selectedGarage.id}/${uploadingDocType}_admin_${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('demarche-documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('demarche-documents')
+        .getPublicUrl(fileName);
+
+      // Create document record with auto-approved status
+      const { error: dbError } = await supabase
+        .from('verification_documents')
+        .insert({
+          garage_id: selectedGarage.id,
+          document_type: uploadingDocType,
+          nom_fichier: file.name,
+          url: publicUrl,
+          status: 'approved',
+          validated_by: user?.id,
+          validated_at: new Date().toISOString()
+        });
+
+      if (dbError) throw dbError;
+
+      toast({
+        title: "Document uploadé",
+        description: "Le document a été ajouté et validé automatiquement"
+      });
+
+      await loadVerificationDocs(selectedGarage.id);
+    } catch (error) {
+      console.error('Error uploading:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'uploader le document",
+        variant: "destructive"
+      });
+    } finally {
+      setUploadingDocType(null);
+      if (adminFileInputRef.current) {
+        adminFileInputRef.current.value = "";
+      }
     }
   };
 
@@ -720,6 +778,15 @@ export default function ManageGarages() {
           )}
         </Card>
 
+        {/* Hidden file input for admin upload */}
+        <input
+          type="file"
+          ref={adminFileInputRef}
+          className="hidden"
+          onChange={handleAdminUpload}
+          accept=".pdf,.jpg,.jpeg,.png"
+        />
+
         {/* Dialog Documents avec onglets */}
         <Dialog open={showDocsDialog} onOpenChange={setShowDocsDialog}>
           <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -870,6 +937,22 @@ export default function ManageGarages() {
                               })}
                             </div>
                           )}
+                          
+                          {/* Admin upload button */}
+                          <div className="mt-3 pt-3 border-t">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="w-full"
+                              onClick={() => {
+                                setUploadingDocType(reqDoc.code);
+                                adminFileInputRef.current?.click();
+                              }}
+                            >
+                              <Upload className="h-4 w-4 mr-2" />
+                              Uploader pour ce garage (auto-validé)
+                            </Button>
+                          </div>
                         </Card>
                       );
                     })}
