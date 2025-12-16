@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
-import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Mail, Phone, Zap, FileCheck as FileCheckIcon, CreditCard, Loader2 } from "lucide-react";
+import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Mail, Phone, Zap, FileCheck as FileCheckIcon, CreditCard, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FactureButton } from "@/components/FactureButton";
 import { formatPrice } from "@/lib/utils";
@@ -44,6 +44,7 @@ export default function DemarcheDetail() {
   const [trackingServices, setTrackingServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [uploadSlots, setUploadSlots] = useState<number[]>([1]);
   const [viewerState, setViewerState] = useState<{
     isOpen: boolean;
     url: string;
@@ -699,15 +700,29 @@ export default function DemarcheDetail() {
                       : "Certains documents ont été refusés. Veuillez uploader de nouveaux documents."}
                   </CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <DocumentUpload
-                    demarcheId={demarche.id}
-                    documentType="correction"
-                    label="Nouveau document"
-                    onUploadComplete={loadData}
-                    isBlocked={isUploadBlocked}
-                    blockedMessage="Paiement requis pour renvoyer des documents"
-                  />
+                <CardContent className="space-y-4">
+                  {uploadSlots.map((slotId, index) => (
+                    <DocumentUpload
+                      key={slotId}
+                      demarcheId={demarche.id}
+                      documentType={`correction_${slotId}`}
+                      label={`Document ${index + 1}`}
+                      onUploadComplete={loadData}
+                      isBlocked={isUploadBlocked}
+                      blockedMessage="Paiement requis pour renvoyer des documents"
+                    />
+                  ))}
+                  
+                  {!isUploadBlocked && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setUploadSlots(prev => [...prev, Math.max(...prev) + 1])}
+                      className="w-full"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Ajouter + de document
+                    </Button>
+                  )}
                 </CardContent>
               </Card>
             )}
