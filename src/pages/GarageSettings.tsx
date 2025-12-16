@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { passwordChangeSchema } from "@/lib/validations";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -233,6 +233,13 @@ export default function GarageSettings() {
       // Upload all selected files
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        
+        // Toast "Upload en cours..."
+        toast({ 
+          title: "Upload en cours...", 
+          description: file.name 
+        });
+        
         const timestamp = Date.now();
         const randomSuffix = Math.random().toString(36).substring(2, 8);
         const fileName = `${garage.id}/${documentType}-${timestamp}-${randomSuffix}.${file.name.split('.').pop()}`;
@@ -262,6 +269,12 @@ export default function GarageSettings() {
           console.error('Insert error:', insertError);
           throw insertError;
         }
+        
+        // Toast "Upload terminé"
+        toast({ 
+          title: "Upload terminé", 
+          description: file.name 
+        });
       }
       // Remettre le garage dans "À vérifier" (nouveau document envoyé)
       // Reset verification_admin_viewed pour qu'il apparaisse dans la section "À vérifier"
@@ -297,13 +310,8 @@ export default function GarageSettings() {
         });
       }
       
-      const fileCount = files.length;
-      toast({ 
-        title: fileCount > 1 ? "Documents envoyés" : "Document envoyé", 
-        description: fileCount > 1 
-          ? `${fileCount} documents ont été soumis pour vérification` 
-          : "Votre document a été soumis pour vérification" 
-      });
+      // Reload garage data
+
       loadGarage();
     } catch (error: any) {
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
@@ -599,9 +607,19 @@ export default function GarageSettings() {
                             )}
                             
                             {status.doc && (
-                              <p className="text-sm text-muted-foreground mb-2">
-                                Dernier envoi: {status.doc.nom_fichier} ({format(new Date(status.doc.created_at), "dd/MM/yyyy HH:mm", { locale: fr })})
-                              </p>
+                              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                <p className="text-sm text-muted-foreground">
+                                  Dernier envoi: {status.doc.nom_fichier} ({format(new Date(status.doc.created_at), "dd/MM/yyyy HH:mm", { locale: fr })})
+                                </p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => window.open(status.doc.url, '_blank')}
+                                >
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Voir le document
+                                </Button>
+                              </div>
                             )}
                             
                             {status.canUpload && (
