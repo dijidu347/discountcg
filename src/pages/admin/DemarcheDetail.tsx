@@ -176,7 +176,7 @@ export default function DemarcheDetail() {
     name: string;
     type: string;
   }>({ isOpen: false, url: "", name: "", type: "" });
-  const [adminUploadRows, setAdminUploadRows] = useState<number>(1);
+  const [adminUploadSlots, setAdminUploadSlots] = useState<number[]>([1]);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -1123,16 +1123,16 @@ export default function DemarcheDetail() {
                 <div className="mt-6 pt-6 border-t">
                   <div className="flex items-center justify-between mb-4">
                     <h4 className="font-semibold">Envoyer un document au client</h4>
-                    <Button variant="secondary" size="sm" onClick={() => setAdminUploadRows((n) => n + 1)}>
+                    <Button variant="secondary" size="sm" onClick={() => setAdminUploadSlots(prev => [...prev, Math.max(...prev) + 1])}>
                       <Plus className="h-4 w-4 mr-1" /> Ajouter une pièce jointe
                     </Button>
                   </div>
                   <div className="space-y-3">
-                    {Array.from({ length: adminUploadRows }).map((_, idx) => (
+                    {adminUploadSlots.map((slotId, idx) => (
                       <DocumentUpload
-                        key={`admin-upload-${idx}`}
+                        key={`admin-upload-${slotId}`}
                         demarcheId={demarche.id}
-                        documentType="admin_document"
+                        documentType={`admin_document_${slotId}`}
                         label={`Pièce jointe ${idx + 1}`}
                         onUploadComplete={async (uploadedFileName?: string) => {
                           // Mettre le statut à "finalisé" et marquer comme vu automatiquement
