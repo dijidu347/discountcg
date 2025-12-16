@@ -192,20 +192,24 @@ export default function GarageSettings() {
     setUploadingDoc(documentType);
     try {
       // Delete any rejected documents of this type before uploading new ones
-      const { data: rejectedDocs } = await supabase
+      const { data: rejectedDocs, error: fetchError } = await supabase
         .from('verification_documents')
         .select('id, url')
         .eq('garage_id', garage.id)
         .eq('document_type', documentType)
         .eq('status', 'rejected');
       
+      if (fetchError) {
+        console.error('Error fetching rejected docs:', fetchError);
+      }
+      
       if (rejectedDocs && rejectedDocs.length > 0) {
-        // Delete from storage first
+        // Delete from storage first (ignore errors - file might already be deleted)
         for (const doc of rejectedDocs) {
           try {
             const urlParts = doc.url.split('/demarche-documents/');
             if (urlParts.length > 1) {
-              const filePath = urlParts[1];
+              const filePath = urlParts[1].split('?')[0]; // Remove any query params
               await supabase.storage.from('demarche-documents').remove([filePath]);
             }
           } catch (e) {
@@ -213,13 +217,17 @@ export default function GarageSettings() {
           }
         }
         
-        // Delete from database
-        await supabase
-          .from('verification_documents')
-          .delete()
-          .eq('garage_id', garage.id)
-          .eq('document_type', documentType)
-          .eq('status', 'rejected');
+        // Delete from database - use individual deletes by ID for better reliability
+        for (const doc of rejectedDocs) {
+          const { error: deleteError } = await supabase
+            .from('verification_documents')
+            .delete()
+            .eq('id', doc.id);
+          
+          if (deleteError) {
+            console.error('Error deleting rejected doc:', deleteError);
+          }
+        }
       }
       
       // Upload all selected files
