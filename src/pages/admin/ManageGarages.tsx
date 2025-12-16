@@ -825,7 +825,8 @@ export default function ManageGarages() {
                           ) : (
                             <div className="space-y-2">
                               {docs.map((doc) => {
-                                const canAction = doc.status === 'pending' || doc.status === 'rejected';
+                                const canApprove = doc.status === 'pending' || doc.status === 'rejected';
+                                const canReject = doc.status === 'pending' || doc.status === 'approved';
                                 return (
                                   <div key={doc.id} className={`flex items-center justify-between p-2 rounded border ${
                                     doc.status === 'rejected' ? 'bg-red-50 border-red-200 dark:bg-red-950/20' :
@@ -833,7 +834,7 @@ export default function ManageGarages() {
                                     'bg-muted/50'
                                   }`}>
                                     <div className="flex items-center gap-3">
-                                      {canAction && (
+                                      {canApprove && (
                                         <Checkbox
                                           checked={selectedDocs.includes(doc.id)}
                                           onCheckedChange={() => toggleDocSelection(doc.id)}
@@ -855,13 +856,13 @@ export default function ManageGarages() {
                                       <Button size="sm" variant="outline" onClick={() => setViewerDoc(doc)}>
                                         <Eye className="h-4 w-4" />
                                       </Button>
-                                      {canAction && (
-                                        <>
-                                          <Button size="sm" onClick={() => handleSingleApprove(doc.id)} className="bg-green-600 hover:bg-green-700">
-                                            <CheckCircle className="h-4 w-4" />
-                                          </Button>
-                                          <SingleRejectButton doc={doc} onReject={handleSingleReject} />
-                                        </>
+                                      {canApprove && (
+                                        <Button size="sm" onClick={() => handleSingleApprove(doc.id)} className="bg-green-600 hover:bg-green-700">
+                                          <CheckCircle className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                      {canReject && (
+                                        <SingleRejectButton doc={doc} onReject={handleSingleReject} />
                                       )}
                                     </div>
                                   </div>
