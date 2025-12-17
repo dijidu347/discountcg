@@ -590,6 +590,55 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "promotion_free_token":
+      return {
+        subject: `🎁 Offre spéciale - Jeton OFFERT pour votre première démarche !`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); padding: 30px; border-radius: 12px; text-align: center; margin-bottom: 20px;">
+              <h1 style="color: white; margin: 0; font-size: 28px;">🎁 JETON OFFERT !</h1>
+              <p style="color: rgba(255,255,255,0.9); font-size: 18px; margin-top: 10px;">Votre première démarche DA ou DC est gratuite</p>
+            </div>
+            
+            <p>Bonjour${data.prenom ? ` ${data.prenom}` : ''},</p>
+            
+            <p>Nous avons le plaisir de vous offrir <strong>un jeton gratuit</strong> pour réaliser votre première démarche !</p>
+            
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 20px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <h3 style="margin-top: 0; color: #166534;">✅ Ce que vous obtenez :</h3>
+              <ul style="margin: 0; padding-left: 20px; color: #15803d;">
+                <li style="margin: 8px 0;"><strong>1 jeton offert</strong> à l'inscription</li>
+                <li style="margin: 8px 0;">Utilisable pour une <strong>DA</strong> (Déclaration d'Achat) ou <strong>DC</strong> (Déclaration de Cession)</li>
+                <li style="margin: 8px 0;">Traitement rapide sous 24h</li>
+                <li style="margin: 8px 0;">Support dédié par email</li>
+              </ul>
+            </div>
+
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="https://discountcg.fr/register" style="display: inline-block; background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-size: 18px; font-weight: bold;">
+                Créer mon compte et profiter de l'offre
+              </a>
+            </div>
+
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+              <p style="margin: 0; color: #92400e;">
+                <strong>💡 Bon à savoir :</strong> Après votre première démarche gratuite, profitez de nos tarifs avantageux et rechargez votre solde avec des bonus allant jusqu'à +25% !
+              </p>
+            </div>
+
+            <p>N'hésitez pas à nous contacter si vous avez des questions.</p>
+            
+            <p style="margin-top: 20px;">À très bientôt,<br><strong>L'équipe DiscountCarteGrise</strong></p>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 12px; text-align: center;">
+              DiscountCarteGrise - Service de cartes grises en ligne<br>
+              contact@discountcartegrise.fr
+            </p>
+          </div>
+        `,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }
