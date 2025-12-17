@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Bell, CheckCircle, Clock, Gift, CreditCard } from "lucide-react";
+import { ArrowLeft, Bell, CheckCircle, Clock, Gift, CreditCard, XCircle, FileText } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export default function AllDemarches() {
@@ -15,6 +15,7 @@ export default function AllDemarches() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [demarchesATraiter, setDemarchesATraiter] = useState<any[]>([]);
   const [demarchesTerminees, setDemarchesTerminees] = useState<any[]>([]);
+  const [demarchesRefusees, setDemarchesRefusees] = useState<any[]>([]);
   const [demarchesEnSaisie, setDemarchesEnSaisie] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -53,19 +54,23 @@ export default function AllDemarches() {
       .order('created_at', { ascending: false });
 
     if (data) {
-      // À TRAITER: Non-brouillon ET (payé OU jeton gratuit utilisé) MAIS pas encore finalisé
+      // À TRAITER: Non-brouillon ET (payé OU jeton gratuit utilisé) MAIS pas encore finalisé ET pas refusé
       const aTraiter = data.filter(d => 
-        d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise'
+        d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse'
       );
       
       // TERMINÉES: Toutes les démarches avec status "finalisé"
       const terminees = data.filter(d => d.status === 'finalise');
+      
+      // REFUSÉES: Toutes les démarches avec status "refuse"
+      const refusees = data.filter(d => d.status === 'refuse');
       
       // EN SAISIE: Tous les brouillons (non finalisés)
       const enSaisie = data.filter(d => d.is_draft === true);
       
       setDemarchesATraiter(aTraiter);
       setDemarchesTerminees(terminees);
+      setDemarchesRefusees(refusees);
       setDemarchesEnSaisie(enSaisie);
     }
 
@@ -195,6 +200,61 @@ export default function AllDemarches() {
                         className={!d.admin_viewed ? "bg-red-500 hover:bg-red-600" : ""}
                       >
                         {!d.admin_viewed ? "À traiter" : "Voir"}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </Card>
+
+        {/* Section REFUSÉES - Démarches refusées */}
+        <Card className="p-6 mb-8 border-2 border-red-500/20 bg-red-50/5">
+          <div className="flex items-center gap-3 mb-6">
+            <XCircle className="h-6 w-6 text-red-600" />
+            <h1 className="text-2xl font-bold text-red-700 dark:text-red-500">Démarches refusées</h1>
+            <Badge variant="outline" className="border-red-500 text-red-600">{demarchesRefusees.length}</Badge>
+          </div>
+          
+          {demarchesRefusees.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Aucune démarche refusée</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Démarche</TableHead>
+                  <TableHead>Immatriculation</TableHead>
+                  <TableHead>Garage</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Paiement</TableHead>
+                  <TableHead>Montant</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {demarchesRefusees.map((d: any) => (
+                  <TableRow key={d.id} className="bg-red-50/50 dark:bg-red-950/10">
+                    <TableCell className="font-mono text-xs font-semibold text-red-700">{d.numero_demarche}</TableCell>
+                    <TableCell className="font-medium">{d.immatriculation}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        {d.garages?.raison_sociale}
+                        {d.garages?.is_verified && (
+                          <Badge className="bg-green-500 text-xs">
+                            Vérifié
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{d.type}</TableCell>
+                    <TableCell>{getPaymentStatusBadge(d)}</TableCell>
+                    <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
+                    <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
+                    <TableCell>
+                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/demarche/${d.id}`)}>
+                        Voir
                       </Button>
                     </TableCell>
                   </TableRow>

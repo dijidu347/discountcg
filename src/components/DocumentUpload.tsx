@@ -123,6 +123,31 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
 
       if (dbError) throw dbError;
 
+      // Notify admin about new document - reset admin_viewed to false and add notification
+      const { data: demarcheData } = await supabase
+        .from('demarches')
+        .select('garage_id, immatriculation, numero_demarche')
+        .eq('id', demarcheId)
+        .single();
+
+      if (demarcheData) {
+        // Reset admin_viewed to bring attention to this demarche
+        await supabase
+          .from('demarches')
+          .update({ admin_viewed: false })
+          .eq('id', demarcheId);
+
+        // Create notification for admin
+        await supabase
+          .from('notifications')
+          .insert({
+            demarche_id: demarcheId,
+            garage_id: demarcheData.garage_id,
+            type: 'new_document',
+            message: `Nouveau document ajouté: ${customName || documentType} (${demarcheData.numero_demarche || demarcheData.immatriculation})`
+          });
+      }
+
       toast({
         title: "Document téléchargé",
         description: "Le document a été téléchargé avec succès"
