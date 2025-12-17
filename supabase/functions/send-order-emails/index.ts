@@ -42,7 +42,7 @@ const validateAuth = async (req: Request): Promise<boolean> => {
 };
 
 interface EmailRequest {
-  type: 'order_complete' | 'document_rejected' | 'payment_confirmed' | 'account_verified' | 'account_rejected';
+  type: 'order_complete' | 'document_rejected' | 'payment_confirmed' | 'account_verified' | 'account_rejected' | 'simple_message';
   orderId?: string;
   trackingNumber?: string;
   demarcheId?: string;
@@ -52,6 +52,8 @@ interface EmailRequest {
   rejectedDocuments?: Array<{ nom: string; raison: string }>;
   montantTTC?: number;
   rejectionReason?: string;
+  customSubject?: string;
+  customMessage?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -73,45 +75,54 @@ const handler = async (req: Request): Promise<Response> => {
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Fetch template from database
-    const { data: template, error: templateError } = await supabase
-      .from('email_templates')
-      .select('subject, html_content')
-      .eq('type', emailData.type)
-      .single();
+    let subject: string;
+    let html: string;
 
-    if (templateError) {
-      console.error(`Template not found for type: ${emailData.type}`, templateError);
-      throw new Error(`Email template not found: ${emailData.type}`);
+    // Handle simple message type (no template, direct message)
+    if (emailData.type === 'simple_message') {
+      subject = emailData.customSubject || 'Message';
+      html = `<div style="font-family: Arial, sans-serif;">${emailData.customMessage || ''}</div>`;
+    } else {
+      // Fetch template from database
+      const { data: template, error: templateError } = await supabase
+        .from('email_templates')
+        .select('subject, html_content')
+        .eq('type', emailData.type)
+        .single();
+
+      if (templateError) {
+        console.error(`Template not found for type: ${emailData.type}`, templateError);
+        throw new Error(`Email template not found: ${emailData.type}`);
+      }
+
+      // Prepare replacement data
+      let replacements: Record<string, string> = {
+        customerName: emailData.customerName,
+        immatriculation: emailData.immatriculation || '',
+        trackingNumber: emailData.trackingNumber || '',
+        demarcheId: emailData.demarcheId || '',
+        montantTTC: emailData.montantTTC?.toString() || '',
+        rejectionReason: emailData.rejectionReason || '',
+      };
+
+      // Handle rejected documents list
+      if (emailData.rejectedDocuments && emailData.rejectedDocuments.length > 0) {
+        const docList = emailData.rejectedDocuments
+          .map(doc => `<li><strong>${doc.nom}</strong>: ${doc.raison}</li>`)
+          .join('');
+        replacements.rejectedDocuments = docList;
+      }
+
+      // Replace placeholders in subject and html
+      subject = template.subject;
+      html = template.html_content;
+
+      Object.entries(replacements).forEach(([key, value]) => {
+        const placeholder = new RegExp(`{{${key}}}`, 'g');
+        subject = subject.replace(placeholder, value);
+        html = html.replace(placeholder, value);
+      });
     }
-
-    // Prepare replacement data
-    let replacements: Record<string, string> = {
-      customerName: emailData.customerName,
-      immatriculation: emailData.immatriculation || '',
-      trackingNumber: emailData.trackingNumber || '',
-      demarcheId: emailData.demarcheId || '',
-      montantTTC: emailData.montantTTC?.toString() || '',
-      rejectionReason: emailData.rejectionReason || '',
-    };
-
-    // Handle rejected documents list
-    if (emailData.rejectedDocuments && emailData.rejectedDocuments.length > 0) {
-      const docList = emailData.rejectedDocuments
-        .map(doc => `<li><strong>${doc.nom}</strong>: ${doc.raison}</li>`)
-        .join('');
-      replacements.rejectedDocuments = docList;
-    }
-
-    // Replace placeholders in subject and html
-    let subject = template.subject;
-    let html = template.html_content;
-
-    Object.entries(replacements).forEach(([key, value]) => {
-      const placeholder = new RegExp(`{{${key}}}`, 'g');
-      subject = subject.replace(placeholder, value);
-      html = html.replace(placeholder, value);
-    });
 
     console.log(`Sending email type: ${emailData.type} to ${emailData.email}`);
 

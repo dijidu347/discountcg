@@ -639,6 +639,12 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "simple_text":
+      return {
+        subject: data.subject || "Message",
+        html: `<div style="font-family: Arial, sans-serif;">${data.message || ''}</div>`,
+      };
+
     default:
       throw new Error(`Type d'email non supporté: ${type}`);
   }
