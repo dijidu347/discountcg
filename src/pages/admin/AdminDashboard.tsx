@@ -55,7 +55,7 @@ export default function AdminDashboard() {
     // Load admin statistics
     const { data: garages } = await supabase
       .from('garages')
-      .select('id, verification_requested_at, is_verified');
+      .select('id, verification_requested_at, is_verified, verification_admin_viewed');
 
     const { data: demarches } = await supabase
       .from('demarches')
@@ -78,9 +78,9 @@ export default function AdminDashboard() {
     // Démarches non vues par l'admin
     const demarchesNonVues = demarchesATraiter.filter(d => !d.admin_viewed);
 
-    // Garages à vérifier = verification_requested_at not null ET is_verified false
+    // Garages à vérifier = verification_requested_at not null ET is_verified false ET pas encore vu par admin
     const garagesAVerifier = garages?.filter(g => 
-      g.verification_requested_at && !g.is_verified
+      g.verification_requested_at && !g.is_verified && !g.verification_admin_viewed
     ) || [];
 
     // Calculate total revenue: validated payments + credit purchases
