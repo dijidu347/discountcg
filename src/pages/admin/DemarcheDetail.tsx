@@ -989,7 +989,7 @@ export default function DemarcheDetail() {
 
                 <div>
                   <Label>Changer le statut</Label>
-                  <Select onValueChange={(value: any) => updateStatus(value)} defaultValue={demarche.status}>
+                  <Select onValueChange={(value: any) => updateStatus(value)} value={demarche.status}>
                     <SelectTrigger className="mt-2">
                       <SelectValue />
                     </SelectTrigger>
