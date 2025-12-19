@@ -61,9 +61,19 @@ export default function AdminDashboard() {
       .from('demarches')
       .select('status, montant_ttc, is_draft, paye, is_free_token, admin_viewed');
 
-    const { data: paiements } = await supabase
+    // Fetch paiements with demarche info to calculate real revenue
+    const { data: paiementsWithDemarches } = await supabase
       .from('paiements')
-      .select('montant, status');
+      .select(`
+        montant, 
+        status,
+        demarches!inner(
+          paid_with_tokens, 
+          is_free_token, 
+          frais_dossier,
+          type
+        )
+      `);
 
     // Fetch token purchases (credit purchases)
     const { data: tokenPurchases } = await supabase
@@ -83,8 +93,22 @@ export default function AdminDashboard() {
       g.verification_requested_at && !g.is_verified && !g.verification_admin_viewed
     ) || [];
 
-    // Calculate total revenue: validated payments + credit purchases
-    const paiementsTotal = paiements?.filter(p => p.status === 'valide').reduce((sum, p) => sum + Number(p.montant), 0) || 0;
+    // Calculate total revenue: 
+    // - Only validated payments where demarche was NOT paid with tokens (free or purchased)
+    // - For CG type: count only frais_dossier (20€), for DA/DC: count montant (5€)
+    const paiementsTotal = paiementsWithDemarches?.filter(p => 
+      p.status === 'valide' && 
+      !p.demarches?.paid_with_tokens && 
+      !p.demarches?.is_free_token
+    ).reduce((sum, p) => {
+      // Pour CG : compter uniquement les frais de dossier (20€)
+      // Pour DA/DC : compter le montant du paiement (5€)
+      if (p.demarches?.type === 'CG' || p.demarches?.type === 'CG_DA' || p.demarches?.type === 'CG_IMPORT') {
+        return sum + Number(p.demarches.frais_dossier || 20);
+      }
+      return sum + Number(p.montant);
+    }, 0) || 0;
+    
     const creditsTotal = tokenPurchases?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
     setStats({
@@ -260,7 +284,7 @@ export default function AdminDashboard() {
                 {stats.totalPaiements.toFixed(2)} €
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Paiements + achats crédits
+                Frais de service + achats jetons
               </p>
             </CardContent>
           </Card>
