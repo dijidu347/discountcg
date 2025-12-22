@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle } from "lucide-react";
-
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [regeneratingFactures, setRegeneratingFactures] = useState(false);
   const [stats, setStats] = useState({
     totalGarages: 0,
     totalDemarches: 0,
@@ -121,6 +123,29 @@ export default function AdminDashboard() {
     });
 
     setLoading(false);
+  };
+
+  const handleRegenerateAllFactures = async () => {
+    setRegeneratingFactures(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('regenerate-all-factures', {});
+      
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: data?.message || "Toutes les factures ont été régénérées",
+      });
+    } catch (error: any) {
+      console.error('Error regenerating factures:', error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de régénérer les factures",
+        variant: "destructive"
+      });
+    } finally {
+      setRegeneratingFactures(false);
+    }
   };
 
   if (authLoading || loading) {
@@ -414,6 +439,21 @@ export default function AdminDashboard() {
               >
                 <Mail className="h-6 w-6 text-green-600" />
                 <span className="text-sm font-medium">Test Email</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2 border-orange-200 hover:border-orange-300"
+                onClick={handleRegenerateAllFactures}
+                disabled={regeneratingFactures}
+              >
+                {regeneratingFactures ? (
+                  <Loader2 className="h-6 w-6 text-orange-600 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-6 w-6 text-orange-600" />
+                )}
+                <span className="text-sm font-medium">
+                  {regeneratingFactures ? "Régénération..." : "Régénérer factures"}
+                </span>
               </Button>
             </div>
           </CardContent>

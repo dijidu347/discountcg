@@ -56,3 +56,6 @@ verify_jwt = false
 
 [functions.regenerate-facture]
 verify_jwt = false
+
+[functions.regenerate-all-factures]
+verify_jwt = false
