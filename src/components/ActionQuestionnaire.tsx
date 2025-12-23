@@ -33,7 +33,7 @@ interface ConditionalDocument {
 
 interface ActionQuestionnaireProps {
   actionId: string;
-  onAnswersChange: (answers: Record<string, string>, isBlocked: boolean, conditionalDocs: ConditionalDocument[]) => void;
+  onAnswersChange: (answers: Record<string, string>, isBlocked: boolean, conditionalDocs: ConditionalDocument[], allAnswered: boolean, answerTexts: Record<string, string>) => void;
 }
 
 export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestionnaireProps) {
@@ -53,12 +53,16 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
     let isBlocked = false;
     let blockedMessage: string | null = null;
     const collectedDocs: ConditionalDocument[] = [];
+    const answerTexts: Record<string, string> = {};
 
     Object.entries(answers).forEach(([questionId, optionId]) => {
       const questionOptions = options[questionId];
       if (questionOptions) {
         const selectedOption = questionOptions.find(o => o.id === optionId);
         if (selectedOption) {
+          // Stocker le texte de l'option sélectionnée
+          answerTexts[questionId] = selectedOption.option_text;
+          
           if (selectedOption.is_blocking) {
             isBlocked = true;
             blockedMessage = selectedOption.blocking_message || "Cette option bloque la démarche";
@@ -73,8 +77,12 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
     });
 
     setBlockingMessage(blockedMessage);
-    onAnswersChange(answers, isBlocked, collectedDocs);
-  }, [answers, options, conditionalDocs]);
+    
+    // Vérifier si toutes les questions ont une réponse
+    const allQuestionsAnswered = questions.length > 0 && questions.every(q => answers[q.id]);
+    
+    onAnswersChange(answers, isBlocked, collectedDocs, allQuestionsAnswered, answerTexts);
+  }, [answers, options, conditionalDocs, questions]);
 
   const loadQuestions = async () => {
     setLoading(true);

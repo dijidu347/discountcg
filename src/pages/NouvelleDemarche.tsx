@@ -76,6 +76,8 @@ export default function NouvelleDemarche() {
   const [vehicleInfoProValid, setVehicleInfoProValid] = useState(false);
   // État pour vérifier si le questionnaire est complété
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
+  // Textes des réponses au questionnaire (pour DocumentsNecessaires)
+  const [questionnaireAnswerTexts, setQuestionnaireAnswerTexts] = useState<Record<string, string>>({});
 
   // Keep refs in sync with state for cleanup
   useEffect(() => {
@@ -754,14 +756,13 @@ export default function NouvelleDemarche() {
               {actionDetails?.id && (
                 <ActionQuestionnaire
                   actionId={actionDetails.id}
-                  onAnswersChange={(answers, isBlocked, condDocs) => {
+                  onAnswersChange={(answers, isBlocked, condDocs, allAnswered, answerTexts) => {
                     setQuestionnaireAnswers(answers);
                     setIsQuestionnaireBlocked(isBlocked);
                     setConditionalDocuments(condDocs);
-                    // Vérifier si toutes les questions ont une réponse
-                    // On considère le questionnaire complété si au moins une réponse existe et pas de blocage
-                    const hasAnswers = Object.keys(answers).length > 0;
-                    setQuestionnaireCompleted(hasAnswers && !isBlocked);
+                    setQuestionnaireAnswerTexts(answerTexts);
+                    // Questionnaire complété = toutes les questions ont une réponse ET pas de blocage
+                    setQuestionnaireCompleted(allAnswered && !isBlocked);
                   }}
                 />
               )}
@@ -771,7 +772,7 @@ export default function NouvelleDemarche() {
                 <DocumentsNecessaires
                   demarcheType={formData.type}
                   demarcheId={demarcheId}
-                  questionnaireAnswers={questionnaireAnswers}
+                  questionnaireAnswers={questionnaireAnswerTexts}
                   onDocumentUpload={(docType) => {
                     setUploadedDocuments(prev => new Set(prev).add(docType));
                   }}
