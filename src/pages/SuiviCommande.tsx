@@ -752,14 +752,13 @@ const SuiviCommande = () => {
                               Refusé
                             </Badge>
                           )}
-                          <a
-                            href={doc.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            <Download className="w-4 h-4" />
-                          </a>
+                          <SimpleDownloadButton
+                            url={doc.url}
+                            filename={doc.nom_fichier || doc.type_document}
+                            trackingNumber={order.tracking_number}
+                            variant="ghost"
+                            size="icon"
+                          />
                         </div>
                       </div>
                     );

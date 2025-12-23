@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban, Loader2 } from "lucide-react";
+import { SecureDownloadButton } from "@/components/SecureDownloadButton";
 import { Textarea as TextareaInput } from "@/components/ui/textarea";
 import {
   AlertDialog,
@@ -1082,13 +1083,14 @@ export default function GuestOrderDetail() {
         </Card>
 
         {/* Viewer de document */}
-        {selectedDoc && (
+        {selectedDoc && order && (
           <DocumentViewer
             isOpen={!!selectedDoc}
             onClose={() => setSelectedDoc(null)}
             documentUrl={selectedDoc.url}
             documentName={selectedDoc.nom_fichier}
             documentType={selectedDoc.type_document}
+            trackingNumber={order.tracking_number}
           />
         )}
 
@@ -1411,14 +1413,12 @@ export default function GuestOrderDetail() {
                         })}
                       </p>
                     </div>
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline"
-                    >
-                      <Download className="h-4 w-4" />
-                    </a>
+                    <SecureDownloadButton
+                      url={doc.url}
+                      filename={doc.nom_fichier}
+                      variant="ghost"
+                      size="icon"
+                    />
                   </div>
                 ))}
               </div>
