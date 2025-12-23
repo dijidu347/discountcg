@@ -16,11 +16,20 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { VehicleForm } from "@/components/VehicleForm";
 import { VehicleFormCG } from "@/components/VehicleFormCG";
 import { VehicleFormSimple } from "@/components/VehicleFormSimple";
+import { VehicleInfoFormPro, VehicleInfoPro } from "@/components/VehicleInfoFormPro";
+import { DocumentsNecessaires } from "@/components/DocumentsNecessaires";
 import { TrackingServiceOption } from "@/components/TrackingServiceOption";
 import { StripePayment } from "@/components/StripePayment";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice } from "@/lib/utils";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
+
+// Types de démarches PRO qui nécessitent un traitement spécial
+const PRO_DEMARCHE_TYPES = ["WW_PROVISOIRE_PRO", "W_GARAGE_PRO", "QUITUS_FISCAL_PRO"];
+// Types de démarches PRO qui nécessitent les infos véhicule (VIN, marque, modèle)
+const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO"];
+// Types de démarches PRO qui n'ont pas besoin de bloc véhicule
+const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO"];
 
 
 export default function NouvelleDemarche() {
@@ -62,6 +71,11 @@ export default function NouvelleDemarche() {
     type: searchParams.get('type') || "",
     commentaire: ""
   });
+  // État pour les démarches PRO - infos véhicule
+  const [vehicleInfoPro, setVehicleInfoPro] = useState<VehicleInfoPro | null>(null);
+  const [vehicleInfoProValid, setVehicleInfoProValid] = useState(false);
+  // État pour vérifier si le questionnaire est complété
+  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
 
   // Keep refs in sync with state for cleanup
   useEffect(() => {
@@ -321,7 +335,8 @@ export default function NouvelleDemarche() {
 
   const getTotalPrice = () => {
     const basePrice = getFraisDossier();
-    const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
+    // Pour DA, DC et démarches PRO, pas de prix carte grise
+    const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC' || PRO_DEMARCHE_TYPES.includes(formData.type)) ? 0 : carteGrisePrice;
     return basePrice + vehiclePrice + trackingServicePrice;
   };
 
@@ -400,49 +415,76 @@ export default function NouvelleDemarche() {
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedImmatriculation.trim()) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez sélectionner ou créer un véhicule",
-        variant: "destructive"
-      });
-      return;
+    // Validation spécifique pour les démarches PRO
+    if (PRO_DEMARCHE_TYPES.includes(formData.type)) {
+      // Vérifier que le questionnaire est complété
+      if (!questionnaireCompleted) {
+        toast({
+          title: "Questionnaire incomplet",
+          description: "Veuillez répondre à toutes les questions avant de continuer",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Vérifier les infos véhicule pour les démarches qui les requièrent
+      if (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) {
+        toast({
+          title: "Informations véhicule incomplètes",
+          description: "Veuillez remplir toutes les informations obligatoires du véhicule (VIN, marque, modèle)",
+          variant: "destructive"
+        });
+        return;
+      }
+    } else {
+      // Validation classique pour les démarches non-PRO
+      if (!selectedImmatriculation.trim()) {
+        toast({
+          title: "Erreur",
+          description: "Veuillez sélectionner ou créer un véhicule",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Check if all obligatory documents are uploaded
-    const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
-    
-    // Trouver l'index de la première carte grise à dédoubler (sans recto/verso dans le nom)
-    const firstCarteGriseIdx = documentsRequis.findIndex(d => {
-      const name = d.nom_document.toLowerCase();
-      return name.includes('carte grise') && !name.includes('recto') && !name.includes('verso');
-    });
-    
-    const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
-      // Récupérer l'index du document dans la liste complète
-      const docIndex = documentsRequis.indexOf(doc);
-      const docKey = `doc_${docIndex + 1}`;
-      const docName = doc.nom_document.toLowerCase();
-      const isCarteGrise = docName.includes('carte grise') && 
-                          !docName.includes('recto') && 
-                          !docName.includes('verso');
+    // Pour les démarches PRO, on utilise les documents du composant DocumentsNecessaires
+    if (!PRO_DEMARCHE_TYPES.includes(formData.type)) {
+      const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
       
-      // Pour la PREMIÈRE carte grise à dédoubler uniquement, vérifier si au moins le recto est uploadé
-      if (isCarteGrise && docIndex === firstCarteGriseIdx) {
-        return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
-      }
-      
-      // Pour tous les autres documents (y compris ceux avec "recto/verso" dans le nom), vérifier normalement
-      return uploadedDocuments.has(docKey);
-    });
-    
-    if (uploadedRequiredDocs.length < requiredDocs.length) {
-      toast({
-        title: "Documents obligatoires manquants",
-        description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
-        variant: "destructive"
+      // Trouver l'index de la première carte grise à dédoubler (sans recto/verso dans le nom)
+      const firstCarteGriseIdx = documentsRequis.findIndex(d => {
+        const name = d.nom_document.toLowerCase();
+        return name.includes('carte grise') && !name.includes('recto') && !name.includes('verso');
       });
-      return;
+      
+      const uploadedRequiredDocs = requiredDocs.filter((doc, idx) => {
+        // Récupérer l'index du document dans la liste complète
+        const docIndex = documentsRequis.indexOf(doc);
+        const docKey = `doc_${docIndex + 1}`;
+        const docName = doc.nom_document.toLowerCase();
+        const isCarteGrise = docName.includes('carte grise') && 
+                            !docName.includes('recto') && 
+                            !docName.includes('verso');
+        
+        // Pour la PREMIÈRE carte grise à dédoubler uniquement, vérifier si au moins le recto est uploadé
+        if (isCarteGrise && docIndex === firstCarteGriseIdx) {
+          return uploadedDocuments.has(`${docKey}_recto`) || uploadedDocuments.has(docKey);
+        }
+        
+        // Pour tous les autres documents (y compris ceux avec "recto/verso" dans le nom), vérifier normalement
+        return uploadedDocuments.has(docKey);
+      });
+      
+      if (uploadedRequiredDocs.length < requiredDocs.length) {
+        toast({
+          title: "Documents obligatoires manquants",
+          description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     // Update before payment
@@ -649,6 +691,7 @@ export default function NouvelleDemarche() {
 
               {garage && (
                 <>
+                  {/* Formulaires véhicule classiques */}
                   {formData.type === 'CG' ? (
                     <VehicleFormCG
                       garageId={garage.id}
@@ -662,7 +705,29 @@ export default function NouvelleDemarche() {
                       onVehicleSelect={handleVehicleSelect}
                       selectedVehicleId={selectedVehicleId}
                     />
-                  ) : (
+                  ) : PRO_TYPES_WITH_VEHICLE.includes(formData.type) ? (
+                    /* Formulaire véhicule PRO (VIN, marque, modèle sans immatriculation) */
+                    <VehicleInfoFormPro
+                      onVehicleInfoChange={(data, isValid) => {
+                        setVehicleInfoPro(data);
+                        setVehicleInfoProValid(isValid);
+                        // Mettre une immatriculation temporaire basée sur le VIN
+                        if (data.vin) {
+                          setSelectedImmatriculation(`VIN-${data.vin.slice(-6)}`);
+                        }
+                      }}
+                      requireVin={formData.type === 'WW_PROVISOIRE_PRO' || formData.type === 'QUITUS_FISCAL_PRO'}
+                      requireDateMec={formData.type === 'WW_PROVISOIRE_PRO'}
+                    />
+                  ) : PRO_TYPES_WITHOUT_VEHICLE.includes(formData.type) ? (
+                    /* W_GARAGE_PRO - Pas de bloc véhicule */
+                    <Alert className="border-blue-500 bg-blue-50">
+                      <AlertDescription className="text-blue-800">
+                        Cette démarche est liée à votre entreprise et non à un véhicule précis. 
+                        Aucune information véhicule n'est requise.
+                      </AlertDescription>
+                    </Alert>
+                  ) : !PRO_DEMARCHE_TYPES.includes(formData.type) && (
                     <VehicleForm
                       garageId={garage.id}
                       onVehicleSelect={handleVehicleSelect}
@@ -693,7 +758,24 @@ export default function NouvelleDemarche() {
                     setQuestionnaireAnswers(answers);
                     setIsQuestionnaireBlocked(isBlocked);
                     setConditionalDocuments(condDocs);
+                    // Vérifier si toutes les questions ont une réponse
+                    // On considère le questionnaire complété si au moins une réponse existe et pas de blocage
+                    const hasAnswers = Object.keys(answers).length > 0;
+                    setQuestionnaireCompleted(hasAnswers && !isBlocked);
                   }}
+                />
+              )}
+
+              {/* Documents Nécessaires pour démarches PRO - Affiché après le questionnaire */}
+              {PRO_DEMARCHE_TYPES.includes(formData.type) && demarcheId && questionnaireCompleted && !isQuestionnaireBlocked && (
+                <DocumentsNecessaires
+                  demarcheType={formData.type}
+                  demarcheId={demarcheId}
+                  questionnaireAnswers={questionnaireAnswers}
+                  onDocumentUpload={(docType) => {
+                    setUploadedDocuments(prev => new Set(prev).add(docType));
+                  }}
+                  uploadedDocuments={uploadedDocuments}
                 />
               )}
 
@@ -905,7 +987,18 @@ export default function NouvelleDemarche() {
               <Button 
                 type="submit"
                 size="lg" 
-                disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0) || isQuestionnaireBlocked}
+                disabled={
+                  loading || 
+                  isQuestionnaireBlocked ||
+                  // Pour les démarches PRO avec véhicule, vérifier les infos véhicule
+                  (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) ||
+                  // Pour les démarches PRO, vérifier que le questionnaire est complété
+                  (PRO_DEMARCHE_TYPES.includes(formData.type) && !questionnaireCompleted) ||
+                  // Pour les démarches classiques, vérifier l'immatriculation
+                  (!PRO_DEMARCHE_TYPES.includes(formData.type) && !selectedImmatriculation.trim()) ||
+                  // Pour CG, vérifier le prix carte grise
+                  ((formData.type !== 'DA' && formData.type !== 'DC' && !PRO_DEMARCHE_TYPES.includes(formData.type)) && carteGrisePrice === 0)
+                }
                 className={`w-full ${isFreeTokenEligible ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
               >
                 {isQuestionnaireBlocked ? 'Démarche impossible' : (isFreeTokenEligible && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${formatPrice(getTotalPrice())}€ HT`)}
