@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      action_conditional_documents: {
+        Row: {
+          created_at: string
+          id: string
+          nom_document: string
+          obligatoire: boolean
+          option_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nom_document: string
+          obligatoire?: boolean
+          option_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nom_document?: string
+          obligatoire?: boolean
+          option_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_conditional_documents_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "action_question_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       action_documents: {
         Row: {
           action_id: string
@@ -42,6 +74,82 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "action_documents_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "actions_rapides"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_question_options: {
+        Row: {
+          blocking_message: string | null
+          created_at: string
+          id: string
+          is_blocking: boolean
+          option_text: string
+          ordre: number
+          question_id: string
+        }
+        Insert: {
+          blocking_message?: string | null
+          created_at?: string
+          id?: string
+          is_blocking?: boolean
+          option_text: string
+          ordre?: number
+          question_id: string
+        }
+        Update: {
+          blocking_message?: string | null
+          created_at?: string
+          id?: string
+          is_blocking?: boolean
+          option_text?: string
+          ordre?: number
+          question_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_question_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "action_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_questions: {
+        Row: {
+          action_id: string
+          blocking_message: string | null
+          created_at: string
+          id: string
+          is_blocking: boolean
+          ordre: number
+          question_text: string
+        }
+        Insert: {
+          action_id: string
+          blocking_message?: string | null
+          created_at?: string
+          id?: string
+          is_blocking?: boolean
+          ordre?: number
+          question_text: string
+        }
+        Update: {
+          action_id?: string
+          blocking_message?: string | null
+          created_at?: string
+          id?: string
+          is_blocking?: boolean
+          ordre?: number
+          question_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_questions_action_id_fkey"
             columns: ["action_id"]
             isOneToOne: false
             referencedRelation: "actions_rapides"

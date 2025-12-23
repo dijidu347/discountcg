@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, FileCheck, Plus, Gift, FileText, X, Download, Coins } from "lucide-react";
+import { ActionQuestionnaire } from "@/components/ActionQuestionnaire";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -52,6 +53,9 @@ export default function NouvelleDemarche() {
   const [paymentCompleted, setPaymentCompleted] = useState(false);
   const [tokenBalance, setTokenBalance] = useState<number>(0);
   const [payingWithTokens, setPayingWithTokens] = useState(false);
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, string>>({});
+  const [isQuestionnaireBlocked, setIsQuestionnaireBlocked] = useState(false);
+  const [conditionalDocuments, setConditionalDocuments] = useState<any[]>([]);
   const demarcheIdRef = useRef<string | null>(null);
   const paymentCompletedRef = useRef(false);
   const [formData, setFormData] = useState({
@@ -668,6 +672,18 @@ export default function NouvelleDemarche() {
                 />
               </div>
 
+              {/* Questions conditionnelles */}
+              {actionDetails?.id && (
+                <ActionQuestionnaire
+                  actionId={actionDetails.id}
+                  onAnswersChange={(answers, isBlocked, condDocs) => {
+                    setQuestionnaireAnswers(answers);
+                    setIsQuestionnaireBlocked(isBlocked);
+                    setConditionalDocuments(condDocs);
+                  }}
+                />
+              )}
+
               {demarcheId && garage && (
                 <TrackingServiceOption 
                   demarcheId={demarcheId} 
@@ -876,10 +892,10 @@ export default function NouvelleDemarche() {
               <Button 
                 type="submit"
                 size="lg" 
-                disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0)}
+                disabled={loading || !selectedImmatriculation.trim() || ((formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice === 0) || isQuestionnaireBlocked}
                 className={`w-full ${isFreeTokenEligible ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
               >
-                {isFreeTokenEligible && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${formatPrice(getTotalPrice())}€ HT`}
+                {isQuestionnaireBlocked ? 'Démarche impossible' : (isFreeTokenEligible && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${formatPrice(getTotalPrice())}€ HT`)}
               </Button>
             </form>
 
