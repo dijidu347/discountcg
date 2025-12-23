@@ -8,7 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, FileCheck, Plus, Gift, FileText, X, Download, Coins } from "lucide-react";
+import { ArrowLeft, FileCheck, Plus, Gift, FileText, X, Download, Coins, Check, ChevronDown, FileQuestion } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Badge } from "@/components/ui/badge";
 import { ActionQuestionnaire } from "@/components/ActionQuestionnaire";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
@@ -752,19 +754,45 @@ export default function NouvelleDemarche() {
                 />
               </div>
 
-              {/* Questions conditionnelles */}
+              {/* Questions conditionnelles - Repliable une fois complété */}
               {actionDetails?.id && (
-                <ActionQuestionnaire
-                  actionId={actionDetails.id}
-                  onAnswersChange={(answers, isBlocked, condDocs, allAnswered, answerTexts) => {
-                    setQuestionnaireAnswers(answers);
-                    setIsQuestionnaireBlocked(isBlocked);
-                    setConditionalDocuments(condDocs);
-                    setQuestionnaireAnswerTexts(answerTexts);
-                    // Questionnaire complété = toutes les questions ont une réponse ET pas de blocage
-                    setQuestionnaireCompleted(allAnswered && !isBlocked);
-                  }}
-                />
+                <Collapsible 
+                  open={!questionnaireCompleted}
+                  className="border rounded-lg"
+                >
+                  <CollapsibleTrigger asChild>
+                    <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50">
+                      <div className="flex items-center gap-2">
+                        <FileQuestion className="h-5 w-5 text-primary" />
+                        <span className="font-medium">Questions préalables</span>
+                      </div>
+                      {questionnaireCompleted && (
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-500">
+                            <Check className="h-3 w-3 mr-1" />
+                            Complété
+                          </Badge>
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <div className="px-4 pb-4">
+                      <ActionQuestionnaire
+                        actionId={actionDetails.id}
+                        onAnswersChange={(answers, isBlocked, condDocs, allAnswered, answerTexts) => {
+                          setQuestionnaireAnswers(answers);
+                          setIsQuestionnaireBlocked(isBlocked);
+                          setConditionalDocuments(condDocs);
+                          setQuestionnaireAnswerTexts(answerTexts);
+                          // Questionnaire complété = toutes les questions ont une réponse ET pas de blocage
+                          setQuestionnaireCompleted(allAnswered && !isBlocked);
+                        }}
+                      />
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
               {/* Documents Nécessaires pour démarches PRO - Affiché après le questionnaire */}
