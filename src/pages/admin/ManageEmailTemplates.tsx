@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import DOMPurify from "dompurify";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -176,7 +177,7 @@ const ManageEmailTemplates = () => {
                       </DialogHeader>
                       <div
                         className="border rounded-lg p-4 bg-white"
-                        dangerouslySetInnerHTML={{ __html: previewHtml }}
+                        dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewHtml) }}
                       />
                     </DialogContent>
                   </Dialog>
