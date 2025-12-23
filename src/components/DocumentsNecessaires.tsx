@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { FileText, CheckCircle2, AlertTriangle, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { FileText, CheckCircle2, AlertTriangle, Download, Plus, X } from "lucide-react";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { Label } from "@/components/ui/label";
@@ -207,6 +209,21 @@ export function DocumentsNecessaires({
     [demarcheType, questionnaireAnswers]
   );
 
+  // Pièces supplémentaires
+  const [additionalDocs, setAdditionalDocs] = useState<{id: number; name: string}[]>([]);
+  const [newDocName, setNewDocName] = useState("");
+
+  const handleAddDocument = () => {
+    if (newDocName.trim()) {
+      setAdditionalDocs(prev => [...prev, { id: Date.now(), name: newDocName.trim() }]);
+      setNewDocName("");
+    }
+  };
+
+  const handleRemoveAdditionalDoc = (docId: number) => {
+    setAdditionalDocs(prev => prev.filter(d => d.id !== docId));
+  };
+
   const requiredDocs = documents.filter(d => d.obligatoire);
   const uploadedRequiredCount = requiredDocs.filter(d => uploadedDocuments.has(d.id)).length;
   const allRequiredUploaded = uploadedRequiredCount === requiredDocs.length;
@@ -321,6 +338,76 @@ export function DocumentsNecessaires({
             ))}
           </div>
         )}
+
+        {/* Pièces supplémentaires */}
+        <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+              <FileText className="h-4 w-4" />
+              Pièces supplémentaires
+              <span className="text-xs bg-muted px-2 py-0.5 rounded">Optionnel</span>
+            </h3>
+          </div>
+          
+          {/* Champ pour ajouter un nouveau document */}
+          <div className="flex gap-2 mb-3">
+            <Input
+              placeholder="Nom du document (ex: Procuration, Mandat...)"
+              value={newDocName}
+              onChange={(e) => setNewDocName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddDocument();
+                }
+              }}
+              className="h-9 text-sm"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddDocument}
+              disabled={!newDocName.trim()}
+              className="h-9"
+            >
+              <Plus className="w-4 h-4 mr-1" />
+              Ajouter
+            </Button>
+          </div>
+          
+          {additionalDocs.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              Aucune pièce supplémentaire ajoutée
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {additionalDocs.map((doc) => (
+                <div key={doc.id} className="flex items-start gap-2 p-3 border rounded-md bg-background">
+                  <div className="flex-1 space-y-2">
+                    <Label className="text-sm font-medium">{doc.name}</Label>
+                    <DocumentUpload
+                      demarcheId={demarcheId}
+                      documentType={`autre_piece_${doc.id}`}
+                      customName={doc.name}
+                      label=""
+                      onUploadComplete={() => onDocumentUpload(`autre_piece_${doc.id}`)}
+                    />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveAdditionalDoc(doc.id)}
+                    className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {allRequiredUploaded && (
           <Alert className="border-green-500 bg-green-500/10">
