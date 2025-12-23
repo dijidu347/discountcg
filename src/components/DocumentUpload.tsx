@@ -124,10 +124,9 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('demarche-documents')
-        .getPublicUrl(fileName);
+      // Store the file path - signed URLs will be generated on demand
+      // since the bucket is now private
+      const fileUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/demarche-documents/${fileName}`;
 
       // Save document reference in database
       const { data: docData, error: dbError } = await supabase
@@ -137,7 +136,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           type_document: documentType,
           document_type: customName || documentType, // Utiliser le nom personnalisé si fourni
           nom_fichier: file.name,
-          url: publicUrl,
+          url: fileUrl,
           taille_octets: file.size
         })
         .select()
@@ -181,7 +180,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           id: docData.id,
           fileName: file.name,
           storagePath: fileName,
-          url: publicUrl
+          url: fileUrl
         }]);
       }
       

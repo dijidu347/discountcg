@@ -253,14 +253,13 @@ export default function GarageSettings() {
           throw uploadError;
         }
         
-        const { data: { publicUrl } } = supabase.storage
-          .from('demarche-documents')
-          .getPublicUrl(fileName);
+        // Store the file path - signed URLs will be generated on demand
+        const fileUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/demarche-documents/${fileName}`;
         
         const { error: insertError } = await supabase.from('verification_documents').insert({ 
           garage_id: garage.id, 
           document_type: documentType, 
-          url: publicUrl, 
+          url: fileUrl, 
           nom_fichier: file.name, 
           status: 'pending' 
         });

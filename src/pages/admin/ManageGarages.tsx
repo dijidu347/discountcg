@@ -395,10 +395,8 @@ export default function ManageGarages() {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('demarche-documents')
-        .getPublicUrl(fileName);
+      // Store the file path - signed URLs will be generated on demand
+      const fileUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/demarche-documents/${fileName}`;
 
       // Create document record with auto-approved status
       const { error: dbError } = await supabase
@@ -407,7 +405,7 @@ export default function ManageGarages() {
           garage_id: selectedGarage.id,
           document_type: uploadingDocType,
           nom_fichier: file.name,
-          url: publicUrl,
+          url: fileUrl,
           status: 'approved',
           validated_by: user?.id,
           validated_at: new Date().toISOString()
