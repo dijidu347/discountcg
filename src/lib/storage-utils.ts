@@ -93,6 +93,32 @@ export const extractBucketFromUrl = (url: string): string | null => {
 };
 
 /**
+ * Download a file from a signed URL as a real browser download (works better on iOS Safari)
+ */
+export const downloadFromSignedUrl = async (signedUrl: string, filename: string): Promise<void> => {
+  try {
+    const res = await fetch(signedUrl);
+    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // cleanup
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (e) {
+    console.error("downloadFromSignedUrl failed, fallback to open:", e);
+    window.open(signedUrl, "_blank");
+  }
+};
+
+/**
  * Download a file from a private bucket
  * @param url - The original storage URL
  * @param filename - The filename to use for download
@@ -105,28 +131,21 @@ export const downloadPrivateFile = async (
 ): Promise<void> => {
   const bucket = extractBucketFromUrl(url);
   const path = extractPathFromUrl(url);
-  
+
   if (!bucket) {
     console.error("Could not determine bucket from URL:", url);
-    // Fallback to direct download attempt
+    // Fallback to direct open
     window.open(url, "_blank");
     return;
   }
-  
+
   const signedUrl = await getSignedUrl(bucket, path, trackingNumber);
-  
+
   if (signedUrl) {
-    // Create a temporary link to trigger download
-    const link = document.createElement("a");
-    link.href = signedUrl;
-    link.download = filename;
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await downloadFromSignedUrl(signedUrl, filename);
   } else {
     console.error("Failed to get signed URL for download");
-    // Fallback to direct download attempt
+    // Fallback to direct open
     window.open(url, "_blank");
   }
 };

@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, Download, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { downloadFromSignedUrl } from "@/lib/storage-utils";
 
 export default function MesFactures() {
   const navigate = useNavigate();
@@ -82,22 +83,7 @@ export default function MesFactures() {
 
       // L'edge function retourne une URL signée
       if (data?.signedUrl) {
-        // Sur mobile Safari, window.open fonctionne mieux que le click programmatique
-        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        
-        if (isMobile) {
-          // Ouvrir directement dans un nouvel onglet sur mobile
-          window.open(data.signedUrl, '_blank');
-        } else {
-          // Sur desktop, utiliser la méthode classique
-          const link = document.createElement('a');
-          link.href = data.signedUrl;
-          link.download = `facture_${numero}.pdf`;
-          link.target = '_blank';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        }
+        await downloadFromSignedUrl(data.signedUrl, `facture_${numero}.pdf`);
       } else {
         throw new Error('URL de téléchargement non disponible');
       }

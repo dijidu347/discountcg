@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { downloadFromSignedUrl } from "@/lib/storage-utils";
 
 
 interface FactureButtonProps {
@@ -76,14 +77,8 @@ export const FactureButton = ({
         throw new Error('Unable to get download URL');
       }
 
-      // Trigger download
-      const link = document.createElement("a");
-      link.href = signedData.signedUrl;
-      link.download = `facture-${facture.numero}.pdf`;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Télécharger (blob) pour éviter l'ouverture en nouvel onglet sur iOS
+      await downloadFromSignedUrl(signedData.signedUrl, `facture-${facture.numero}.pdf`);
 
       toast({
         title: "Facture téléchargée",
