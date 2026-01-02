@@ -53,42 +53,58 @@ export const getSignedUrl = async (
  * @returns The file path within the bucket
  */
 export const extractPathFromUrl = (url: string): string => {
-  // URL format: https://xxx.supabase.co/storage/v1/object/public/bucket-name/path/to/file
-  // or: https://xxx.supabase.co/storage/v1/object/sign/bucket-name/path/to/file?token=xxx
-  const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+?)(?:\?|$)/);
-  if (match) {
-    return decodeURIComponent(match[1]);
-  }
-  
-  // Fallback: try to get everything after the bucket name
-  const parts = url.split("/");
-  const bucketIndex = parts.findIndex(p => 
-    p === "demarche-documents" || 
-    p === "guest-order-documents" || 
-    p === "factures"
+  // Supported formats:
+  // - https://.../storage/v1/object/public/<bucket>/<path>
+  // - https://.../storage/v1/object/sign/<bucket>/<path>?token=...
+  // - <bucket>/<path>
+  // - /<bucket>/<path>
+
+  const trimmed = url.replace(/^\/+/, "");
+
+  // Full storage URL
+  const match = trimmed.match(
+    /\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+?)(?:\?|$)/,
   );
-  
-  if (bucketIndex !== -1 && bucketIndex < parts.length - 1) {
-    return parts.slice(bucketIndex + 1).join("/").split("?")[0];
+  if (match) return decodeURIComponent(match[1]);
+
+  const buckets = ["demarche-documents", "guest-order-documents", "factures"] as const;
+
+  // Simple "bucket/path" format
+  for (const bucket of buckets) {
+    if (trimmed.startsWith(`${bucket}/`)) {
+      return trimmed.slice(bucket.length + 1).split("?")[0];
+    }
   }
-  
-  return url;
+
+  // Fallback: try to find the bucket segment in URL parts
+  const parts = trimmed.split("/");
+  const bucketIndex = parts.findIndex((p) =>
+    p === "demarche-documents" || p === "guest-order-documents" || p === "factures",
+  );
+
+  if (bucketIndex !== -1 && bucketIndex < parts.length - 1) {
+    return parts
+      .slice(bucketIndex + 1)
+      .join("/")
+      .split("?")[0];
+  }
+
+  return trimmed.split("?")[0];
 };
 
 /**
- * Extract the bucket name from a full Supabase storage URL
- * @param url - The full storage URL
- * @returns The bucket name
+ * Extract the bucket name from a storage URL or "bucket/path" format
  */
 export const extractBucketFromUrl = (url: string): string | null => {
-  const buckets = ["demarche-documents", "guest-order-documents", "factures"];
-  
+  const buckets = ["demarche-documents", "guest-order-documents", "factures"] as const;
+  const trimmed = url.replace(/^\/+/, "");
+
   for (const bucket of buckets) {
-    if (url.includes(`/${bucket}/`)) {
-      return bucket;
-    }
+    if (trimmed.startsWith(`${bucket}/`)) return bucket;
+    if (trimmed.includes(`/${bucket}/`)) return bucket;
+    if (trimmed.includes(`/storage/v1/object/`) && trimmed.includes(`/${bucket}/`)) return bucket;
   }
-  
+
   return null;
 };
 
