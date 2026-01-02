@@ -31,7 +31,7 @@ export const getSignedUrl = async (
     }
     
     const { data, error } = await supabase.functions.invoke("get-signed-url", {
-      body: JSON.stringify({ bucket, path, trackingNumber }),
+      body: { bucket, path, trackingNumber },
       headers,
     });
     

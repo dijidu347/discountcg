@@ -31,9 +31,11 @@ serve(async (req) => {
     let requestBody: SignedUrlRequest;
     try {
       const contentType = req.headers.get("content-type") || "";
-      
+
       if (contentType.includes("application/json")) {
-        requestBody = await req.json();
+        const parsed = await req.json();
+        // supabase.functions.invoke peut envoyer une string JSON selon l'environnement
+        requestBody = typeof parsed === "string" ? JSON.parse(parsed) : parsed;
       } else {
         const bodyText = await req.text();
         // Check if body is already an object string like "[object Object]"
