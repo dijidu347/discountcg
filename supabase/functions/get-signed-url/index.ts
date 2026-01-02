@@ -66,7 +66,17 @@ serve(async (req) => {
     // Check if user is authenticated and is admin
     if (authHeader) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      
+      // Si le token est l'anon key, on essaie de récupérer l'utilisateur via l'apikey header
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+      const apiKeyHeader = req.headers.get("apikey");
+      
+      // Créer un client avec le token de l'utilisateur pour vérifier son identité
+      const userSupabase = createClient(supabaseUrl, anonKey || supabaseServiceKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+      
+      const { data: { user }, error: userError } = await userSupabase.auth.getUser();
       
       if (user && !userError) {
         // Check if user is admin
@@ -83,8 +93,8 @@ serve(async (req) => {
           console.log("✅ Admin user authorized");
         }
 
-        // Check if user owns the garage (for demarche-documents)
-        if (!isAuthorized && bucket === "demarche-documents") {
+        // Check if user owns the garage (for demarche-documents or factures)
+        if (!isAuthorized && (bucket === "demarche-documents" || bucket === "factures")) {
           const { data: garageData } = await supabase
             .from("garages")
             .select("id")
@@ -93,9 +103,11 @@ serve(async (req) => {
           
           if (garageData) {
             isAuthorized = true;
-            console.log("✅ Garage owner authorized");
+            console.log("✅ Garage owner authorized for bucket:", bucket);
           }
         }
+      } else {
+        console.log("⚠️ Could not get user from token:", userError?.message);
       }
     }
 
