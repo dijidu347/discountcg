@@ -10,7 +10,7 @@ import { DocumentViewer } from "@/components/DocumentViewer";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Mail, Phone, Zap, FileCheck as FileCheckIcon, CreditCard, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { FactureButton } from "@/components/FactureButton";
+
 import { formatPrice } from "@/lib/utils";
 
 const statusLabels: Record<string, string> = {
@@ -479,13 +479,6 @@ export default function DemarcheDetail() {
                       {statusLabels[demarche.status]}
                     </Badge>
                   </div>
-                  {demarche.facture_id && (
-                    <FactureButton 
-                      demarcheId={demarche.id}
-                      existingFactureId={demarche.facture_id}
-                      onFactureGenerated={loadData}
-                    />
-                  )}
                 </div>
               </CardHeader>
               <CardContent>
