@@ -1,24 +1,49 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// Valid bucket names
+export type StorageBucket = "demarche-documents" | "guest-order-documents" | "factures";
+
+const VALID_BUCKETS: StorageBucket[] = ["demarche-documents", "guest-order-documents", "factures"];
+
 /**
  * Get a signed URL for a file in a private storage bucket
- * @param bucket - The storage bucket name
- * @param path - The file path within the bucket
+ * @param bucket - The storage bucket name (must be one of the valid buckets)
+ * @param path - The file path within the bucket (e.g., "garage_id/file.pdf")
  * @param trackingNumber - Optional tracking number for guest order access
  * @returns The signed URL or null if failed
  */
 export const getSignedUrl = async (
-  bucket: string,
+  bucket: StorageBucket,
   path: string,
   trackingNumber?: string
 ): Promise<string | null> => {
   try {
+    // Validate bucket
+    if (!VALID_BUCKETS.includes(bucket)) {
+      console.error("Invalid bucket:", bucket);
+      return null;
+    }
+
+    // Clean the path - remove any leading slashes or bucket prefix
+    let cleanPath = path;
+    
+    // Remove leading slashes
+    cleanPath = cleanPath.replace(/^\/+/, "");
+    
+    // Remove bucket prefix if present
+    if (cleanPath.startsWith(`${bucket}/`)) {
+      cleanPath = cleanPath.slice(bucket.length + 1);
+    }
+    
+    // Remove query params
+    cleanPath = cleanPath.split("?")[0];
+
+    console.log(`📤 Requesting signed URL - bucket: "${bucket}", path: "${cleanPath}"`);
+
     // Get the current session for JWT
     const { data: { session } } = await supabase.auth.getSession();
     
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
+    const headers: Record<string, string> = {};
     
     // Add JWT if authenticated
     if (session?.access_token) {
@@ -30,17 +55,26 @@ export const getSignedUrl = async (
       headers["x-tracking-number"] = trackingNumber;
     }
     
-    const { data, error } = await supabase.functions.invoke("get-signed-url", {
-      body: { bucket, path, trackingNumber },
+    // Call edge function with explicit JSON body
+    const response = await supabase.functions.invoke("get-signed-url", {
+      body: { bucket, path: cleanPath, trackingNumber },
       headers,
     });
     
-    if (error) {
-      console.error("Error getting signed URL:", error);
+    if (response.error) {
+      console.error("Error getting signed URL:", response.error);
       return null;
     }
     
-    return data?.signedUrl || null;
+    const signedUrl = response.data?.signedUrl;
+    
+    if (!signedUrl) {
+      console.error("No signedUrl in response:", response.data);
+      return null;
+    }
+    
+    console.log("✅ Got signed URL successfully");
+    return signedUrl;
   } catch (error) {
     console.error("Error in getSignedUrl:", error);
     return null;
@@ -48,68 +82,64 @@ export const getSignedUrl = async (
 };
 
 /**
- * Extract the file path from a full Supabase storage URL
- * @param url - The full storage URL
- * @returns The file path within the bucket
+ * Extract the bucket name from a storage URL or path
+ * @param url - The URL or path (e.g., "factures/garage_id/file.pdf" or full Supabase URL)
+ * @returns The bucket name or null if not found
  */
-export const extractPathFromUrl = (url: string): string => {
-  // Supported formats:
-  // - https://.../storage/v1/object/public/<bucket>/<path>
-  // - https://.../storage/v1/object/sign/<bucket>/<path>?token=...
-  // - <bucket>/<path>
-  // - /<bucket>/<path>
-
+export const extractBucketFromUrl = (url: string): StorageBucket | null => {
+  if (!url) return null;
+  
   const trimmed = url.replace(/^\/+/, "");
 
-  // Full storage URL
-  const match = trimmed.match(
-    /\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+?)(?:\?|$)/,
-  );
-  if (match) return decodeURIComponent(match[1]);
-
-  const buckets = ["demarche-documents", "guest-order-documents", "factures"] as const;
-
-  // Simple "bucket/path" format
-  for (const bucket of buckets) {
-    if (trimmed.startsWith(`${bucket}/`)) {
-      return trimmed.slice(bucket.length + 1).split("?")[0];
-    }
-  }
-
-  // Fallback: try to find the bucket segment in URL parts
-  const parts = trimmed.split("/");
-  const bucketIndex = parts.findIndex((p) =>
-    p === "demarche-documents" || p === "guest-order-documents" || p === "factures",
-  );
-
-  if (bucketIndex !== -1 && bucketIndex < parts.length - 1) {
-    return parts
-      .slice(bucketIndex + 1)
-      .join("/")
-      .split("?")[0];
-  }
-
-  return trimmed.split("?")[0];
-};
-
-/**
- * Extract the bucket name from a storage URL or "bucket/path" format
- */
-export const extractBucketFromUrl = (url: string): string | null => {
-  const buckets = ["demarche-documents", "guest-order-documents", "factures"] as const;
-  const trimmed = url.replace(/^\/+/, "");
-
-  for (const bucket of buckets) {
+  for (const bucket of VALID_BUCKETS) {
+    // Check direct prefix: "bucket/path"
     if (trimmed.startsWith(`${bucket}/`)) return bucket;
+    // Check URL contains bucket segment
     if (trimmed.includes(`/${bucket}/`)) return bucket;
-    if (trimmed.includes(`/storage/v1/object/`) && trimmed.includes(`/${bucket}/`)) return bucket;
   }
 
   return null;
 };
 
 /**
- * Download a file from a signed URL as a real browser download (works better on iOS Safari)
+ * Extract the file path from a storage URL (removes bucket prefix and query params)
+ * @param url - The URL or path
+ * @returns The clean file path within the bucket
+ */
+export const extractPathFromUrl = (url: string): string => {
+  if (!url) return "";
+  
+  let cleanUrl = url.replace(/^\/+/, "");
+  
+  // Handle full Supabase storage URLs
+  // Format: https://xxx.supabase.co/storage/v1/object/public/bucket/path
+  // Format: https://xxx.supabase.co/storage/v1/object/sign/bucket/path?token=xxx
+  const storageMatch = cleanUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/);
+  if (storageMatch) {
+    return decodeURIComponent(storageMatch[2].split("?")[0]);
+  }
+
+  // Handle "bucket/path" format - remove bucket prefix
+  for (const bucket of VALID_BUCKETS) {
+    if (cleanUrl.startsWith(`${bucket}/`)) {
+      return cleanUrl.slice(bucket.length + 1).split("?")[0];
+    }
+  }
+
+  // Fallback: find bucket in path segments
+  const parts = cleanUrl.split("/");
+  const bucketIndex = parts.findIndex((p) => VALID_BUCKETS.includes(p as StorageBucket));
+
+  if (bucketIndex !== -1 && bucketIndex < parts.length - 1) {
+    return parts.slice(bucketIndex + 1).join("/").split("?")[0];
+  }
+
+  // Return as-is (might already be just the path)
+  return cleanUrl.split("?")[0];
+};
+
+/**
+ * Download a file from a signed URL as a real browser download
  */
 export const downloadFromSignedUrl = async (signedUrl: string, filename: string): Promise<void> => {
   try {
@@ -126,7 +156,7 @@ export const downloadFromSignedUrl = async (signedUrl: string, filename: string)
     link.click();
     document.body.removeChild(link);
 
-    // cleanup
+    // Cleanup
     setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
   } catch (e) {
     console.error("downloadFromSignedUrl failed, fallback to open:", e);
@@ -135,33 +165,50 @@ export const downloadFromSignedUrl = async (signedUrl: string, filename: string)
 };
 
 /**
- * Download a file from a private bucket
- * @param url - The original storage URL
- * @param filename - The filename to use for download
- * @param trackingNumber - Optional tracking number for guest order access
+ * Download a file from a private bucket using signed URL
+ * @param bucket - The bucket name
+ * @param path - The file path within the bucket
+ * @param filename - The filename for the download
+ * @param trackingNumber - Optional tracking number for guest access
  */
 export const downloadPrivateFile = async (
-  url: string,
+  bucket: StorageBucket,
+  path: string,
   filename: string,
   trackingNumber?: string
 ): Promise<void> => {
-  const bucket = extractBucketFromUrl(url);
-  const path = extractPathFromUrl(url);
-
-  if (!bucket) {
-    console.error("Could not determine bucket from URL:", url);
-    // Fallback to direct open
-    window.open(url, "_blank");
-    return;
-  }
-
   const signedUrl = await getSignedUrl(bucket, path, trackingNumber);
 
   if (signedUrl) {
     await downloadFromSignedUrl(signedUrl, filename);
   } else {
     console.error("Failed to get signed URL for download");
-    // Fallback to direct open
-    window.open(url, "_blank");
+    throw new Error("Impossible de télécharger le fichier");
   }
+};
+
+/**
+ * Legacy function: Download using URL that contains bucket info
+ * Extracts bucket and path from URL, then downloads
+ */
+export const downloadPrivateFileFromUrl = async (
+  url: string,
+  filename: string,
+  trackingNumber?: string
+): Promise<void> => {
+  const bucket = extractBucketFromUrl(url);
+  
+  if (!bucket) {
+    console.error("Could not determine bucket from URL:", url);
+    throw new Error("Bucket non reconnu");
+  }
+  
+  const path = extractPathFromUrl(url);
+  
+  if (!path) {
+    console.error("Could not extract path from URL:", url);
+    throw new Error("Chemin du fichier invalide");
+  }
+  
+  await downloadPrivateFile(bucket, path, filename, trackingNumber);
 };

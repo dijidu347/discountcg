@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { downloadPrivateFile } from "@/lib/storage-utils";
+import { 
+  downloadPrivateFile, 
+  downloadPrivateFileFromUrl,
+  extractBucketFromUrl, 
+  extractPathFromUrl,
+  type StorageBucket 
+} from "@/lib/storage-utils";
 import { useToast } from "@/hooks/use-toast";
 
 interface SecureDownloadButtonProps {
@@ -29,7 +35,7 @@ export const SecureDownloadButton = ({
   const handleDownload = async () => {
     try {
       setIsLoading(true);
-      await downloadPrivateFile(url, filename, trackingNumber);
+      await downloadPrivateFileFromUrl(url, filename, trackingNumber);
     } catch (error) {
       console.error("Download error:", error);
       toast({
@@ -92,7 +98,7 @@ export const SecureDownloadLink = ({
     e.preventDefault();
     try {
       setIsLoading(true);
-      await downloadPrivateFile(url, filename, trackingNumber);
+      await downloadPrivateFileFromUrl(url, filename, trackingNumber);
     } catch (error) {
       console.error("Download error:", error);
       toast({

@@ -3,8 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { downloadFromSignedUrl } from "@/lib/storage-utils";
-
+import { getSignedUrl, downloadFromSignedUrl } from "@/lib/storage-utils";
 
 interface FactureButtonProps {
   demarcheId: string;
@@ -62,27 +61,31 @@ export const FactureButton = ({
         throw new Error('Facture URL not found');
       }
 
-      // pdf_url contains the path in the bucket (e.g. "garage_id/2025-00001.pdf")
-      const pdfPath = facture.pdf_url.includes('factures/') 
-        ? facture.pdf_url.split('factures/').pop() || facture.pdf_url
-        : facture.pdf_url;
+      // pdf_url contains the path in the bucket (e.g., "garage_id/2025-00001.pdf")
+      // Clean the path: remove bucket prefix if present
+      let pdfPath = facture.pdf_url;
+      if (pdfPath.includes('factures/')) {
+        pdfPath = pdfPath.split('factures/').pop() || pdfPath;
+      }
+      // Remove leading slashes
+      pdfPath = pdfPath.replace(/^\/+/, '');
       
-      // Get signed URL directly from storage
-      const { data: signedData, error: signedError } = await supabase.storage
-        .from('factures')
-        .createSignedUrl(pdfPath, 3600);
+      console.log(`📄 FactureButton: Downloading facture, path="${pdfPath}"`);
+      
+      // Use the edge function to get signed URL (respects RLS)
+      const signedUrl = await getSignedUrl("factures", pdfPath);
 
-      if (signedError || !signedData?.signedUrl) {
-        console.error('Error getting signed URL:', signedError);
+      if (!signedUrl) {
+        console.error('Failed to get signed URL for facture');
         throw new Error('Unable to get download URL');
       }
 
-      // Télécharger (blob) pour éviter l'ouverture en nouvel onglet sur iOS
-      await downloadFromSignedUrl(signedData.signedUrl, `facture-${facture.numero}.pdf`);
+      // Download using blob for iOS Safari compatibility
+      await downloadFromSignedUrl(signedUrl, `facture-${facture.numero}.pdf`);
 
       toast({
         title: "Facture téléchargée",
-        description: `Facture ${facture.numero} ouverte`,
+        description: `Facture ${facture.numero} téléchargée`,
       });
     } catch (error) {
       console.error('Error downloading facture:', error);

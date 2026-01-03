@@ -1,92 +1,115 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
+import { 
+  getSignedUrl, 
+  downloadFromSignedUrl, 
+  extractBucketFromUrl, 
+  extractPathFromUrl,
+  type StorageBucket 
+} from "@/lib/storage-utils";
 
 interface DocumentViewerProps {
   isOpen: boolean;
   onClose: () => void;
-  documentUrl: string;
   documentName: string;
-  documentType: string;
   trackingNumber?: string;
+  // New approach: bucket + path
+  bucket?: StorageBucket;
+  path?: string;
+  // Legacy approach: documentUrl (will extract bucket/path from it)
+  documentUrl?: string;
+  documentType?: string;
 }
 
 export function DocumentViewer({ 
   isOpen, 
   onClose, 
-  documentUrl, 
-  documentName, 
+  bucket: propBucket,
+  path: propPath,
+  documentUrl,
+  documentName,
   documentType,
   trackingNumber 
 }: DocumentViewerProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [isLoadingUrl, setIsLoadingUrl] = useState(false);
   const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const isPdf = documentType.toLowerCase().includes('pdf') || documentUrl.toLowerCase().endsWith('.pdf');
+  
+  // Determine if PDF from name, path, or type
+  const isPdf = documentName?.toLowerCase().endsWith('.pdf') || 
+                propPath?.toLowerCase().endsWith('.pdf') ||
+                documentUrl?.toLowerCase().endsWith('.pdf') ||
+                documentType?.toLowerCase().includes('pdf');
+
+  // Resolve bucket and path from props or documentUrl
+  const resolvedBucket = propBucket || (documentUrl ? extractBucketFromUrl(documentUrl) : null);
+  const resolvedPath = propPath || (documentUrl ? extractPathFromUrl(documentUrl) : null);
 
   // Get signed URL when dialog opens
   useEffect(() => {
-    if (isOpen && documentUrl) {
+    if (isOpen && resolvedBucket && resolvedPath) {
       loadSignedUrl();
+    } else if (isOpen && !resolvedBucket) {
+      setError("Bucket non reconnu");
     } else {
       setSignedUrl(null);
+      setError(null);
     }
-  }, [isOpen, documentUrl]);
+  }, [isOpen, resolvedBucket, resolvedPath, trackingNumber]);
 
   const loadSignedUrl = async () => {
+    if (!resolvedBucket || !resolvedPath) {
+      setError("Informations du document manquantes");
+      return;
+    }
+    
     setIsLoadingUrl(true);
+    setError(null);
+    
     try {
-      const bucket = extractBucketFromUrl(documentUrl);
+      console.log(`📄 DocumentViewer: Loading signed URL for bucket="${resolvedBucket}", path="${resolvedPath}"`);
+      const url = await getSignedUrl(resolvedBucket, resolvedPath, trackingNumber);
       
-      // If it's a private bucket, get signed URL
-      if (bucket) {
-        const path = extractPathFromUrl(documentUrl);
-        const url = await getSignedUrl(bucket, path, trackingNumber);
-        setSignedUrl(url || documentUrl);
+      if (url) {
+        setSignedUrl(url);
+        console.log("✅ DocumentViewer: Got signed URL");
       } else {
-        // Not a known private bucket, use original URL
-        setSignedUrl(documentUrl);
+        setError("Impossible de charger le document");
+        console.error("❌ DocumentViewer: Failed to get signed URL");
       }
-    } catch (error) {
-      console.error('Error loading signed URL:', error);
-      // Fallback to original URL
-      setSignedUrl(documentUrl);
+    } catch (err) {
+      console.error("❌ DocumentViewer: Error loading signed URL:", err);
+      setError("Erreur lors du chargement du document");
     } finally {
       setIsLoadingUrl(false);
     }
   };
 
   const handleDownload = async () => {
+    if (!signedUrl) {
+      toast({
+        title: "Erreur",
+        description: "Le lien du document n'est pas disponible",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsDownloading(true);
     try {
-      const urlToUse = signedUrl || documentUrl;
-      // Fetch the file as a blob to force direct download
-      const response = await fetch(urlToUse);
-      if (!response.ok) throw new Error('Failed to fetch file');
-      
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = documentName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Clean up the blob URL
-      window.URL.revokeObjectURL(blobUrl);
+      await downloadFromSignedUrl(signedUrl, documentName);
       
       toast({
         title: "Téléchargement lancé",
         description: `${documentName} est en cours de téléchargement`,
       });
-    } catch (error) {
-      console.error('Download error:', error);
+    } catch (err) {
+      console.error("Download error:", err);
       toast({
         title: "Erreur",
         description: "Impossible de télécharger le fichier",
@@ -96,8 +119,6 @@ export function DocumentViewer({
       setIsDownloading(false);
     }
   };
-
-  const displayUrl = signedUrl || documentUrl;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -109,7 +130,7 @@ export function DocumentViewer({
               variant="outline" 
               size="sm" 
               onClick={handleDownload}
-              disabled={isDownloading || isLoadingUrl}
+              disabled={isDownloading || isLoadingUrl || !signedUrl}
             >
               {isDownloading ? (
                 <>
@@ -131,19 +152,34 @@ export function DocumentViewer({
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               <span className="ml-2 text-muted-foreground">Chargement du document...</span>
             </div>
-          ) : isPdf ? (
-            <iframe
-              src={displayUrl}
-              className="w-full h-full border-0"
-              title={documentName}
-            />
-          ) : (
-            <img
-              src={displayUrl}
-              alt={documentName}
-              className="w-full h-auto object-contain"
-            />
-          )}
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-destructive">
+              <AlertCircle className="h-12 w-12 mb-4" />
+              <p className="text-lg font-medium">{error}</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={loadSignedUrl}
+              >
+                Réessayer
+              </Button>
+            </div>
+          ) : signedUrl ? (
+            isPdf ? (
+              <iframe
+                src={signedUrl}
+                className="w-full h-full border-0"
+                title={documentName}
+              />
+            ) : (
+              <img
+                src={signedUrl}
+                alt={documentName}
+                className="w-full h-auto object-contain"
+                onError={() => setError("Impossible d'afficher l'image")}
+              />
+            )
+          ) : null}
         </div>
       </DialogContent>
     </Dialog>
