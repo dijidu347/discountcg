@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -194,13 +194,18 @@ export default function AllDemarches() {
                     <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Button 
-                        size="sm" 
+                      <Link 
+                        to={`/admin/demarche/${d.id}`}
+                        target="_blank"
                         onClick={() => handleViewDemarche(d)}
-                        className={!d.admin_viewed ? "bg-red-500 hover:bg-red-600" : ""}
                       >
-                        {!d.admin_viewed ? "À traiter" : "Voir"}
-                      </Button>
+                        <Button 
+                          size="sm" 
+                          className={!d.admin_viewed ? "bg-red-500 hover:bg-red-600" : ""}
+                        >
+                          {!d.admin_viewed ? "À traiter" : "Voir"}
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -253,9 +258,11 @@ export default function AllDemarches() {
                     <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/demarche/${d.id}`)}>
-                        Voir
-                      </Button>
+                      <Link to={`/admin/demarche/${d.id}`} target="_blank">
+                        <Button variant="outline" size="sm">
+                          Voir
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -308,9 +315,11 @@ export default function AllDemarches() {
                     <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/demarche/${d.id}`)}>
-                        Voir
-                      </Button>
+                      <Link to={`/admin/demarche/${d.id}`} target="_blank">
+                        <Button variant="outline" size="sm">
+                          Voir
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -352,9 +361,11 @@ export default function AllDemarches() {
                     <TableCell className="text-muted-foreground">{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell className="text-muted-foreground">{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Button variant="outline" size="sm" onClick={() => navigate(`/admin/demarche/${d.id}`)}>
-                        Voir
-                      </Button>
+                      <Link to={`/admin/demarche/${d.id}`} target="_blank">
+                        <Button variant="outline" size="sm">
+                          Voir
+                        </Button>
+                      </Link>
                     </TableCell>
                   </TableRow>
                 ))}
