@@ -728,25 +728,16 @@ export default function NouvelleDemarche() {
               </Alert>
             )}
             <form onSubmit={handleSubmitPayment} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="type">Type de démarche *</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => setFormData({ ...formData, type: value })}
-                  required
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez le type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {actionsRapides.map((action) => (
-                      <SelectItem key={action.id} value={action.code}>
-                        {action.titre} - {(freeTokenAvailable && (action.code === 'DA' || action.code === 'DC')) ? '0€ (offert)' : `${action.prix}€`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              {/* Affichage du type de démarche sélectionné */}
+              {actionDetails && (
+                <div className="p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
+                  <p className="text-sm text-muted-foreground mb-1">Type de démarche</p>
+                  <p className="text-lg font-semibold text-primary">{actionDetails.titre}</p>
+                  {actionDetails.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{actionDetails.description}</p>
+                  )}
+                </div>
+              )}
 
               {garage && (
                 <>
