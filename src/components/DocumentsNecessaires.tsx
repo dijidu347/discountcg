@@ -270,7 +270,8 @@ export function DocumentsNecessaires({
               <a
                 key={index}
                 href={getCerfaUrl(cerfaNumber)}
-                download
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
