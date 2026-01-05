@@ -775,10 +775,12 @@ export default function DemarcheDetail() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Immatriculation</p>
-                      <p className="font-medium">{vehicule.immatriculation}</p>
-                    </div>
+                    {vehicule.immatriculation && !vehicule.immatriculation.startsWith('VIN-') && (
+                      <div>
+                        <p className="text-sm text-muted-foreground">Immatriculation</p>
+                        <p className="font-medium">{vehicule.immatriculation}</p>
+                      </div>
+                    )}
                     {vehicule.marque && (
                       <div>
                         <p className="text-sm text-muted-foreground">Marque</p>
