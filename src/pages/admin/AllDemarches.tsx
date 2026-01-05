@@ -196,7 +196,6 @@ export default function AllDemarches() {
                     <TableCell>
                       <Link 
                         to={`/admin/demarche/${d.id}`}
-                        target="_blank"
                         onClick={() => handleViewDemarche(d)}
                       >
                         <Button 
@@ -258,7 +257,7 @@ export default function AllDemarches() {
                     <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Link to={`/admin/demarche/${d.id}`} target="_blank">
+                      <Link to={`/admin/demarche/${d.id}`}>
                         <Button variant="outline" size="sm">
                           Voir
                         </Button>
@@ -315,7 +314,7 @@ export default function AllDemarches() {
                     <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell>{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Link to={`/admin/demarche/${d.id}`} target="_blank">
+                      <Link to={`/admin/demarche/${d.id}`}>
                         <Button variant="outline" size="sm">
                           Voir
                         </Button>
@@ -361,7 +360,7 @@ export default function AllDemarches() {
                     <TableCell className="text-muted-foreground">{formatPrice(d.montant_ttc || 0)}€</TableCell>
                     <TableCell className="text-muted-foreground">{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
                     <TableCell>
-                      <Link to={`/admin/demarche/${d.id}`} target="_blank">
+                      <Link to={`/admin/demarche/${d.id}`}>
                         <Button variant="outline" size="sm">
                           Voir
                         </Button>
