@@ -24,7 +24,6 @@ type ActionRapide = {
   ordre: number;
   actif: boolean;
   require_immatriculation: boolean;
-  test_only: boolean;
 };
 
 type ActionDocument = {
@@ -124,8 +123,7 @@ export default function ManageActions() {
       couleur: 'primary',
       ordre: actions.length + 1,
       actif: true,
-      require_immatriculation: true,
-      test_only: false
+      require_immatriculation: true
     });
     setNewDocuments([{ nom: '', obligatoire: true }]);
     setShowDialog(true);
@@ -349,7 +347,7 @@ export default function ManageActions() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {actions.filter(action => !action.test_only || user?.email === 'test@test.com').map((action) => (
+          {actions.map((action) => (
             <Card key={action.id} className={!action.actif ? 'opacity-60' : ''}>
               <CardHeader>
                 <div className="flex items-start justify-between">
