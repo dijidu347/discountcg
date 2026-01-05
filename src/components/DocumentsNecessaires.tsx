@@ -252,7 +252,7 @@ export function DocumentsNecessaires({
             <span className="text-muted-foreground text-xs">(optionnel)</span>
           )}
           {doc.conditionKey && (
-            <Badge variant="outline" className="text-xs">Conditionnel</Badge>
+            <span className="text-xs text-muted-foreground italic">Requis selon votre situation</span>
           )}
         </div>
       );
@@ -287,7 +287,7 @@ export function DocumentsNecessaires({
           <span className="text-muted-foreground text-xs">(optionnel)</span>
         )}
         {doc.conditionKey && (
-          <Badge variant="outline" className="text-xs">Conditionnel</Badge>
+          <span className="text-xs text-muted-foreground italic">Requis selon votre situation</span>
         )}
       </div>
     );
