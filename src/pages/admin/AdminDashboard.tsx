@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import RevenueStats from "@/components/admin/RevenueStats";
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -247,7 +248,7 @@ export default function AdminDashboard() {
         )}
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardDescription>Total Garages</CardDescription>
@@ -298,21 +299,11 @@ export default function AdminDashboard() {
               </p>
             </CardContent>
           </Card>
+        </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>Revenus</CardDescription>
-              <DollarSign className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <CardTitle className="text-3xl text-green-600">
-                {stats.totalPaiements.toFixed(2)} €
-              </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
-                Frais de service + achats jetons
-              </p>
-            </CardContent>
-          </Card>
+        {/* Revenue Stats Section */}
+        <div className="mb-8">
+          <RevenueStats />
         </div>
 
         {/* Section Particuliers */}
