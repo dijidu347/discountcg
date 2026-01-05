@@ -490,12 +490,35 @@ export default function NouvelleDemarche() {
 
     // Update before payment
     if (demarcheId) {
+      // Pour les démarches PRO avec infos véhicule, créer un véhicule dans la base
+      let vehicleIdToUse = selectedVehicleId;
+      
+      if (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && vehicleInfoPro && garage) {
+        // Créer un véhicule avec les infos PRO
+        const { data: newVehicle, error: vehicleError } = await supabase
+          .from('vehicules')
+          .insert({
+            garage_id: garage.id,
+            immatriculation: selectedImmatriculation || `VIN-${vehicleInfoPro.vin?.slice(-6) || 'PRO'}`,
+            marque: vehicleInfoPro.marque,
+            modele: vehicleInfoPro.modele,
+            vin: vehicleInfoPro.vin,
+            date_mec: vehicleInfoPro.date_mec || null
+          })
+          .select()
+          .single();
+        
+        if (!vehicleError && newVehicle) {
+          vehicleIdToUse = newVehicle.id;
+        }
+      }
+      
       await supabase
         .from('demarches')
         .update({
           immatriculation: selectedImmatriculation,
           commentaire: formData.commentaire,
-          vehicule_id: selectedVehicleId
+          vehicule_id: vehicleIdToUse
         })
         .eq('id', demarcheId);
     }
