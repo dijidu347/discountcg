@@ -244,7 +244,7 @@ export function DocumentsNecessaires({
 
     if (!hasCerfa || !cerfaNumber) {
       return (
-        <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+        <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
           {doc.nom}
           {doc.obligatoire ? (
             <span className="text-destructive text-base font-bold">*</span>
@@ -254,7 +254,7 @@ export function DocumentsNecessaires({
           {doc.conditionKey && (
             <Badge variant="outline" className="text-xs">Conditionnel</Badge>
           )}
-        </Label>
+        </div>
       );
     }
 
@@ -263,15 +263,14 @@ export function DocumentsNecessaires({
     const parts = doc.nom.split(cerfaRegex);
 
     return (
-      <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+      <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
         {parts.map((part, index) => {
           if (cerfaRegex.test(part)) {
             return (
               <a
                 key={index}
                 href={getCerfaUrl(cerfaNumber)}
-                target="_blank"
-                rel="noopener noreferrer"
+                download
                 className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
@@ -290,7 +289,7 @@ export function DocumentsNecessaires({
         {doc.conditionKey && (
           <Badge variant="outline" className="text-xs">Conditionnel</Badge>
         )}
-      </Label>
+      </div>
     );
   };
 
