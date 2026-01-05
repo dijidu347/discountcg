@@ -279,6 +279,37 @@ export default function DemarcheDetail() {
         .eq('code', demarcheData.type)
         .single();
 
+      // Labels pour les documents PRO (démarches WW, W, Quitus)
+      const proDocLabels: Record<string, string> = {
+        // WW Provisoire PRO
+        ww_mandat: "Mandat d'immatriculation signé (Cerfa 13757)",
+        ww_assurance: "Attestation d'assurance du véhicule",
+        ww_facture: "Facture d'achat du véhicule",
+        ww_cession: "Certificat de cession",
+        ww_cg_etranger: "Certificat d'immatriculation étranger",
+        ww_coc: "Certificat de conformité (COC)",
+        ww_contrat_location: "Contrat de location complet",
+        ww_mandat_location: "Mandat de la société de location",
+        ww_kbis: "Extrait Kbis < 6 mois",
+        ww_id_representant: "Pièce d'identité du représentant légal",
+        // W Garage PRO
+        w_kbis: "Extrait Kbis < 6 mois",
+        w_id_dirigeant: "Pièce d'identité du dirigeant",
+        w_justif_domicile: "Justificatif de domicile du dirigeant",
+        w_mandat: "Mandat d'immatriculation signé et tamponné (Cerfa 13757)",
+        w_assurance: "Attestation d'assurance W Garage",
+        w_declaration_achat: "Déclaration d'achat (Cerfa 13751)",
+        w_cession_vente: "Certificat de cession ou justificatif de vente",
+        // Quitus Fiscal PRO
+        qf_facture: "Facture d'achat ou certificat de cession",
+        qf_cg_etranger: "Certificat d'immatriculation étranger",
+        qf_mandat: "Mandat d'immatriculation signé (Cerfa 13757)",
+        qf_id_representant: "Pièce d'identité du représentant légal",
+        qf_kbis: "Extrait Kbis < 6 mois",
+        qf_justif_siege: "Justificatif de domicile du siège social",
+        qf_justif_tva: "Justificatif de paiement de la TVA",
+      };
+
       if (actionData) {
         const { data: actionDocs } = await supabase
           .from('action_documents')
@@ -287,12 +318,16 @@ export default function DemarcheDetail() {
           .order('ordre');
 
         if (actionDocs) {
-          const labels: Record<string, string> = {};
+          const labels: Record<string, string> = { ...proDocLabels };
           actionDocs.forEach((doc, idx) => {
             labels[`doc_${idx + 1}`] = doc.nom_document;
           });
           setDocumentLabels(labels);
+        } else {
+          setDocumentLabels(proDocLabels);
         }
+      } else {
+        setDocumentLabels(proDocLabels);
       }
     }
 
