@@ -11,9 +11,19 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { path } = await req.json();
+    const raw = await req.text();
+    let payload: any = {};
 
-    if (!path) {
+    try {
+      payload = raw ? JSON.parse(raw) : {};
+    } catch {
+      payload = {};
+    }
+
+    // Accept either { path } or { body: { path } }
+    const path = payload?.path ?? payload?.body?.path;
+
+    if (!path || typeof path !== "string") {
       return new Response(JSON.stringify({ error: "path requis" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
