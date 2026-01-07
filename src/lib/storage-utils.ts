@@ -147,39 +147,42 @@ export const downloadFromSignedUrl = async (signedUrl: string, filename: string)
     throw new Error("URL de téléchargement invalide");
   }
 
+  console.log("📥 Downloading:", filename);
+
+  // Method 1: Try direct link click (works for same-origin or CORS-enabled)
+  const link = document.createElement("a");
+  link.href = signedUrl;
+  link.download = filename;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  
+  // For cross-origin URLs, we need to fetch and create blob
   try {
-    console.log("📥 Downloading from signed URL:", signedUrl.substring(0, 100) + "...");
-    const res = await fetch(signedUrl);
+    const res = await fetch(signedUrl, { mode: "cors" });
     
-    if (!res.ok) {
-      console.error("Download response not ok:", res.status, res.statusText);
-      throw new Error(`Download failed: ${res.status} ${res.statusText}`);
+    if (res.ok) {
+      const blob = await res.blob();
+      if (blob.size > 0) {
+        const blobUrl = URL.createObjectURL(blob);
+        link.href = blobUrl;
+        link.target = "_self";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        console.log("✅ Downloaded via blob");
+        return;
+      }
     }
-
-    const blob = await res.blob();
-    
-    if (blob.size === 0) {
-      console.error("Downloaded blob is empty");
-      throw new Error("Le fichier téléchargé est vide");
-    }
-    
-    console.log("✅ Downloaded blob size:", blob.size);
-    const blobUrl = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    // Cleanup
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
   } catch (e) {
-    console.error("downloadFromSignedUrl failed:", e);
-    // Don't fallback to window.open as it causes about:blank issues
-    throw e;
+    console.log("Fetch failed, trying direct link:", e);
   }
+
+  // Fallback: Direct link (browser will handle the download)
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  console.log("✅ Downloaded via direct link");
 };
 
 /**
