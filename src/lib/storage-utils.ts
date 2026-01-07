@@ -142,11 +142,28 @@ export const extractPathFromUrl = (url: string): string => {
  * Download a file from a signed URL as a real browser download
  */
 export const downloadFromSignedUrl = async (signedUrl: string, filename: string): Promise<void> => {
+  if (!signedUrl || signedUrl === "null" || signedUrl === "undefined") {
+    console.error("Invalid signed URL:", signedUrl);
+    throw new Error("URL de téléchargement invalide");
+  }
+
   try {
+    console.log("📥 Downloading from signed URL:", signedUrl.substring(0, 100) + "...");
     const res = await fetch(signedUrl);
-    if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+    
+    if (!res.ok) {
+      console.error("Download response not ok:", res.status, res.statusText);
+      throw new Error(`Download failed: ${res.status} ${res.statusText}`);
+    }
 
     const blob = await res.blob();
+    
+    if (blob.size === 0) {
+      console.error("Downloaded blob is empty");
+      throw new Error("Le fichier téléchargé est vide");
+    }
+    
+    console.log("✅ Downloaded blob size:", blob.size);
     const blobUrl = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
@@ -159,8 +176,9 @@ export const downloadFromSignedUrl = async (signedUrl: string, filename: string)
     // Cleanup
     setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
   } catch (e) {
-    console.error("downloadFromSignedUrl failed, fallback to open:", e);
-    window.open(signedUrl, "_blank");
+    console.error("downloadFromSignedUrl failed:", e);
+    // Don't fallback to window.open as it causes about:blank issues
+    throw e;
   }
 };
 
