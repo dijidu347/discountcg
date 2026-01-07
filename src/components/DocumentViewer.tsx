@@ -5,7 +5,6 @@ import { Download, Loader2, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
   getSignedUrl, 
-  downloadFromSignedUrl, 
   extractBucketFromUrl, 
   extractPathFromUrl,
   type StorageBucket 
@@ -102,7 +101,8 @@ export function DocumentViewer({
     
     setIsDownloading(true);
     try {
-      await downloadFromSignedUrl(signedUrl, documentName);
+      // Use window.location.href for native browser download
+      window.location.href = signedUrl;
       
       toast({
         title: "Téléchargement lancé",

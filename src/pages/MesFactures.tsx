@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, FileText, Download, Loader2, Coins, Car } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { downloadFromSignedUrl } from "@/lib/storage-utils";
+import { downloadFacture, extractPathFromUrl } from "@/lib/storage-utils";
 
 export default function MesFactures() {
   const navigate = useNavigate();
@@ -75,26 +75,28 @@ export default function MesFactures() {
 
   const [downloading, setDownloading] = useState<string | null>(null);
 
-  const handleDownload = async (factureId: string, numero: string) => {
-    setDownloading(factureId);
+  const handleDownload = async (facture: any) => {
+    if (!facture.pdf_url) return;
+    
+    setDownloading(facture.id);
     try {
-      const { data, error } = await supabase.functions.invoke('download-facture', {
-        body: { factureId }
+      // Extract clean path from pdf_url
+      const path = extractPathFromUrl(facture.pdf_url);
+      
+      console.log(`📄 MesFactures: Downloading facture, path="${path}"`);
+      
+      // Use the UNIQUE download function
+      await downloadFacture(path);
+      
+      toast({
+        title: "Facture téléchargée",
+        description: `Facture ${facture.numero}`
       });
-
-      if (error) throw error;
-
-      // L'edge function retourne une URL signée
-      if (data?.signedUrl) {
-        await downloadFromSignedUrl(data.signedUrl, `facture_${numero}.pdf`);
-      } else {
-        throw new Error('URL de téléchargement non disponible');
-      }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erreur téléchargement:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de télécharger la facture",
+        description: error?.message || "Impossible de télécharger la facture",
         variant: "destructive"
       });
     } finally {
@@ -214,7 +216,7 @@ export default function MesFactures() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDownload(facture.id, facture.numero)}
+                              onClick={() => handleDownload(facture)}
                               disabled={!facture.pdf_url || downloading === facture.id}
                             >
                               {downloading === facture.id ? (

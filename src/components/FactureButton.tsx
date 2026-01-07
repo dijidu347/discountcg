@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { getSignedUrl, downloadFromSignedUrl } from "@/lib/storage-utils";
+import { downloadFacture, extractPathFromUrl } from "@/lib/storage-utils";
 
 interface FactureButtonProps {
   demarcheId: string;
@@ -47,10 +47,11 @@ export const FactureButton = ({
     }
   };
 
-  const downloadFacture = async () => {
+  const handleDownload = async () => {
     try {
       setLoading(true);
 
+      // Get facture info
       const { data: facture, error } = await supabase
         .from('factures')
         .select('pdf_url, numero')
@@ -58,40 +59,26 @@ export const FactureButton = ({
         .single();
 
       if (error || !facture?.pdf_url) {
-        throw new Error('Facture URL not found');
+        throw new Error('Facture non trouvée');
       }
 
-      // pdf_url contains the path in the bucket (e.g., "garage_id/2025-00001.pdf")
-      // Clean the path: remove bucket prefix if present
-      let pdfPath = facture.pdf_url;
-      if (pdfPath.includes('factures/')) {
-        pdfPath = pdfPath.split('factures/').pop() || pdfPath;
-      }
-      // Remove leading slashes
-      pdfPath = pdfPath.replace(/^\/+/, '');
+      // Extract clean path from pdf_url
+      const path = extractPathFromUrl(facture.pdf_url);
       
-      console.log(`📄 FactureButton: Downloading facture, path="${pdfPath}"`);
+      console.log(`📄 FactureButton: Downloading facture, path="${path}"`);
       
-      // Use the edge function to get signed URL (respects RLS)
-      const signedUrl = await getSignedUrl("factures", pdfPath);
-
-      if (!signedUrl) {
-        console.error('Failed to get signed URL for facture');
-        throw new Error('Unable to get download URL');
-      }
-
-      // Download using blob for iOS Safari compatibility
-      await downloadFromSignedUrl(signedUrl, `facture-${facture.numero}.pdf`);
+      // Use the unique download function
+      await downloadFacture(path);
 
       toast({
         title: "Facture téléchargée",
-        description: `Facture ${facture.numero} téléchargée`,
+        description: `Facture ${facture.numero}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error downloading facture:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de télécharger la facture",
+        description: error?.message || "Impossible de télécharger la facture",
         variant: "destructive",
       });
     } finally {
@@ -102,7 +89,7 @@ export const FactureButton = ({
   if (existingFactureId) {
     return (
       <Button
-        onClick={downloadFacture}
+        onClick={handleDownload}
         disabled={loading}
         variant="outline"
         size="sm"

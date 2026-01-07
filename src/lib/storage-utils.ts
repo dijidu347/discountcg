@@ -82,6 +82,39 @@ export const getSignedUrl = async (
 };
 
 /**
+ * UNIQUE function to download a facture (tokens or demarches)
+ * Uses window.location.href for native browser download
+ * @param path - The file path within the factures bucket (e.g., "garage_id/2025-00001.pdf")
+ */
+export const downloadFacture = async (path: string): Promise<void> => {
+  try {
+    console.log("📥 downloadFacture called with path:", path);
+
+    const { data, error } = await supabase.functions.invoke("download-facture", {
+      body: { path }
+    });
+
+    if (error) {
+      console.error("Error from download-facture:", error);
+      throw new Error("Téléchargement impossible");
+    }
+
+    if (!data?.url) {
+      console.error("No URL in response:", data);
+      throw new Error("URL de téléchargement non disponible");
+    }
+
+    console.log("✅ Got signed URL, redirecting for download");
+    
+    // CRITICAL: Use window.location.href for native browser download
+    window.location.href = data.url;
+  } catch (error) {
+    console.error("Error in downloadFacture:", error);
+    throw error;
+  }
+};
+
+/**
  * Extract the bucket name from a storage URL or path
  * @param url - The URL or path (e.g., "factures/garage_id/file.pdf" or full Supabase URL)
  * @returns The bucket name or null if not found
@@ -139,57 +172,10 @@ export const extractPathFromUrl = (url: string): string => {
 };
 
 /**
- * Download a file from a signed URL as a real browser download
- */
-export const downloadFromSignedUrl = async (signedUrl: string, filename: string): Promise<void> => {
-  if (!signedUrl || signedUrl === "null" || signedUrl === "undefined") {
-    console.error("Invalid signed URL:", signedUrl);
-    throw new Error("URL de téléchargement invalide");
-  }
-
-  console.log("📥 Downloading:", filename);
-
-  // Method 1: Try direct link click (works for same-origin or CORS-enabled)
-  const link = document.createElement("a");
-  link.href = signedUrl;
-  link.download = filename;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  
-  // For cross-origin URLs, we need to fetch and create blob
-  try {
-    const res = await fetch(signedUrl, { mode: "cors" });
-    
-    if (res.ok) {
-      const blob = await res.blob();
-      if (blob.size > 0) {
-        const blobUrl = URL.createObjectURL(blob);
-        link.href = blobUrl;
-        link.target = "_self";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-        console.log("✅ Downloaded via blob");
-        return;
-      }
-    }
-  } catch (e) {
-    console.log("Fetch failed, trying direct link:", e);
-  }
-
-  // Fallback: Direct link (browser will handle the download)
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  console.log("✅ Downloaded via direct link");
-};
-
-/**
  * Download a file from a private bucket using signed URL
  * @param bucket - The bucket name
  * @param path - The file path within the bucket
- * @param filename - The filename for the download
+ * @param filename - The filename for the download (not used - browser handles it)
  * @param trackingNumber - Optional tracking number for guest access
  */
 export const downloadPrivateFile = async (
@@ -201,7 +187,8 @@ export const downloadPrivateFile = async (
   const signedUrl = await getSignedUrl(bucket, path, trackingNumber);
 
   if (signedUrl) {
-    await downloadFromSignedUrl(signedUrl, filename);
+    // Use window.location.href for native browser download
+    window.location.href = signedUrl;
   } else {
     console.error("Failed to get signed URL for download");
     throw new Error("Impossible de télécharger le fichier");

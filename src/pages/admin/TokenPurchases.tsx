@@ -149,24 +149,31 @@ export default function TokenPurchases() {
     }
   };
 
-  const downloadFacture = async (purchase: TokenPurchase) => {
+  const handleDownloadFacture = async (purchase: TokenPurchase) => {
     if (!purchase.facture?.pdf_url) return;
 
     setDownloadingId(purchase.id);
     try {
-      const { data, error } = await supabase.functions.invoke('download-facture', {
-        body: { factureId: purchase.facture.id }
+      // Import dynamically to avoid circular deps
+      const { downloadFacture, extractPathFromUrl } = await import("@/lib/storage-utils");
+      
+      // Extract clean path from pdf_url
+      const path = extractPathFromUrl(purchase.facture.pdf_url);
+      
+      console.log(`📄 TokenPurchases: Downloading facture, path="${path}"`);
+      
+      // Use the UNIQUE download function
+      await downloadFacture(path);
+      
+      toast({
+        title: "Facture téléchargée",
+        description: `Facture ${purchase.facture.numero}`
       });
-
-      if (error) throw error;
-
-      // Open in new tab
-      window.open(data.url, '_blank');
     } catch (error: any) {
       console.error('Error downloading facture:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de télécharger la facture",
+        description: error?.message || "Impossible de télécharger la facture",
         variant: "destructive"
       });
     } finally {
@@ -280,7 +287,7 @@ export default function TokenPurchases() {
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => downloadFacture(purchase)}
+                              onClick={() => handleDownloadFacture(purchase)}
                               disabled={downloadingId === purchase.id}
                             >
                               {downloadingId === purchase.id ? (
