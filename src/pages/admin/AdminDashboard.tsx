@@ -83,9 +83,9 @@ export default function AdminDashboard() {
       .from('token_purchases')
       .select('amount');
 
-    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées
+    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées ET pas refusées
     const demarchesATraiter = demarches?.filter(d => 
-      d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise'
+      d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse'
     ) || [];
 
     // Démarches non vues par l'admin
