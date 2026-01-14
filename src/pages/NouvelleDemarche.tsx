@@ -279,8 +279,11 @@ export default function NouvelleDemarche() {
   const handleAutoCreateDraft = async () => {
     if (!garage || demarcheId || !actionDetails) return;
 
-    // Frais de dossier = prix de l'action (0 si jeton gratuit)
-    const fraisDossierHT = freeTokenAvailable ? 0 : actionDetails.prix;
+    // Le jeton gratuit ne s'applique qu'aux démarches DA et DC
+    const isFreeTokenApplicable = freeTokenAvailable && (formData.type === 'DA' || formData.type === 'DC');
+
+    // Frais de dossier = prix de l'action (0 si jeton gratuit ET DA/DC uniquement)
+    const fraisDossierHT = isFreeTokenApplicable ? 0 : actionDetails.prix;
     
     // Prix carte grise (taxe régionale, exonérée TVA) - 0 pour DA/DC
     const prixCarteGrise = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
@@ -306,7 +309,8 @@ export default function NouvelleDemarche() {
         is_draft: true,
         paye: false,
         vehicule_id: selectedVehicleId,
-        is_free_token: freeTokenAvailable
+        // Le jeton gratuit ne s'applique qu'aux DA/DC
+        is_free_token: isFreeTokenApplicable
       } as any)
       .select()
       .single();
