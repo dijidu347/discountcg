@@ -407,7 +407,6 @@ export default function AdminDashboard() {
                 <Euro className="h-6 w-6 text-blue-600" />
                 <span className="text-sm font-medium">Achats jetons</span>
               </Button>
-              {/* MASQUÉ TEMPORAIREMENT - Actions rapides
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
@@ -416,7 +415,6 @@ export default function AdminDashboard() {
                 <FileText className="h-6 w-6" />
                 <span className="text-sm font-medium">Actions rapides</span>
               </Button>
-              */}
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
