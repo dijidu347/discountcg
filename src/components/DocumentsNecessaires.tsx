@@ -144,9 +144,8 @@ const getDocumentsConfig = (
         { 
           id: "w_attestation_fiscale", 
           nom: "Attestation de régularité fiscale / justificatif fiscal de l'activité", 
-          obligatoire: false,
-          recommended: true,
-          helpText: "Document fiscal pouvant être demandé selon contrôle du dossier (ex : avis CFE, TVA, attestation fiscale, etc.)."
+          obligatoire: true,
+          helpText: "Document fiscal obligatoire (ex : avis CFE, TVA, attestation fiscale, etc.)."
         },
       ];
 
@@ -368,8 +367,7 @@ export function DocumentsNecessaires({
           <Alert className="border-primary/30 bg-primary/5">
             <FileText className="h-4 w-4 text-primary" />
             <AlertDescription className="text-sm">
-              <strong>Pour la première demande W Garage :</strong> le Cerfa 13752*02 est <strong>obligatoire</strong>.
-              L'attestation / justificatif fiscal peut être demandé selon vérification.
+              <strong>Pour la première demande W Garage :</strong> le Cerfa 13752*02 et l'attestation de régularité fiscale sont <strong>obligatoires</strong>.
             </AlertDescription>
           </Alert>
         )}
