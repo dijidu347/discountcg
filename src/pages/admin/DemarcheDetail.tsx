@@ -293,11 +293,13 @@ export default function DemarcheDetail() {
         ww_kbis: "Extrait Kbis < 6 mois",
         ww_id_representant: "Pièce d'identité du représentant légal",
         // W Garage PRO
+        w_cerfa_13752: "Cerfa 13752*02 – Demande W Garage",
         w_kbis: "Extrait Kbis < 6 mois",
         w_id_dirigeant: "Pièce d'identité du dirigeant",
         w_justif_domicile: "Justificatif de domicile du dirigeant",
         w_mandat: "Mandat d'immatriculation signé et tamponné (Cerfa 13757)",
         w_assurance: "Attestation d'assurance W Garage",
+        w_attestation_fiscale: "Attestation de régularité fiscale / justificatif fiscal",
         w_declaration_achat: "Déclaration d'achat (Cerfa 13751)",
         w_cession_vente: "Certificat de cession ou justificatif de vente",
         // Quitus Fiscal PRO

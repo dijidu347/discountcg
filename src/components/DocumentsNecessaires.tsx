@@ -14,6 +14,8 @@ interface DocumentItem {
   nom: string;
   obligatoire: boolean;
   conditionKey?: string;
+  recommended?: boolean;
+  helpText?: string;
 }
 
 interface DocumentsNecessairesProps {
@@ -126,13 +128,26 @@ const getDocumentsConfig = (
     }
 
     case "W_GARAGE_PRO": {
-      // Documents requis
+      // Documents requis - Cerfa 13752 en premier (obligatoire bloquant)
       documents = [
+        { 
+          id: "w_cerfa_13752", 
+          nom: "Cerfa 13752*02 – Demande W Garage", 
+          obligatoire: true,
+          helpText: "Formulaire Cerfa 13752*02 complété et signé. (Sans ce document, le dossier ne peut pas être traité.)"
+        },
         { id: "w_kbis", nom: "Extrait Kbis < 6 mois", obligatoire: true },
         { id: "w_id_dirigeant", nom: "Pièce d'identité du dirigeant", obligatoire: true },
         { id: "w_justif_domicile", nom: "Justificatif de domicile du dirigeant", obligatoire: true },
         { id: "w_mandat", nom: "Mandat d'immatriculation signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "w_assurance", nom: "Attestation d'assurance W Garage", obligatoire: true },
+        { 
+          id: "w_attestation_fiscale", 
+          nom: "Attestation de régularité fiscale / justificatif fiscal de l'activité", 
+          obligatoire: false,
+          recommended: true,
+          helpText: "Document fiscal pouvant être demandé selon contrôle du dossier (ex : avis CFE, TVA, attestation fiscale, etc.)."
+        },
       ];
 
       const allAnswerValues = Object.values(answers).join(" ").toLowerCase();
@@ -242,18 +257,35 @@ export function DocumentsNecessaires({
     const cerfaNumber = extractCerfaNumber(doc.nom);
     const hasCerfa = cerfaNumber && cerfaExists(cerfaNumber);
 
+    // Badges
+    const renderBadges = () => (
+      <>
+        {doc.obligatoire ? (
+          <Badge variant="destructive" className="text-xs">Obligatoire</Badge>
+        ) : doc.recommended ? (
+          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50">Recommandé</Badge>
+        ) : (
+          <span className="text-muted-foreground text-xs">(optionnel)</span>
+        )}
+        {doc.conditionKey && (
+          <span className="text-xs text-muted-foreground italic">Requis selon votre situation</span>
+        )}
+      </>
+    );
+
+    // Help text
+    const renderHelpText = () => doc.helpText ? (
+      <p className="text-xs text-muted-foreground mt-1">{doc.helpText}</p>
+    ) : null;
+
     if (!hasCerfa || !cerfaNumber) {
       return (
-        <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
-          {doc.nom}
-          {doc.obligatoire ? (
-            <span className="text-destructive text-base font-bold">*</span>
-          ) : (
-            <span className="text-muted-foreground text-xs">(optionnel)</span>
-          )}
-          {doc.conditionKey && (
-            <span className="text-xs text-muted-foreground italic">Requis selon votre situation</span>
-          )}
+        <div className="flex-1">
+          <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+            {doc.nom}
+            {renderBadges()}
+          </div>
+          {renderHelpText()}
         </div>
       );
     }
@@ -262,33 +294,49 @@ export function DocumentsNecessaires({
     const cerfaRegex = /(\(cerfa\s+\d+\*?\d*\))/i;
     const parts = doc.nom.split(cerfaRegex);
 
+    // Check if the cerfa number is in the document name (format: Cerfa XXXXX*XX)
+    const cerfaInNameRegex = /cerfa\s+(\d+)\*?(\d*)/i;
+    const hasCerfaInName = cerfaInNameRegex.test(doc.nom);
+
     return (
-      <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
-        {parts.map((part, index) => {
-          if (cerfaRegex.test(part)) {
-            return (
+      <div className="flex-1">
+        <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+          {hasCerfaInName ? (
+            // If cerfa is directly in the name (like "Cerfa 13752*02 – Demande W Garage")
+            <>
               <a
-                key={index}
                 href={getCerfaUrl(cerfaNumber)}
                 download
                 className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
-                {part}
+                {doc.nom}
                 <Download className="h-3 w-3" />
               </a>
-            );
-          }
-          return <span key={index}>{part}</span>;
-        })}
-        {doc.obligatoire ? (
-          <span className="text-destructive text-base font-bold">*</span>
-        ) : (
-          <span className="text-muted-foreground text-xs">(optionnel)</span>
-        )}
-        {doc.conditionKey && (
-          <span className="text-xs text-muted-foreground italic">Requis selon votre situation</span>
-        )}
+            </>
+          ) : (
+            // Original behavior for "(Cerfa XXXXX)" format
+            parts.map((part, index) => {
+              if (cerfaRegex.test(part)) {
+                return (
+                  <a
+                    key={index}
+                    href={getCerfaUrl(cerfaNumber)}
+                    download
+                    className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {part}
+                    <Download className="h-3 w-3" />
+                  </a>
+                );
+              }
+              return <span key={index}>{part}</span>;
+            })
+          )}
+          {renderBadges()}
+        </div>
+        {renderHelpText()}
       </div>
     );
   };
@@ -315,27 +363,48 @@ export function DocumentsNecessaires({
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Encart d'aide spécifique W_GARAGE_PRO */}
+        {demarcheType === "W_GARAGE_PRO" && (
+          <Alert className="border-primary/30 bg-primary/5">
+            <FileText className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm">
+              <strong>Pour la première demande W Garage :</strong> le Cerfa 13752*02 est <strong>obligatoire</strong>.
+              L'attestation / justificatif fiscal peut être demandé selon vérification.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {documents.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">
             Aucun document requis pour cette configuration.
           </p>
         ) : (
           <div className="space-y-3">
-            {documents.map((doc) => (
-              <div key={doc.id} className="flex items-center gap-4 p-3 bg-muted/30 rounded-lg">
-                <div className="flex-1">
+            {documents.map((doc) => {
+              // Warning léger si document recommandé non uploadé
+              const showRecommendedWarning = doc.recommended && !uploadedDocuments.has(doc.id);
+              
+              return (
+                <div 
+                  key={doc.id} 
+                  className={`flex items-center gap-4 p-3 rounded-lg ${
+                    showRecommendedWarning 
+                      ? 'bg-amber-50 border border-amber-200' 
+                      : 'bg-muted/30'
+                  }`}
+                >
                   {renderDocLabel(doc)}
+                  <div className="w-[350px]">
+                    <DocumentUpload
+                      demarcheId={demarcheId}
+                      documentType={doc.id}
+                      label=""
+                      onUploadComplete={() => onDocumentUpload(doc.id)}
+                    />
+                  </div>
                 </div>
-                <div className="w-[350px]">
-                  <DocumentUpload
-                    demarcheId={demarcheId}
-                    documentType={doc.id}
-                    label=""
-                    onUploadComplete={() => onDocumentUpload(doc.id)}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
