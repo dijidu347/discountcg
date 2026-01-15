@@ -407,14 +407,15 @@ export default function AdminDashboard() {
                 <Euro className="h-6 w-6 text-blue-600" />
                 <span className="text-sm font-medium">Achats jetons</span>
               </Button>
-              <Button
+              {/* Bouton masqué - accessible via /admin/actions */}
+              {/* <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
                 onClick={() => navigate("/admin/actions")}
               >
                 <FileText className="h-6 w-6" />
                 <span className="text-sm font-medium">Actions rapides</span>
-              </Button>
+              </Button> */}
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
