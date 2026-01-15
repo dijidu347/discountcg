@@ -42,14 +42,16 @@ const getDocumentsConfig = (
 
   switch (demarcheType) {
     case "WW_PROVISOIRE_PRO": {
-      // Socle commun
+      // Socle commun pour WW Provisoire
       documents = [
-        { id: "ww_mandat", nom: "Mandat d'immatriculation signé (Cerfa 13757)", obligatoire: true },
         { id: "ww_assurance", nom: "Attestation d'assurance du véhicule", obligatoire: true },
+        { id: "ww_coc", nom: "Certificat de conformité (COC)", obligatoire: true, helpText: "Nécessaire si le champ \"K\" de la carte grise est vide, ou pour un véhicule neuf ou très ancien." },
+        { id: "ww_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)", obligatoire: true },
+        { id: "ww_cg_etranger", nom: "Certificat d'immatriculation étranger", obligatoire: true },
+        { id: "ww_quitus", nom: "Quitus fiscal ou preuve de dépôt de la demande", obligatoire: true, helpText: "Hormis régions : Nord (59), Pas-De-Calais (62), la Moselle (57), le Bas-Rhin (67)." },
+        { id: "ww_controle_technique", nom: "Contrôle technique français ou étranger de moins de 6 mois", obligatoire: false, recommended: true, helpText: "Pour les véhicules de plus de 4 ans." },
       ];
 
-      // Documents conditionnels basés sur les réponses
-      // Note: On détecte les réponses par leur texte ou ID d'option
       const allAnswerValues = Object.values(answers).join(" ").toLowerCase();
 
       // Si véhicule neuf
@@ -66,25 +68,10 @@ const getDocumentsConfig = (
       if (allAnswerValues.includes("occasion")) {
         documents.push({ 
           id: "ww_cession", 
-          nom: "Certificat de cession", 
+          nom: "Facture d'achat ou Certificat de cession", 
           obligatoire: true, 
-          conditionKey: "occasion" 
-        });
-      }
-
-      // Si origine Union Européenne ou Hors UE
-      if (allAnswerValues.includes("union européenne") || allAnswerValues.includes("hors ue") || allAnswerValues.includes("import")) {
-        documents.push({ 
-          id: "ww_cg_etranger", 
-          nom: "Certificat d'immatriculation étranger", 
-          obligatoire: true, 
-          conditionKey: "import" 
-        });
-        documents.push({ 
-          id: "ww_coc", 
-          nom: "Certificat de conformité (COC)", 
-          obligatoire: true, 
-          conditionKey: "import" 
+          conditionKey: "occasion",
+          helpText: "Si nécessaire, retracer toute la chaîne de propriété."
         });
       }
 
@@ -114,7 +101,13 @@ const getDocumentsConfig = (
         });
         documents.push({ 
           id: "ww_id_representant", 
-          nom: "Pièce d'identité du représentant légal", 
+          nom: "Pièce d'identité du représentant légal (recto/verso)", 
+          obligatoire: true, 
+          conditionKey: "societe" 
+        });
+        documents.push({ 
+          id: "ww_mandat", 
+          nom: "Mandat signé et tamponné (Cerfa 13757)", 
           obligatoire: true, 
           conditionKey: "societe" 
         });
