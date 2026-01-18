@@ -300,10 +300,7 @@ export default function GarageSettings() {
           verification_admin_viewed: false
         }).eq('id', garage.id);
         
-        // Send admin notifications
-        await supabase.functions.invoke('send-email', {
-          body: { type: 'admin_verification_request', to: 'mathieugaillac4@gmail.com', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
-        });
+        // Send admin notification
         await supabase.functions.invoke('send-email', {
           body: { type: 'admin_verification_request', to: 'contact@discountcartegrise.fr', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
         });

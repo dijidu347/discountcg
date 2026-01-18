@@ -69,8 +69,7 @@ const corsHeaders = {
 
 // Admin emails for notifications
 const ADMIN_EMAILS = [
-  "contact@discountcartegrise.fr",
-  "mathieugaillac4@gmail.com"
+  "contact@discountcartegrise.fr"
 ];
 
 // -----------------------------

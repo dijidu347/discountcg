@@ -607,7 +607,7 @@ export default function NouvelleDemarche() {
 
       // Toujours envoyer les mails admin pour les démarches avec jeton gratuit
       if (demarche) {
-        const adminEmails = ["contact@discountcartegrise.fr", "mathieugaillac4@gmail.com"];
+        const adminEmails = ["contact@discountcartegrise.fr"];
         for (const adminEmail of adminEmails) {
           await supabase.functions.invoke("send-email", {
             body: {

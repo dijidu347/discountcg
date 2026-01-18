@@ -297,7 +297,7 @@ const PaiementDemarche = () => {
         });
 
         // Emails aux admins
-        const adminEmails = ["contact@discountcartegrise.fr", "mathieugaillac4@gmail.com"];
+        const adminEmails = ["contact@discountcartegrise.fr"];
         for (const adminEmail of adminEmails) {
           await new Promise(resolve => setTimeout(resolve, 600));
           await supabase.functions.invoke("send-email", {
