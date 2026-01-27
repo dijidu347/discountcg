@@ -194,6 +194,18 @@ const getDocumentsConfig = (
       }
       break;
     }
+
+    case "CHANGEMENT_ADRESSE_PRO": {
+      // Documents requis pour le changement d'adresse du titulaire (société)
+      documents = [
+        { id: "ca_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
+        { id: "ca_certificat_immat", nom: "Certificat d'immatriculation", obligatoire: true },
+        { id: "ca_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
+        { id: "ca_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)", obligatoire: true },
+        { id: "ca_kbis", nom: "Extrait Kbis de moins de 6 mois mis à jour", obligatoire: true },
+      ];
+      break;
+    }
   }
 
   return { documents, blockingMessage };
