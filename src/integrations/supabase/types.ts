@@ -1468,6 +1468,7 @@ export type Database = {
         | "WW_PROVISOIRE_PRO"
         | "W_GARAGE_PRO"
         | "QUITUS_FISCAL_PRO"
+        | "CHANGEMENT_ADRESSE_PRO"
       paiement_status: "en_attente" | "valide" | "refuse" | "rembourse"
     }
     CompositeTypes: {
@@ -1615,6 +1616,7 @@ export const Constants = {
         "WW_PROVISOIRE_PRO",
         "W_GARAGE_PRO",
         "QUITUS_FISCAL_PRO",
+        "CHANGEMENT_ADRESSE_PRO",
       ],
       paiement_status: ["en_attente", "valide", "refuse", "rembourse"],
     },
