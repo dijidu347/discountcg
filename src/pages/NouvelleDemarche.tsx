@@ -27,11 +27,11 @@ import { formatPrice } from "@/lib/utils";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 
 // Types de démarches PRO qui nécessitent un traitement spécial
-const PRO_DEMARCHE_TYPES = ["WW_PROVISOIRE_PRO", "W_GARAGE_PRO", "QUITUS_FISCAL_PRO"];
+const PRO_DEMARCHE_TYPES = ["WW_PROVISOIRE_PRO", "W_GARAGE_PRO", "QUITUS_FISCAL_PRO", "CHANGEMENT_ADRESSE_PRO"];
 // Types de démarches PRO qui nécessitent les infos véhicule (VIN, marque, modèle)
 const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO"];
 // Types de démarches PRO qui n'ont pas besoin de bloc véhicule
-const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO"];
+const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO", "CHANGEMENT_ADRESSE_PRO"];
 
 
 export default function NouvelleDemarche() {
@@ -920,7 +920,7 @@ export default function NouvelleDemarche() {
                                   );
                                 }
                                 
-                                const cerfaRegex = /(\(cerfa\s+\d+\*\d+\))/i;
+                                const cerfaRegex = /(\(cerfa\s+\d+(?:\*\d+)?\))/i;
                                 const parts = labelText.split(cerfaRegex);
                                 
                                 return (
