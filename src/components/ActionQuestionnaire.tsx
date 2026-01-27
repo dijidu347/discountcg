@@ -79,7 +79,8 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
     setBlockingMessage(blockedMessage);
     
     // Vérifier si toutes les questions ont une réponse
-    const allQuestionsAnswered = questions.length > 0 && questions.every(q => answers[q.id]);
+    // Si pas de questions, considérer comme complété automatiquement
+    const allQuestionsAnswered = questions.length === 0 || questions.every(q => answers[q.id]);
     
     onAnswersChange(answers, isBlocked, collectedDocs, allQuestionsAnswered, answerTexts);
   }, [answers, options, conditionalDocs, questions]);
