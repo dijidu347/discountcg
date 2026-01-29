@@ -22,6 +22,7 @@ export function extractCerfaNumber(text: string): string | null {
     "13750": "13750_05",
     "13757": "13757_03",
     "13752": "13752_02",
+    "13753": "13753_04",
   };
 
   return latestByNumber[number] ?? null;
@@ -38,7 +39,7 @@ export function getCerfaUrl(cerfaNumber: string): string {
  * Check if a Cerfa file exists
  */
 export function cerfaExists(cerfaNumber: string): boolean {
-  const availableCerfas = ["15776_01", "13751_02", "13750_05", "13757_03", "13752_02"];
+  const availableCerfas = ["15776_01", "13751_02", "13750_05", "13757_03", "13752_02", "13753_04"];
   return availableCerfas.includes(cerfaNumber);
 }
 

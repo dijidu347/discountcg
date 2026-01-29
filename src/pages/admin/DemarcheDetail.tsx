@@ -317,6 +317,16 @@ export default function DemarcheDetail() {
         ca_mandat: "Mandat signé et tamponné (Cerfa 13757)",
         ca_cerfa_13750: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)",
         ca_kbis: "Extrait Kbis de moins de 6 mois mis à jour",
+        // Duplicata CG PRO
+        dup_kbis: "Extrait Kbis de moins de 6 mois",
+        dup_id_dirigeant: "Pièce d'identité du dirigeant (recto)",
+        dup_id_dirigeant_verso: "Pièce d'identité du dirigeant (verso)",
+        dup_assurance: "Attestation d'assurance",
+        dup_mandat: "Mandat signé et tamponné (Cerfa 13757)",
+        dup_cerfa_13750: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)",
+        dup_cerfa_13753: "Déclaration de perte ou de vol (Cerfa 13753)",
+        dup_ct: "Contrôle technique en cours de validité",
+        dup_mandat_location: "Mandat de la société de location (LOA/LLD/Crédit-Bail)",
       };
 
       if (actionData) {
