@@ -192,9 +192,14 @@ export default function NouvelleDemarche() {
   }, [formData.type, questionnaireAnswerTexts, uploadedDocuments]);
 
   useEffect(() => {
+    console.log("=== DEBUG DUPLICATA_CG_PRO ===");
     console.log("type démarche:", formData.type);
+    console.log("demarcheId:", demarcheId);
     console.log("questionnaireCompleted:", questionnaireCompleted);
-  }, [formData.type, questionnaireCompleted]);
+    console.log("isQuestionnaireBlocked:", isQuestionnaireBlocked);
+    console.log("garage:", garage?.id);
+    console.log("actionDetails:", actionDetails?.code);
+  }, [formData.type, questionnaireCompleted, demarcheId, isQuestionnaireBlocked, garage, actionDetails]);
 
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
