@@ -78,24 +78,26 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
 
     setBlockingMessage(blockedMessage);
     
-    // Vérifier si toutes les questions ont une réponse
-    // Si pas de questions, considérer comme complété automatiquement
-    const allQuestionsAnswered = questions.length === 0 || questions.every(q => answers[q.id]);
+    // IMPORTANT: ne pas marquer “complété” pendant le chargement.
+    // Une fois chargé: si pas de questions => complété; sinon => toutes les questions doivent être répondues.
+    const allQuestionsAnswered = !loading && (questions.length === 0 || questions.every(q => answers[q.id]));
     
     onAnswersChange(answers, isBlocked, collectedDocs, allQuestionsAnswered, answerTexts);
-  }, [answers, options, conditionalDocs, questions]);
+  }, [answers, options, conditionalDocs, questions, loading]);
 
   const loadQuestions = async () => {
     setLoading(true);
+    setAnswers({});
+    setBlockingMessage(null);
 
     // Load questions for this action
-    const { data: questionsData } = await supabase
+    const { data: questionsData, error: questionsError } = await supabase
       .from('action_questions')
       .select('*')
       .eq('action_id', actionId)
       .order('ordre');
 
-    if (questionsData && questionsData.length > 0) {
+    if (!questionsError && questionsData && questionsData.length > 0) {
       setQuestions(questionsData);
 
       // Load options for all questions
@@ -135,9 +137,11 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
         }
       }
     } else {
-      // Pas de questions - notifier le parent immédiatement que le questionnaire est complété
+      // Pas de questions (ou erreur) => on affiche rien.
+      // L'effet ci-dessus se chargera de notifier le parent une fois loading=false.
       setQuestions([]);
-      onAnswersChange({}, false, [], true, {});
+      setOptions({});
+      setConditionalDocs({});
     }
 
     setLoading(false);
