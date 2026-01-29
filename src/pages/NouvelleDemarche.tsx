@@ -923,17 +923,20 @@ export default function NouvelleDemarche() {
                             Répondez aux questions préalables ci-dessus pour afficher la liste des pièces justificatives.
                           </AlertDescription>
                         </Alert>
-                      ) : questionnaireCompleted ? (
+                      ) : (
+                        /* questionnaireCompleted === true => afficher les documents */
                         <DocumentsNecessaires
                           demarcheType={formData.type}
                           demarcheId={demarcheId}
                           questionnaireAnswers={questionnaireAnswerTexts}
                           onDocumentUpload={(docType) => {
                             setUploadedDocuments((prev) => new Set(prev).add(docType));
+                            // Recharger les documents existants pour s'assurer du bon état
+                            loadExistingDocuments();
                           }}
                           uploadedDocuments={uploadedDocuments}
                         />
-                      ) : null}
+                      )}
                     </div>
                   ) : (
                     /* Pour les démarches classiques */
