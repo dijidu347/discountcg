@@ -193,10 +193,16 @@ export default function NouvelleDemarche() {
   }, [formData.type, questionnaireAnswerTexts, uploadedDocuments]);
 
   useEffect(() => {
-    console.log("type démarche", formData.type);
-    console.log("documents requis", documentsRequis);
-    console.log("questionnaireCompleted", questionnaireCompleted);
-  }, [formData.type, documentsRequis, questionnaireCompleted]);
+    console.log("=== DEBUG DUPLICATA_CG_PRO ===");
+    console.log("type démarche:", formData.type);
+    console.log("isPRO:", PRO_DEMARCHE_TYPES.includes(formData.type));
+    console.log("questionnaireCompleted:", questionnaireCompleted);
+    console.log("isQuestionnaireBlocked:", isQuestionnaireBlocked);
+    console.log("proDocsState.requiredIds:", proDocsState.requiredIds);
+    console.log("proDocsState.allRequiredUploaded:", proDocsState.allRequiredUploaded);
+    console.log("uploadedDocuments:", Array.from(uploadedDocuments));
+    console.log("demarcheId:", demarcheId);
+  }, [formData.type, questionnaireCompleted, isQuestionnaireBlocked, proDocsState, uploadedDocuments, demarcheId]);
 
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
@@ -906,39 +912,47 @@ export default function NouvelleDemarche() {
               {/* Pièces justificatives - Bloc unique pour tous les types de démarches */}
               {formData.type && demarcheId && (
                 <>
-                  {/* Pour les démarches PRO: afficher seulement après questionnaire complété */}
-                  {PRO_DEMARCHE_TYPES.includes(formData.type) ? (
+                  {/* ====== DÉMARCHES PRO ====== */}
+                  {PRO_DEMARCHE_TYPES.includes(formData.type) && (
                     <div className="space-y-3">
-                      {isQuestionnaireBlocked ? (
+                      {/* ÉTAPE 1 - Blocage questionnaire */}
+                      {isQuestionnaireBlocked && (
                         <Alert variant="destructive">
                           <AlertTitle>Démarche impossible</AlertTitle>
                           <AlertDescription>
                             Une de vos réponses bloque cette démarche. Modifiez vos réponses dans le questionnaire.
                           </AlertDescription>
                         </Alert>
-                      ) : !questionnaireCompleted ? (
+                      )}
+
+                      {/* ÉTAPE 2 - Questionnaire non complété */}
+                      {!isQuestionnaireBlocked && !questionnaireCompleted && (
                         <Alert>
                           <AlertTitle>Questionnaire à compléter</AlertTitle>
                           <AlertDescription>
                             Répondez aux questions préalables ci-dessus pour afficher la liste des pièces justificatives.
                           </AlertDescription>
                         </Alert>
-                      ) : (
-                        /* questionnaireCompleted === true => afficher les documents */
+                      )}
+
+                      {/* ÉTAPE 3 - Documents (visible seulement si questionnaire complété ET pas de blocage) */}
+                      {!isQuestionnaireBlocked && questionnaireCompleted && (
                         <DocumentsNecessaires
                           demarcheType={formData.type}
                           demarcheId={demarcheId}
                           questionnaireAnswers={questionnaireAnswerTexts}
                           onDocumentUpload={(docType) => {
                             setUploadedDocuments((prev) => new Set(prev).add(docType));
-                            // Recharger les documents existants pour s'assurer du bon état
                             loadExistingDocuments();
                           }}
                           uploadedDocuments={uploadedDocuments}
                         />
                       )}
                     </div>
-                  ) : (
+                  )}
+
+                  {/* ====== DÉMARCHES CLASSIQUES ====== */}
+                  {!PRO_DEMARCHE_TYPES.includes(formData.type) && (
                     /* Pour les démarches classiques */
                     documentsRequis.length > 0 && (formData.type === 'CG' ? carteGrisePrice > 0 : true) && (
                       <div className="space-y-6">
