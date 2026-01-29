@@ -39,7 +39,6 @@ const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO", "DUPLI
 // Types de démarches PRO qui n'ont pas besoin de bloc véhicule
 const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO", "CHANGEMENT_ADRESSE_PRO"];
 
-
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -193,16 +192,9 @@ export default function NouvelleDemarche() {
   }, [formData.type, questionnaireAnswerTexts, uploadedDocuments]);
 
   useEffect(() => {
-    console.log("=== DEBUG DUPLICATA_CG_PRO ===");
     console.log("type démarche:", formData.type);
-    console.log("isPRO:", PRO_DEMARCHE_TYPES.includes(formData.type));
     console.log("questionnaireCompleted:", questionnaireCompleted);
-    console.log("isQuestionnaireBlocked:", isQuestionnaireBlocked);
-    console.log("proDocsState.requiredIds:", proDocsState.requiredIds);
-    console.log("proDocsState.allRequiredUploaded:", proDocsState.allRequiredUploaded);
-    console.log("uploadedDocuments:", Array.from(uploadedDocuments));
-    console.log("demarcheId:", demarcheId);
-  }, [formData.type, questionnaireCompleted, isQuestionnaireBlocked, proDocsState, uploadedDocuments, demarcheId]);
+  }, [formData.type, questionnaireCompleted]);
 
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
@@ -809,7 +801,6 @@ export default function NouvelleDemarche() {
                       onVehicleSelect={handleVehicleSelect}
                       selectedVehicleId={selectedVehicleId}
                     />
-                  /* DUPLICATA_CG_PRO est maintenant dans PRO_TYPES_WITH_VEHICLE, géré en dessous */
                   ) : PRO_TYPES_WITH_VEHICLE.includes(formData.type) ? (
                     /* Formulaire véhicule PRO (VIN, marque, modèle sans immatriculation) */
                     <VehicleInfoFormPro

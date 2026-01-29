@@ -233,13 +233,11 @@ export const getDocumentsConfig = (
 
       // Message d'info si CT égaré
       if (allAnswerValues.includes("égaré")) {
-        // Le document CT reste obligatoire mais on ajoute un helpText
         const ctDoc = documents.find(d => d.id === "dup_ct");
         if (ctDoc) {
           ctDoc.helpText = "Si le PV de contrôle technique est perdu, contactez le centre ayant réalisé le contrôle pour obtenir un duplicata. Exceptionnellement, une photo de la vignette pare-brise peut être fournie.";
         }
       }
-
       break;
     }
   }
