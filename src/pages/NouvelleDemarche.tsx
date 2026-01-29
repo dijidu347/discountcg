@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ import { VehicleForm } from "@/components/VehicleForm";
 import { VehicleFormCG } from "@/components/VehicleFormCG";
 import { VehicleFormSimple } from "@/components/VehicleFormSimple";
 import { VehicleInfoFormPro, VehicleInfoPro } from "@/components/VehicleInfoFormPro";
-import { DocumentsNecessaires } from "@/components/DocumentsNecessaires";
+import { DocumentsNecessaires, getDocumentsConfig } from "@/components/DocumentsNecessaires";
 // TrackingServiceOption supprimé - options SMS retirées
 import { StripePayment } from "@/components/StripePayment";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -179,6 +179,24 @@ export default function NouvelleDemarche() {
 
   // Jeton gratuit uniquement pour DA et DC
   const isFreeTokenEligible = freeTokenAvailable && (formData.type === 'DA' || formData.type === 'DC');
+
+  const isDuplicataCgPro = formData.type === "DUPLICATA_CG_PRO";
+
+  const proDocsState = useMemo(() => {
+    if (!PRO_DEMARCHE_TYPES.includes(formData.type)) {
+      return { requiredIds: [] as string[], allRequiredUploaded: true, blockingMessage: null as string | null };
+    }
+    const { documents, blockingMessage } = getDocumentsConfig(formData.type, questionnaireAnswerTexts);
+    const requiredIds = documents.filter((d) => d.obligatoire).map((d) => d.id);
+    const allRequiredUploaded = requiredIds.every((id) => uploadedDocuments.has(id));
+    return { requiredIds, allRequiredUploaded, blockingMessage };
+  }, [formData.type, questionnaireAnswerTexts, uploadedDocuments]);
+
+  useEffect(() => {
+    console.log("type démarche", formData.type);
+    console.log("documents requis", documentsRequis);
+    console.log("questionnaireCompleted", questionnaireCompleted);
+  }, [formData.type, documentsRequis, questionnaireCompleted]);
 
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
@@ -438,6 +456,16 @@ export default function NouvelleDemarche() {
         return;
       }
 
+      // DUPLICATA_CG_PRO: véhicule obligatoire (sélectionné)
+      if (isDuplicataCgPro && !selectedImmatriculation.trim()) {
+        toast({
+          title: "Véhicule requis",
+          description: "Veuillez sélectionner ou créer un véhicule avant de continuer",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Vérifier les infos véhicule pour les démarches qui les requièrent
       if (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) {
         toast({
@@ -460,8 +488,26 @@ export default function NouvelleDemarche() {
     }
 
     // Check if all obligatory documents are uploaded
-    // Pour les démarches PRO, on utilise les documents du composant DocumentsNecessaires
-    if (!PRO_DEMARCHE_TYPES.includes(formData.type)) {
+    if (PRO_DEMARCHE_TYPES.includes(formData.type)) {
+      // Pour les démarches PRO, on utilise les documents du composant DocumentsNecessaires
+      if (proDocsState.blockingMessage) {
+        toast({
+          title: "Démarche impossible",
+          description: proDocsState.blockingMessage,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!proDocsState.allRequiredUploaded) {
+        toast({
+          title: "Documents obligatoires manquants",
+          description: "Veuillez uploader toutes les pièces justificatives obligatoires avant de passer au paiement.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
       const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
       
       // Trouver l'index de la première carte grise à dédoubler (sans recto/verso dans le nom)
@@ -761,6 +807,12 @@ export default function NouvelleDemarche() {
                     />
                   ) : (formData.type === 'DA' || formData.type === 'DC') ? (
                     <VehicleFormSimple
+                      garageId={garage.id}
+                      onVehicleSelect={handleVehicleSelect}
+                      selectedVehicleId={selectedVehicleId}
+                    />
+                  ) : isDuplicataCgPro ? (
+                    <VehicleForm
                       garageId={garage.id}
                       onVehicleSelect={handleVehicleSelect}
                       selectedVehicleId={selectedVehicleId}
@@ -1097,10 +1149,14 @@ export default function NouvelleDemarche() {
                 disabled={
                   loading || 
                   isQuestionnaireBlocked ||
+                  // DUPLICATA_CG_PRO: véhicule obligatoire
+                  (isDuplicataCgPro && !selectedImmatriculation.trim()) ||
                   // Pour les démarches PRO avec véhicule, vérifier les infos véhicule
                   (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) ||
                   // Pour les démarches PRO, vérifier que le questionnaire est complété
                   (PRO_DEMARCHE_TYPES.includes(formData.type) && !questionnaireCompleted) ||
+                  // Pour les démarches PRO, vérifier que les documents obligatoires sont uploadés
+                  (PRO_DEMARCHE_TYPES.includes(formData.type) && !proDocsState.allRequiredUploaded) ||
                   // Pour les démarches classiques, vérifier l'immatriculation
                   (!PRO_DEMARCHE_TYPES.includes(formData.type) && !selectedImmatriculation.trim()) ||
                   // Pour CG, vérifier le prix carte grise

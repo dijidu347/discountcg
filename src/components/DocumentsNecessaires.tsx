@@ -27,7 +27,7 @@ interface DocumentsNecessairesProps {
 }
 
 // Configuration des documents par type de démarche
-const getDocumentsConfig = (
+export const getDocumentsConfig = (
   demarcheType: string, 
   answers: Record<string, string>
 ): { documents: DocumentItem[]; blockingMessage: string | null } => {
