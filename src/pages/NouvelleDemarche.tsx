@@ -35,7 +35,7 @@ const PRO_DEMARCHE_TYPES = [
   "DUPLICATA_CG_PRO",
 ];
 // Types de démarches PRO qui nécessitent les infos véhicule (VIN, marque, modèle)
-const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO"];
+const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO", "DUPLICATA_CG_PRO"];
 // Types de démarches PRO qui n'ont pas besoin de bloc véhicule
 const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO", "CHANGEMENT_ADRESSE_PRO"];
 
@@ -180,7 +180,7 @@ export default function NouvelleDemarche() {
   // Jeton gratuit uniquement pour DA et DC
   const isFreeTokenEligible = freeTokenAvailable && (formData.type === 'DA' || formData.type === 'DC');
 
-  const isDuplicataCgPro = formData.type === "DUPLICATA_CG_PRO";
+  // isDuplicataCgPro est maintenant dans PRO_TYPES_WITH_VEHICLE, plus besoin de traitement spécial
 
   const proDocsState = useMemo(() => {
     if (!PRO_DEMARCHE_TYPES.includes(formData.type)) {
@@ -456,15 +456,7 @@ export default function NouvelleDemarche() {
         return;
       }
 
-      // DUPLICATA_CG_PRO: véhicule obligatoire (sélectionné)
-      if (isDuplicataCgPro && !selectedImmatriculation.trim()) {
-        toast({
-          title: "Véhicule requis",
-          description: "Veuillez sélectionner ou créer un véhicule avant de continuer",
-          variant: "destructive",
-        });
-        return;
-      }
+      // Note: Pour les PRO_TYPES_WITH_VEHICLE, la validation est faite plus bas avec vehicleInfoProValid
 
       // Vérifier les infos véhicule pour les démarches qui les requièrent
       if (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) {
@@ -811,12 +803,7 @@ export default function NouvelleDemarche() {
                       onVehicleSelect={handleVehicleSelect}
                       selectedVehicleId={selectedVehicleId}
                     />
-                  ) : isDuplicataCgPro ? (
-                    <VehicleForm
-                      garageId={garage.id}
-                      onVehicleSelect={handleVehicleSelect}
-                      selectedVehicleId={selectedVehicleId}
-                    />
+                  /* DUPLICATA_CG_PRO est maintenant dans PRO_TYPES_WITH_VEHICLE, géré en dessous */
                   ) : PRO_TYPES_WITH_VEHICLE.includes(formData.type) ? (
                     /* Formulaire véhicule PRO (VIN, marque, modèle sans immatriculation) */
                     <VehicleInfoFormPro
@@ -828,8 +815,8 @@ export default function NouvelleDemarche() {
                           setSelectedImmatriculation(`VIN-${data.vin.slice(-6)}`);
                         }
                       }}
-                      requireVin={formData.type === 'WW_PROVISOIRE_PRO' || formData.type === 'QUITUS_FISCAL_PRO'}
-                      requireDateMec={formData.type === 'WW_PROVISOIRE_PRO'}
+                      requireVin={PRO_TYPES_WITH_VEHICLE.includes(formData.type)}
+                      requireDateMec={formData.type === 'WW_PROVISOIRE_PRO' || formData.type === 'DUPLICATA_CG_PRO'}
                     />
                   ) : PRO_TYPES_WITHOUT_VEHICLE.includes(formData.type) ? (
                     /* W_GARAGE_PRO - Pas de bloc véhicule */
@@ -1149,8 +1136,6 @@ export default function NouvelleDemarche() {
                 disabled={
                   loading || 
                   isQuestionnaireBlocked ||
-                  // DUPLICATA_CG_PRO: véhicule obligatoire
-                  (isDuplicataCgPro && !selectedImmatriculation.trim()) ||
                   // Pour les démarches PRO avec véhicule, vérifier les infos véhicule
                   (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) ||
                   // Pour les démarches PRO, vérifier que le questionnaire est complété
