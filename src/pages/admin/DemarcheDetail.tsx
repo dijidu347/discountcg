@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon } from "lucide-react";
+import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, StorageBucket } from "@/lib/storage-utils";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -179,6 +180,8 @@ export default function DemarcheDetail() {
   }>({ isOpen: false, url: "", name: "", type: "" });
   const [adminUploadSlots, setAdminUploadSlots] = useState<number[]>([1]);
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [documentPreviews, setDocumentPreviews] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -271,6 +274,33 @@ export default function DemarcheDetail() {
         .eq('demarche_id', id);
 
       setTrackingServices(trackingData || []);
+
+      // Load notifications history for this demarche
+      const { data: notificationsData } = await supabase
+        .from('notifications')
+        .select('*')
+        .eq('demarche_id', id)
+        .order('created_at', { ascending: false });
+
+      setNotifications(notificationsData || []);
+
+      // Load document previews
+      if (documentsData && documentsData.length > 0) {
+        const previews: Record<string, string> = {};
+        for (const doc of documentsData) {
+          if (doc.url) {
+            const bucket = extractBucketFromUrl(doc.url);
+            const path = extractPathFromUrl(doc.url);
+            if (bucket && path) {
+              const signedUrl = await getSignedUrl(bucket as StorageBucket, path);
+              if (signedUrl) {
+                previews[doc.id] = signedUrl;
+              }
+            }
+          }
+        }
+        setDocumentPreviews(previews);
+      }
 
       // Load document labels from action_documents
       const { data: actionData } = await supabase
@@ -367,6 +397,11 @@ export default function DemarcheDetail() {
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'demarches', filter: `id=eq.${id}` },
+        () => loadDemarcheData()
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `demarche_id=eq.${id}` },
         () => loadDemarcheData()
       )
       .subscribe();
@@ -1101,82 +1136,148 @@ export default function DemarcheDetail() {
                   <p className="text-sm text-muted-foreground">Aucun document téléchargé</p>
                 ) : (
                   <div className="space-y-3">
-                    {documents.map((doc) => (
-                      <div key={doc.id} className="border rounded-lg p-4 space-y-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 flex-1">
-                            <Checkbox 
-                              checked={selectedDocs.includes(doc.id)}
-                              onCheckedChange={() => toggleDocSelection(doc.id)}
-                            />
-                            <div className="flex-1">
-                              {/* Afficher le nom personnalisé pour les pièces supplémentaires ou le label standard */}
-                              {(doc.type_document?.startsWith('autre_piece') && doc.document_type) ? (
-                                <p className="text-xs font-semibold text-primary uppercase mb-2">
-                                  {doc.document_type}
+                    {documents.map((doc) => {
+                      const isImage = doc.nom_fichier?.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+                      const isPdf = doc.nom_fichier?.match(/\.pdf$/i);
+                      const previewUrl = documentPreviews[doc.id];
+                      
+                      return (
+                        <div key={doc.id} className="border rounded-lg p-4 space-y-3">
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 flex-1">
+                              <Checkbox 
+                                checked={selectedDocs.includes(doc.id)}
+                                onCheckedChange={() => toggleDocSelection(doc.id)}
+                              />
+                              <div className="flex-1">
+                                {/* Afficher le nom personnalisé pour les pièces supplémentaires ou le label standard */}
+                                {(doc.type_document?.startsWith('autre_piece') && doc.document_type) ? (
+                                  <p className="text-xs font-semibold text-primary uppercase mb-2">
+                                    {doc.document_type}
+                                  </p>
+                                ) : (
+                                  <p className="text-xs font-semibold text-primary uppercase mb-2">
+                                    {documentLabels[doc.type_document] || doc.type_document?.replace(/_/g, ' ') || 'Document'}
+                                  </p>
+                                )}
+                                <div className="flex items-center gap-2 mb-1">
+                                  <p className="text-sm font-medium">{doc.nom_fichier}</p>
+                                  {getValidationBadge(doc.validation_status || 'pending')}
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                  {(doc.taille_octets / 1024).toFixed(2)} KB
                                 </p>
-                              ) : (
-                                <p className="text-xs font-semibold text-primary uppercase mb-2">
-                                  {documentLabels[doc.type_document] || doc.type_document?.replace(/_/g, ' ') || 'Document'}
-                                </p>
-                              )}
-                              <div className="flex items-center gap-2 mb-1">
-                                <p className="text-sm font-medium">{doc.nom_fichier}</p>
-                                {getValidationBadge(doc.validation_status || 'pending')}
+                                {doc.validation_comment && (
+                                  <p className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded">
+                                    Motif du refus: {doc.validation_comment}
+                                  </p>
+                                )}
+                                
+                                {/* Preview thumbnail */}
+                                {previewUrl && (
+                                  <div className="mt-3">
+                                    {isImage ? (
+                                      <img 
+                                        src={previewUrl} 
+                                        alt={doc.nom_fichier}
+                                        className="w-24 h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                        onClick={() => setViewerState({
+                                          isOpen: true,
+                                          url: doc.url,
+                                          name: doc.nom_fichier,
+                                          type: doc.type_document
+                                        })}
+                                      />
+                                    ) : isPdf ? (
+                                      <div 
+                                        className="w-24 h-24 bg-muted rounded border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
+                                        onClick={() => setViewerState({
+                                          isOpen: true,
+                                          url: doc.url,
+                                          name: doc.nom_fichier,
+                                          type: doc.type_document
+                                        })}
+                                      >
+                                        <FileText className="h-8 w-8 text-destructive" />
+                                        <span className="text-xs text-muted-foreground mt-1">PDF</span>
+                                      </div>
+                                    ) : (
+                                      <div 
+                                        className="w-24 h-24 bg-muted rounded border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
+                                        onClick={() => setViewerState({
+                                          isOpen: true,
+                                          url: doc.url,
+                                          name: doc.nom_fichier,
+                                          type: doc.type_document
+                                        })}
+                                      >
+                                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                        <span className="text-xs text-muted-foreground mt-1">Fichier</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
-                              <p className="text-xs text-muted-foreground">
-                                {(doc.taille_octets / 1024).toFixed(2)} KB
-                              </p>
-                              {doc.validation_comment && (
-                                <p className="text-xs text-destructive mt-2 p-2 bg-destructive/10 rounded">
-                                  Motif du refus: {doc.validation_comment}
-                                </p>
-                              )}
+                            </div>
+                            <div className="flex flex-col gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="default"
+                                onClick={() => setViewerState({
+                                  isOpen: true,
+                                  url: doc.url,
+                                  name: doc.nom_fichier,
+                                  type: doc.type_document
+                                })}
+                              >
+                                <Eye className="h-4 w-4 mr-2" />
+                                Voir
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => {
+                                  if (previewUrl) {
+                                    window.location.href = previewUrl;
+                                  }
+                                }}
+                                disabled={!previewUrl}
+                              >
+                                <Download className="h-4 w-4 mr-2" />
+                                Télécharger
+                              </Button>
                             </div>
                           </div>
-                          <Button 
-                            size="sm" 
-                            variant="default"
-                            onClick={() => setViewerState({
-                              isOpen: true,
-                              url: doc.url,
-                              name: doc.nom_fichier,
-                              type: doc.type_document
-                            })}
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            Voir
-                          </Button>
+                          
+                          {doc.validation_status !== 'valid' && doc.validation_status !== 'validated' && doc.validation_status !== 'invalid' && doc.validation_status !== 'rejected' && (
+                            <div className="flex gap-2 flex-wrap">
+                              <Button 
+                                size="sm" 
+                                className="flex-1 bg-success hover:bg-success/90"
+                                onClick={() => validateDocument(doc.id, 'valid')}
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Valider
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="destructive" 
+                                className="flex-1"
+                                onClick={() => handleInvalidateDocument(doc.id)}
+                              >
+                                <XCircle className="h-4 w-4 mr-1" />
+                                Refuser
+                              </Button>
+                              <RejectWithPaymentDialog
+                                onReject={(reason) => handleRejectWithPayment(doc.id, reason)}
+                                disabled={false}
+                                amount={demarche.resubmission_payment_amount || 10}
+                              />
+                            </div>
+                          )}
                         </div>
-                        
-                        {doc.validation_status !== 'valid' && doc.validation_status !== 'validated' && doc.validation_status !== 'invalid' && doc.validation_status !== 'rejected' && (
-                          <div className="flex gap-2 flex-wrap">
-                            <Button 
-                              size="sm" 
-                              className="flex-1 bg-success hover:bg-success/90"
-                              onClick={() => validateDocument(doc.id, 'valid')}
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Valider
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="destructive" 
-                              className="flex-1"
-                              onClick={() => handleInvalidateDocument(doc.id)}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Refuser
-                            </Button>
-                            <RejectWithPaymentDialog
-                              onReject={(reason) => handleRejectWithPayment(doc.id, reason)}
-                              disabled={false}
-                              amount={demarche.resubmission_payment_amount || 10}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
 
@@ -1259,6 +1360,69 @@ export default function DemarcheDetail() {
                     ))}
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Historique des notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Historique des notifications
+                </CardTitle>
+                <CardDescription>
+                  {notifications.length} notification(s) envoyée(s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {notifications.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucune notification envoyée</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {notifications.map((notif) => {
+                      const typeLabels: Record<string, { label: string; color: string }> = {
+                        'info': { label: 'Information', color: 'bg-blue-100 text-blue-800' },
+                        'document_request': { label: 'Demande de documents', color: 'bg-yellow-100 text-yellow-800' },
+                        'document_ready': { label: 'Documents prêts', color: 'bg-green-100 text-green-800' },
+                        'document_invalid': { label: 'Document refusé', color: 'bg-red-100 text-red-800' },
+                        'review_request': { label: 'Action requise', color: 'bg-orange-100 text-orange-800' },
+                        'resubmission_payment_required': { label: 'Paiement requis', color: 'bg-red-100 text-red-800' },
+                      };
+                      const typeInfo = typeLabels[notif.type] || { label: notif.type, color: 'bg-muted text-muted-foreground' };
+                      
+                      return (
+                        <div key={notif.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge className={typeInfo.color}>
+                              {typeInfo.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(notif.created_at).toLocaleDateString('fr-FR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm">{notif.message}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {notif.is_read ? (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3 text-success" /> Lu
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Non lu
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
