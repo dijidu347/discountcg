@@ -1236,9 +1236,27 @@ export default function DemarcheDetail() {
                               <Button 
                                 size="sm" 
                                 variant="outline"
-                                onClick={() => {
+                                onClick={async () => {
                                   if (previewUrl) {
-                                    window.location.href = previewUrl;
+                                    try {
+                                      const response = await fetch(previewUrl);
+                                      const blob = await response.blob();
+                                      const blobUrl = URL.createObjectURL(blob);
+                                      const link = document.createElement('a');
+                                      link.href = blobUrl;
+                                      link.download = doc.nom_fichier;
+                                      document.body.appendChild(link);
+                                      link.click();
+                                      document.body.removeChild(link);
+                                      URL.revokeObjectURL(blobUrl);
+                                    } catch (error) {
+                                      console.error('Download error:', error);
+                                      toast({
+                                        title: "Erreur",
+                                        description: "Impossible de télécharger le fichier",
+                                        variant: "destructive"
+                                      });
+                                    }
                                   }
                                 }}
                                 disabled={!previewUrl}
@@ -1363,68 +1381,6 @@ export default function DemarcheDetail() {
               </CardContent>
             </Card>
 
-            {/* Historique des notifications */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <History className="h-5 w-5" />
-                  Historique des notifications
-                </CardTitle>
-                <CardDescription>
-                  {notifications.length} notification(s) envoyée(s)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {notifications.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aucune notification envoyée</p>
-                ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {notifications.map((notif) => {
-                      const typeLabels: Record<string, { label: string; color: string }> = {
-                        'info': { label: 'Information', color: 'bg-blue-100 text-blue-800' },
-                        'document_request': { label: 'Demande de documents', color: 'bg-yellow-100 text-yellow-800' },
-                        'document_ready': { label: 'Documents prêts', color: 'bg-green-100 text-green-800' },
-                        'document_invalid': { label: 'Document refusé', color: 'bg-red-100 text-red-800' },
-                        'review_request': { label: 'Action requise', color: 'bg-orange-100 text-orange-800' },
-                        'resubmission_payment_required': { label: 'Paiement requis', color: 'bg-red-100 text-red-800' },
-                      };
-                      const typeInfo = typeLabels[notif.type] || { label: notif.type, color: 'bg-muted text-muted-foreground' };
-                      
-                      return (
-                        <div key={notif.id} className="border rounded-lg p-3 space-y-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <Badge className={typeInfo.color}>
-                              {typeInfo.label}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(notif.created_at).toLocaleDateString('fr-FR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </span>
-                          </div>
-                          <p className="text-sm">{notif.message}</p>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {notif.is_read ? (
-                              <span className="flex items-center gap-1">
-                                <CheckCircle className="h-3 w-3 text-success" /> Lu
-                              </span>
-                            ) : (
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> Non lu
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
 
           {/* Sidebar */}
@@ -1541,6 +1497,69 @@ export default function DemarcheDetail() {
                   <Send className="mr-2 h-4 w-4" />
                   Envoyer
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Historique des notifications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="h-5 w-5" />
+                  Historique des notifications
+                </CardTitle>
+                <CardDescription>
+                  {notifications.length} notification(s) envoyée(s)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {notifications.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucune notification envoyée</p>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {notifications.map((notif) => {
+                      const typeLabels: Record<string, { label: string; color: string }> = {
+                        'info': { label: 'Information', color: 'bg-blue-100 text-blue-800' },
+                        'document_request': { label: 'Demande de documents', color: 'bg-yellow-100 text-yellow-800' },
+                        'document_ready': { label: 'Documents prêts', color: 'bg-green-100 text-green-800' },
+                        'document_invalid': { label: 'Document refusé', color: 'bg-red-100 text-red-800' },
+                        'review_request': { label: 'Action requise', color: 'bg-orange-100 text-orange-800' },
+                        'resubmission_payment_required': { label: 'Paiement requis', color: 'bg-red-100 text-red-800' },
+                      };
+                      const typeInfo = typeLabels[notif.type] || { label: notif.type, color: 'bg-muted text-muted-foreground' };
+                      
+                      return (
+                        <div key={notif.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge className={typeInfo.color}>
+                              {typeInfo.label}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(notif.created_at).toLocaleDateString('fr-FR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm">{notif.message}</p>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {notif.is_read ? (
+                              <span className="flex items-center gap-1">
+                                <CheckCircle className="h-3 w-3 text-success" /> Lu
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" /> Non lu
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
