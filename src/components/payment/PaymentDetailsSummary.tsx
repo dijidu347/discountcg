@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
 
@@ -75,20 +76,22 @@ export const PaymentDetailsSummary = ({
   // Total = carte grise + services (pas de TVA)
   const totalTTC = prixCarteGrise + totalServicesHT;
 
-  // Créer le résultat du calcul
-  const result: PaymentCalculationResult = {
-    prixCarteGrise,
-    fraisDossier: fraisDossierHT,
-    optionsTotal,
-    totalServicesHT,
-    tva,
-    totalTTC,
-  };
-
-  // Notifier le parent du calcul si callback fourni
-  if (onCalculated) {
-    onCalculated(result);
-  }
+  // Utiliser useEffect pour notifier le parent seulement quand le total change
+  const lastTotalRef = useRef<number | null>(null);
+  
+  useEffect(() => {
+    if (onCalculated && lastTotalRef.current !== totalTTC) {
+      lastTotalRef.current = totalTTC;
+      onCalculated({
+        prixCarteGrise,
+        fraisDossier: fraisDossierHT,
+        optionsTotal,
+        totalServicesHT,
+        tva,
+        totalTTC,
+      });
+    }
+  }, [totalTTC, prixCarteGrise, fraisDossierHT, optionsTotal, totalServicesHT, tva, onCalculated]);
 
   // ==============================
   // AFFICHAGE POUR CARTE GRISE
