@@ -1190,7 +1190,7 @@ export default function DemarcheDetail() {
                                       />
                                     ) : isPdf ? (
                                       <div 
-                                        className="w-24 h-24 bg-muted rounded border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
+                                        className="w-24 h-24 rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative group"
                                         onClick={() => setViewerState({
                                           isOpen: true,
                                           url: doc.url,
@@ -1198,8 +1198,12 @@ export default function DemarcheDetail() {
                                           type: doc.type_document
                                         })}
                                       >
-                                        <FileText className="h-8 w-8 text-destructive" />
-                                        <span className="text-xs text-muted-foreground mt-1">PDF</span>
+                                        <iframe 
+                                          src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                                          className="w-full h-full pointer-events-none"
+                                          title={doc.nom_fichier}
+                                        />
+                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                       </div>
                                     ) : (
                                       <div 
