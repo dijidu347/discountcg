@@ -29,7 +29,7 @@ export const calculatePrice = (
   let prixCVAvantAbattement: number | undefined;
   let abattement = false;
 
-  if (anciennete > 10) {
+  if (anciennete >= 10) {
     prixCVAvantAbattement = prixCV;
     prixCV = prixCV * 0.5;
     abattement = true;
