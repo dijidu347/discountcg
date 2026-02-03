@@ -83,7 +83,7 @@ export default function Simulateur() {
 
         vehicleData = {
           dateMiseEnCirculation: apiResponse.data.date_mec,
-          chevauxFiscaux: apiResponse.data.puissance_fiscale,
+          chevauxFiscaux: Number(apiResponse.data.puissance_fiscale) || 0,
         };
         
         if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {
