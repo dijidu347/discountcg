@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { formatPrice } from "@/lib/utils";
+import { PriceCalculation } from "@/utils/calculatePrice";
 import { Car, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +33,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const [fetchingVehicle, setFetchingVehicle] = useState(false);
   const [priceCalculated, setPriceCalculated] = useState(false);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
+  const [priceDetails, setPriceDetails] = useState<PriceCalculation | null>(null);
   const [vehicleData, setVehicleData] = useState<any>(null);
   const [immatriculation, setImmatriculation] = useState("");
   const [openDepartement, setOpenDepartement] = useState(false);
@@ -81,16 +84,18 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
           const { calculatePrice } = await import("@/utils/calculatePrice");
           const priceResult = calculatePrice(
             selectedDept.tarif,
-            data.puissance_fiscale,
+            Number(data.puissance_fiscale),
             data.date_mec
           );
           
           setCalculatedPrice(priceResult.prixTotal);
+          setPriceDetails(priceResult);
           setPriceCalculated(true);
 
+          const abattementText = priceResult.abattement ? " (abattement -50% appliqué)" : "";
           toast({
             title: "Prix calculé",
-            description: `Prix de la carte grise: ${priceResult.prixTotal.toFixed(2)}€`
+            description: `Prix de la carte grise: ${formatPrice(priceResult.prixTotal)}€${abattementText}`
           });
         }
       } else {
@@ -115,6 +120,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const handleModify = () => {
     setPriceCalculated(false);
     setCalculatedPrice(0);
+    setPriceDetails(null);
     setVehicleData(null);
   };
 
@@ -243,7 +249,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
             </div>
           )}
 
-          {priceCalculated && vehicleData && (
+          {priceCalculated && vehicleData && priceDetails && (
             <div className="p-4 bg-green-50 border border-green-200 rounded-md">
               <h4 className="font-semibold text-green-900 mb-2">Informations du véhicule</h4>
               <div className="space-y-1 text-sm text-green-800">
@@ -253,7 +259,22 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
                 <p><strong>Puissance fiscale:</strong> {vehicleData.puissance_fiscale} CV</p>
                 {vehicleData.energie && <p><strong>Énergie:</strong> {vehicleData.energie}</p>}
                 {vehicleData.couleur && <p><strong>Couleur:</strong> {vehicleData.couleur}</p>}
-                <p className="text-lg font-bold mt-2">Prix: {calculatedPrice.toFixed(2)}€</p>
+                
+                {priceDetails.abattement && (
+                  <div className="mt-2 p-2 bg-emerald-100 border border-emerald-300 rounded">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="bg-emerald-500 text-white">+10 ans</Badge>
+                      <span className="text-emerald-700 font-medium">Abattement -50%</span>
+                    </div>
+                    <p className="text-xs text-emerald-600 mt-1">
+                      Ancienneté: {priceDetails.anciennete} ans • 
+                      Avant: {formatPrice(priceDetails.prixCVAvantAbattement || 0)}€ → 
+                      Après: {formatPrice(priceDetails.prixCV)}€
+                    </p>
+                  </div>
+                )}
+                
+                <p className="text-lg font-bold mt-2">Prix: {formatPrice(calculatedPrice)}€</p>
               </div>
             </div>
           )}
