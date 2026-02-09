@@ -49,6 +49,7 @@ interface RawDemarche {
   frais_dossier: number | null;
   montant_ttc: number | null;
   garage_id: string;
+  immatriculation: string;
 }
 
 interface DailyData {
@@ -123,7 +124,7 @@ export default function AdminRevenus() {
         .select("amount, created_at, garage_id, quantity"),
       supabase
         .from("demarches")
-        .select("type, created_at, paye, is_free_token, paid_with_tokens, frais_dossier, montant_ttc, garage_id")
+        .select("type, created_at, paye, is_free_token, paid_with_tokens, frais_dossier, montant_ttc, garage_id, immatriculation")
         .eq("is_draft", false),
       supabase
         .from("garages")
@@ -190,8 +191,14 @@ export default function AdminRevenus() {
   const totalTokenRevenue = filteredTokens.reduce((s, t) => s + Number(t.amount), 0);
   const totalRevenue = totalServiceFees + totalTokenRevenue;
   const totalDemarches = filteredDemarches.length;
-  const paidDemarches = filteredDemarches.filter(d => d.paye || d.is_free_token || d.paid_with_tokens).length;
-  const avgRevenuePerDemarche = paidDemarches > 0 ? totalServiceFees / paidDemarches : 0;
+  const cbPaidDemarches = filteredDemarches.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length;
+  const avgRevenuePerDemarche = cbPaidDemarches > 0 ? totalServiceFees / cbPaidDemarches : 0;
+  
+  // Token usage stats
+  const tokenPaidDemarches = filteredDemarches.filter(d => d.paid_with_tokens);
+  const freeTokenDemarches = filteredDemarches.filter(d => d.is_free_token);
+  const totalTokensSpent = tokenPaidDemarches.reduce((s, d) => s + Number(d.frais_dossier || d.montant_ttc || 0), 0);
+  const totalTokensCredited = filteredTokens.reduce((s, t) => s + t.quantity, 0);
 
   // Previous period for trend
   const prevRange = useMemo(() => {
@@ -458,10 +465,83 @@ export default function AdminRevenus() {
                   <Activity className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">{paidDemarches} démarches payées</p>
+              <p className="text-xs text-muted-foreground mt-3">{cbPaidDemarches} démarches CB</p>
             </CardContent>
           </Card>
         </div>
+
+        {/* Token Usage Stats */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Coins className="h-5 w-5 text-purple-600" />
+              Utilisation des jetons
+            </CardTitle>
+            <CardDescription>Démarches payées par jetons et jetons gratuits</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+              <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 text-center">
+                <p className="text-2xl font-bold text-purple-600">{tokenPaidDemarches.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Démarches par jetons</p>
+              </div>
+              <div className="p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-center">
+                <p className="text-2xl font-bold text-emerald-600">{freeTokenDemarches.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">Jetons gratuits utilisés</p>
+              </div>
+              <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
+                <p className="text-2xl font-bold text-blue-600">{totalTokensCredited.toFixed(0)} €</p>
+                <p className="text-xs text-muted-foreground mt-1">Crédits achetés</p>
+              </div>
+              <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
+                <p className="text-2xl font-bold text-amber-600">{totalTokensSpent.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground mt-1">Crédits dépensés</p>
+              </div>
+            </div>
+
+            {tokenPaidDemarches.length + freeTokenDemarches.length > 0 ? (
+              <div className="max-h-[300px] overflow-y-auto overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type démarche</TableHead>
+                      <TableHead>Immatriculation</TableHead>
+                      <TableHead>Garage</TableHead>
+                      <TableHead>Mode</TableHead>
+                      <TableHead className="text-right">Montant</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...tokenPaidDemarches.map(d => ({ ...d, mode: 'jeton' as const })),
+                      ...freeTokenDemarches.map(d => ({ ...d, mode: 'gratuit' as const }))]
+                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                      .map((d, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-sm">
+                            {format(new Date(d.created_at), "dd/MM/yyyy", { locale: fr })}
+                          </TableCell>
+                          <TableCell className="text-sm">{TYPE_LABELS[d.type] || d.type}</TableCell>
+                          <TableCell className="text-sm font-mono">{d.immatriculation}</TableCell>
+                          <TableCell className="text-sm truncate max-w-[150px]">{garageNames[d.garage_id] || d.garage_id.slice(0, 8)}</TableCell>
+                          <TableCell>
+                            <Badge variant={d.mode === 'gratuit' ? 'default' : 'secondary'}>
+                              {d.mode === 'gratuit' ? 'Gratuit' : 'Solde'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-bold text-sm">
+                            {d.mode === 'gratuit' ? 'Offert' : `${Number(d.frais_dossier || d.montant_ttc || 0).toFixed(2)} €`}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-center py-4">Aucune démarche payée par jetons</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Charts */}
         <Tabs defaultValue="evolution" className="mb-8">
