@@ -688,7 +688,7 @@ export default function AdminRevenus() {
             {recentTransactions.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">Aucune transaction</p>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto max-h-[420px] overflow-y-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
