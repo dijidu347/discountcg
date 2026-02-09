@@ -1470,6 +1470,7 @@ export type Database = {
         | "QUITUS_FISCAL_PRO"
         | "CHANGEMENT_ADRESSE_PRO"
         | "DUPLICATA_CG_PRO"
+        | "FIV_PRO"
       paiement_status: "en_attente" | "valide" | "refuse" | "rembourse"
     }
     CompositeTypes: {
@@ -1619,6 +1620,7 @@ export const Constants = {
         "QUITUS_FISCAL_PRO",
         "CHANGEMENT_ADRESSE_PRO",
         "DUPLICATA_CG_PRO",
+        "FIV_PRO",
       ],
       paiement_status: ["en_attente", "valide", "refuse", "rembourse"],
     },

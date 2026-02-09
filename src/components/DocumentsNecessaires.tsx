@@ -240,6 +240,29 @@ export const getDocumentsConfig = (
       }
       break;
     }
+
+    case "FIV_PRO": {
+      // Documents requis pour la Fiche d'Identification de Véhicule (sociétés)
+      documents = [
+        { id: "fiv_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
+        { id: "fiv_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
+        { id: "fiv_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
+        { id: "fiv_cerfa_13753", nom: "Déclaration de perte ou de vol signée et tamponnée (Cerfa 13753)", obligatoire: true, helpText: "S'il s'agit d'un vol, le document doit être signé et tamponné par la police." },
+      ];
+
+      const allAnswerValues = Object.values(answers).join(" ").toLowerCase();
+
+      // Documents conditionnels - Si LOA/LLD/Crédit-bail
+      if (allAnswerValues.includes("oui")) {
+        documents.push({ 
+          id: "fiv_mandat_location", 
+          nom: "Mandat de la société de location autorisant le locataire à effectuer la démarche", 
+          obligatoire: true, 
+          conditionKey: "loa" 
+        });
+      }
+      break;
+    }
   }
 
   return { documents, blockingMessage };
