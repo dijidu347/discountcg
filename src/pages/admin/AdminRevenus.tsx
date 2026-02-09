@@ -626,26 +626,27 @@ export default function AdminRevenus() {
           </TabsContent>
         </Tabs>
 
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Top Garages */}
-        <Card className="mb-8">
+        <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" />
-              Top garages par revenus générés
+              Top garages
             </CardTitle>
-            <CardDescription>Les garages qui dépensent le plus sur la période sélectionnée</CardDescription>
+            <CardDescription>Par revenus générés</CardDescription>
           </CardHeader>
           <CardContent>
             {topGarages.length === 0 ? (
               <p className="text-muted-foreground text-center py-8">Aucune donnée</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-3 max-h-[420px] overflow-y-auto">
                 {topGarages.map((g, i) => {
                   const maxTotal = topGarages[0]?.total || 1;
                   const pct = (g.total / maxTotal) * 100;
                   return (
-                    <div key={g.id} className="flex items-center gap-4">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                    <div key={g.id} className="flex items-center gap-3">
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                         i === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
                         i === 1 ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' :
                         i === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
@@ -658,16 +659,13 @@ export default function AdminRevenus() {
                           <p className="font-medium text-sm truncate">{g.name}</p>
                           <p className="font-bold text-sm shrink-0 ml-2">{g.total.toFixed(2)} €</p>
                         </div>
-                        <div className="h-2 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-primary transition-all"
-                            style={{ width: `${pct}%` }}
-                          />
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>{g.demarcheCount} démarche{g.demarcheCount > 1 ? 's' : ''}</span>
-                          {g.serviceFees > 0 && <span>CB: {g.serviceFees.toFixed(2)} €</span>}
-                          {g.tokenPurchases > 0 && <span>Jetons: {g.tokenPurchases.toFixed(2)} €</span>}
+                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                          <span>{g.demarcheCount} dém.</span>
+                          {g.serviceFees > 0 && <span>CB: {g.serviceFees.toFixed(2)}€</span>}
+                          {g.tokenPurchases > 0 && <span>Jet: {g.tokenPurchases.toFixed(2)}€</span>}
                         </div>
                       </div>
                     </div>
@@ -725,6 +723,7 @@ export default function AdminRevenus() {
             )}
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
