@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2, Euro } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
+import AnnouncementManager from "@/components/admin/AnnouncementManager";
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -349,6 +350,13 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Separator className="my-8" />
+
+        {/* Annonces générales */}
+        <div className="mb-8">
+          <AnnouncementManager />
+        </div>
 
         <Separator className="my-8" />
 

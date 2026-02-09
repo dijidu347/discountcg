@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 export default function Dashboard() {
   const {
@@ -242,6 +243,9 @@ export default function Dashboard() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Admin Announcements */}
+        <AnnouncementBanner />
+
         {/* Welcome Section */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
