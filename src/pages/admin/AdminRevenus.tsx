@@ -219,21 +219,28 @@ export default function AdminRevenus() {
 
   // Daily/Monthly chart data
   const chartData = useMemo(() => {
+    const getTokenUsage = (items: RawDemarche[], keyFn: (d: RawDemarche) => string, key: string) =>
+      items.filter(d => keyFn(d) === key && (d.paid_with_tokens || d.is_free_token))
+        .reduce((s, d) => s + Number(d.frais_dossier || d.montant_ttc || 0), 0);
+
     if (viewMode === "monthly") {
       const months = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
       return months.map(month => {
         const key = format(month, "yyyy-MM");
+        const keyFn = (d: RawDemarche) => format(new Date(d.created_at), "yyyy-MM");
         const pSum = filteredPaiements
           .filter(p => format(new Date(p.created_at), "yyyy-MM") === key)
           .reduce((s, p) => s + getRevenueAmount(p), 0);
         const tSum = filteredTokens
           .filter(t => format(new Date(t.created_at), "yyyy-MM") === key)
           .reduce((s, t) => s + Number(t.amount), 0);
+        const uSum = getTokenUsage(filteredDemarches, keyFn, key);
         return {
           date: key,
           label: format(month, "MMM yy", { locale: fr }),
           paiements: Math.round(pSum * 100) / 100,
           tokens: Math.round(tSum * 100) / 100,
+          utilisation: Math.round(uSum * 100) / 100,
           total: Math.round((pSum + tSum) * 100) / 100,
         };
       });
@@ -242,17 +249,20 @@ export default function AdminRevenus() {
     const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
     return days.map(day => {
       const key = format(day, "yyyy-MM-dd");
+      const keyFn = (d: RawDemarche) => format(new Date(d.created_at), "yyyy-MM-dd");
       const pSum = filteredPaiements
         .filter(p => format(new Date(p.created_at), "yyyy-MM-dd") === key)
         .reduce((s, p) => s + getRevenueAmount(p), 0);
       const tSum = filteredTokens
         .filter(t => format(new Date(t.created_at), "yyyy-MM-dd") === key)
         .reduce((s, t) => s + Number(t.amount), 0);
+      const uSum = getTokenUsage(filteredDemarches, keyFn, key);
       return {
         date: key,
         label: format(day, "dd/MM", { locale: fr }),
         paiements: Math.round(pSum * 100) / 100,
         tokens: Math.round(tSum * 100) / 100,
+        utilisation: Math.round(uSum * 100) / 100,
         total: Math.round((pSum + tSum) * 100) / 100,
       };
     });
@@ -569,6 +579,10 @@ export default function AdminRevenus() {
                           <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.3} />
                           <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                         </linearGradient>
+                        <linearGradient id="colorUtilisation" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                        </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                       <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
@@ -581,6 +595,7 @@ export default function AdminRevenus() {
                       <Legend />
                       <Area type="monotone" dataKey="paiements" name="Frais de service" stroke="#3b82f6" strokeWidth={2} fill="url(#colorPaiements)" />
                       <Area type="monotone" dataKey="tokens" name="Ventes jetons" stroke="#8b5cf6" strokeWidth={2} fill="url(#colorTokens)" />
+                      <Area type="monotone" dataKey="utilisation" name="Utilisation jetons" stroke="#f59e0b" strokeWidth={2} fill="url(#colorUtilisation)" />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
