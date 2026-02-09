@@ -91,6 +91,7 @@ export default function AdminRevenus() {
   const [paiements, setPaiements] = useState<RawPaiement[]>([]);
   const [tokenPurchases, setTokenPurchases] = useState<RawTokenPurchase[]>([]);
   const [demarches, setDemarches] = useState<RawDemarche[]>([]);
+  const [garageNames, setGarageNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<string>("30");
   const [viewMode, setViewMode] = useState<string>("daily");
@@ -112,7 +113,7 @@ export default function AdminRevenus() {
   };
 
   const loadData = async () => {
-    const [pRes, tRes, dRes] = await Promise.all([
+    const [pRes, tRes, dRes, gRes] = await Promise.all([
       supabase
         .from("paiements")
         .select("montant, status, created_at, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
@@ -124,11 +125,20 @@ export default function AdminRevenus() {
         .from("demarches")
         .select("type, created_at, paye, is_free_token, paid_with_tokens, frais_dossier, montant_ttc, garage_id")
         .eq("is_draft", false),
+      supabase
+        .from("garages")
+        .select("id, raison_sociale, ville"),
     ]);
 
     setPaiements((pRes.data as any) || []);
     setTokenPurchases((tRes.data as any) || []);
     setDemarches((dRes.data as any) || []);
+    
+    const names: Record<string, string> = {};
+    (gRes.data || []).forEach((g: any) => {
+      names[g.id] = `${g.raison_sociale}${g.ville ? ` (${g.ville})` : ''}`;
+    });
+    setGarageNames(names);
     setLoading(false);
   };
 
@@ -281,19 +291,33 @@ export default function AdminRevenus() {
 
   // Top garages by revenue
   const topGarages = useMemo(() => {
-    const garageMap = new Map<string, number>();
+    const garageMap = new Map<string, { serviceFees: number; tokenPurchases: number; demarcheCount: number }>();
+    
     filteredPaiements.forEach(p => {
       const gid = p.demarches?.garage_id || "unknown";
-      garageMap.set(gid, (garageMap.get(gid) || 0) + getRevenueAmount(p));
+      const cur = garageMap.get(gid) || { serviceFees: 0, tokenPurchases: 0, demarcheCount: 0 };
+      cur.serviceFees += getRevenueAmount(p);
+      cur.demarcheCount++;
+      garageMap.set(gid, cur);
     });
     filteredTokens.forEach(t => {
-      garageMap.set(t.garage_id, (garageMap.get(t.garage_id) || 0) + Number(t.amount));
+      const cur = garageMap.get(t.garage_id) || { serviceFees: 0, tokenPurchases: 0, demarcheCount: 0 };
+      cur.tokenPurchases += Number(t.amount);
+      garageMap.set(t.garage_id, cur);
     });
+
     return Array.from(garageMap.entries())
-      .map(([id, revenue]) => ({ id, revenue: Math.round(revenue * 100) / 100 }))
-      .sort((a, b) => b.revenue - a.revenue)
+      .map(([id, data]) => ({
+        id,
+        name: garageNames[id] || id.slice(0, 8) + "...",
+        serviceFees: Math.round(data.serviceFees * 100) / 100,
+        tokenPurchases: Math.round(data.tokenPurchases * 100) / 100,
+        total: Math.round((data.serviceFees + data.tokenPurchases) * 100) / 100,
+        demarcheCount: data.demarcheCount,
+      }))
+      .sort((a, b) => b.total - a.total)
       .slice(0, 10);
-  }, [filteredPaiements, filteredTokens]);
+  }, [filteredPaiements, filteredTokens, garageNames]);
 
   // Recent transactions
   const recentTransactions = useMemo(() => {
@@ -601,6 +625,58 @@ export default function AdminRevenus() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Top Garages */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5 text-primary" />
+              Top garages par revenus générés
+            </CardTitle>
+            <CardDescription>Les garages qui dépensent le plus sur la période sélectionnée</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {topGarages.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">Aucune donnée</p>
+            ) : (
+              <div className="space-y-3">
+                {topGarages.map((g, i) => {
+                  const maxTotal = topGarages[0]?.total || 1;
+                  const pct = (g.total / maxTotal) * 100;
+                  return (
+                    <div key={g.id} className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shrink-0 ${
+                        i === 0 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' :
+                        i === 1 ? 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' :
+                        i === 2 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' :
+                        'bg-muted text-muted-foreground'
+                      }`}>
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="font-medium text-sm truncate">{g.name}</p>
+                          <p className="font-bold text-sm shrink-0 ml-2">{g.total.toFixed(2)} €</p>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                          <span>{g.demarcheCount} démarche{g.demarcheCount > 1 ? 's' : ''}</span>
+                          {g.serviceFees > 0 && <span>CB: {g.serviceFees.toFixed(2)} €</span>}
+                          {g.tokenPurchases > 0 && <span>Jetons: {g.tokenPurchases.toFixed(2)} €</span>}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Recent Transactions */}
         <Card>
