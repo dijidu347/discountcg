@@ -96,6 +96,7 @@ export default function AdminRevenus() {
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<string>("30");
   const [viewMode, setViewMode] = useState<string>("daily");
+  const [demarcheTypeFilter, setDemarcheTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     if (!authLoading && user) checkAccessAndLoad();
@@ -267,6 +268,34 @@ export default function AdminRevenus() {
       };
     });
   }, [filteredPaiements, filteredTokens, dateRange, viewMode]);
+
+  // Demarche count chart data (with type filter)
+  const demarcheChartData = useMemo(() => {
+    const filtered = demarcheTypeFilter === "all"
+      ? filteredDemarches
+      : filteredDemarches.filter(d => d.type === demarcheTypeFilter);
+
+    if (viewMode === "monthly") {
+      const months = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
+      return months.map(month => {
+        const key = format(month, "yyyy-MM");
+        const count = filtered.filter(d => format(new Date(d.created_at), "yyyy-MM") === key).length;
+        return { label: format(month, "MMM yy", { locale: fr }), count };
+      });
+    }
+    const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
+    return days.map(day => {
+      const key = format(day, "yyyy-MM-dd");
+      const count = filtered.filter(d => format(new Date(d.created_at), "yyyy-MM-dd") === key).length;
+      return { label: format(day, "dd/MM", { locale: fr }), count };
+    });
+  }, [filteredDemarches, dateRange, viewMode, demarcheTypeFilter]);
+
+  // Available demarche types for filter
+  const availableDemarcheTypes = useMemo(() => {
+    const types = new Set(filteredDemarches.map(d => d.type));
+    return Array.from(types).sort();
+  }, [filteredDemarches]);
 
   // Revenue by demarche type
   const typeBreakdown = useMemo((): TypeBreakdown[] => {
@@ -557,6 +586,7 @@ export default function AdminRevenus() {
         <Tabs defaultValue="evolution" className="mb-8">
           <TabsList className="mb-4">
             <TabsTrigger value="evolution">📈 Évolution</TabsTrigger>
+            <TabsTrigger value="demarches">📋 Nb démarches</TabsTrigger>
             <TabsTrigger value="types">📊 Par type</TabsTrigger>
             <TabsTrigger value="payment">💳 Modes de paiement</TabsTrigger>
           </TabsList>
@@ -599,6 +629,45 @@ export default function AdminRevenus() {
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="demarches">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+                <CardTitle className="text-lg">Nombre de démarches ({viewMode === "daily" ? "jour" : "mois"})</CardTitle>
+                <Select value={demarcheTypeFilter} onValueChange={setDemarcheTypeFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Filtrer par type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    {availableDemarcheTypes.map(t => (
+                      <SelectItem key={t} value={t}>{TYPE_LABELS[t] || t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={demarcheChartData}>
+                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                      <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                      <Tooltip
+                        formatter={(value: number) => `${value} démarche${value > 1 ? 's' : ''}`}
+                        contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                      />
+                      <Bar dataKey="count" name="Démarches" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <p className="text-sm text-muted-foreground mt-3 text-center">
+                  Total : {demarcheChartData.reduce((s, d) => s + d.count, 0)} démarche{demarcheChartData.reduce((s, d) => s + d.count, 0) > 1 ? 's' : ''}
+                  {demarcheTypeFilter !== "all" && ` (${TYPE_LABELS[demarcheTypeFilter] || demarcheTypeFilter})`}
+                </p>
               </CardContent>
             </Card>
           </TabsContent>
