@@ -388,7 +388,7 @@ export default function AdminRevenus() {
     filteredTokens.slice(0, 50).forEach(t => {
       all.push({
         date: t.created_at,
-        type: `${t.quantity}€ crédits`,
+        type: `${t.quantity}€ jetons`,
         amount: Number(t.amount),
         source: "Achat jetons",
       });
@@ -565,11 +565,11 @@ export default function AdminRevenus() {
               </div>
               <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-center">
                 <p className="text-2xl font-bold text-blue-600">{totalTokensCredited.toFixed(0)} €</p>
-                <p className="text-xs text-muted-foreground mt-1">Crédits achetés</p>
+                <p className="text-xs text-muted-foreground mt-1">Jetons achetés</p>
               </div>
               <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-center">
                 <p className="text-2xl font-bold text-amber-600">{totalTokensSpent.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground mt-1">Crédits dépensés</p>
+                <p className="text-xs text-muted-foreground mt-1">Jetons dépensés</p>
               </div>
             </div>
 
