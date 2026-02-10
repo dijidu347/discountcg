@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   ArrowLeft, DollarSign, TrendingUp, TrendingDown, Minus,
-  CreditCard, Coins, Calendar, BarChart3, Users, FileText,
+  CreditCard, Coins, Calendar as CalendarIcon, BarChart3, Users, FileText,
   ArrowUpRight, ArrowDownRight, Activity, Euro, Eye
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -20,6 +22,7 @@ import {
 } from "recharts";
 import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 
 interface RawPaiement {
   montant: number;
@@ -99,6 +102,7 @@ export default function AdminRevenus() {
   const [viewMode, setViewMode] = useState<string>("daily");
   const [demarcheTypeFilter, setDemarcheTypeFilter] = useState<string>("all");
   const [selectedGarageId, setSelectedGarageId] = useState<string | null>(null);
+  const [customDateRange, setCustomDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   useEffect(() => {
     if (!authLoading && user) checkAccessAndLoad();
@@ -148,13 +152,16 @@ export default function AdminRevenus() {
 
   const dateRange = useMemo(() => {
     const now = new Date();
+    if (period === "custom" && customDateRange.from) {
+      return { start: customDateRange.from, end: customDateRange.to || now };
+    }
     if (period === "7") return { start: subDays(now, 7), end: now };
     if (period === "30") return { start: subDays(now, 30), end: now };
     if (period === "90") return { start: subDays(now, 90), end: now };
     if (period === "365") return { start: subDays(now, 365), end: now };
     // All time
     return { start: new Date("2024-01-01"), end: now };
-  }, [period]);
+  }, [period, customDateRange]);
 
   const getRevenueAmount = (p: RawPaiement): number => {
     if (p.demarches?.paid_with_tokens || p.demarches?.is_free_token) return 0;
@@ -433,7 +440,7 @@ export default function AdminRevenus() {
                 <SelectItem value="monthly">Par mois</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={period} onValueChange={setPeriod}>
+            <Select value={period} onValueChange={(v) => { setPeriod(v); if (v !== "custom") setCustomDateRange({}); }}>
               <SelectTrigger className="w-[160px]">
                 <SelectValue />
               </SelectTrigger>
@@ -443,8 +450,34 @@ export default function AdminRevenus() {
                 <SelectItem value="90">3 derniers mois</SelectItem>
                 <SelectItem value="365">12 derniers mois</SelectItem>
                 <SelectItem value="all">Tout</SelectItem>
+                <SelectItem value="custom">Personnalisé</SelectItem>
               </SelectContent>
             </Select>
+            {period === "custom" && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-[240px] justify-start text-left font-normal", !customDateRange.from && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customDateRange.from ? (
+                      customDateRange.to ? (
+                        `${format(customDateRange.from, "dd/MM/yy")} - ${format(customDateRange.to, "dd/MM/yy")}`
+                      ) : format(customDateRange.from, "dd/MM/yyyy")
+                    ) : "Choisir les dates"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="end">
+                  <Calendar
+                    mode="range"
+                    selected={customDateRange.from ? { from: customDateRange.from, to: customDateRange.to } : undefined}
+                    onSelect={(range) => setCustomDateRange({ from: range?.from, to: range?.to })}
+                    numberOfMonths={2}
+                    disabled={(date) => date > new Date()}
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={fr}
+                  />
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         </div>
 
