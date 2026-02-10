@@ -289,9 +289,18 @@ export default function AdminRevenus() {
         const dk = viewMode === "monthly" ? format(new Date(d.created_at), "yyyy-MM") : format(new Date(d.created_at), "yyyy-MM-dd");
         return dk === key;
       });
+      const cbItems = inKey.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token);
+      const cbEuros = cbItems.reduce((s, d) => {
+        if (["CG", "CG_DA", "CG_IMPORT"].includes(d.type)) return s + Number(d.frais_dossier || 20);
+        return s + Number(d.montant_ttc || d.frais_dossier || 0);
+      }, 0);
+      const jetonItems = inKey.filter(d => d.paid_with_tokens);
+      const jetonEuros = jetonItems.reduce((s, d) => s + Number(d.frais_dossier || d.montant_ttc || 0), 0);
       return {
-        cb: inKey.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length,
-        jetons: inKey.filter(d => d.paid_with_tokens).length,
+        cb: cbItems.length,
+        cbEuros: Math.round(cbEuros * 100) / 100,
+        jetons: jetonItems.length,
+        jetonEuros: Math.round(jetonEuros * 100) / 100,
         gratuit: inKey.filter(d => d.is_free_token).length,
         nonPaye: inKey.filter(d => !d.paye && !d.paid_with_tokens && !d.is_free_token).length,
       };
@@ -302,14 +311,14 @@ export default function AdminRevenus() {
       return months.map(month => {
         const key = format(month, "yyyy-MM");
         const c = countByKey(key);
-        return { label: format(month, "MMM yy", { locale: fr }), cb: c.cb, jetons: c.jetons, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
+        return { label: format(month, "MMM yy", { locale: fr }), cb: c.cb, cbEuros: c.cbEuros, jetons: c.jetons, jetonEuros: c.jetonEuros, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
       });
     }
     const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
     return days.map(day => {
       const key = format(day, "yyyy-MM-dd");
       const c = countByKey(key);
-      return { label: format(day, "dd/MM", { locale: fr }), cb: c.cb, jetons: c.jetons, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
+      return { label: format(day, "dd/MM", { locale: fr }), cb: c.cb, cbEuros: c.cbEuros, jetons: c.jetons, jetonEuros: c.jetonEuros, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
     });
   }, [filteredDemarches, dateRange, viewMode, demarcheTypeFilter]);
 
@@ -711,7 +720,19 @@ export default function AdminRevenus() {
                       <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
                       <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                       <Tooltip
-                        contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
+                        content={({ active, payload, label }) => {
+                          if (!active || !payload?.length) return null;
+                          const data = payload[0]?.payload;
+                          return (
+                            <div className="bg-background border rounded-lg p-3 shadow-lg text-sm">
+                              <p className="font-semibold mb-1">{label}</p>
+                              {data?.cb > 0 && <p className="text-blue-600">Paiement € : {data.cb} ({data.cbEuros.toFixed(2)} €)</p>}
+                              {data?.jetons > 0 && <p className="text-violet-600">Jetons : {data.jetons} ({data.jetonEuros.toFixed(2)} €)</p>}
+                              {data?.gratuit > 0 && <p className="text-emerald-600">Gratuits : {data.gratuit}</p>}
+                              <p className="text-muted-foreground mt-1 border-t pt-1">Total : {data?.count}</p>
+                            </div>
+                          );
+                        }}
                       />
                       <Legend />
                       <Bar dataKey="cb" name="Paiement €" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
