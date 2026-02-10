@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import {
   ArrowLeft, DollarSign, TrendingUp, TrendingDown, Minus,
   CreditCard, Coins, Calendar, BarChart3, Users, FileText,
-  ArrowUpRight, ArrowDownRight, Activity, Euro
+  ArrowUpRight, ArrowDownRight, Activity, Euro, Eye
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line
@@ -97,6 +98,7 @@ export default function AdminRevenus() {
   const [period, setPeriod] = useState<string>("30");
   const [viewMode, setViewMode] = useState<string>("daily");
   const [demarcheTypeFilter, setDemarcheTypeFilter] = useState<string>("all");
+  const [selectedGarageId, setSelectedGarageId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) checkAccessAndLoad();
@@ -826,12 +828,15 @@ export default function AdminRevenus() {
                         <div className="h-1.5 rounded-full bg-muted overflow-hidden">
                           <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
                         </div>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <span>{g.demarcheCount} dém.</span>
                           {g.serviceFees > 0 && <span>CB: {g.serviceFees.toFixed(2)}€</span>}
                           {g.tokenPurchases > 0 && <span>Jet: {g.tokenPurchases.toFixed(2)}€</span>}
                         </div>
                       </div>
+                      <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedGarageId(g.id)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </div>
                   );
                 })}
@@ -888,6 +893,86 @@ export default function AdminRevenus() {
           </CardContent>
         </Card>
         </div>
+
+        {/* Garage detail dialog */}
+        <Dialog open={!!selectedGarageId} onOpenChange={(open) => !open && setSelectedGarageId(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                {selectedGarageId ? (garageNames[selectedGarageId] || selectedGarageId) : ""}
+              </DialogTitle>
+            </DialogHeader>
+            {selectedGarageId && (() => {
+              const garageDemarches = filteredDemarches.filter(d => d.garage_id === selectedGarageId);
+              const cbDem = garageDemarches.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token);
+              const tokenDem = garageDemarches.filter(d => d.paid_with_tokens);
+              const freeDem = garageDemarches.filter(d => d.is_free_token);
+              const totalTokensSpent = tokenDem.reduce((s, d) => s + Number(d.frais_dossier || d.montant_ttc || 0), 0);
+
+              return (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{cbDem.length}</p>
+                      <p className="text-xs text-muted-foreground">Payées CB</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-violet-600">{tokenDem.length}</p>
+                      <p className="text-xs text-muted-foreground">Payées jetons</p>
+                    </div>
+                    <div className="rounded-lg border p-3 text-center">
+                      <p className="text-2xl font-bold text-emerald-600">{freeDem.length}</p>
+                      <p className="text-xs text-muted-foreground">Jetons gratuits</p>
+                    </div>
+                  </div>
+                  {tokenDem.length > 0 && (
+                    <p className="text-sm text-muted-foreground">Total jetons dépensés : <span className="font-semibold text-foreground">{totalTokensSpent.toFixed(2)} €</span></p>
+                  )}
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Immat.</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Mode</TableHead>
+                        <TableHead className="text-right">Montant</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {garageDemarches
+                        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                        .map((d, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-sm">{format(new Date(d.created_at), "dd/MM/yy", { locale: fr })}</TableCell>
+                          <TableCell className="font-mono text-sm">{d.immatriculation}</TableCell>
+                          <TableCell><Badge variant="outline" className="text-xs">{TYPE_LABELS[d.type] || d.type}</Badge></TableCell>
+                          <TableCell>
+                            {d.is_free_token ? (
+                              <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs">Gratuit</Badge>
+                            ) : d.paid_with_tokens ? (
+                              <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400 text-xs">Jetons</Badge>
+                            ) : d.paye ? (
+                              <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 text-xs">CB</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-xs">Non payé</Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right text-sm font-medium">
+                            {Number(d.frais_dossier || d.montant_ttc || 0).toFixed(2)} €
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {garageDemarches.length === 0 && (
+                        <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Aucune démarche</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
