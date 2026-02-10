@@ -284,19 +284,32 @@ export default function AdminRevenus() {
       ? filteredDemarches
       : filteredDemarches.filter(d => d.type === demarcheTypeFilter);
 
+    const countByKey = (key: string) => {
+      const inKey = filtered.filter(d => {
+        const dk = viewMode === "monthly" ? format(new Date(d.created_at), "yyyy-MM") : format(new Date(d.created_at), "yyyy-MM-dd");
+        return dk === key;
+      });
+      return {
+        cb: inKey.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length,
+        jetons: inKey.filter(d => d.paid_with_tokens).length,
+        gratuit: inKey.filter(d => d.is_free_token).length,
+        nonPaye: inKey.filter(d => !d.paye && !d.paid_with_tokens && !d.is_free_token).length,
+      };
+    };
+
     if (viewMode === "monthly") {
       const months = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
       return months.map(month => {
         const key = format(month, "yyyy-MM");
-        const count = filtered.filter(d => format(new Date(d.created_at), "yyyy-MM") === key).length;
-        return { label: format(month, "MMM yy", { locale: fr }), count };
+        const c = countByKey(key);
+        return { label: format(month, "MMM yy", { locale: fr }), cb: c.cb, jetons: c.jetons, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
       });
     }
     const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
     return days.map(day => {
       const key = format(day, "yyyy-MM-dd");
-      const count = filtered.filter(d => format(new Date(d.created_at), "yyyy-MM-dd") === key).length;
-      return { label: format(day, "dd/MM", { locale: fr }), count };
+      const c = countByKey(key);
+      return { label: format(day, "dd/MM", { locale: fr }), cb: c.cb, jetons: c.jetons, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
     });
   }, [filteredDemarches, dateRange, viewMode, demarcheTypeFilter]);
 
@@ -692,10 +705,12 @@ export default function AdminRevenus() {
                       <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
                       <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
                       <Tooltip
-                        formatter={(value: number) => `${value} démarche${value > 1 ? 's' : ''}`}
                         contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }}
                       />
-                      <Bar dataKey="count" name="Démarches" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                      <Legend />
+                      <Bar dataKey="cb" name="Paiement €" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="jetons" name="Jetons" fill="#8b5cf6" stackId="a" radius={[0, 0, 0, 0]} />
+                      <Bar dataKey="gratuit" name="Jetons gratuits" fill="#10b981" stackId="a" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
