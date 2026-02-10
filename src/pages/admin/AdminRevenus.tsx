@@ -545,14 +545,20 @@ export default function AdminRevenus() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium">Revenu moyen / démarche</p>
-                  <p className="text-3xl font-bold text-amber-600 mt-1">{avgRevenuePerDemarche.toFixed(2)} €</p>
+                  <p className="text-sm text-muted-foreground font-medium">Nombre de démarches</p>
+                  <p className="text-3xl font-bold text-amber-600 mt-1">{filteredDemarches.length}</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <Activity className="h-6 w-6 text-amber-600" />
+                  <FileText className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">{cbPaidDemarches} démarches CB</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
+                <span>{cbPaidDemarches} par €</span>
+                <span>·</span>
+                <span>{tokenPaidDemarches.length} par jetons</span>
+                <span>·</span>
+                <span>{freeTokenDemarches.length} gratuits</span>
+              </div>
             </CardContent>
           </Card>
         </div>
