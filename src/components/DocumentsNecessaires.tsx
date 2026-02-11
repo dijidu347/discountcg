@@ -293,6 +293,21 @@ export const getDocumentsConfig = (
       }
       break;
     }
+
+    case "MODIF_CG_PRO": {
+      // Documents requis pour modification/correction de CG (sociétés)
+      documents = [
+        { id: "modif_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
+        { id: "modif_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
+        { id: "modif_assurance", nom: "Attestation d'assurance", obligatoire: true },
+        { id: "modif_ci", nom: "Certificat d'immatriculation", obligatoire: true },
+        { id: "modif_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
+        { id: "modif_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)", obligatoire: true },
+        { id: "modif_justificatif", nom: "Pièce justificative officielle de la modification à apporter", obligatoire: true, helpText: "Document officiel attestant la modification demandée" },
+        { id: "modif_ct", nom: "Contrôle technique en cours de validité", obligatoire: true },
+      ];
+      break;
+    }
   }
 
   return { documents, blockingMessage };
