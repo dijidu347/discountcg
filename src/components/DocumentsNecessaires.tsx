@@ -263,6 +263,36 @@ export const getDocumentsConfig = (
       }
       break;
     }
+
+    case "CG_NEUF_PRO": {
+      // Documents requis pour l'immatriculation d'un véhicule neuf (sociétés)
+      documents = [
+        { id: "cgn_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
+        { id: "cgn_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
+        { id: "cgn_assurance", nom: "Attestation d'assurance", obligatoire: true },
+        { id: "cgn_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
+        { id: "cgn_cerfa_13749", nom: "Cerfa 13749 remis par le constructeur – Demande de certificat d'immatriculation d'un véhicule neuf", obligatoire: true },
+      ];
+
+      const allAnswerValues = Object.values(answers).join(" ").toLowerCase();
+
+      // Documents conditionnels - Si LOA/LLD/Crédit-bail
+      if (allAnswerValues.includes("oui")) {
+        documents.push({ 
+          id: "cgn_contrat_location", 
+          nom: "Contrat de location complet", 
+          obligatoire: true, 
+          conditionKey: "loa" 
+        });
+        documents.push({ 
+          id: "cgn_mandat_location", 
+          nom: "Mandat de la société de location autorisant le locataire à effectuer la démarche", 
+          obligatoire: true, 
+          conditionKey: "loa" 
+        });
+      }
+      break;
+    }
   }
 
   return { documents, blockingMessage };
