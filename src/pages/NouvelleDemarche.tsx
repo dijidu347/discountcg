@@ -37,13 +37,14 @@ const PRO_DEMARCHE_TYPES = [
   "CG_NEUF_PRO",
   "MODIF_CG_PRO",
   "ANNULATION_CPI_WW_PRO",
+  "CHANGEMENT_ADRESSE_LOCATAIRE_PRO",
 ];
 // Types de démarches PRO qui nécessitent les infos véhicule manuelles (VIN, marque, modèle)
 const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO", "CG_NEUF_PRO"];
 // Types de démarches PRO qui utilisent la plaque d'immatriculation (lookup API)
 const PRO_TYPES_WITH_PLATE = ["DUPLICATA_CG_PRO", "FIV_PRO", "MODIF_CG_PRO", "ANNULATION_CPI_WW_PRO"];
 // Types de démarches PRO qui n'ont pas besoin de bloc véhicule
-const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO", "CHANGEMENT_ADRESSE_PRO"];
+const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO", "CHANGEMENT_ADRESSE_PRO", "CHANGEMENT_ADRESSE_LOCATAIRE_PRO"];
 
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();

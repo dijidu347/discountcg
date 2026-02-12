@@ -322,6 +322,19 @@ export const getDocumentsConfig = (
       ];
       break;
     }
+
+    case "CHANGEMENT_ADRESSE_LOCATAIRE_PRO": {
+      // Documents requis pour changement d'adresse du locataire (sociétés)
+      documents = [
+        { id: "cal_kbis_id", nom: "Extrait Kbis de moins de 6 mois + Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
+        { id: "cal_ci", nom: "Certificat d'immatriculation", obligatoire: true },
+        { id: "cal_mandat_locataire", nom: "Mandat signé et tamponné par le locataire (Cerfa 13757)", obligatoire: true, helpText: "Mandat vous autorisant à faire la démarche" },
+        { id: "cal_mandat_bailleur", nom: "Mandat signé et tamponné par le bailleur autorisant le locataire à effectuer des modifications", obligatoire: true },
+        { id: "cal_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée par le locataire (Cerfa 13750)", obligatoire: true },
+        { id: "cal_kbis_maj", nom: "Extrait Kbis de moins de 6 mois mis à jour", obligatoire: true, helpText: "Kbis avec la nouvelle adresse" },
+      ];
+      break;
+    }
   }
 
   return { documents, blockingMessage };
