@@ -1515,6 +1515,7 @@ export type Database = {
         | "COTITULAIRE_PRO"
         | "ANNULER_CORRIGER_DC_DA_PRO"
         | "CYCLO_ANCIEN_PRO"
+        | "IMMAT_DEFINITIVE_PRO"
       paiement_status: "en_attente" | "valide" | "refuse" | "rembourse"
     }
     CompositeTypes: {
@@ -1673,6 +1674,7 @@ export const Constants = {
         "COTITULAIRE_PRO",
         "ANNULER_CORRIGER_DC_DA_PRO",
         "CYCLO_ANCIEN_PRO",
+        "IMMAT_DEFINITIVE_PRO",
       ],
       paiement_status: ["en_attente", "valide", "refuse", "rembourse"],
     },

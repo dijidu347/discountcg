@@ -472,6 +472,21 @@ export const getDocumentsConfig = (
       ];
       break;
     }
+
+    case "IMMAT_DEFINITIVE_PRO": {
+      documents = [
+        { id: "imd_kbis_id", nom: "Extrait Kbis de moins de 6 mois + Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
+        { id: "imd_assurance", nom: "Attestation d'assurance", obligatoire: true },
+        { id: "imd_mandat", nom: "Mandat signé (Cerfa 13757)", obligatoire: true },
+        { id: "imd_cerfa_13750", nom: "Demande d'immatriculation signée (Cerfa 13750)", obligatoire: true },
+        { id: "imd_ci_etranger", nom: "Certificat d'immatriculation étranger", obligatoire: true },
+        { id: "imd_coc", nom: "Certificat de conformité COC", obligatoire: true, helpText: "Nécessaire si le champ \"K\" de la carte grise est vide, ou pour un véhicule neuf ou très ancien" },
+        { id: "imd_facture_cession", nom: "Facture d'achat ou Certificat de cession", obligatoire: true, helpText: "Si nécessaire, retracer toute la chaîne de propriété" },
+        { id: "imd_quitus", nom: "Quitus fiscal", obligatoire: true, helpText: "Hormis régions : Nord (59), Pas-De-Calais (62), la Moselle (57), le Bas-Rhin (67)" },
+        { id: "imd_ct", nom: "Contrôle technique français ou étranger de moins de 6 mois", obligatoire: false, recommended: true, helpText: "Pour les véhicules de plus de 4 ans" },
+      ];
+      break;
+    }
   }
 
   return { documents, blockingMessage };
