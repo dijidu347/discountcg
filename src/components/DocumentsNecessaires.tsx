@@ -396,6 +396,38 @@ export const getDocumentsConfig = (
 
       break;
     }
+
+    case "COTITULAIRE_PRO": {
+      // Documents de base communs (ajouter ou retirer)
+      documents = [
+        { id: "cot_id_titulaire", nom: "Pièce d'identité et permis de conduire du titulaire (recto/verso)", obligatoire: true },
+        { id: "cot_justif_domicile", nom: "Justificatif de domicile de moins de 6 mois du titulaire", obligatoire: true, helpText: "Si le justificatif n'est pas au nom du titulaire : fournir une attestation d'hébergement + pièce d'identité de l'hébergeur" },
+        { id: "cot_assurance", nom: "Attestation d'assurance", obligatoire: true },
+        { id: "cot_mandat", nom: "Mandat signé (Cerfa 13757)", obligatoire: true },
+        { id: "cot_cerfa_13750", nom: "Demande d'immatriculation signée (Cerfa 13750)", obligatoire: true },
+        { id: "cot_ct", nom: "Contrôle technique en cours de validité", obligatoire: true },
+      ];
+
+      const allAnswerValues = Object.values(answers).join(" ").toLowerCase();
+
+      // Cas "Ajouter un co-titulaire"
+      if (allAnswerValues.includes("ajouter")) {
+        documents.push(
+          { id: "cot_id_cotitulaire_ajout", nom: "Pièce d'identité et permis de conduire du co-titulaire à ajouter (recto/verso)", obligatoire: true, conditionKey: "ajouter" },
+          { id: "cot_attestation_ajout", nom: "Attestation signée par les deux parties mentionnant l'ajout du co-titulaire (ou Acte de mariage / Attestation de PACS)", obligatoire: true, conditionKey: "ajouter" },
+        );
+      }
+
+      // Cas "Retirer un co-titulaire"
+      if (allAnswerValues.includes("retirer")) {
+        documents.push(
+          { id: "cot_id_cotitulaire_retrait", nom: "Pièce d'identité et permis de conduire du co-titulaire à retirer (recto/verso)", obligatoire: true, conditionKey: "retirer" },
+          { id: "cot_attestation_retrait", nom: "Certificat de cession ou attestation signée par les deux parties mentionnant le retrait du co-titulaire (ou Acte de divorce / Rupture de PACS)", obligatoire: true, conditionKey: "retirer" },
+        );
+      }
+
+      break;
+    }
   }
 
   return { documents, blockingMessage };
