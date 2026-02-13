@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DepartmentSelect } from "@/components/simulateur/DepartmentSelect";
-import { Loader2, Calculator, FileText, Car, FileCheck, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users } from "lucide-react";
+import { Loader2, Calculator, FileText, Car, FileCheck, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users, Bike, Receipt, Globe, XCircle, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
@@ -40,6 +40,11 @@ const getIconForCode = (code: string) => {
     case 'CHGT_ADRESSE_LOCATAIRE': return Home;
     case 'SUCCESSION': return ScrollText;
     case 'COTITULAIRE': return Users;
+    case 'IMMAT_CYCLO_ANCIEN': return Bike;
+    case 'QUITUS_FISCAL': return Receipt;
+    case 'CPI_WW': return Globe;
+    case 'ANNULER_CPI_WW': return XCircle;
+    case 'DEMANDE_IMMAT': return ClipboardList;
     default: return FileText;
   }
 };

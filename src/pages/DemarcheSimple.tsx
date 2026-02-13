@@ -6,7 +6,7 @@ import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, FileText, ArrowRightLeft, CheckCircle, Car, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, ArrowRightLeft, CheckCircle, Car, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users, Bike, Receipt, Globe, XCircle, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -37,6 +37,11 @@ const getIconForCode = (code: string) => {
     case 'CHGT_ADRESSE_LOCATAIRE': return <Home className="w-5 h-5" />;
     case 'SUCCESSION': return <ScrollText className="w-5 h-5" />;
     case 'COTITULAIRE': return <Users className="w-5 h-5" />;
+    case 'IMMAT_CYCLO_ANCIEN': return <Bike className="w-5 h-5" />;
+    case 'QUITUS_FISCAL': return <Receipt className="w-5 h-5" />;
+    case 'CPI_WW': return <Globe className="w-5 h-5" />;
+    case 'ANNULER_CPI_WW': return <XCircle className="w-5 h-5" />;
+    case 'DEMANDE_IMMAT': return <ClipboardList className="w-5 h-5" />;
     default: return <FileText className="w-5 h-5" />;
   }
 };
