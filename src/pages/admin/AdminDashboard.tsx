@@ -347,14 +347,6 @@ export default function AdminDashboard() {
                 <ShoppingCart className="h-6 w-6" />
                 <span className="text-sm font-medium">Commandes Particuliers</span>
               </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2"
-                onClick={() => navigate("/admin/guest-actions")}
-              >
-                <ClipboardList className="h-6 w-6" />
-                <span className="text-sm font-medium">Actions rapides Particuliers</span>
-              </Button>
             </div>
           </CardContent>
         </Card>
