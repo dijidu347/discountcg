@@ -44,6 +44,7 @@ import ManageEmailTemplates from "./pages/admin/ManageEmailTemplates";
 import ManagePricingConfig from "./pages/admin/ManagePricingConfig";
 import TestEmail from "./pages/admin/TestEmail";
 import AdminRevenus from "./pages/admin/AdminRevenus";
+import ManageGuestActions from "./pages/admin/ManageGuestActions";
 import AcheterJetons from "./pages/AcheterJetons";
 import PaiementRecharge from "./pages/PaiementRecharge";
 import PaiementRechargeSucces from "./pages/PaiementRechargeSucces";
@@ -104,7 +105,8 @@ const App = () => (
           <Route path="/admin/test-email" element={<TestEmail />} />
           <Route path="/admin/revenus" element={<AdminRevenus />} />
           <Route path="/admin/guest-orders" element={<GuestOrders />} />
-          <Route path="/admin/guest-order/:id" element={<GuestOrderDetail />} />
+           <Route path="/admin/guest-order/:id" element={<GuestOrderDetail />} />
+           <Route path="/admin/guest-actions" element={<ManageGuestActions />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

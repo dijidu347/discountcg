@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DepartmentSelect } from "@/components/simulateur/DepartmentSelect";
-import { Loader2, Calculator, FileText, Car, FileCheck } from "lucide-react";
+import { Loader2, Calculator, FileText, Car, FileCheck, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
@@ -32,6 +32,14 @@ const getIconForCode = (code: string) => {
     case 'CG': return Car;
     case 'DA': return FileText;
     case 'DC': return FileCheck;
+    case 'CHGT_ADRESSE': return MapPin;
+    case 'CG_NEUF': return PlusCircle;
+    case 'DUPLICATA': return Copy;
+    case 'FIV': return Search;
+    case 'MODIF_CG': return PenTool;
+    case 'CHGT_ADRESSE_LOCATAIRE': return Home;
+    case 'SUCCESSION': return ScrollText;
+    case 'COTITULAIRE': return Users;
     default: return FileText;
   }
 };
@@ -59,7 +67,7 @@ export const SimulateurSection = () => {
         .order('ordre');
 
       if (error) throw error;
-      // Filtrer DA pour les particuliers (uniquement CG et DC disponibles)
+      // Filtrer DA (désactivé pour les particuliers)
       const filteredData = (data || []).filter(t => t.code !== 'DA');
       setDemarcheTypes(filteredData);
       if (filteredData.length > 0 && !filteredData.find(t => t.code === selectedTypeCode)) {
