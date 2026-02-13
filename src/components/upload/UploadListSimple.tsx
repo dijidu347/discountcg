@@ -31,23 +31,27 @@ interface OrderInfo {
   montant_ttc: number;
 }
 
-// Documents requis pour DA
-const documentsDA = [
-  { id: "da_1", nom_document: "Certificat de cession (cerfa 15776*01)", rectoOnly: true },
-  { id: "da_2", nom_document: "Certificat déclaration d'achat (cerfa 13751*02)", rectoOnly: true },
-  { id: "da_3", nom_document: "Carte grise barrée et tamponnée", rectoOnly: false },
-  { id: "da_4", nom_document: "Dernière DA enregistrée (si achat à un pro)", rectoOnly: true },
-  { id: "da_5", nom_document: "Accusé d'enregistrement déclaration de cession", rectoOnly: true },
+interface RequiredDocument {
+  id: string;
+  nom_document: string;
+  obligatoire: boolean;
+  ordre: number;
+}
+
+// Documents qui nécessitent recto/verso
+const RECTO_VERSO_KEYWORDS = [
+  "pièce d'identité",
+  "carte d'identité",
+  "permis de conduire",
+  "permis du titulaire",
+  "permis du co-titulaire",
+  "identité et permis",
 ];
 
-// Documents requis pour DC
-const documentsDC = [
-  { id: "dc_1", nom_document: "Certificat de cession (cerfa 15776*01)", rectoOnly: true },
-  { id: "dc_2", nom_document: "Certificat déclaration d'achat (si achat à un pro)", rectoOnly: true },
-  { id: "dc_3", nom_document: "Carte grise barrée et tamponnée (signée, datée)", rectoOnly: false },
-  { id: "dc_4", nom_document: "Carte d'identité du nouveau propriétaire", rectoOnly: false },
-  { id: "dc_5", nom_document: "Dernière DA enregistrée (si achat à un pro)", rectoOnly: true },
-];
+const isRectoOnly = (docName: string): boolean => {
+  const lower = docName.toLowerCase();
+  return !RECTO_VERSO_KEYWORDS.some(keyword => lower.includes(keyword));
+};
 
 export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSimpleProps) => {
   const navigate = useNavigate();
@@ -56,12 +60,23 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
-
-  const requiredDocuments = demarcheType === "DA" ? documentsDA : documentsDC;
+  const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
+      // Load required documents from DB
+      const { data: docsConfig } = await supabase
+        .from('guest_order_required_documents')
+        .select('*')
+        .eq('demarche_type_code', demarcheType)
+        .eq('actif', true)
+        .order('ordre');
+
+      if (docsConfig) {
+        setRequiredDocuments(docsConfig);
+      }
+
       // Load existing uploaded documents
       const { data: existingDocs } = await supabase
         .from('guest_order_documents')
@@ -117,13 +132,11 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
 
     setIsSubmitting(true);
     try {
-      // Update order to indicate documents received
       await supabase
         .from('guest_orders')
         .update({ documents_complets: true })
         .eq('id', orderId);
 
-      // Send email if email is provided
       if (orderInfo.email && orderInfo.email.trim() !== '') {
         await supabase.functions.invoke('send-guest-order-email', {
           body: {
@@ -145,7 +158,6 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         description: "Vos documents ont été envoyés avec succès. Vous allez être redirigé vers la page de suivi.",
       });
 
-      // Redirect to tracking page
       setTimeout(() => {
         navigate(`/suivi/${orderInfo.tracking_number}`);
       }, 1500);
@@ -221,10 +233,10 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
               key={doc.id}
               orderId={orderId}
               documentType={doc.nom_document}
-              label={doc.nom_document}
+              label={`${doc.nom_document}${!doc.obligatoire ? ' (facultatif)' : ''}`}
               existingFiles={filesForDoc}
               onUploadComplete={loadData}
-              rectoOnly={doc.rectoOnly}
+              rectoOnly={isRectoOnly(doc.nom_document)}
             />
           );
         })}

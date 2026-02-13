@@ -6,7 +6,7 @@ import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, FileText, ArrowRightLeft, CheckCircle, Car } from "lucide-react";
+import { Loader2, ChevronLeft, FileText, ArrowRightLeft, CheckCircle, Car, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -29,6 +29,14 @@ const getIconForCode = (code: string) => {
     case 'CG': return <Car className="w-5 h-5" />;
     case 'DA': return <FileText className="w-5 h-5" />;
     case 'DC': return <ArrowRightLeft className="w-5 h-5" />;
+    case 'CHGT_ADRESSE': return <MapPin className="w-5 h-5" />;
+    case 'CG_NEUF': return <PlusCircle className="w-5 h-5" />;
+    case 'DUPLICATA': return <Copy className="w-5 h-5" />;
+    case 'FIV': return <Search className="w-5 h-5" />;
+    case 'MODIF_CG': return <PenTool className="w-5 h-5" />;
+    case 'CHGT_ADRESSE_LOCATAIRE': return <Home className="w-5 h-5" />;
+    case 'SUCCESSION': return <ScrollText className="w-5 h-5" />;
+    case 'COTITULAIRE': return <Users className="w-5 h-5" />;
     default: return <FileText className="w-5 h-5" />;
   }
 };
@@ -257,7 +265,7 @@ export default function DemarcheSimple() {
               <UploadListSimple 
                 orderId={orderId}
                 isPaid={isPaid}
-                demarcheType={demarcheType as "DA" | "DC"}
+                demarcheType={demarcheType}
               />
             )}
           </div>
