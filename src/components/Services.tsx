@@ -16,6 +16,7 @@ const Services = () => {
           .from("actions_rapides")
           .select("*")
           .eq("actif", true)
+          .in("code", ["DC", "CG"])
           .order("ordre");
         
         if (error) throw error;
