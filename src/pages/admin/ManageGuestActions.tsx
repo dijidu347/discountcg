@@ -157,7 +157,6 @@ export default function ManageGuestActions() {
         const { error } = await supabase
           .from('guest_demarche_types')
           .update({
-            code: editingAction.code,
             titre: editingAction.titre,
             description: editingAction.description,
             prix_base: editingAction.prix_base,
@@ -169,29 +168,6 @@ export default function ManageGuestActions() {
           .eq('id', editingAction.id);
 
         if (error) throw error;
-
-        // Delete old documents for this code
-        await supabase
-          .from('guest_order_required_documents')
-          .delete()
-          .eq('demarche_type_code', editingAction.code);
-
-        // Insert new documents
-        const docsToInsert = newDocuments
-          .filter(d => d.nom.trim())
-          .map((doc, idx) => ({
-            demarche_type_code: editingAction.code,
-            nom_document: doc.nom,
-            ordre: idx + 1,
-            obligatoire: doc.obligatoire,
-            actif: true,
-          }));
-
-        if (docsToInsert.length > 0) {
-          await supabase
-            .from('guest_order_required_documents')
-            .insert(docsToInsert);
-        }
 
         toast({ title: "Démarche mise à jour", description: "La démarche a été mise à jour avec succès" });
       } else {
@@ -362,23 +338,7 @@ export default function ManageGuestActions() {
                   <p className="text-sm text-muted-foreground mb-4">{action.description}</p>
                 )}
                 
-                <div className="mb-4">
-                  <p className="text-sm font-semibold mb-2">
-                    Documents requis ({documents[action.code]?.length || 0})
-                  </p>
-                  <ul className="text-xs space-y-1">
-                    {documents[action.code]?.slice(0, 3).map((doc) => (
-                      <li key={doc.id} className="text-muted-foreground">
-                        • {doc.nom_document} {!doc.obligatoire && <span className="italic">(facultatif)</span>}
-                      </li>
-                    ))}
-                    {(documents[action.code]?.length || 0) > 3 && (
-                      <li className="text-muted-foreground italic">
-                        ... et {(documents[action.code]?.length || 0) - 3} autres
-                      </li>
-                    )}
-                  </ul>
-                </div>
+                {/* Section documents masquée pour le moment */}
 
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleEditAction(action)} className="flex-1">
@@ -488,42 +448,7 @@ export default function ManageGuestActions() {
                   </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <Label>Documents requis</Label>
-                    <Button type="button" variant="outline" size="sm" onClick={addNewDocument}>
-                      <Plus className="mr-2 h-3 w-3" />
-                      Ajouter
-                    </Button>
-                  </div>
-
-                  <div className="space-y-2">
-                    {newDocuments.map((doc, idx) => (
-                      <div key={idx} className="flex gap-2 items-start">
-                        <div className="flex-1 space-y-2">
-                          <Input
-                            value={doc.nom}
-                            onChange={(e) => updateDocument(idx, 'nom', e.target.value)}
-                            placeholder="Nom du document"
-                          />
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id={`obligatoire-${idx}`}
-                              checked={doc.obligatoire}
-                              onCheckedChange={(checked) => updateDocument(idx, 'obligatoire', checked)}
-                            />
-                            <Label htmlFor={`obligatoire-${idx}`} className="text-sm text-muted-foreground">
-                              Obligatoire
-                            </Label>
-                          </div>
-                        </div>
-                        <Button type="button" variant="ghost" size="sm" onClick={() => removeDocument(idx)}>
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+                {/* Section documents masquée pour le moment */}
               </div>
             )}
 
