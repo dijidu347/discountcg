@@ -304,10 +304,6 @@ export default function ManageGuestActions() {
               Configurer les types de démarches particuliers, leurs prix et documents requis
             </p>
           </div>
-          <Button onClick={handleCreateAction}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle démarche
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
