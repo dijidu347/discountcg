@@ -318,7 +318,46 @@ export default function AdminDashboard() {
           </CardHeader>
         </Card>
 
-        {/* Section Particuliers masquée - accessible via URLs directes */}
+        {/* Section Particuliers */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              <CardTitle>Espace Particuliers</CardTitle>
+            </div>
+            <CardDescription>
+              Gérer les commandes et la configuration pour les particuliers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/pricing-config")}
+              >
+                <Calculator className="h-6 w-6" />
+                <span className="text-sm font-medium">Simulateur Particulier</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/guest-orders")}
+              >
+                <ShoppingCart className="h-6 w-6" />
+                <span className="text-sm font-medium">Commandes Particuliers</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/admin/guest-actions")}
+              >
+                <ClipboardList className="h-6 w-6" />
+                <span className="text-sm font-medium">Actions rapides Particuliers</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Separator className="my-8" />
 
