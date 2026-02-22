@@ -642,7 +642,7 @@ const getEmailTemplate = (type: string, data: any) => {
     case "simple_text":
       return {
         subject: data.subject || "Message",
-        html: `<div style="font-family: Arial, sans-serif;">${data.message || ''}</div>`,
+        html: data.html || `<div style="font-family: Arial, sans-serif;">${data.message || ''}</div>`,
       };
 
     default:
@@ -666,7 +666,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, to, data, attachments }: EmailRequest = await req.json();
+    const { type, to, data, attachments, from: customFrom }: EmailRequest & { from?: string } = await req.json();
 
     console.log(`📧 Envoi email type: ${type} à ${to}`);
 
@@ -679,7 +679,8 @@ const handler = async (req: Request): Promise<Response> => {
     }));
 
     const emailResponse = await resend.emails.send({
-      from: "DiscountCarteGrise <noreply@discountcartegrise.fr>",
+      from: customFrom || "DiscountCarteGrise <noreply@discountcartegrise.fr>",
+      reply_to: customFrom ? undefined : "contact@discountcartegrise.fr",
       to: to,
       subject: subject,
       html: html,
