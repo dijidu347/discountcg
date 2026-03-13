@@ -158,7 +158,7 @@ async function generateDemarcheFacturePDF(
   let y = height - margin;
 
   // Header
-  page.drawText("DiscountCarteGrise", { x: margin, y, size: 24, font: fontBold, color: blue });
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 24, font: fontBold, color: blue });
 
   const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
   page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
@@ -175,20 +175,23 @@ async function generateDemarcheFacturePDF(
   page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
 
   y -= 20;
-  page.drawText("DiscountCarteGrise", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
   page.drawText(garage?.raison_sociale || "Client", { x: width / 2, y, size: 12, font: fontBold, color: black });
 
   y -= 15;
-  page.drawText("Service de cartes grises", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("SAS - Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
   page.drawText(garage?.adresse || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
 
   y -= 12;
-  page.drawText("SIRET : 123 456 789 00012", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("SIRET : 820 073 484 00017", { x: margin, y, size: 10, font: fontRegular, color: gray });
   page.drawText(`${garage?.code_postal || ""} ${garage?.ville || ""}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
 
   y -= 12;
-  page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("24 RUE DU CROUZET, 34770 GIGEAN", { x: margin, y, size: 10, font: fontRegular, color: gray });
   page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+
+  y -= 12;
+  page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
 
   y -= 12;
   page.drawText(garage?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
@@ -251,7 +254,7 @@ async function generateDemarcheFacturePDF(
   y -= 60;
   page.drawText("Merci pour votre confiance !", { x: margin, y, size: 10, font: fontRegular, color: gray });
   y -= 15;
-  page.drawText("DiscountCarteGrise - Service de cartes grises en ligne", { x: margin, y, size: 9, font: fontRegular, color: gray });
+  page.drawText("DISCOUNT DRIVER - SAS - Service de cartes grises en ligne", { x: margin, y, size: 9, font: fontRegular, color: gray });
 
   return await pdfDoc.save();
 }

@@ -61,20 +61,23 @@ async function generateFacturePDF(
   page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
   
   y -= 20;
-  page.drawText("DISCOUNT AUTO PARE BRISE", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
   page.drawText(garage?.raison_sociale || "Client", { x: width / 2, y, size: 12, font: fontBold, color: black });
-  
+
   y -= 15;
-  page.drawText("Service de cartes grises", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("SAS - Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
   page.drawText(garage?.adresse || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
-  
+
   y -= 12;
-  page.drawText("SIRET : 83088827700027", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText("SIRET : 820 073 484 00017", { x: margin, y, size: 10, font: fontRegular, color: gray });
   page.drawText(`${garage?.code_postal || ""} ${garage?.ville || ""}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
-  
+
+  y -= 12;
+  page.drawText("24 RUE DU CROUZET, 34770 GIGEAN", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+
   y -= 12;
   page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
-  page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
   
   y -= 12;
   page.drawText(garage?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });

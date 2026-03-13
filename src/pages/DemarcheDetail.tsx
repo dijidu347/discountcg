@@ -11,6 +11,7 @@ import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Mail, Phone, Zap, FileCheck as FileCheckIcon, CreditCard, Loader2, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { FactureButton } from "@/components/FactureButton";
+import { DemarcheChat } from "@/components/DemarcheChat";
 import { formatPrice } from "@/lib/utils";
 
 const statusLabels: Record<string, string> = {
@@ -38,6 +39,7 @@ export default function DemarcheDetail() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [demarche, setDemarche] = useState<any>(null);
+  const [garage, setGarage] = useState<any>(null);
   const [vehicule, setVehicule] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
@@ -115,6 +117,7 @@ export default function DemarcheDetail() {
       return;
     }
 
+    setGarage(garageData);
     setDemarche(demarcheData);
 
     // Load vehicule data
@@ -844,6 +847,22 @@ export default function DemarcheDetail() {
           </div>
         </div>
       </div>
+
+      {/* Messagerie */}
+      {demarche && garage && (
+        <div className="container mx-auto px-4 pb-8">
+          <div className="max-w-4xl mx-auto">
+            <DemarcheChat
+              demarcheId={demarche.id}
+              garageId={garage.id}
+              garageEmail={garage.email}
+              garageName={garage.raison_sociale}
+              isAdmin={false}
+              numeroDemarche={demarche.numero_demarche}
+            />
+          </div>
+        </div>
+      )}
 
       <DocumentViewer
         isOpen={viewerState.isOpen}

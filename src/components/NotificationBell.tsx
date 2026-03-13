@@ -19,18 +19,19 @@ interface Notification {
   created_at: string;
   source?: 'notification' | 'verification';
   subject?: string;
+  demarche_id?: string;
 }
 
 export function NotificationBell({ garageId }: { garageId: string }) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [open, setOpen] = useState(false);
   const [readVerificationIds, setReadVerificationIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     loadNotifications();
 
-    // Subscribe to new notifications
     const channel = supabase
       .channel('notifications')
       .on(
@@ -57,6 +58,18 @@ export function NotificationBell({ garageId }: { garageId: string }) {
           loadNotifications();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `garage_id=eq.${garageId}`
+        },
+        () => {
+          loadNotifications();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -68,7 +81,7 @@ export function NotificationBell({ garageId }: { garageId: string }) {
     // Load regular notifications
     const { data: regularNotifs } = await supabase
       .from('notifications')
-      .select('*')
+      .select('*, demarches(numero_demarche)')
       .eq('garage_id', garageId)
       .order('created_at', { ascending: false })
       .limit(10);
@@ -81,10 +94,23 @@ export function NotificationBell({ garageId }: { garageId: string }) {
       .order('created_at', { ascending: false })
       .limit(10);
 
+    // Load unread messages from admin
+    const { data: adminMessages } = await supabase
+      .from('messages')
+      .select('*, demarches(numero_demarche)')
+      .eq('garage_id', garageId)
+      .eq('sender_type', 'admin')
+      .eq('is_read', false)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
     // Combine and sort
     const combined: Notification[] = [
-      ...(regularNotifs || []).map(n => ({ ...n, source: 'notification' as const })),
-      ...(verificationNotifs || []).map(n => ({
+      ...(regularNotifs || []).map((n: any) => ({
+        ...n,
+        source: 'notification' as const,
+      })),
+      ...(verificationNotifs || []).map((n: any) => ({
         id: n.id,
         type: 'verification',
         message: n.subject,
@@ -92,25 +118,38 @@ export function NotificationBell({ garageId }: { garageId: string }) {
         created_at: n.created_at,
         source: 'verification' as const,
         subject: n.subject
-      }))
+      })),
+      ...(adminMessages || []).map((n: any) => ({
+        id: n.id,
+        type: 'new_message',
+        message: `Message admin: ${n.content.substring(0, 80)}${n.content.length > 80 ? '...' : ''}`,
+        is_read: false,
+        created_at: n.created_at,
+        source: 'notification' as const,
+        demarche_id: n.demarche_id,
+      })),
     ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-     .slice(0, 10);
+     .slice(0, 15);
 
     setNotifications(combined);
     setUnreadCount(combined.filter(n => !n.is_read).length);
   };
 
   const markAsRead = async (notification: Notification) => {
-    if (notification.source === 'notification') {
+    if (notification.type === 'new_message') {
+      await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('id', notification.id);
+    } else if (notification.source === 'notification') {
       await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notification.id);
     } else {
-      // For verification notifications, track locally and navigate
       setReadVerificationIds(prev => new Set([...prev, notification.id]));
     }
-    
+
     loadNotifications();
   };
 
@@ -118,9 +157,13 @@ export function NotificationBell({ garageId }: { garageId: string }) {
     if (!notification.is_read) {
       markAsRead(notification);
     }
-    
+
+    setOpen(false);
+
     if (notification.source === 'verification' || notification.type === 'verification') {
       navigate('/garage-settings?tab=verification');
+    } else if (notification.demarche_id) {
+      navigate(`/mes-demarches?demarche=${notification.demarche_id}`);
     }
   };
 
@@ -136,19 +179,21 @@ export function NotificationBell({ garageId }: { garageId: string }) {
         return '⭐';
       case 'verification':
         return '🔐';
+      case 'new_message':
+        return '💬';
       default:
         return '📢';
     }
   };
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
               {unreadCount}
@@ -178,8 +223,11 @@ export function NotificationBell({ garageId }: { garageId: string }) {
                       <span className="text-xl">{getNotificationIcon(notification.type)}</span>
                       <div className="flex-1 space-y-1">
                         <p className="text-sm font-medium">{notification.message}</p>
+                        {notification.demarche_id && (
+                          <p className="text-xs text-primary">Voir la demarche →</p>
+                        )}
                         {notification.source === 'verification' && (
-                          <p className="text-xs text-primary">Cliquez pour voir les détails</p>
+                          <p className="text-xs text-primary">Cliquez pour voir les details</p>
                         )}
                         <p className="text-xs text-muted-foreground">
                           {new Date(notification.created_at).toLocaleString('fr-FR')}

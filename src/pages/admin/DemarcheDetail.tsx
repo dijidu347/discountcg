@@ -16,6 +16,7 @@ import { DocumentViewer } from "@/components/DocumentViewer";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { Badge } from "@/components/ui/badge";
 import { FactureButton } from "@/components/FactureButton";
+import { DemarcheChat } from "@/components/DemarcheChat";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -1503,6 +1504,18 @@ export default function DemarcheDetail() {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* Messagerie avec le garage */}
+            {demarche && garage && (
+              <DemarcheChat
+                demarcheId={demarche.id}
+                garageId={garage.id}
+                garageEmail={garage.email}
+                garageName={garage.raison_sociale}
+                isAdmin={true}
+                numeroDemarche={demarche.numero_demarche}
+              />
+            )}
 
             {/* Historique des notifications */}
             <Card>

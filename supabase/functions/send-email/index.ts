@@ -749,6 +749,54 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "new_message_notification":
+      return {
+        subject: `💬 Nouveau message - ${data.reference}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #2563eb; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">🇫🇷 Discount Carte Grise</h1>
+            </div>
+            <div style="padding: 30px 20px;">
+              <h2 style="color: #2563eb;">Nouveau message</h2>
+              <p>Bonjour ${data.garage_name},</p>
+              <p>Vous avez reçu un nouveau message concernant votre dossier <strong>${data.reference}</strong> :</p>
+              <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
+                <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
+              </div>
+              <a href="https://discountcartegrise.fr/mes-demarches" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                Voir la conversation
+              </a>
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 12px; text-align: center;">
+                Service agréé et conforme ANTS • <a href="https://discountcartegrise.fr" style="color: #2563eb;">discountcartegrise.fr</a>
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
+    case "admin_new_message":
+      return {
+        subject: `💬 Message garage: ${data.garage_name} - ${data.reference}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #2563eb;">Nouveau message d'un garage</h2>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Garage :</strong> ${data.garage_name}</p>
+              <p style="margin: 4px 0;"><strong>Email :</strong> ${data.garage_email}</p>
+              <p style="margin: 4px 0;"><strong>Dossier :</strong> ${data.reference}</p>
+            </div>
+            <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
+              <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
+            </div>
+            <a href="https://discountcartegrise.fr/admin" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+              Voir dans l'admin
+            </a>
+          </div>
+        `,
+      };
+
     case "simple_text":
       return {
         subject: data.subject || "Message",
