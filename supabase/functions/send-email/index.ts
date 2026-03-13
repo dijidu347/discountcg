@@ -691,6 +691,36 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "client_payment_confirmed":
+      return {
+        subject: `✅ Paiement confirmé - ${data.immatriculation}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #2563eb; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">🇫🇷 Discount Carte Grise</h1>
+            </div>
+            <div style="padding: 30px 20px;">
+              <h2 style="color: #22c55e;">Paiement confirmé !</h2>
+              <p>Bonjour,</p>
+              <p>Votre paiement pour la carte grise du véhicule <strong>${data.immatriculation}</strong> a bien été reçu.</p>
+
+              <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+                <p style="margin: 8px 0;"><strong>🚗 Immatriculation :</strong> ${data.immatriculation}</p>
+                <p style="margin: 8px 0;"><strong>💰 Montant payé :</strong> ${data.montant_ttc} €</p>
+                <p style="margin: 8px 0;"><strong>📋 Référence :</strong> ${data.reference}</p>
+              </div>
+
+              <p>Votre dossier est désormais <strong>en cours de traitement</strong>. Vous recevrez un email dès que votre carte grise sera prête.</p>
+
+              <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 12px; text-align: center;">
+                Service agréé et conforme ANTS • <a href="https://discountcartegrise.fr" style="color: #2563eb;">discountcartegrise.fr</a>
+              </p>
+            </div>
+          </div>
+        `,
+      };
+
     case "garage_client_paid":
       return {
         subject: `✅ Paiement client reçu - ${data.immatriculation}`,

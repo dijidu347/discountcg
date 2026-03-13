@@ -785,7 +785,18 @@ async function handleClientPayment(
         .eq("id", demarcheId);
     }
 
+    // Send confirmation email to client
+    if (demarche.client_email) {
+      await sendEmail("client_payment_confirmed", demarche.client_email, {
+        immatriculation: realImmat,
+        montant_ttc: clientActualAmount.toFixed(2),
+        reference: demarche.numero_demarche,
+      });
+      console.log("✅ Client payment confirmation email sent to", demarche.client_email);
+    }
+
     // Send notification to garage: client has paid
+    await delay(600);
     if (garage?.email) {
       await sendEmail("garage_client_paid", garage.email, {
         garage_name: garage.raison_sociale,
