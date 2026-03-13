@@ -691,6 +691,34 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "garage_client_paid":
+      return {
+        subject: `✅ Paiement client reçu - ${data.immatriculation}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Paiement client reçu !</h1>
+            <p>Bonjour ${data.garage_name},</p>
+            <p>Votre client a bien réglé sa part pour la carte grise du véhicule <strong>${data.immatriculation}</strong>.</p>
+
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>📧 Email client :</strong> ${data.client_email}</p>
+              <p style="margin: 8px 0;"><strong>🚗 Immatriculation :</strong> ${data.immatriculation}</p>
+              <p style="margin: 8px 0;"><strong>💰 Montant payé :</strong> ${data.montant_ttc} €</p>
+              <p style="margin: 8px 0;"><strong>📋 Référence :</strong> ${data.reference}</p>
+            </div>
+
+            <p>Le dossier est désormais complet et <strong>en cours de traitement</strong>.</p>
+
+            <a href="https://discountcartegrise.fr/mes-demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir mes démarches
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+          </div>
+        `,
+      };
+
     case "simple_text":
       return {
         subject: data.subject || "Message",
