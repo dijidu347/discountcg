@@ -850,8 +850,8 @@ export default function NouvelleDemarche() {
         </Button>
 
         <Card className="max-w-4xl mx-auto">
-          {/* Étape 1 : Choix du mode de paiement (plein écran, rien d'autre) */}
-          {actionDetails && !paymentModeConfirmed && (
+          {/* Étape 1 : Choix du mode de paiement (uniquement pour carte grise CG) */}
+          {actionDetails && !paymentModeConfirmed && formData.type === 'CG' && (
             <CardContent className="py-8">
               <PaymentModeSelector
                 onSelect={(mode, email, phone) => {
@@ -865,8 +865,8 @@ export default function NouvelleDemarche() {
             </CardContent>
           )}
 
-          {/* Étape 2+ : Formulaire complet (affiché seulement après confirmation du mode) */}
-          {paymentModeConfirmed && (
+          {/* Étape 2+ : Formulaire complet (affiché après confirmation du mode, ou directement pour non-CG) */}
+          {(paymentModeConfirmed || formData.type !== 'CG') && (
           <>
           <CardHeader>
             <CardTitle className="text-2xl">Nouvelle démarche</CardTitle>
@@ -894,19 +894,21 @@ export default function NouvelleDemarche() {
               </Alert>
             )}
             <form onSubmit={handleSubmitPayment} className="space-y-6">
-              {/* Résumé du mode de paiement choisi */}
-              <PaymentModeSelector
-                onSelect={(mode, email, phone) => {
-                  setPaymentMode(mode);
-                  setClientEmail(email);
-                  setClientPhone(phone);
-                }}
-                onConfirm={() => setPaymentModeConfirmed(false)}
-                confirmed={true}
-                initialMode={paymentMode}
-                initialClientEmail={clientEmail}
-                initialClientPhone={clientPhone}
-              />
+              {/* Résumé du mode de paiement choisi (uniquement carte grise) */}
+              {formData.type === 'CG' && (
+                <PaymentModeSelector
+                  onSelect={(mode, email, phone) => {
+                    setPaymentMode(mode);
+                    setClientEmail(email);
+                    setClientPhone(phone);
+                  }}
+                  onConfirm={() => setPaymentModeConfirmed(false)}
+                  confirmed={true}
+                  initialMode={paymentMode}
+                  initialClientEmail={clientEmail}
+                  initialClientPhone={clientPhone}
+                />
+              )}
 
               {/* Affichage du type de démarche sélectionné */}
               {actionDetails && (
