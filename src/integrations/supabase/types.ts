@@ -1069,6 +1069,54 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          demarche_id: string | null
+          garage_id: string
+          id: string
+          is_read: boolean | null
+          sender_id: string | null
+          sender_type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          demarche_id?: string | null
+          garage_id: string
+          id?: string
+          is_read?: boolean | null
+          sender_id?: string | null
+          sender_type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          demarche_id?: string | null
+          garage_id?: string
+          id?: string
+          is_read?: boolean | null
+          sender_id?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string | null
