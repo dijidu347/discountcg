@@ -13,9 +13,11 @@ serve(async (req) => {
   }
 
   try {
-    // Use production Stripe secret key
-    const stripeKey = Deno.env.get('STRIPE_SECRET_KEY');
-    if (!stripeKey) {
+    // Stripe 1: frais de dossier only (split pro part, tokens, resubmissions)
+    const stripeKey1 = Deno.env.get('STRIPE_SECRET_KEY');
+    // Stripe 2: carte grise fees (pro_pays_all, client payments)
+    const stripeKey2 = Deno.env.get('STRIPE_SECRET_KEY_2');
+    if (!stripeKey1) {
       throw new Error('STRIPE_SECRET_KEY not configured');
     }
 
@@ -36,11 +38,12 @@ serve(async (req) => {
         });
       }
 
-      // Create Stripe payment intent with automatic payment methods for wallet support
+      // Guest orders use Stripe 2 (carte grise fees)
+      const guestStripeKey = stripeKey2 || stripeKey1;
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${stripeKey}`,
+          'Authorization': `Bearer ${guestStripeKey}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
@@ -132,31 +135,59 @@ serve(async (req) => {
     }
 
     console.log('Ownership check passed, calculating amount');
-    
+
+    // Use requested mode from body as override (workaround for DB save issue)
+    const { paymentMode: requestedMode } = body;
+    const paymentMode = requestedMode || demarche.payment_mode || 'pro_pays_all';
+    console.log('Effective payment mode:', paymentMode, '(db:', demarche.payment_mode, ', requested:', requestedMode, ')');
+    if (paymentMode === 'client_pays_all') {
+      console.error('Pro should not pay when payment_mode is client_pays_all');
+      return new Response(JSON.stringify({ error: 'Le client est responsable du paiement pour cette démarche' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Fetch tracking services for the demarche
     const { data: trackingServices } = await supabaseClient
       .from('tracking_services')
       .select('price')
       .eq('demarche_id', demarcheId);
-    
+
     const optionsTotal = (trackingServices || []).reduce((sum: number, s: any) => sum + Number(s.price || 0), 0);
-    
-    // Calculate amount without TVA
+
+    // Calculate amount based on payment_mode
     const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
     const fraisDossier = Number(demarche.frais_dossier) || 0;
     const totalServices = fraisDossier + optionsTotal;
-    const calculatedTotal = prixCarteGrise + totalServices;
-    
+
+    let calculatedTotal: number;
+
+    if (paymentMode === 'split') {
+      // Split mode: pro only pays frais_dossier + options (no prix_carte_grise)
+      calculatedTotal = totalServices;
+      console.log('Split mode: pro pays services only:', calculatedTotal);
+    } else {
+      // pro_pays_all: full amount
+      calculatedTotal = prixCarteGrise + totalServices;
+      console.log('Pro pays all:', calculatedTotal);
+    }
+
     // Use calculated total (sans TVA)
     const paymentAmount = Math.round(calculatedTotal * 100);
     console.log('Payment amount (in cents):', paymentAmount, 'Calculated total (sans TVA):', calculatedTotal);
 
-    console.log('Creating Stripe payment intent...');
+    // Select Stripe account:
+    // - split mode (pro pays frais dossier only) → Stripe 1
+    // - pro_pays_all (pro pays everything) → Stripe 2
+    const useStripe2 = paymentMode !== 'split';
+    const activeStripeKey = useStripe2 && stripeKey2 ? stripeKey2 : stripeKey1;
+    console.log('Creating Stripe payment intent... (account:', useStripe2 ? 'Stripe2' : 'Stripe1', ')');
     // Create Stripe payment intent with automatic payment methods for wallet support
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${stripeKey}`,
+        'Authorization': `Bearer ${activeStripeKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
@@ -166,6 +197,7 @@ serve(async (req) => {
         'metadata[demarche_id]': demarcheId,
         'metadata[garage_id]': demarche.garage_id,
         'metadata[payment_type]': paymentType || 'full',
+        'metadata[payment_mode]': paymentMode,
       }),
     });
 
@@ -178,24 +210,7 @@ serve(async (req) => {
       throw new Error(paymentIntent.error?.message || 'Payment intent creation failed');
     }
 
-    console.log('Creating payment record in database...');
-    // Create payment record
-    const { error: paymentError } = await supabaseClient
-      .from('paiements')
-      .insert({
-        demarche_id: demarcheId,
-        garage_id: demarche.garage_id,
-        montant: demarche.montant_ttc,
-        status: 'en_attente',
-        stripe_payment_id: paymentIntent.id,
-      });
-
-    if (paymentError) {
-      console.error('Payment record error:', paymentError);
-    } else {
-      console.log('Payment record created successfully');
-    }
-
+    // Paiement record is created by the webhook on payment success (upsert by stripe_payment_id)
     console.log('Returning client secret to frontend');
     return new Response(
       JSON.stringify({ 

@@ -646,10 +646,10 @@ export default function AdminRevenus() {
         </Card>
 
         {/* Charts */}
-        <Tabs defaultValue="evolution" className="mb-8">
+        <Tabs defaultValue="demarches" className="mb-8">
           <TabsList className="mb-4">
-            <TabsTrigger value="evolution">📈 Évolution</TabsTrigger>
             <TabsTrigger value="demarches">📋 Nb démarches</TabsTrigger>
+            <TabsTrigger value="evolution">📈 Évolution</TabsTrigger>
             <TabsTrigger value="types">📊 Par type</TabsTrigger>
             <TabsTrigger value="payment">💳 Modes de paiement</TabsTrigger>
           </TabsList>

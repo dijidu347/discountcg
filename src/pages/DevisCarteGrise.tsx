@@ -35,7 +35,8 @@ export default function DevisCarteGrise() {
       if (error) throw error;
       
       if (data?.publishableKey) {
-        setStripePromise(loadStripe(data.publishableKey));
+        // Devis uses Stripe 2 (carte grise fees)
+        setStripePromise(loadStripe(data.publishableKey2 || data.publishableKey));
       }
     } catch (error) {
       console.error("Error loading Stripe:", error);

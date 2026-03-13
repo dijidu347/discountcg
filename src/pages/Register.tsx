@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 import { getSupabaseErrorMessage } from "@/lib/error-messages";
 
@@ -27,6 +29,8 @@ export default function Register() {
     ville: "",
     password: "",
     confirmPassword: "",
+    referralSource: "",
+    referralSourceOther: "",
   });
 
   useEffect(() => {
@@ -49,6 +53,10 @@ export default function Register() {
 
     setLoading(true);
 
+    const referralSource = formData.referralSource === "autre"
+      ? formData.referralSourceOther || "Autre"
+      : formData.referralSource || null;
+
     const { error } = await signUp(formData.email, formData.password, {
       raison_sociale: formData.raisonSociale,
       reseau: formData.reseau || null,
@@ -57,7 +65,8 @@ export default function Register() {
       code_postal: formData.codePostal,
       ville: formData.ville,
       email: formData.email,
-      telephone: formData.telephone
+      telephone: formData.telephone,
+      referral_source: referralSource
     });
 
     if (error) {
@@ -67,6 +76,26 @@ export default function Register() {
         variant: "destructive"
       });
     } else {
+      // Envoyer notification admin
+      try {
+        await supabase.functions.invoke("send-email", {
+          body: {
+            type: "admin_new_registration",
+            to: "contact@discountcartegrise.fr",
+            data: {
+              garage_name: formData.raisonSociale,
+              garage_email: formData.email,
+              telephone: formData.telephone,
+              siret: formData.siret,
+              ville: formData.ville,
+              referral_source: referralSource || "Non renseigné"
+            }
+          }
+        });
+      } catch (e) {
+        console.error("Failed to send admin notification:", e);
+      }
+
       toast({
         title: "Compte créé avec succès",
         description: "Redirection vers votre espace..."
@@ -112,7 +141,7 @@ export default function Register() {
               Créer un compte professionnel
             </CardTitle>
             <CardDescription className="text-center">
-              Rejoignez DiscountCG et simplifiez vos démarches
+              Rejoignez Discount Carte Grise et simplifiez vos démarches
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -256,6 +285,36 @@ export default function Register() {
                       required
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Comment nous avez-vous connu ?</h3>
+                <div className="space-y-2">
+                  <Select
+                    value={formData.referralSource}
+                    onValueChange={(value) => handleChange("referralSource", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionnez une option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="youtube">YouTube</SelectItem>
+                      <SelectItem value="google">Google</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="bouche_a_oreille">Bouche à oreille</SelectItem>
+                      <SelectItem value="autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {formData.referralSource === "autre" && (
+                    <Input
+                      placeholder="Précisez comment vous nous avez connu..."
+                      value={formData.referralSourceOther}
+                      onChange={(e) => handleChange("referralSourceOther", e.target.value)}
+                    />
+                  )}
                 </div>
               </div>
 

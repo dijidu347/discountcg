@@ -328,6 +328,15 @@ export type Database = {
           validated_at: string | null
           validated_by: string | null
           vehicule_id: string | null
+          payment_mode: string
+          client_payment_token: string | null
+          client_payment_token_expires_at: string | null
+          client_email: string | null
+          client_phone: string | null
+          client_paid: boolean
+          client_paid_at: string | null
+          client_stripe_payment_id: string | null
+          pro_payment_pending: boolean
         }
         Insert: {
           admin_viewed?: boolean | null
@@ -366,6 +375,11 @@ export type Database = {
           validated_at?: string | null
           validated_by?: string | null
           vehicule_id?: string | null
+          payment_mode?: string
+          client_email?: string | null
+          client_phone?: string | null
+          client_paid?: boolean
+          pro_payment_pending?: boolean
         }
         Update: {
           admin_viewed?: boolean | null
@@ -404,6 +418,11 @@ export type Database = {
           validated_at?: string | null
           validated_by?: string | null
           vehicule_id?: string | null
+          payment_mode?: string
+          client_email?: string | null
+          client_phone?: string | null
+          client_paid?: boolean
+          pro_payment_pending?: boolean
         }
         Relationships: [
           {

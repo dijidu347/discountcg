@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2 } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
@@ -109,6 +109,7 @@ const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onS
 const PaiementDemarche = () => {
   const { demarcheId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [demarche, setDemarche] = useState<any>(null);
   const [clientSecret, setClientSecret] = useState<string>("");
@@ -124,6 +125,12 @@ const PaiementDemarche = () => {
   // Montant calculé (sans TVA)
   const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null);
 
+  // Client payment link state
+  const [clientPaymentUrl, setClientPaymentUrl] = useState<string>("");
+  const [isSendingLink, setIsSendingLink] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
   useEffect(() => {
     loadDemarche();
   }, [demarcheId]);
@@ -138,7 +145,7 @@ const PaiementDemarche = () => {
       // Charger les détails de la démarche
       const { data: demarcheData, error: demarcheError } = await supabase
         .from("demarches")
-        .select("*")
+        .select("*, vehicules(immatriculation)")
         .eq("id", demarcheId)
         .single();
 
@@ -161,7 +168,69 @@ const PaiementDemarche = () => {
         return;
       }
 
+      // Resolve real immatriculation from linked vehicle or URL param if demarche has "TEMP"
+      if (!demarcheData.immatriculation || demarcheData.immatriculation === 'TEMP') {
+        const urlImmat = searchParams.get('immat');
+        if (demarcheData.vehicules?.immatriculation) {
+          demarcheData.immatriculation = demarcheData.vehicules.immatriculation;
+        } else if (urlImmat) {
+          demarcheData.immatriculation = urlImmat;
+        }
+      }
+
       setDemarche(demarcheData);
+
+      // Use URL params as fallback since payment_mode may not be saved to DB yet
+      const urlMode = searchParams.get('mode');
+      const paymentMode = demarcheData.payment_mode && demarcheData.payment_mode !== 'pro_pays_all'
+        ? demarcheData.payment_mode
+        : (urlMode || demarcheData.payment_mode || 'pro_pays_all');
+
+      // Also update demarche payment_mode in DB from URL params if needed
+      if (urlMode && urlMode !== 'pro_pays_all' && demarcheData.payment_mode === 'pro_pays_all') {
+        const urlEmail = searchParams.get('email') || '';
+        const urlPhone = searchParams.get('phone') || '';
+        await supabase
+          .from('demarches')
+          .update({
+            payment_mode: urlMode,
+            client_email: urlEmail || null,
+            client_phone: urlPhone || null,
+          } as any)
+          .eq('id', demarcheId);
+      }
+
+      // If client pays all, no Stripe needed for pro — show send link UI
+      if (paymentMode === 'client_pays_all') {
+        // Check if link was already sent
+        if (demarcheData.client_payment_token && demarcheData.status === 'en_attente_paiement_client') {
+          setClientPaymentUrl(`https://discountcartegrise.fr/paiement-client/${demarcheData.client_payment_token}`);
+          setLinkSent(true);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // If split and pro already paid, show send-link UI (don't load Stripe)
+      const proPaid = searchParams.get('pro_paid') === 'true';
+      if (paymentMode === 'split' && proPaid) {
+        if (demarcheData.client_payment_token) {
+          setClientPaymentUrl(`https://discountcartegrise.fr/paiement-client/${demarcheData.client_payment_token}`);
+          setLinkSent(true);
+        }
+        setIsLoading(false);
+        return;
+      }
+
+      // If split and waiting for client (pro paid previously), show waiting UI
+      if (paymentMode === 'split' && !demarcheData.client_paid && demarcheData.status === 'en_attente_paiement_client') {
+        if (demarcheData.client_payment_token) {
+          setClientPaymentUrl(`https://discountcartegrise.fr/paiement-client/${demarcheData.client_payment_token}`);
+          setLinkSent(true);
+        }
+        setIsLoading(false);
+        return;
+      }
 
       // Charger les infos du garage pour le solde
       const { data: garageData } = await supabase
@@ -195,23 +264,28 @@ const PaiementDemarche = () => {
         setActionRapide(actionData);
       }
 
-      // Récupérer la clé publique Stripe
+      // Récupérer les clés publiques Stripe
       const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
 
       if (keyError || !keyData?.publishableKey) {
         throw new Error("Impossible de charger la clé Stripe");
       }
 
-      const stripe = await loadStripe(keyData.publishableKey);
+      // Split mode (pro pays frais dossier) → Stripe 1, pro_pays_all → Stripe 2
+      const useStripe2 = paymentMode !== 'split';
+      const stripeKey = useStripe2 && keyData.publishableKey2 ? keyData.publishableKey2 : keyData.publishableKey;
+      console.log('Using Stripe account:', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)');
+      const stripe = await loadStripe(stripeKey);
       setStripePromise(stripe);
 
-      // Créer le payment intent
+      // Créer le payment intent (pass paymentMode for split override)
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         "create-payment-intent",
         {
           body: {
             demarcheId,
-            paymentType: "full",
+            paymentType: paymentMode === 'split' ? 'split_pro' : 'full',
+            paymentMode,
           },
         }
       );
@@ -233,6 +307,57 @@ const PaiementDemarche = () => {
     }
   };
 
+  // Envoyer le lien de paiement au client
+  const handleSendPaymentLink = async () => {
+    if (!demarcheId) return;
+    setIsSendingLink(true);
+
+    // Resolve paymentMode the same way as rest of the page
+    const urlMode = searchParams.get('mode');
+    const currentPaymentMode = (demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
+      ? demarche.payment_mode
+      : (urlMode || demarche?.payment_mode || 'pro_pays_all');
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-client-payment-link", {
+        body: { demarcheId, paymentMode: currentPaymentMode, clientEmail: demarche?.client_email || searchParams.get('email') || '', clientPhone: demarche?.client_phone || searchParams.get('phone') || '' },
+      });
+
+      if (error || !data?.paymentUrl) {
+        throw new Error("Impossible de créer le lien de paiement");
+      }
+
+      setClientPaymentUrl(data.paymentUrl);
+      setLinkSent(true);
+
+      // Refresh demarche
+      const { data: updated } = await supabase.from("demarches").select("*").eq("id", demarcheId).single();
+      if (updated) setDemarche(updated);
+
+      toast({
+        title: "✅ Lien envoyé !",
+        description: `Un email a été envoyé à ${demarche?.client_email}`,
+        variant: "success" as any,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer le lien",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSendingLink(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    if (!clientPaymentUrl) return;
+    await navigator.clipboard.writeText(clientPaymentUrl);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+    toast({ title: "Lien copié !", description: "Le lien a été copié dans le presse-papier" });
+  };
+
   // Callback pour récupérer le montant calculé
   const handlePaymentCalculated = useCallback((result: PaymentCalculationResult) => {
     setCalculatedTotal(result.totalTTC);
@@ -243,19 +368,25 @@ const PaiementDemarche = () => {
   // Gérer le paiement par solde
   const handleBalancePayment = async () => {
     if (!garage || !demarcheId || !demarche) return;
-    
-    // Calculer le montant à débiter directement
+
+    // Use URL-based paymentMode (same as rest of the page)
+    const urlMode = searchParams.get('mode');
+    const currentPaymentMode = (demarche.payment_mode && demarche.payment_mode !== 'pro_pays_all')
+      ? demarche.payment_mode
+      : (urlMode || demarche.payment_mode || 'pro_pays_all');
+
     const prixCG = Number(demarche.prix_carte_grise) || 0;
     const frais = Number(demarche.frais_dossier) || 0;
     const optionsSum = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
-    const amountToPay = prixCG + frais + optionsSum;
-    
+    const amountToPayRaw = currentPaymentMode === 'split' ? (frais + optionsSum) : (prixCG + frais + optionsSum);
+    const amountToPay = Math.round(amountToPayRaw * 100) / 100;
+
     if (amountToPay <= 0 || garage.token_balance < amountToPay) return;
 
     setIsProcessingBalance(true);
 
     try {
-      const newBalance = garage.token_balance - amountToPay;
+      const newBalance = Math.round((garage.token_balance - amountToPay) * 100) / 100;
 
       // Déduire du solde
       const { error: balanceError } = await supabase
@@ -265,7 +396,54 @@ const PaiementDemarche = () => {
 
       if (balanceError) throw balanceError;
 
-      // Marquer la démarche comme payée
+      if (currentPaymentMode === 'split') {
+        // Split mode: pro paid their part via balance, now send client link
+        const { error: demarcheError } = await supabase
+          .from("demarches")
+          .update({
+            paye: false,
+            paid_with_tokens: true,
+            status: 'en_attente_paiement_client',
+            is_draft: false
+          })
+          .eq("id", demarcheId);
+
+        if (demarcheError) throw demarcheError;
+
+        // Auto-create and send client payment link
+        const { data: linkData, error: linkError } = await supabase.functions.invoke("create-client-payment-link", {
+          body: {
+            demarcheId,
+            paymentMode: 'split',
+            clientEmail: demarche.client_email || searchParams.get('email') || '',
+            clientPhone: demarche.client_phone || searchParams.get('phone') || '',
+          },
+        });
+
+        if (linkError || !linkData?.paymentUrl) {
+          throw new Error("Paiement débité mais impossible d'envoyer le lien client");
+        }
+
+        setClientPaymentUrl(linkData.paymentUrl);
+        setLinkSent(true);
+
+        // Refresh demarche
+        const { data: updated } = await supabase.from("demarches").select("*, vehicules(immatriculation)").eq("id", demarcheId).single();
+        if (updated) setDemarche(updated);
+
+        toast({
+          title: "✅ Votre part a été payée !",
+          description: `Un lien de paiement a été envoyé à ${demarche.client_email || searchParams.get('email')}`,
+          variant: "success" as any,
+        });
+
+        // Don't navigate - show the link UI
+        setIsProcessingBalance(false);
+        setShowBalanceConfirm(false);
+        return;
+      }
+
+      // Pro pays all: mark as fully paid
       const { error: demarcheError } = await supabase
         .from("demarches")
         .update({
@@ -280,7 +458,6 @@ const PaiementDemarche = () => {
 
       // Envoyer les emails
       try {
-        // Email au garage
         await supabase.functions.invoke("send-email", {
           body: {
             type: "balance_payment_confirmed",
@@ -296,7 +473,6 @@ const PaiementDemarche = () => {
           },
         });
 
-        // Emails aux admins
         const adminEmails = ["contact@discountcartegrise.fr"];
         for (const adminEmail of adminEmails) {
           await new Promise(resolve => setTimeout(resolve, 600));
@@ -330,7 +506,7 @@ const PaiementDemarche = () => {
       console.error("Balance payment error:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors du paiement",
+        description: error.message || "Une erreur est survenue lors du paiement",
         variant: "destructive",
       });
     } finally {
@@ -340,11 +516,69 @@ const PaiementDemarche = () => {
   };
 
   const handlePaymentSuccess = async () => {
+    const urlMode = searchParams.get('mode');
+    const currentPaymentMode = (demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
+      ? demarche.payment_mode
+      : (urlMode || demarche?.payment_mode || 'pro_pays_all');
+
     try {
-      // Mettre à jour le statut de la démarche
+      if (currentPaymentMode === 'split') {
+        // Split mode: pro just paid their part. Mark pro as paid, but demarche not fully paid yet.
+        const { error } = await supabase
+          .from("demarches")
+          .update({
+            paye: false,
+            status: 'en_attente_paiement_client',
+            is_draft: false
+          })
+          .eq("id", demarcheId);
+
+        if (error) {
+          console.error("Error updating demarche:", error);
+        }
+
+        // Auto-create and send client payment link
+        try {
+          const { data, error: linkError } = await supabase.functions.invoke("create-client-payment-link", {
+            body: {
+              demarcheId,
+              paymentMode: 'split',
+              clientEmail: demarche?.client_email || searchParams.get('email') || '',
+              clientPhone: demarche?.client_phone || searchParams.get('phone') || '',
+            },
+          });
+
+          if (linkError || !data?.paymentUrl) {
+            throw new Error("Impossible de créer le lien de paiement");
+          }
+
+          setClientPaymentUrl(data.paymentUrl);
+          setLinkSent(true);
+
+          // Refresh demarche
+          const { data: updated } = await supabase.from("demarches").select("*").eq("id", demarcheId).single();
+          if (updated) setDemarche(updated);
+
+          toast({
+            title: "Paiement validé !",
+            description: `Votre part a été payée. Un lien a été envoyé à ${demarche?.client_email}`,
+            variant: "success" as any,
+          });
+        } catch (linkError: any) {
+          console.error("Error creating client link:", linkError);
+          toast({
+            title: "Paiement validé",
+            description: "Votre part a été payée mais le lien client n'a pas pu être envoyé. Veuillez réessayer.",
+            variant: "destructive",
+          });
+        }
+        return; // Don't navigate away - show the link UI
+      }
+
+      // Normal mode: mark as fully paid
       const { error } = await supabase
         .from("demarches")
-        .update({ 
+        .update({
           paye: true,
           status: 'en_attente',
           is_draft: false
@@ -362,8 +596,10 @@ const PaiementDemarche = () => {
     } catch (error) {
       console.error("Error in handlePaymentSuccess:", error);
     } finally {
-      // Rediriger vers la page de succès
-      navigate(`/paiement-succes/${demarcheId}`);
+      if (currentPaymentMode !== 'split') {
+        // Rediriger vers la page de succès
+        navigate(`/paiement-succes/${demarcheId}`);
+      }
     }
   };
 
@@ -375,6 +611,108 @@ const PaiementDemarche = () => {
     );
   }
 
+  const urlMode = searchParams.get('mode');
+  const paymentMode = (demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
+    ? demarche.payment_mode
+    : (urlMode || demarche?.payment_mode || 'pro_pays_all');
+
+  // Client payment link UI (client_pays_all, or split after pro has paid)
+  const proPaidParam = searchParams.get('pro_paid') === 'true';
+  if (demarche && (paymentMode === 'client_pays_all' || (paymentMode === 'split' && (linkSent || proPaidParam)))) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 md:py-12 max-w-2xl">
+          <Button variant="ghost" onClick={() => navigate("/mes-demarches")} className="mb-6">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Retour
+          </Button>
+
+          <Card className="border-2 border-blue-200">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Send className="w-5 h-5 text-blue-600" />
+                {linkSent ? "Lien de paiement envoyé" : "Envoyer le lien de paiement"}
+              </CardTitle>
+              <CardDescription>
+                {paymentMode === 'client_pays_all'
+                  ? "Votre client recevra un lien pour payer la carte grise et les frais de dossier"
+                  : "Votre client recevra un lien pour payer la carte grise. Vos frais de dossier ont déjà été réglés."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Recap */}
+              <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Démarche</span>
+                  <span className="font-medium">{demarche.numero_demarche}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Immatriculation</span>
+                  <span className="font-medium">{demarche.immatriculation}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Email client</span>
+                  <span className="font-medium">{demarche.client_email}</span>
+                </div>
+                <div className="flex justify-between text-sm font-semibold border-t pt-2 mt-2">
+                  <span>Montant client</span>
+                  <span className="text-primary">
+                    {formatPrice(
+                      paymentMode === 'client_pays_all'
+                        ? (Number(demarche.prix_carte_grise) || 0) + (Number(demarche.frais_dossier) || 0) + trackingServices.reduce((sum: number, s: any) => sum + Number(s.price || 0), 0)
+                        : (Number(demarche.prix_carte_grise) || 0)
+                    )}€
+                  </span>
+                </div>
+              </div>
+
+              {!linkSent ? (
+                <Button
+                  onClick={handleSendPaymentLink}
+                  disabled={isSendingLink}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  size="lg"
+                >
+                  {isSendingLink ? (
+                    <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Envoi en cours...</>
+                  ) : (
+                    <><Send className="w-5 h-5 mr-2" /> Envoyer le lien au client</>
+                  )}
+                </Button>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="text-sm font-medium">Email envoyé à {demarche.client_email}</span>
+                  </div>
+
+                  {/* Copyable link */}
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Ou partagez ce lien directement :</p>
+                    <div className="flex gap-2">
+                      <div className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm font-mono truncate">
+                        {clientPaymentUrl}
+                      </div>
+                      <Button variant="outline" size="sm" onClick={handleCopyLink}>
+                        {linkCopied ? <CheckCircle className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
+                    <Clock className="w-5 h-5" />
+                    <span className="text-sm">Ce lien est valable 30 jours. Des relances seront envoyées automatiquement.</span>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!demarche || !clientSecret || !stripePromise) return null;
 
   // Calculer le montant correct sans TVA directement
@@ -382,9 +720,11 @@ const PaiementDemarche = () => {
   const fraisDossier = Number(demarche.frais_dossier) || 0;
   const optionsTotal = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
   const totalServices = fraisDossier + optionsTotal;
-  
-  // Utiliser le montant calculé correctement (sans TVA)
-  const finalAmount = calculatedTotal !== null ? calculatedTotal : (prixCarteGrise + totalServices);
+
+  // For split mode, pro only pays services (frais + options), not carte grise
+  const isSplitMode = paymentMode === 'split';
+  const fullAmount = calculatedTotal !== null ? calculatedTotal : (prixCarteGrise + totalServices);
+  const finalAmount = isSplitMode ? totalServices : fullAmount;
   
   // Vérifier si le paiement par solde est possible (utiliser finalAmount au lieu de calculatedTotal)
   const canPayWithBalance = garage && finalAmount > 0 && garage.token_balance >= finalAmount;
@@ -622,6 +962,11 @@ const PaiementDemarche = () => {
               <CardHeader className="pb-4">
                 <CardTitle className="text-xl">Récapitulatif</CardTitle>
                 <CardDescription>Démarche {demarche.numero_demarche}</CardDescription>
+                {isSplitMode && (
+                  <div className="text-xs text-blue-600 bg-blue-50 dark:bg-blue-950/30 rounded-md px-3 py-1.5 mt-2">
+                    Paiement partagé — vous payez uniquement les frais de dossier. La carte grise sera payée par votre client.
+                  </div>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">

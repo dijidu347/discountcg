@@ -55,12 +55,18 @@ interface Facture {
   garage_id?: string;
 }
 
-// Stripe client - Production
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+// Stripe clients - Production
+// Stripe 1: frais de dossier (pro split, tokens, resubmissions)
+const stripe1 = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
   apiVersion: "2023-10-16",
 });
+const webhookSecret1 = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
 
-const webhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET") || "";
+// Stripe 2: carte grise fees (pro_pays_all, client payments, guest orders)
+const stripe2 = new Stripe(Deno.env.get("STRIPE_SECRET_KEY_2") || "", {
+  apiVersion: "2023-10-16",
+});
+const webhookSecret2 = Deno.env.get("STRIPE_WEBHOOK_SECRET_2") || "";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -267,10 +273,10 @@ async function handleDemarchePayment(
 
   console.log(`📋 Processing demarche payment: ${demarcheId}`);
 
-  // Fetch demarche with garage
+  // Fetch demarche with garage and vehicle
   const { data: demarche, error: demarcheError } = await supabase
     .from("demarches")
-    .select("*, garages(*)")
+    .select("*, garages(*), vehicules(immatriculation)")
     .eq("id", demarcheId)
     .single();
 
@@ -280,15 +286,38 @@ async function handleDemarchePayment(
   }
 
   const garage = demarche.garages as Garage;
+  // Resolve TEMP immatriculation
+  const realImmat = (demarche.immatriculation === 'TEMP' && (demarche as any).vehicules?.immatriculation)
+    ? (demarche as any).vehicules.immatriculation
+    : demarche.immatriculation;
 
-  // Update demarche as paid
+  const paymentMode = paymentIntent.metadata?.payment_mode || 'pro_pays_all';
+  const actualAmount = paymentIntent.amount / 100;
+
+  // Update demarche based on payment mode
+  let updateFields: Record<string, unknown>;
+  if (paymentMode === 'split') {
+    // Split mode: pro only paid frais dossier — NOT fully paid yet
+    updateFields = {
+      paye: false,
+      status: "en_attente_paiement_client",
+      is_draft: false,
+      updated_at: new Date().toISOString(),
+    };
+    console.log("📋 Split mode: pro paid their part, waiting for client");
+  } else {
+    // pro_pays_all: fully paid
+    updateFields = {
+      paye: true,
+      status: "paye",
+      is_draft: false,
+      updated_at: new Date().toISOString(),
+    };
+  }
+
   const { error: updateError } = await supabase
     .from("demarches")
-    .update({ 
-      paye: true, 
-      status: "paye",
-      updated_at: new Date().toISOString()
-    })
+    .update(updateFields)
     .eq("id", demarcheId);
 
   if (updateError) {
@@ -296,36 +325,44 @@ async function handleDemarchePayment(
     return;
   }
 
-  console.log("✅ Demarche marked as paid");
+  console.log("✅ Demarche updated (mode:", paymentMode, ")");
 
-  // Create paiement record
+  // Create paiement record (create-payment-intent no longer inserts one)
   const { error: paiementError } = await supabase
     .from("paiements")
     .insert({
       demarche_id: demarcheId,
       garage_id: demarche.garage_id,
-      montant: demarche.montant_ttc,
+      montant: actualAmount,
       status: "valide",
       stripe_payment_id: paymentIntent.id,
       validated_at: new Date().toISOString(),
+      payer_type: "pro",
     });
 
   if (paiementError) {
     console.error("❌ Failed to create paiement:", paiementError);
   }
 
+  // For split mode (pro pays frais dossier only), don't generate facture or send emails yet
+  // The full facture will be generated when the client pays their part (handleClientPayment)
+  if (paymentMode === 'split') {
+    console.log("📋 Split mode: skipping facture & emails — waiting for client payment");
+    return;
+  }
+
   // Generate facture number
   const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
 
-  // Create facture (sans TVA)
+  // Create facture using actual payment amount (not stale demarche.montant_ttc)
   const { data: facture, error: factureError } = await supabase
     .from("factures")
     .insert({
       numero: factureNumero,
       demarche_id: demarcheId,
       garage_id: demarche.garage_id,
-      montant_ht: demarche.montant_ht || 0,
-      montant_ttc: demarche.montant_ttc || 0,
+      montant_ht: actualAmount,
+      montant_ttc: actualAmount,
       tva: 0,
     })
     .select()
@@ -381,9 +418,9 @@ async function handleDemarchePayment(
     await sendEmail("garage_demarche_confirmation", garage.email, {
       type: demarche.type,
       reference: demarche.numero_demarche,
-      immatriculation: demarche.immatriculation,
+      immatriculation: realImmat,
       garage_name: garage.raison_sociale,
-      montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+      montant_ttc: actualAmount.toFixed(2),
       is_free_token: demarche.is_free_token || false,
     });
     console.log("✅ Client confirmation email sent");
@@ -393,13 +430,13 @@ async function handleDemarchePayment(
   for (let i = 0; i < ADMIN_EMAILS.length; i++) {
     // Wait 600ms between each email to stay under 2 req/sec limit
     await delay(600);
-    
+
     await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
       type: demarche.type,
       reference: demarche.numero_demarche,
-      immatriculation: demarche.immatriculation,
+      immatriculation: realImmat,
       client_name: garage?.raison_sociale || "N/A",
-      montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
+      montant_ttc: actualAmount.toFixed(2),
       is_free_token: demarche.is_free_token || false,
     });
   }
@@ -598,6 +635,186 @@ async function handleTokenPurchase(
 }
 
 // -----------------------------
+// CLIENT PAYMENT HANDLER
+// -----------------------------
+
+async function handleClientPayment(
+  supabase: SupabaseClient,
+  paymentIntent: Stripe.PaymentIntent
+): Promise<void> {
+  const demarcheId = paymentIntent.metadata?.demarche_id;
+  const paymentMode = paymentIntent.metadata?.payment_mode;
+
+  if (!demarcheId) {
+    console.log("⚠️ No demarche_id in client payment metadata");
+    return;
+  }
+
+  console.log(`📋 Processing client payment for demarche: ${demarcheId}, mode: ${paymentMode}`);
+
+  // Fetch demarche with garage and vehicle
+  const { data: demarche, error: demarcheError } = await supabase
+    .from("demarches")
+    .select("*, garages(*), vehicules(immatriculation)")
+    .eq("id", demarcheId)
+    .single();
+
+  if (demarcheError || !demarche) {
+    console.error("❌ Demarche not found:", demarcheError);
+    return;
+  }
+
+  const garage = demarche.garages as Garage;
+  // Resolve TEMP immatriculation from vehicle
+  const realImmat = (demarche.immatriculation === 'TEMP' && (demarche as any).vehicules?.immatriculation)
+    ? (demarche as any).vehicules.immatriculation
+    : demarche.immatriculation;
+
+  // Update demarche: mark client as paid
+  const updateFields: Record<string, unknown> = {
+    client_paid: true,
+    client_paid_at: new Date().toISOString(),
+    client_stripe_payment_id: paymentIntent.id,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (paymentMode === "split") {
+    // Split mode: pro already paid, client just paid their part — fully paid now
+    updateFields.status = "en_attente";
+    updateFields.paye = true;
+    updateFields.is_draft = false;
+  } else if (paymentMode === "client_pays_all") {
+    // Client pays all: fully paid
+    updateFields.status = "en_attente";
+    updateFields.paye = true;
+    updateFields.is_draft = false;
+  }
+
+  const { error: updateError } = await supabase
+    .from("demarches")
+    .update(updateFields)
+    .eq("id", demarcheId);
+
+  if (updateError) {
+    console.error("❌ Failed to update demarche:", updateError);
+    return;
+  }
+
+  console.log("✅ Demarche updated with client payment");
+
+  const clientActualAmount = paymentIntent.amount / 100;
+
+  // Create paiement record
+  const { error: paiementError } = await supabase
+    .from("paiements")
+    .insert({
+      demarche_id: demarcheId,
+      garage_id: demarche.garage_id,
+      montant: clientActualAmount,
+      status: "valide",
+      stripe_payment_id: paymentIntent.id,
+      validated_at: new Date().toISOString(),
+      payer_type: "client",
+    });
+
+  if (paiementError) {
+    console.error("❌ Failed to create paiement:", paiementError);
+  }
+
+  if (paymentMode === "split" || paymentMode === "client_pays_all") {
+    // Full payment by client - create facture and send confirmations
+
+    // Generate facture number
+    const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+
+    // Create facture using actual payment amount
+    const { data: facture, error: factureError } = await supabase
+      .from("factures")
+      .insert({
+        numero: factureNumero,
+        demarche_id: demarcheId,
+        garage_id: demarche.garage_id,
+        montant_ht: clientActualAmount,
+        montant_ttc: clientActualAmount,
+        tva: 0,
+      })
+      .select()
+      .single();
+
+    if (factureError) {
+      console.error("❌ Failed to create facture:", factureError);
+    } else {
+      console.log("✅ Facture created:", facture?.numero);
+
+      // Generate and upload PDF
+      try {
+        const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage);
+        const pdfFileName = `facture_${facture.numero}.pdf`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("factures")
+          .upload(pdfFileName, pdfBytes, {
+            contentType: "application/pdf",
+            upsert: true,
+          });
+
+        if (uploadError) {
+          console.error("❌ PDF upload failed:", uploadError);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from("factures")
+            .getPublicUrl(pdfFileName);
+
+          await supabase
+            .from("factures")
+            .update({ pdf_url: publicUrl })
+            .eq("id", facture.id);
+
+          console.log("✅ PDF uploaded:", pdfFileName);
+        }
+      } catch (pdfError) {
+        console.error("❌ PDF generation failed:", pdfError);
+      }
+    }
+
+    // Update demarche with facture_id
+    if (facture) {
+      await supabase
+        .from("demarches")
+        .update({ facture_id: facture.id })
+        .eq("id", demarcheId);
+    }
+
+    // Send confirmation email to garage
+    if (garage?.email) {
+      await sendEmail("garage_demarche_confirmation", garage.email, {
+        type: demarche.type,
+        reference: demarche.numero_demarche,
+        immatriculation: realImmat,
+        garage_name: garage.raison_sociale,
+        montant_ttc: clientActualAmount.toFixed(2),
+        is_free_token: demarche.is_free_token || false,
+      });
+      console.log("✅ Client confirmation email sent");
+    }
+
+    // Send admin notification emails
+    for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+      await delay(600);
+      await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
+        type: demarche.type,
+        reference: demarche.numero_demarche,
+        immatriculation: realImmat,
+        client_name: garage?.raison_sociale || "N/A",
+        montant_ttc: clientActualAmount.toFixed(2),
+        is_free_token: demarche.is_free_token || false,
+      });
+    }
+    console.log("✅ Admin notification emails sent");
+  }
+}
+
+// -----------------------------
 // RESUBMISSION PAYMENT HANDLER
 // -----------------------------
 
@@ -662,18 +879,35 @@ serve(async (req: Request): Promise<Response> => {
 
   let event: Stripe.Event;
 
+  // Try verifying with Stripe 1 webhook secret first, then Stripe 2
+  let verifiedWith = "stripe1";
   try {
-    event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-  } catch (err) {
-    const errorMessage = err instanceof Error ? err.message : "Unknown error";
-    console.error("❌ Invalid Stripe Signature:", errorMessage);
-    return new Response(`Webhook error: ${errorMessage}`, {
-      status: 400,
-      headers: corsHeaders,
-    });
+    event = await stripe1.webhooks.constructEventAsync(body, signature, webhookSecret1);
+  } catch (err1) {
+    // Try Stripe 2 webhook secret
+    if (webhookSecret2) {
+      try {
+        event = await stripe2.webhooks.constructEventAsync(body, signature, webhookSecret2);
+        verifiedWith = "stripe2";
+      } catch (err2) {
+        const errorMessage = err2 instanceof Error ? err2.message : "Unknown error";
+        console.error("❌ Invalid Stripe Signature (tried both accounts):", errorMessage);
+        return new Response(`Webhook error: ${errorMessage}`, {
+          status: 400,
+          headers: corsHeaders,
+        });
+      }
+    } else {
+      const errorMessage = err1 instanceof Error ? err1.message : "Unknown error";
+      console.error("❌ Invalid Stripe Signature:", errorMessage);
+      return new Response(`Webhook error: ${errorMessage}`, {
+        status: 400,
+        headers: corsHeaders,
+      });
+    }
   }
 
-  console.log("✔️ Stripe event received:", event.type);
+  console.log("✔️ Stripe event received:", event.type, "(verified with:", verifiedWith, ")");
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL") ?? "",
@@ -689,6 +923,10 @@ serve(async (req: Request): Promise<Response> => {
         // Check if it's a resubmission payment
         if (paymentIntent.metadata?.is_resubmission === "true") {
           await handleResubmissionPayment(supabase, paymentIntent);
+        }
+        // Check if it's a client payment
+        else if (paymentIntent.metadata?.type === "client_payment") {
+          await handleClientPayment(supabase, paymentIntent);
         }
         // Check if it's a token purchase
         else if (paymentIntent.metadata?.type === "token_purchase") {

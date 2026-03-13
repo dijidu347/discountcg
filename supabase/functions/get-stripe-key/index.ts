@@ -11,15 +11,17 @@ serve(async (req) => {
   }
 
   try {
-    // Use production Stripe publishable key
+    // Stripe 1: frais de dossier (pro split payments, token purchases, resubmissions)
     const publishableKey = Deno.env.get('VITE_STRIPE_PUBLISHABLE_KEY');
-    
+    // Stripe 2: carte grise fees (pro_pays_all, client_pays_all, split client part)
+    const publishableKey2 = Deno.env.get('STRIPE_PUBLISHABLE_KEY_2');
+
     if (!publishableKey) {
       throw new Error('VITE_STRIPE_PUBLISHABLE_KEY not configured');
     }
 
     return new Response(
-      JSON.stringify({ publishableKey }),
+      JSON.stringify({ publishableKey, publishableKey2: publishableKey2 || null }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }

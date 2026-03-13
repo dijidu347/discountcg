@@ -8,16 +8,27 @@ interface StripePaymentProps {
   amount: number;
   onSuccess: () => void;
   onCancel: () => void;
+  immatriculation?: string;
+  paymentMode?: string;
+  clientEmail?: string;
+  clientPhone?: string;
 }
 
 // Composant principal - Redirige vers la page de paiement
-export function StripePayment({ demarcheId, amount, onSuccess, onCancel }: StripePaymentProps) {
+export function StripePayment({ demarcheId, amount, onSuccess, onCancel, immatriculation, paymentMode, clientEmail, clientPhone }: StripePaymentProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
     // Redirection automatique vers la page de paiement
-    navigate(`/paiement-demarche/${demarcheId}`);
-  }, [demarcheId, navigate]);
+    const searchParams = new URLSearchParams();
+    if (immatriculation) searchParams.set('immat', immatriculation);
+    if (paymentMode) searchParams.set('mode', paymentMode);
+    if (clientEmail) searchParams.set('email', clientEmail);
+    if (clientPhone) searchParams.set('phone', clientPhone);
+    if (paymentMode === 'split') searchParams.set('pro_amount', amount.toString());
+    const qs = searchParams.toString();
+    navigate(`/paiement-demarche/${demarcheId}${qs ? '?' + qs : ''}`);
+  }, [demarcheId, navigate, immatriculation, paymentMode, amount]);
 
   return (
     <Card>

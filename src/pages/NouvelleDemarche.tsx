@@ -19,6 +19,7 @@ import { VehicleForm } from "@/components/VehicleForm";
 import { VehicleFormCG } from "@/components/VehicleFormCG";
 import { VehicleFormSimple } from "@/components/VehicleFormSimple";
 import { VehicleInfoFormPro, VehicleInfoPro } from "@/components/VehicleInfoFormPro";
+import { PaymentModeSelector, PaymentMode } from "@/components/demarche/PaymentModeSelector";
 import { DocumentsNecessaires, getDocumentsConfig } from "@/components/DocumentsNecessaires";
 // TrackingServiceOption supprimé - options SMS retirées
 import { StripePayment } from "@/components/StripePayment";
@@ -99,6 +100,11 @@ export default function NouvelleDemarche() {
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(true);
   // Textes des réponses au questionnaire (pour DocumentsNecessaires)
   const [questionnaireAnswerTexts, setQuestionnaireAnswerTexts] = useState<Record<string, string>>({});
+  // Payment mode state
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>("pro_pays_all");
+  const [clientEmail, setClientEmail] = useState<string | undefined>();
+  const [clientPhone, setClientPhone] = useState<string | undefined>();
+  const [paymentModeConfirmed, setPaymentModeConfirmed] = useState(false);
 
   // Keep refs in sync with state for cleanup
   useEffect(() => {
@@ -333,9 +339,7 @@ export default function NouvelleDemarche() {
     // Total TTC = carte grise + services (pas de TVA)
     const totalTTC = prixCarteGrise + totalServicesHT;
 
-    const { data, error } = await supabase
-      .from('demarches')
-      .insert({
+    const insertData: any = {
         garage_id: garage.id,
         type: formData.type,
         immatriculation: selectedImmatriculation || 'TEMP',
@@ -349,19 +353,68 @@ export default function NouvelleDemarche() {
         paye: false,
         vehicule_id: selectedVehicleId,
         // Le jeton gratuit ne s'applique qu'aux DA/DC
-        is_free_token: isFreeTokenApplicable
-      } as any)
+        is_free_token: isFreeTokenApplicable,
+    };
+
+    // Ajouter les champs split payment seulement si le mode n'est pas le défaut
+    // (ces colonnes peuvent ne pas encore exister en base)
+    if (paymentMode && paymentMode !== 'pro_pays_all') {
+      insertData.payment_mode = paymentMode;
+      if (clientEmail) insertData.client_email = clientEmail;
+      if (clientPhone) insertData.client_phone = clientPhone;
+    }
+
+    const { data, error } = await supabase
+      .from('demarches')
+      .insert(insertData)
       .select()
       .single();
 
-    if (!error && data) {
+    if (error) {
+      console.error("Error creating draft demarche:", error);
+      // Retry without split payment columns if they don't exist yet
+      if (error.message?.includes('payment_mode') || error.message?.includes('client_email') || error.message?.includes('client_phone') || error.code === '42703') {
+        const { data: retryData, error: retryError } = await supabase
+          .from('demarches')
+          .insert({
+            garage_id: garage.id,
+            type: formData.type,
+            immatriculation: selectedImmatriculation || 'TEMP',
+            commentaire: formData.commentaire,
+            prix_carte_grise: prixCarteGrise,
+            frais_dossier: fraisDossierHT,
+            montant_ht: totalServicesHT,
+            montant_ttc: totalTTC,
+            status: 'en_saisie',
+            is_draft: true,
+            paye: false,
+            vehicule_id: selectedVehicleId,
+            is_free_token: isFreeTokenApplicable,
+          } as any)
+          .select()
+          .single();
+        if (!retryError && retryData) {
+          setDemarcheId(retryData.id);
+        } else {
+          console.error("Retry also failed:", retryError);
+        }
+      }
+    } else if (data) {
       setDemarcheId(data.id);
     }
   };
 
-  const handleVehicleSelect = (vehicleId: string, immatriculation: string, vehicleData?: any) => {
+  const handleVehicleSelect = async (vehicleId: string, immatriculation: string, vehicleData?: any) => {
     setSelectedVehicleId(vehicleId);
     setSelectedImmatriculation(immatriculation);
+
+    // Update the draft demarche immatriculation in DB if it exists
+    if (demarcheId && immatriculation) {
+      await supabase
+        .from('demarches')
+        .update({ immatriculation, vehicule_id: vehicleId })
+        .eq('id', demarcheId);
+    }
   };
 
   const handlePriceCalculated = (price: number) => {
@@ -384,6 +437,16 @@ export default function NouvelleDemarche() {
     // Pour DA, DC et démarches PRO, pas de prix carte grise
     const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC' || PRO_DEMARCHE_TYPES.includes(formData.type)) ? 0 : carteGrisePrice;
     return basePrice + vehiclePrice;
+  };
+
+  // En mode split: le pro paie uniquement les frais de dossier (+ options tracking)
+  // Le client paie la carte grise (taxe régionale)
+  const getProPrice = () => {
+    return getFraisDossier();
+  };
+
+  const getClientPrice = () => {
+    return (formData.type === 'DA' || formData.type === 'DC' || PRO_DEMARCHE_TYPES.includes(formData.type)) ? 0 : carteGrisePrice;
   };
 
   // Calcul du coût en jetons (1 jeton = 5€, arrondi au supérieur)
@@ -576,19 +639,35 @@ export default function NouvelleDemarche() {
         }
       }
       
-      await supabase
-        .from('demarches')
-        .update({
+      const updateData: any = {
           immatriculation: selectedImmatriculation,
           commentaire: formData.commentaire,
-          vehicule_id: vehicleIdToUse
-        })
+          vehicule_id: vehicleIdToUse,
+          payment_mode: paymentMode || 'pro_pays_all',
+          client_email: clientEmail || null,
+          client_phone: clientPhone || null,
+      };
+      console.log("=== UPDATE DEMARCHE ===", { demarcheId, paymentMode, clientEmail, updateData });
+      const { error: updateError } = await supabase
+        .from('demarches')
+        .update(updateData)
         .eq('id', demarcheId);
+      if (updateError) {
+        console.error("UPDATE FAILED:", updateError);
+      } else {
+        console.log("UPDATE SUCCESS");
+      }
     }
 
     // Si le montant total est 0, valider directement sans paiement
     if (getTotalPrice() === 0) {
       await handlePaymentSuccess();
+      return;
+    }
+
+    // Si le client paie tout, rediriger vers la page d'envoi de lien
+    if (paymentMode === 'client_pays_all') {
+      navigate(`/paiement-demarche/${demarcheId}?mode=${paymentMode}&email=${encodeURIComponent(clientEmail || '')}&phone=${encodeURIComponent(clientPhone || '')}&immat=${encodeURIComponent(selectedImmatriculation || '')}`);
       return;
     }
 
@@ -725,6 +804,12 @@ export default function NouvelleDemarche() {
       description: "Votre démarche a été soumise avec succès"
     });
 
+    // Si split, rediriger vers la page d'envoi du lien client
+    if (paymentMode === 'split') {
+      navigate(`/paiement-demarche/${demarcheId}?mode=split&email=${encodeURIComponent(clientEmail || '')}&phone=${encodeURIComponent(clientPhone || '')}&pro_paid=true`);
+      return;
+    }
+
     navigate("/mes-demarches");
   };
 
@@ -765,6 +850,24 @@ export default function NouvelleDemarche() {
         </Button>
 
         <Card className="max-w-4xl mx-auto">
+          {/* Étape 1 : Choix du mode de paiement (plein écran, rien d'autre) */}
+          {actionDetails && !paymentModeConfirmed && (
+            <CardContent className="py-8">
+              <PaymentModeSelector
+                onSelect={(mode, email, phone) => {
+                  setPaymentMode(mode);
+                  setClientEmail(email);
+                  setClientPhone(phone);
+                }}
+                onConfirm={() => setPaymentModeConfirmed(true)}
+                confirmed={false}
+              />
+            </CardContent>
+          )}
+
+          {/* Étape 2+ : Formulaire complet (affiché seulement après confirmation du mode) */}
+          {paymentModeConfirmed && (
+          <>
           <CardHeader>
             <CardTitle className="text-2xl">Nouvelle démarche</CardTitle>
             <CardDescription>
@@ -791,6 +894,20 @@ export default function NouvelleDemarche() {
               </Alert>
             )}
             <form onSubmit={handleSubmitPayment} className="space-y-6">
+              {/* Résumé du mode de paiement choisi */}
+              <PaymentModeSelector
+                onSelect={(mode, email, phone) => {
+                  setPaymentMode(mode);
+                  setClientEmail(email);
+                  setClientPhone(phone);
+                }}
+                onConfirm={() => setPaymentModeConfirmed(false)}
+                confirmed={true}
+                initialMode={paymentMode}
+                initialClientEmail={clientEmail}
+                initialClientPhone={clientPhone}
+              />
+
               {/* Affichage du type de démarche sélectionné */}
               {actionDetails && (
                 <div className="p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
@@ -1174,7 +1291,11 @@ export default function NouvelleDemarche() {
                 }
                 className={`w-full ${isFreeTokenEligible ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
               >
-                {isQuestionnaireBlocked ? 'Démarche impossible' : (isFreeTokenEligible && getTotalPrice() === 0 ? 'Valider gratuitement' : `Payer ${formatPrice(getTotalPrice())}€`)}
+                {isQuestionnaireBlocked ? 'Démarche impossible'
+                  : isFreeTokenEligible && getTotalPrice() === 0 ? 'Valider gratuitement'
+                  : paymentMode === 'client_pays_all' ? 'Envoyer le lien de paiement au client'
+                  : paymentMode === 'split' ? `Payer ma part (${formatPrice(getProPrice())}€) & envoyer le lien au client`
+                  : `Payer ${formatPrice(getTotalPrice())}€`}
               </Button>
             </form>
 
@@ -1193,9 +1314,14 @@ export default function NouvelleDemarche() {
                       Frais de dossier : {isFreeTokenEligible ? (
                         <><span className="line-through text-muted-foreground">{formatPrice(getOriginalFraisDossier())}€</span> <span className="text-green-600 font-bold">0€ (offert)</span></>
                       ) : `${formatPrice(getFraisDossier())}€`}
-                      {(formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice > 0 && ` + Prix carte grise : ${formatPrice(carteGrisePrice)}€`}
+                      {paymentMode !== 'split' && (formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice > 0 && ` + Prix carte grise : ${formatPrice(carteGrisePrice)}€`}
                       <br />
-                      Montant total : {formatPrice(getTotalPrice())}€
+                      {paymentMode === 'split' ? (
+                        <>Votre part (frais de dossier) : {formatPrice(getProPrice())}€
+                        <br />Part client (taxe régionale) : {formatPrice(getClientPrice())}€ — un lien lui sera envoyé</>
+                      ) : (
+                        <>Montant total : {formatPrice(getTotalPrice())}€</>
+                      )}
                     </DialogDescription>
                   </DialogHeader>
                   <div className="py-4 space-y-6">
@@ -1244,9 +1370,13 @@ export default function NouvelleDemarche() {
                         )}
                         <StripePayment
                           demarcheId={demarcheId}
-                          amount={getTotalPrice()}
+                          amount={paymentMode === 'split' ? getProPrice() : getTotalPrice()}
                           onSuccess={handlePaymentSuccess}
                           onCancel={handlePaymentCancel}
+                          immatriculation={selectedImmatriculation}
+                          paymentMode={paymentMode}
+                          clientEmail={clientEmail}
+                          clientPhone={clientPhone}
                         />
                       </div>
                     )}
@@ -1254,6 +1384,8 @@ export default function NouvelleDemarche() {
                 </DialogContent>
               </Dialog>
           </CardContent>
+          </>
+          )}
         </Card>
       </div>
     </div>

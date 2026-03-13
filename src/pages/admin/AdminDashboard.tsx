@@ -22,7 +22,9 @@ export default function AdminDashboard() {
     demarchesATraiter: 0,
     demarchesNonVues: 0,
     totalPaiements: 0,
-    garagesAVerifier: 0
+    garagesAVerifier: 0,
+    demarchesToday: 0,
+    demarchesTodayTokens: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -61,9 +63,25 @@ export default function AdminDashboard() {
       .from('garages')
       .select('id, verification_requested_at, is_verified, verification_admin_viewed');
 
+    // Count total demarches (no 1000 row limit)
+    const { count: totalDemarchesCount } = await supabase
+      .from('demarches')
+      .select('*', { count: 'exact', head: true });
+
     const { data: demarches } = await supabase
       .from('demarches')
-      .select('status, montant_ttc, is_draft, paye, is_free_token, admin_viewed');
+      .select('status, montant_ttc, is_draft, paye, is_free_token, admin_viewed, paid_with_tokens, created_at');
+
+    // Démarches payées aujourd'hui (paiement Stripe/carte + jetons)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todayISO = today.toISOString();
+    const demarchesTodayPaid = demarches?.filter(d =>
+      d.created_at >= todayISO && d.paye === true && !d.is_free_token
+    ) || [];
+    const demarchesTodayTokens = demarches?.filter(d =>
+      d.created_at >= todayISO && (d.paid_with_tokens === true || d.is_free_token === true)
+    ) || [];
 
     // Fetch paiements with demarche info to calculate real revenue
     const { data: paiementsWithDemarches } = await supabase
@@ -117,11 +135,13 @@ export default function AdminDashboard() {
 
     setStats({
       totalGarages: garages?.length || 0,
-      totalDemarches: demarches?.length || 0,
+      totalDemarches: totalDemarchesCount || demarches?.length || 0,
       demarchesATraiter: demarchesATraiter.length,
       demarchesNonVues: demarchesNonVues.length,
       totalPaiements: paiementsTotal + creditsTotal,
-      garagesAVerifier: garagesAVerifier.length
+      garagesAVerifier: garagesAVerifier.length,
+      demarchesToday: demarchesTodayPaid.length,
+      demarchesTodayTokens: demarchesTodayTokens.length
     });
 
     setLoading(false);
@@ -296,7 +316,15 @@ export default function AdminDashboard() {
             <CardContent>
               <CardTitle className="text-3xl">{stats.totalDemarches}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Toutes démarches
+                {stats.demarchesToday + stats.demarchesTodayTokens > 0 ? (
+                  <>
+                    {stats.demarchesToday + stats.demarchesTodayTokens} aujourd'hui
+                    {stats.demarchesToday > 0 && <span> ({stats.demarchesToday} payée{stats.demarchesToday > 1 ? 's' : ''})</span>}
+                    {stats.demarchesTodayTokens > 0 && <span> ({stats.demarchesTodayTokens} jeton{stats.demarchesTodayTokens > 1 ? 's' : ''})</span>}
+                  </>
+                ) : (
+                  "0 démarche aujourd'hui"
+                )}
               </p>
             </CardContent>
           </Card>

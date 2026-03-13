@@ -49,6 +49,7 @@ import AcheterJetons from "./pages/AcheterJetons";
 import PaiementRecharge from "./pages/PaiementRecharge";
 import PaiementRechargeSucces from "./pages/PaiementRechargeSucces";
 import PaiementSoldeSucces from "./pages/PaiementSoldeSucces";
+import PaiementClient from "./pages/PaiementClient";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,7 @@ const App = () => (
         <Route path="/paiement-succes/:demarcheId" element={<PaiementSucces />} />
         <Route path="/recherche-suivi" element={<RechercheSuivi />} />
         <Route path="/suivi/:trackingNumber" element={<SuiviCommande />} />
+        <Route path="/paiement-client/:token" element={<PaiementClient />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/nouvelle-demarche" element={<NouvelleDemarche />} />
             <Route path="/nouvelle-demarche/:draftId" element={<NouvelleDemarche />} />

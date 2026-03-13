@@ -546,6 +546,33 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "admin_new_registration":
+      return {
+        subject: `🆕 [ADMIN] Nouvelle inscription - ${data.garage_name}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">🆕 Nouvelle inscription garage</h1>
+            <p>Un nouveau garage vient de s'inscrire sur DiscountCarteGrise.</p>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>🏢 Raison sociale :</strong> ${data.garage_name}</p>
+              <p style="margin: 8px 0;"><strong>📧 Email :</strong> ${data.garage_email}</p>
+              <p style="margin: 8px 0;"><strong>📞 Téléphone :</strong> ${data.telephone || 'Non renseigné'}</p>
+              <p style="margin: 8px 0;"><strong>🔢 SIRET :</strong> ${data.siret || 'Non renseigné'}</p>
+              <p style="margin: 8px 0;"><strong>📍 Ville :</strong> ${data.ville || 'Non renseigné'}</p>
+              <p style="margin: 8px 0;"><strong>📣 Source :</strong> ${data.referral_source || 'Non renseigné'}</p>
+            </div>
+
+            <a href="https://discountcartegrise.fr/admin/manage-garages" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir les garages
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Notification automatique - DiscountCarteGrise</p>
+          </div>
+        `,
+      };
+
     case "admin_verification_request":
       return {
         subject: `🔍 [ADMIN] Nouveau garage à vérifier - ${data.garage_name}`,
@@ -635,6 +662,31 @@ const getEmailTemplate = (type: string, data: any) => {
               DiscountCarteGrise - Service de cartes grises en ligne<br>
               contact@discountcartegrise.fr
             </p>
+          </div>
+        `,
+      };
+
+    case "client_payment_link":
+      return {
+        subject: `Paiement carte grise - ${data.immatriculation || 'Votre véhicule'}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+              <h1 style="margin: 0; font-size: 24px;">🇫🇷 Discount Carte Grise</h1>
+            </div>
+            <div style="padding: 30px; background: #f9fafb; border: 1px solid #e5e7eb;">
+              <h2 style="color: #1e40af; margin-top: 0;">Lien de paiement pour votre carte grise</h2>
+              <p>Bonjour${data.client_prenom ? ' ' + data.client_prenom : ''},</p>
+              <p>Votre garage <strong>${data.garage_name || ''}</strong> vous invite à régler les frais de carte grise pour le véhicule immatriculé <strong>${data.immatriculation || ''}</strong>.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${data.payment_url}" style="background: #1e40af; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">Payer maintenant</a>
+              </div>
+              <p style="color: #6b7280; font-size: 14px;">Ce lien est valable 30 jours.</p>
+              <p style="color: #6b7280; font-size: 14px;">Si le bouton ne fonctionne pas, copiez ce lien : <br/><a href="${data.payment_url}">${data.payment_url}</a></p>
+            </div>
+            <div style="padding: 15px; text-align: center; color: #9ca3af; font-size: 12px;">
+              Service agréé et conforme ANTS • discountcartegrise.fr
+            </div>
           </div>
         `,
       };
