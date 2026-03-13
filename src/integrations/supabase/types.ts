@@ -293,6 +293,13 @@ export type Database = {
       demarches: {
         Row: {
           admin_viewed: boolean | null
+          client_email: string | null
+          client_paid: boolean
+          client_paid_at: string | null
+          client_payment_token: string | null
+          client_payment_token_expires_at: string | null
+          client_phone: string | null
+          client_stripe_payment_id: string | null
           commentaire: string | null
           created_at: string
           documents_complets: boolean | null
@@ -308,7 +315,9 @@ export type Database = {
           numero_demarche: string | null
           paid_with_tokens: boolean | null
           paye: boolean | null
+          payment_mode: string
           prix_carte_grise: number | null
+          pro_payment_pending: boolean
           requires_resubmission_payment: boolean | null
           resubmission_paid: boolean | null
           resubmission_payment_amount: number | null
@@ -322,6 +331,13 @@ export type Database = {
         }
         Insert: {
           admin_viewed?: boolean | null
+          client_email?: string | null
+          client_paid?: boolean
+          client_paid_at?: string | null
+          client_payment_token?: string | null
+          client_payment_token_expires_at?: string | null
+          client_phone?: string | null
+          client_stripe_payment_id?: string | null
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
@@ -337,7 +353,9 @@ export type Database = {
           numero_demarche?: string | null
           paid_with_tokens?: boolean | null
           paye?: boolean | null
+          payment_mode?: string
           prix_carte_grise?: number | null
+          pro_payment_pending?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
@@ -351,6 +369,13 @@ export type Database = {
         }
         Update: {
           admin_viewed?: boolean | null
+          client_email?: string | null
+          client_paid?: boolean
+          client_paid_at?: string | null
+          client_payment_token?: string | null
+          client_payment_token_expires_at?: string | null
+          client_phone?: string | null
+          client_stripe_payment_id?: string | null
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
@@ -366,7 +391,9 @@ export type Database = {
           numero_demarche?: string | null
           paid_with_tokens?: boolean | null
           paye?: boolean | null
+          payment_mode?: string
           prix_carte_grise?: number | null
+          pro_payment_pending?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
@@ -668,6 +695,7 @@ export type Database = {
           is_gold: boolean | null
           is_verified: boolean | null
           raison_sociale: string
+          referral_source: string | null
           reseau: string | null
           siret: string
           telephone: string
@@ -689,6 +717,7 @@ export type Database = {
           is_gold?: boolean | null
           is_verified?: boolean | null
           raison_sociale: string
+          referral_source?: string | null
           reseau?: string | null
           siret: string
           telephone: string
@@ -710,6 +739,7 @@ export type Database = {
           is_gold?: boolean | null
           is_verified?: boolean | null
           raison_sociale?: string
+          referral_source?: string | null
           reseau?: string | null
           siret?: string
           telephone?: string
@@ -1094,6 +1124,7 @@ export type Database = {
           garage_id: string
           id: string
           montant: number
+          payer_type: string
           status: Database["public"]["Enums"]["paiement_status"]
           stripe_payment_id: string | null
           validated_at: string | null
@@ -1104,6 +1135,7 @@ export type Database = {
           garage_id: string
           id?: string
           montant: number
+          payer_type?: string
           status?: Database["public"]["Enums"]["paiement_status"]
           stripe_payment_id?: string | null
           validated_at?: string | null
@@ -1114,6 +1146,7 @@ export type Database = {
           garage_id?: string
           id?: string
           montant?: number
+          payer_type?: string
           status?: Database["public"]["Enums"]["paiement_status"]
           stripe_payment_id?: string | null
           validated_at?: string | null
@@ -1131,6 +1164,35 @@ export type Database = {
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_reminders: {
+        Row: {
+          demarche_id: string
+          id: string
+          reminder_number: number
+          sent_at: string
+        }
+        Insert: {
+          demarche_id: string
+          id?: string
+          reminder_number: number
+          sent_at?: string
+        }
+        Update: {
+          demarche_id?: string
+          id?: string
+          reminder_number?: number
+          sent_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_reminders_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
             referencedColumns: ["id"]
           },
         ]
@@ -1494,6 +1556,8 @@ export type Database = {
         | "valide"
         | "finalise"
         | "refuse"
+        | "en_attente_paiement_client"
+        | "en_attente_paiement_pro"
       demarche_type:
         | "DA"
         | "DC"
@@ -1652,6 +1716,8 @@ export const Constants = {
         "valide",
         "finalise",
         "refuse",
+        "en_attente_paiement_client",
+        "en_attente_paiement_pro",
       ],
       demarche_type: [
         "DA",
