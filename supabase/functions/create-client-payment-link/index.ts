@@ -127,7 +127,7 @@ serve(async (req) => {
 
     const paymentUrl = `https://discountcartegrise.fr/paiement-client/${clientPaymentToken}`;
 
-    // Resolve TEMP immatriculation for notification message
+    // Resolve immatriculation for notification message
     const notifImmat = realImmat || demarche.immatriculation;
 
     // Insert in-app notification for the garage (realtime NotificationBell)
