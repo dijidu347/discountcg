@@ -68,7 +68,7 @@ export const DepartmentSelect = ({ value, onChange }: DepartmentSelectProps) => 
     <div className="space-y-2">
       <label className="text-sm font-medium">Département</label>
       <Select value={value || undefined} onValueChange={handleChange}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className={`w-full ${!value ? "text-muted-foreground" : ""}`}>
           <SelectValue placeholder="Choisissez votre département" />
         </SelectTrigger>
         <SelectContent className="max-h-[300px]">

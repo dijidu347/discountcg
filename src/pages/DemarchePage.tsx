@@ -448,6 +448,20 @@ const DemarchePage = () => {
         </div>
       </section>
 
+      {/* Bouton flottant Commander */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden">
+        <Button
+          size="lg"
+          className="shadow-2xl rounded-full px-8 py-6 text-base font-semibold"
+          onClick={handleStartDemarche}
+          disabled={starting}
+        >
+          {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+          {isCG ? "Simuler mon tarif" : "Commander maintenant"}
+          <ArrowRight className="ml-2 h-5 w-5" />
+        </Button>
+      </div>
+
       <Footer />
     </div>
   );
