@@ -76,12 +76,14 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
       const filteredData = (data || []).filter(t => t.code !== 'DA');
       setDemarcheTypes(filteredData);
       if (filteredData.length > 0) {
-        // Use initialType if provided and valid, otherwise keep current or default to first
-        const typeToSelect = initialType && filteredData.find(t => t.code === initialType)
-          ? initialType
-          : selectedTypeCode && filteredData.find(t => t.code === selectedTypeCode)
-            ? selectedTypeCode
-            : filteredData[0].code;
+        // Embedded mode: force CG. Otherwise use initialType or keep current or default to first
+        const typeToSelect = embedded
+          ? (filteredData.find(t => t.code === 'CG') ? 'CG' : filteredData[0].code)
+          : initialType && filteredData.find(t => t.code === initialType)
+            ? initialType
+            : selectedTypeCode && filteredData.find(t => t.code === selectedTypeCode)
+              ? selectedTypeCode
+              : filteredData[0].code;
         setSelectedTypeCode(typeToSelect);
       }
     } catch (error) {
@@ -250,6 +252,9 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
 
   const simulatorContent = (
     <div className={`bg-card border border-border shadow-xl rounded-2xl p-8 ${embedded ? "" : "max-w-xl mx-auto"}`}>
+          {embedded && (
+            <h2 className="text-xl font-bold text-foreground text-center mb-6">Simulateur prix de carte grise</h2>
+          )}
           {/* Plaque d'immatriculation visuelle */}
           <div className="mb-10 flex justify-center">
             {showOldPlate ? (
@@ -333,7 +338,8 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
 
           {/* Formulaire */}
           <div className="space-y-4">
-            {/* Type de démarche */}
+            {/* Type de démarche - hidden in embedded mode (CG forced) */}
+            {!embedded && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Type de démarche</label>
               <Select value={selectedTypeCode} onValueChange={setSelectedTypeCode}>
@@ -358,6 +364,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
                 <p className="text-xs text-muted-foreground">{currentDemarche.description}</p>
               )}
             </div>
+            )}
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Immatriculation</label>

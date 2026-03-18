@@ -186,7 +186,7 @@ const DemarchePage = () => {
       <section className="container mx-auto px-4 py-12">
         <div className="max-w-3xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Qu'est-ce que {demarche.shortTitle.toLowerCase()} ?
+            Qu'est-ce que la {demarche.shortTitle.toLowerCase()} ?
           </h2>
           <div className="prose prose-lg text-muted-foreground">
             {demarche.longDescription.split("\n\n").map((paragraph, i) => (
@@ -281,7 +281,7 @@ const DemarchePage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-              Prix de {demarche.shortTitle.toLowerCase()}
+              Prix de la {demarche.shortTitle.toLowerCase()}
             </h2>
             <p className="text-muted-foreground mb-4">
               {demarche.prixDescription}
