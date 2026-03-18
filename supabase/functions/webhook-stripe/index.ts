@@ -811,6 +811,22 @@ async function handleClientPayment(
       console.log("✅ Garage notified: client paid");
     }
 
+    // Insert in-app notification for the garage (realtime NotificationBell)
+    const { error: notifError } = await supabase
+      .from("notifications")
+      .insert({
+        garage_id: demarche.garage_id,
+        demarche_id: demarcheId,
+        type: "client_payment_confirmed",
+        message: `Le client a payé ${clientActualAmount.toFixed(2)} € pour la démarche ${demarche.numero_demarche} (${realImmat})`,
+      });
+
+    if (notifError) {
+      console.error("❌ Failed to insert client_payment_confirmed notification:", notifError);
+    } else {
+      console.log("✅ Notification client_payment_confirmed inserted for garage");
+    }
+
     // Send admin notification emails
     await delay(600);
     for (let i = 0; i < ADMIN_EMAILS.length; i++) {
