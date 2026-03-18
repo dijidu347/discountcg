@@ -1,56 +1,65 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import CompleteProfile from "./pages/CompleteProfile";
-import Dashboard from "./pages/Dashboard";
-import NouvelleDemarche from "./pages/NouvelleDemarche";
-import MesDemarches from "./pages/MesDemarches";
-import MesFactures from "./pages/MesFactures";
-import DemarcheDetail from "./pages/DemarcheDetail";
-import GarageSettings from "./pages/GarageSettings";
-import Support from "./pages/Support";
-import CommanderSansCompte from "./pages/CommanderSansCompte";
-import PaiementGuestOrder from "./pages/PaiementGuestOrder";
-import PaiementDemarche from "./pages/PaiementDemarche";
-import PaiementSucces from "./pages/PaiementSucces";
-import SuiviCommande from "./pages/SuiviCommande";
-import RechercheSuivi from "./pages/RechercheSuivi";
-import DevisCarteGrise from "./pages/DevisCarteGrise";
-import Simulateur from "./pages/Simulateur";
-import ResultatCarteGrise from "./pages/ResultatCarteGrise";
-import DemarcheSimple from "./pages/DemarcheSimple";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AllDemarches from "./pages/admin/AllDemarches";
-import AdminDemarcheDetail from "./pages/admin/DemarcheDetail";
-import ManageUsers from "./pages/admin/ManageUsers";
-import ManageActions from "./pages/admin/ManageActions";
-import ManageGarages from "./pages/admin/ManageGarages";
-import ManageAccounts from "./pages/admin/ManageAccounts";
-import GuestOrders from "./pages/admin/GuestOrders";
-import GuestOrderDetail from "./pages/admin/GuestOrderDetail";
-import AdminNotifications from "./pages/admin/AdminNotifications";
-import HistoriquePaiements from "./pages/admin/HistoriquePaiements";
-import TokenPurchases from "./pages/admin/TokenPurchases";
-import ManageEmailTemplates from "./pages/admin/ManageEmailTemplates";
-import ManagePricingConfig from "./pages/admin/ManagePricingConfig";
-import TestEmail from "./pages/admin/TestEmail";
-import AdminRevenus from "./pages/admin/AdminRevenus";
-import ManageGuestActions from "./pages/admin/ManageGuestActions";
-import AcheterJetons from "./pages/AcheterJetons";
-import PaiementRecharge from "./pages/PaiementRecharge";
-import PaiementRechargeSucces from "./pages/PaiementRechargeSucces";
-import PaiementSoldeSucces from "./pages/PaiementSoldeSucces";
-import PaiementClient from "./pages/PaiementClient";
-import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
+
+const Index = React.lazy(() => import("./pages/Index"));
+const Login = React.lazy(() => import("./pages/Login"));
+const Register = React.lazy(() => import("./pages/Register"));
+const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = React.lazy(() => import("./pages/ResetPassword"));
+const CompleteProfile = React.lazy(() => import("./pages/CompleteProfile"));
+const Dashboard = React.lazy(() => import("./pages/Dashboard"));
+const NouvelleDemarche = React.lazy(() => import("./pages/NouvelleDemarche"));
+const MesDemarches = React.lazy(() => import("./pages/MesDemarches"));
+const MesFactures = React.lazy(() => import("./pages/MesFactures"));
+const DemarcheDetail = React.lazy(() => import("./pages/DemarcheDetail"));
+const GarageSettings = React.lazy(() => import("./pages/GarageSettings"));
+const Support = React.lazy(() => import("./pages/Support"));
+const CommanderSansCompte = React.lazy(() => import("./pages/CommanderSansCompte"));
+const PaiementGuestOrder = React.lazy(() => import("./pages/PaiementGuestOrder"));
+const PaiementDemarche = React.lazy(() => import("./pages/PaiementDemarche"));
+const PaiementSucces = React.lazy(() => import("./pages/PaiementSucces"));
+const SuiviCommande = React.lazy(() => import("./pages/SuiviCommande"));
+const RechercheSuivi = React.lazy(() => import("./pages/RechercheSuivi"));
+const DevisCarteGrise = React.lazy(() => import("./pages/DevisCarteGrise"));
+const Simulateur = React.lazy(() => import("./pages/Simulateur"));
+const ResultatCarteGrise = React.lazy(() => import("./pages/ResultatCarteGrise"));
+const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
+const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
+const AllDemarches = React.lazy(() => import("./pages/admin/AllDemarches"));
+const AdminDemarcheDetail = React.lazy(() => import("./pages/admin/DemarcheDetail"));
+const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
+const ManageActions = React.lazy(() => import("./pages/admin/ManageActions"));
+const ManageGarages = React.lazy(() => import("./pages/admin/ManageGarages"));
+const ManageAccounts = React.lazy(() => import("./pages/admin/ManageAccounts"));
+const GuestOrders = React.lazy(() => import("./pages/admin/GuestOrders"));
+const GuestOrderDetail = React.lazy(() => import("./pages/admin/GuestOrderDetail"));
+const AdminNotifications = React.lazy(() => import("./pages/admin/AdminNotifications"));
+const HistoriquePaiements = React.lazy(() => import("./pages/admin/HistoriquePaiements"));
+const TokenPurchases = React.lazy(() => import("./pages/admin/TokenPurchases"));
+const ManageEmailTemplates = React.lazy(() => import("./pages/admin/ManageEmailTemplates"));
+const ManagePricingConfig = React.lazy(() => import("./pages/admin/ManagePricingConfig"));
+const TestEmail = React.lazy(() => import("./pages/admin/TestEmail"));
+const AdminRevenus = React.lazy(() => import("./pages/admin/AdminRevenus"));
+const ManageGuestActions = React.lazy(() => import("./pages/admin/ManageGuestActions"));
+const AcheterJetons = React.lazy(() => import("./pages/AcheterJetons"));
+const PaiementRecharge = React.lazy(() => import("./pages/PaiementRecharge"));
+const PaiementRechargeSucces = React.lazy(() => import("./pages/PaiementRechargeSucces"));
+const PaiementSoldeSucces = React.lazy(() => import("./pages/PaiementSoldeSucces"));
+const PaiementClient = React.lazy(() => import("./pages/PaiementClient"));
+const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
+const PrixCarteGrise = React.lazy(() => import("./pages/PrixCarteGrise"));
+const APropos = React.lazy(() => import("./pages/APropos"));
+const MentionsLegales = React.lazy(() => import("./pages/MentionsLegales"));
+const CGV = React.lazy(() => import("./pages/CGV"));
+const PolitiqueConfidentialite = React.lazy(() => import("./pages/PolitiqueConfidentialite"));
+const Cookies = React.lazy(() => import("./pages/Cookies"));
+const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
@@ -61,6 +70,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
           <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />
@@ -109,9 +119,17 @@ const App = () => (
           <Route path="/admin/guest-orders" element={<GuestOrders />} />
            <Route path="/admin/guest-order/:id" element={<GuestOrderDetail />} />
            <Route path="/admin/guest-actions" element={<ManageGuestActions />} />
+            <Route path="/prix-carte-grise" element={<PrixCarteGrise />} />
+            <Route path="/a-propos" element={<APropos />} />
+            <Route path="/mentions-legales" element={<MentionsLegales />} />
+            <Route path="/cgv" element={<CGV />} />
+            <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
+            <Route path="/cookies" element={<Cookies />} />
+            <Route path="/:slug" element={<DemarchePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

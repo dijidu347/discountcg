@@ -49,11 +49,11 @@ const getIconForCode = (code: string) => {
   }
 };
 
-export const SimulateurSection = () => {
+export const SimulateurSection = ({ embedded = false, initialType = "" }: { embedded?: boolean; initialType?: string }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [demarcheTypes, setDemarcheTypes] = useState<DemarcheType[]>([]);
-  const [selectedTypeCode, setSelectedTypeCode] = useState<string>("CG");
+  const [selectedTypeCode, setSelectedTypeCode] = useState<string>("");
   const [departement, setDepartement] = useState("");
   const [plaque, setPlaque] = useState("");
   const [loading, setLoading] = useState(false);
@@ -75,8 +75,14 @@ export const SimulateurSection = () => {
       // Filtrer DA (désactivé pour les particuliers)
       const filteredData = (data || []).filter(t => t.code !== 'DA');
       setDemarcheTypes(filteredData);
-      if (filteredData.length > 0 && !filteredData.find(t => t.code === selectedTypeCode)) {
-        setSelectedTypeCode(filteredData[0].code);
+      if (filteredData.length > 0) {
+        // Use initialType if provided and valid, otherwise keep current or default to first
+        const typeToSelect = initialType && filteredData.find(t => t.code === initialType)
+          ? initialType
+          : selectedTypeCode && filteredData.find(t => t.code === selectedTypeCode)
+            ? selectedTypeCode
+            : filteredData[0].code;
+        setSelectedTypeCode(typeToSelect);
       }
     } catch (error) {
       console.error('Error loading demarche types:', error);
@@ -242,17 +248,8 @@ export const SimulateurSection = () => {
     );
   }
 
-  return (
-    <section className="py-20 bg-muted/30" id="simulateur">
-      <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-foreground">
-          Simulateur de prix
-        </h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
-          Calculez instantanément le prix de votre démarche
-        </p>
-
-        <div className="max-w-xl mx-auto bg-card border border-border shadow-xl rounded-2xl p-8">
+  const simulatorContent = (
+    <div className={`bg-card border border-border shadow-xl rounded-2xl p-8 ${embedded ? "" : "max-w-xl mx-auto"}`}>
           {/* Plaque d'immatriculation visuelle */}
           <div className="mb-10 flex justify-center">
             {showOldPlate ? (
@@ -405,6 +402,26 @@ export const SimulateurSection = () => {
             </p>
           </div>
         </div>
+  );
+
+  if (embedded) {
+    return (
+      <div id="simulateur">
+        {simulatorContent}
+      </div>
+    );
+  }
+
+  return (
+    <section className="py-20 bg-muted/30" id="simulateur">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-foreground">
+          Simulateur de prix
+        </h2>
+        <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
+          Calculez instantanément le prix de votre démarche
+        </p>
+        {simulatorContent}
       </div>
     </section>
   );

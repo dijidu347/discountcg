@@ -1,14 +1,7 @@
-import { Shield, Clock, ArrowRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Shield, Clock } from "lucide-react";
+import { SimulateurSection } from "@/components/SimulateurSection";
+
 const Hero = () => {
-  const scrollToSimulator = () => {
-    const element = document.getElementById("simulateur");
-    if (element) {
-      element.scrollIntoView({
-        behavior: "smooth"
-      });
-    }
-  };
   return <section className="relative pt-16 overflow-hidden">
       {/* Bande tricolore */}
       <div className="absolute top-16 left-0 right-0 h-1 flex z-20">
@@ -25,14 +18,14 @@ const Hero = () => {
             <div className="text-center md:text-left">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-6 leading-tight">
                 Carte grise en ligne<br />
-                <span className="text-primary-foreground/90">rapide et sécurisée</span>
+                <span className="text-primary-foreground/90">rapide, sécurisée et pas chère</span>
               </h1>
-              
+
               <p className="text-lg md:text-xl mb-8 opacity-90">
-                Service habilité par l'État – traitement sous 24h maximum
+                Faites votre carte grise en ligne pas chère — service habilité par l'État, traitement sous 24h. Frais de dossier dès 30€.
               </p>
 
-              <div className="flex flex-wrap gap-4 justify-center md:justify-start mb-8">
+              <div className="flex flex-wrap gap-4 justify-center md:justify-start">
                 <div className="flex items-center gap-2 px-4 py-2 bg-primary-foreground/10 rounded-full border border-primary-foreground/20">
                   <Shield className="w-5 h-5" />
                   <span className="text-sm font-medium">Service Agréé</span>
@@ -42,21 +35,11 @@ const Hero = () => {
                   <span className="text-sm font-medium">24h Max</span>
                 </div>
               </div>
-
-              <Button onClick={scrollToSimulator} size="lg" className="bg-background text-primary hover:bg-background/90 font-semibold py-6 px-10 rounded-2xl text-lg">
-                Simuler mon tarif
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </Button>
             </div>
 
-            {/* Image carte grise */}
-            <div className="flex justify-center">
-              <div className="relative">
-                <img alt="Carte grise française" className="rounded-3xl shadow-2xl w-full max-w-md border-4 border-primary-foreground/20" src="/lovable-uploads/afe744c8-2491-4bc5-b822-6e18a95d9183.webp" />
-                <div className="absolute -bottom-4 -right-4 bg-background text-foreground px-4 py-2 rounded-xl shadow-lg">
-                  <div className="text-sm font-bold text-primary">100% en ligne</div>
-                </div>
-              </div>
+            {/* Simulateur */}
+            <div>
+              <SimulateurSection embedded />
             </div>
           </div>
         </div>

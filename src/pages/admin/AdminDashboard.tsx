@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2, Euro, ClipboardList } from "lucide-react";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2, Euro, ClipboardList, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
@@ -24,7 +24,8 @@ export default function AdminDashboard() {
     totalPaiements: 0,
     garagesAVerifier: 0,
     demarchesToday: 0,
-    demarchesTodayTokens: 0
+    demarchesTodayTokens: 0,
+    demarchesAttenteClient: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -102,9 +103,14 @@ export default function AdminDashboard() {
       .from('token_purchases')
       .select('amount');
 
-    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées ET pas refusées
-    const demarchesATraiter = demarches?.filter(d => 
-      d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse'
+    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées ET pas refusées ET pas en attente client
+    const demarchesATraiter = demarches?.filter(d =>
+      d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse' && d.status !== 'en_attente_paiement_client'
+    ) || [];
+
+    // Démarches en attente paiement client
+    const demarchesAttenteClient = demarches?.filter(d =>
+      d.status === 'en_attente_paiement_client' && d.is_draft === false
     ) || [];
 
     // Démarches non vues par l'admin
@@ -141,7 +147,8 @@ export default function AdminDashboard() {
       totalPaiements: paiementsTotal + creditsTotal,
       garagesAVerifier: garagesAVerifier.length,
       demarchesToday: demarchesTodayPaid.length,
-      demarchesTodayTokens: demarchesTodayTokens.length
+      demarchesTodayTokens: demarchesTodayTokens.length,
+      demarchesAttenteClient: demarchesAttenteClient.length
     });
 
     setLoading(false);
@@ -263,6 +270,29 @@ export default function AdminDashboard() {
                   <Bell className="h-4 w-4 mr-2" />
                   Vérifier
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Alerte attente paiement client */}
+        {stats.demarchesAttenteClient > 0 && (
+          <Card className="mb-6 border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors"
+                onClick={() => navigate("/admin/demarches")}>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Clock className="h-8 w-8 text-amber-500" />
+                  <div>
+                    <p className="font-bold text-amber-700 dark:text-amber-400">
+                      {stats.demarchesAttenteClient} démarche{stats.demarchesAttenteClient > 1 ? 's' : ''} en attente de paiement client
+                    </p>
+                    <p className="text-sm text-amber-600 dark:text-amber-500">
+                      Le client n'a pas encore payé sa part
+                    </p>
+                  </div>
+                </div>
+                <Button className="bg-amber-500 hover:bg-amber-600">Voir</Button>
               </div>
             </CardContent>
           </Card>

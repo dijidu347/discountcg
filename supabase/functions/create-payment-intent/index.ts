@@ -178,11 +178,11 @@ serve(async (req) => {
     console.log('Payment amount (in cents):', paymentAmount, 'Calculated total (sans TVA):', calculatedTotal);
 
     // Select Stripe account:
-    // - split mode (pro pays frais dossier only) → Stripe 1
-    // - pro_pays_all (pro pays everything) → Stripe 2
-    const useStripe2 = paymentMode !== 'split';
+    // - Stripe 1: frais de dossier only (split mode, OR no carte grise price = DA/DC)
+    // - Stripe 2: includes carte grise fees (pro_pays_all with actual CG price)
+    const useStripe2 = paymentMode !== 'split' && prixCarteGrise > 0;
     const activeStripeKey = useStripe2 && stripeKey2 ? stripeKey2 : stripeKey1;
-    console.log('Creating Stripe payment intent... (account:', useStripe2 ? 'Stripe2' : 'Stripe1', ')');
+    console.log('Creating Stripe payment intent... (account:', useStripe2 ? 'Stripe2' : 'Stripe1', ', prixCG:', prixCarteGrise, ')');
     // Create Stripe payment intent with automatic payment methods for wallet support
     const response = await fetch('https://api.stripe.com/v1/payment_intents', {
       method: 'POST',

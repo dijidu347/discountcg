@@ -1,20 +1,10 @@
 import { Menu, X, LogIn, Star } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [statsCount, setStatsCount] = useState(0);
   const navigate = useNavigate();
-  useEffect(() => {
-    const startDate = new Date('2017-01-01');
-    const today = new Date();
-    const daysSinceStart = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    const averagePerDay = 45;
-    const baseCount = daysSinceStart * averagePerDay;
-    const todayProgress = Math.floor(Math.random() * averagePerDay);
-    setStatsCount(baseCount + todayProgress);
-  }, []);
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id);
     if (element) {
@@ -44,18 +34,15 @@ const Navbar = () => {
               </div>
               <div className="text-[11px] text-muted-foreground">5.0 / 5 avis clients</div>
             </div>
-            <div className="text-center">
-              <div className="text-primary font-extrabold text-lg tracking-wide">
-                {statsCount.toLocaleString('fr-FR')}+
-              </div>
-              <div className="text-[11px] text-muted-foreground">Démarches réalisées</div>
-            </div>
           </div>
 
           {/* Navigation - Desktop */}
           <div className="hidden md:flex items-center gap-4">
             <button onClick={() => navigate("/")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Accueil
+            </button>
+            <button onClick={() => navigate("/carte-grise")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
+              Démarches
             </button>
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
@@ -82,10 +69,6 @@ const Navbar = () => {
                 </div>
                 <div className="text-[10px] text-muted-foreground">5.0 / 5</div>
               </div>
-              <div className="text-center">
-                <div className="text-primary font-bold text-sm">{statsCount.toLocaleString('fr-FR')}+</div>
-                <div className="text-[10px] text-muted-foreground">Démarches</div>
-              </div>
             </div>
             
             <button onClick={() => {
@@ -93,6 +76,12 @@ const Navbar = () => {
           navigate("/");
         }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Accueil
+            </button>
+            <button onClick={() => {
+          setIsOpen(false);
+          navigate("/carte-grise");
+        }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
+              Démarches
             </button>
             <button onClick={() => {
           setIsOpen(false);

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { formatPrice } from "@/lib/utils";
+import { Helmet } from "react-helmet-async";
 
 interface DemarcheTypeInfo {
   id: string;
@@ -70,7 +71,7 @@ export default function DemarcheSimple() {
         const typeParam = searchParams.get('type');
         const plaqueParam = searchParams.get('plaque');
 
-        if (!orderIdParam || !typeParam || !plaqueParam) {
+        if (!orderIdParam || !typeParam) {
           toast({
             title: "Erreur",
             description: "Données manquantes",
@@ -82,7 +83,7 @@ export default function DemarcheSimple() {
 
         setOrderId(orderIdParam);
         setDemarcheType(typeParam);
-        setPlaque(plaqueParam);
+        setPlaque(plaqueParam || "");
 
         // Charger les infos du type de démarche
         const { data: typeData, error: typeError } = await supabase
@@ -154,8 +155,9 @@ export default function DemarcheSimple() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet><meta name="robots" content="noindex" /></Helmet>
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <Button
           variant="ghost"

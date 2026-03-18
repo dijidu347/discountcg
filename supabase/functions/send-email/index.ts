@@ -797,6 +797,52 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    case "guest_new_message":
+      return {
+        subject: `💬 Nouveau message - Commande ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background-color: #2563eb; padding: 20px; text-align: center;">
+              <h1 style="color: white; margin: 0;">Nouveau message</h1>
+            </div>
+            <div style="padding: 20px;">
+              <p>Bonjour ${data.customer_name},</p>
+              <p>Vous avez reçu un nouveau message concernant votre commande <strong>${data.tracking_number}</strong> :</p>
+              <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
+                <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
+              </div>
+              <a href="https://discountcartegrise.fr/suivi/${data.tracking_number}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+                Voir ma commande
+              </a>
+            </div>
+            <div style="padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            </div>
+          </div>
+        `,
+      };
+
+    case "admin_guest_message":
+      return {
+        subject: `💬 Message client particulier: ${data.client_name} - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #2563eb;">Nouveau message d'un client particulier</h2>
+            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
+              <p style="margin: 4px 0;"><strong>Client :</strong> ${data.client_name}</p>
+              <p style="margin: 4px 0;"><strong>Email :</strong> ${data.client_email}</p>
+              <p style="margin: 4px 0;"><strong>Commande :</strong> ${data.tracking_number}</p>
+            </div>
+            <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
+              <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
+            </div>
+            <a href="https://discountcartegrise.fr/admin/guest-orders" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+              Voir dans l'admin
+            </a>
+          </div>
+        `,
+      };
+
     case "simple_text":
       return {
         subject: data.subject || "Message",
@@ -824,7 +870,7 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { type, to, data, attachments, from: customFrom }: EmailRequest & { from?: string } = await req.json();
+    const { type, to, data, attachments, from: customFrom, cc }: EmailRequest & { from?: string; cc?: string | string[] } = await req.json();
 
     console.log(`📧 Envoi email type: ${type} à ${to}`);
 
@@ -840,6 +886,7 @@ const handler = async (req: Request): Promise<Response> => {
       from: customFrom || "DiscountCarteGrise <noreply@discountcartegrise.fr>",
       reply_to: customFrom ? undefined : "contact@discountcartegrise.fr",
       to: to,
+      cc: cc || undefined,
       subject: subject,
       html: html,
       attachments: emailAttachments,

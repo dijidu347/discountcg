@@ -271,10 +271,12 @@ const PaiementDemarche = () => {
         throw new Error("Impossible de charger la clé Stripe");
       }
 
-      // Split mode (pro pays frais dossier) → Stripe 1, pro_pays_all → Stripe 2
-      const useStripe2 = paymentMode !== 'split';
+      // Stripe 1: frais de dossier only (split mode, OR no carte grise price = DA/DC)
+      // Stripe 2: includes carte grise fees (pro_pays_all with actual CG price)
+      const prixCG = Number(demarcheData.prix_carte_grise) || 0;
+      const useStripe2 = paymentMode !== 'split' && prixCG > 0;
       const stripeKey = useStripe2 && keyData.publishableKey2 ? keyData.publishableKey2 : keyData.publishableKey;
-      console.log('Using Stripe account:', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)');
+      console.log('Using Stripe account:', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)', 'prixCG:', prixCG);
       const stripe = await loadStripe(stripeKey);
       setStripePromise(stripe);
 

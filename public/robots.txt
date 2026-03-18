@@ -1,14 +1,37 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
 User-agent: *
 Allow: /
+
+# Ensure crawlers can access JS/CSS assets needed to render the SPA
+Allow: /assets/*.js
+Allow: /assets/*.css
+Allow: /assets/*.js.map
+
+# Block private routes
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /nouvelle-demarche
+Disallow: /mes-demarches
+Disallow: /mes-factures
+Disallow: /garage-settings
+Disallow: /acheter-jetons
+Disallow: /paiement-recharge
+Disallow: /support
+Disallow: /paiement-demarche
+Disallow: /complete-profile
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+Sitemap: https://discountcartegrise.fr/sitemap.xml

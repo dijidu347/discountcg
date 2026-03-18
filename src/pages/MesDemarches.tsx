@@ -27,12 +27,13 @@ const getStatusLabel = (demarche: any): string => {
   const statusLabels: Record<string, string> = {
     en_saisie: "En saisie",
     en_attente: "En attente",
+    en_attente_paiement_client: "Attente paiement client",
     paye: "Payé",
     valide: "Validé",
     finalise: "Finalisé",
     refuse: "Refusé"
   };
-  
+
   return statusLabels[demarche.status] || demarche.status;
 };
 
@@ -41,22 +42,24 @@ const getStatusColor = (demarche: any): string => {
   if (demarche.is_free_token && !demarche.paye) {
     return "bg-emerald-500";
   }
-  
+
   const statusColors: Record<string, string> = {
     en_saisie: "bg-gray-500",
     en_attente: "bg-orange-500",
+    en_attente_paiement_client: "bg-amber-500",
     paye: "bg-blue-500",
     valide: "bg-green-500",
     finalise: "bg-green-700",
     refuse: "bg-red-500"
   };
-  
+
   return statusColors[demarche.status] || "bg-gray-500";
 };
 
 const statusLabels: Record<string, string> = {
   en_saisie: "En saisie",
   en_attente: "En attente",
+  en_attente_paiement_client: "Attente paiement client",
   paye: "Payé",
   valide: "Validé",
   finalise: "Finalisé",
@@ -66,6 +69,7 @@ const statusLabels: Record<string, string> = {
 const statusColors: Record<string, string> = {
   en_saisie: "bg-gray-500",
   en_attente: "bg-orange-500",
+  en_attente_paiement_client: "bg-amber-500",
   paye: "bg-blue-500",
   valide: "bg-green-500",
   finalise: "bg-green-700",
@@ -173,7 +177,7 @@ export default function MesDemarches() {
         .from('demarches')
         .select('*')
         .eq('garage_id', garageData.id)
-        .or('paye.eq.true,is_free_token.eq.true')
+        .or('paye.eq.true,is_free_token.eq.true,status.eq.en_attente_paiement_client')
         .order('created_at', { ascending: false });
 
       if (demarchesData) {
@@ -332,6 +336,7 @@ export default function MesDemarches() {
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="en_saisie">En saisie</SelectItem>
                 <SelectItem value="en_attente">En attente</SelectItem>
+                <SelectItem value="en_attente_paiement_client">Attente paiement client</SelectItem>
                 <SelectItem value="paye">Payé</SelectItem>
                 <SelectItem value="valide">Validé</SelectItem>
                 <SelectItem value="finalise">Finalisé</SelectItem>
@@ -403,6 +408,7 @@ export default function MesDemarches() {
                     <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="en_saisie">En saisie</SelectItem>
                     <SelectItem value="en_attente">En attente</SelectItem>
+                    <SelectItem value="en_attente_paiement_client">Attente paiement client</SelectItem>
                     <SelectItem value="paye">Payé</SelectItem>
                     <SelectItem value="valide">Validé</SelectItem>
                     <SelectItem value="finalise">Finalisé</SelectItem>
@@ -410,7 +416,7 @@ export default function MesDemarches() {
                   </SelectContent>
                 </Select>
               </div>
-            
+
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -455,10 +461,36 @@ export default function MesDemarches() {
                             <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                             <span className="font-semibold text-emerald-700 dark:text-emerald-400">Offert</span>
                           </div>
+                        ) : demarche.status === 'en_attente_paiement_client' ? (
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                              <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                              <span className="font-semibold text-amber-700 dark:text-amber-400">Attente paiement client</span>
+                            </div>
+                            <div className="text-xs space-y-0.5 pl-1">
+                              {demarche.client_email && (
+                                <p className="text-muted-foreground">Client : {demarche.client_email}</p>
+                              )}
+                              {demarche.client_payment_token ? (
+                                <p className="text-blue-600">Lien envoyé{demarche.client_payment_token_expires_at && (
+                                  new Date(demarche.client_payment_token_expires_at) < new Date()
+                                    ? <span className="text-red-600 font-semibold"> — Expiré</span>
+                                    : <span> — Expire le {new Date(demarche.client_payment_token_expires_at).toLocaleDateString('fr-FR')}</span>
+                                )}</p>
+                              ) : (
+                                <p className="text-red-600">Lien non envoyé</p>
+                              )}
+                              {demarche.client_paid ? (
+                                <p className="text-green-600 font-semibold">Client a payé le {new Date(demarche.client_paid_at).toLocaleDateString('fr-FR')}</p>
+                              ) : (
+                                <p className="text-amber-600">Client n'a pas encore payé</p>
+                              )}
+                            </div>
+                          </div>
                         ) : demarche.status === 'en_attente' ? (
                           <div className="flex items-center gap-2 px-3 py-1.5 bg-orange-100 dark:bg-orange-900/30 border border-orange-300 dark:border-orange-700 rounded-lg">
                             <Clock className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-                            <span className="font-semibold text-orange-700 dark:text-orange-400">En attente paiement</span>
+                            <span className="font-semibold text-orange-700 dark:text-orange-400">En attente</span>
                           </div>
                         ) : (
                           <Badge className={getStatusColor(demarche)}>

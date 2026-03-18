@@ -184,6 +184,10 @@ export function NotificationBell({ garageId }: { garageId: string }) {
         return '🔐';
       case 'new_message':
         return '💬';
+      case 'client_payment_confirmed':
+        return '💳';
+      case 'client_payment_link_sent':
+        return '📧';
       default:
         return '📢';
     }

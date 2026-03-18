@@ -1,5 +1,4 @@
-import { Facebook, Instagram, Linkedin, Mail } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -23,17 +22,8 @@ const Footer = () => {
               Vos démarches d'immatriculation simplifiées. Service rapide, professionnel et 100% sécurisé.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="opacity-70 hover:opacity-100 transition-opacity">
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a href="#" className="opacity-70 hover:opacity-100 transition-opacity">
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a href="#" className="opacity-70 hover:opacity-100 transition-opacity">
-                <Linkedin className="w-5 h-5" />
-              </a>
-              <a href="#" className="opacity-70 hover:opacity-100 transition-opacity">
-                <Mail className="w-5 h-5" />
+              <a href="mailto:contact@discountcartegrise.fr" className="opacity-70 hover:opacity-100 transition-opacity" aria-label="Email">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
               </a>
             </div>
           </div>
@@ -42,10 +32,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold mb-4">Services</h4>
             <ul className="space-y-2 text-sm opacity-80">
-              <li><a href="#services" className="hover:opacity-100 transition-opacity">Changement de titulaire</a></li>
-              <li><a href="#services" className="hover:opacity-100 transition-opacity">Déclaration de cession</a></li>
-              <li><a href="#services" className="hover:opacity-100 transition-opacity">Changement d'adresse</a></li>
-              <li><a href="#tarifs" className="hover:opacity-100 transition-opacity">Tarifs</a></li>
+              <li><Link to="/carte-grise" className="hover:opacity-100 transition-opacity">Carte grise en ligne</Link></li>
+              <li><Link to="/declaration-cession" className="hover:opacity-100 transition-opacity">Déclaration de cession</Link></li>
+              <li><Link to="/changement-adresse-carte-grise" className="hover:opacity-100 transition-opacity">Changement d'adresse</Link></li>
+              <li><Link to="/prix-carte-grise" className="hover:opacity-100 transition-opacity">Prix carte grise 2026</Link></li>
             </ul>
           </div>
 
@@ -57,6 +47,8 @@ const Footer = () => {
               <li><a href="#faq" className="hover:opacity-100 transition-opacity">FAQ</a></li>
               <li><a href="#contact" className="hover:opacity-100 transition-opacity">Contact</a></li>
               <li><button onClick={() => navigate("/login")} className="hover:opacity-100 transition-opacity">Espace Pro</button></li>
+              <li><Link to="/simulateur" className="hover:opacity-100 transition-opacity">Simulateur prix carte grise</Link></li>
+              <li><Link to="/a-propos" className="hover:opacity-100 transition-opacity">A propos</Link></li>
             </ul>
           </div>
 
@@ -64,10 +56,10 @@ const Footer = () => {
           <div>
             <h4 className="font-bold mb-4">Légal</h4>
             <ul className="space-y-2 text-sm opacity-80">
-              <li><a href="#" className="hover:opacity-100 transition-opacity">Mentions légales</a></li>
-              <li><a href="#" className="hover:opacity-100 transition-opacity">Conditions générales</a></li>
-              <li><a href="#" className="hover:opacity-100 transition-opacity">Politique de confidentialité</a></li>
-              <li><a href="#" className="hover:opacity-100 transition-opacity">Cookies</a></li>
+              <li><Link to="/mentions-legales" className="hover:opacity-100 transition-opacity">Mentions légales</Link></li>
+              <li><Link to="/cgv" className="hover:opacity-100 transition-opacity">Conditions générales</Link></li>
+              <li><Link to="/politique-confidentialite" className="hover:opacity-100 transition-opacity">Politique de confidentialité</Link></li>
+              <li><Link to="/cookies" className="hover:opacity-100 transition-opacity">Cookies</Link></li>
             </ul>
           </div>
         </div>

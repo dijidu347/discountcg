@@ -14,6 +14,7 @@ export default function AllDemarches() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [demarchesATraiter, setDemarchesATraiter] = useState<any[]>([]);
+  const [demarchesAttenteClient, setDemarchesAttenteClient] = useState<any[]>([]);
   const [demarchesTerminees, setDemarchesTerminees] = useState<any[]>([]);
   const [demarchesRefusees, setDemarchesRefusees] = useState<any[]>([]);
   const [demarchesEnSaisie, setDemarchesEnSaisie] = useState<any[]>([]);
@@ -54,21 +55,27 @@ export default function AllDemarches() {
       .order('created_at', { ascending: false });
 
     if (data) {
-      // À TRAITER: Non-brouillon ET (payé OU jeton gratuit utilisé) MAIS pas encore finalisé ET pas refusé
-      const aTraiter = data.filter(d => 
-        d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse'
+      // À TRAITER: Non-brouillon ET (payé OU jeton gratuit utilisé) MAIS pas encore finalisé ET pas refusé ET pas en attente client
+      const aTraiter = data.filter(d =>
+        d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse' && d.status !== 'en_attente_paiement_client'
       );
-      
+
+      // ATTENTE PAIEMENT CLIENT: Démarches split/client_pays_all en attente du paiement client
+      const attenteClient = data.filter(d =>
+        d.status === 'en_attente_paiement_client' && d.is_draft === false
+      );
+
       // TERMINÉES: Toutes les démarches avec status "finalisé"
       const terminees = data.filter(d => d.status === 'finalise');
-      
+
       // REFUSÉES: Toutes les démarches avec status "refuse"
       const refusees = data.filter(d => d.status === 'refuse');
-      
+
       // EN SAISIE: Tous les brouillons (non finalisés)
       const enSaisie = data.filter(d => d.is_draft === true);
-      
+
       setDemarchesATraiter(aTraiter);
+      setDemarchesAttenteClient(attenteClient);
       setDemarchesTerminees(terminees);
       setDemarchesRefusees(refusees);
       setDemarchesEnSaisie(enSaisie);
@@ -212,6 +219,92 @@ export default function AllDemarches() {
             </Table>
           )}
         </Card>
+
+        {/* Section ATTENTE PAIEMENT CLIENT */}
+        {demarchesAttenteClient.length > 0 && (
+          <Card className="p-6 mb-8 border-2 border-amber-500/20 bg-amber-50/5">
+            <div className="flex items-center gap-3 mb-6">
+              <Clock className="h-6 w-6 text-amber-600" />
+              <h1 className="text-2xl font-bold text-amber-700 dark:text-amber-500">En attente paiement client</h1>
+              <Badge variant="outline" className="border-amber-500 text-amber-600">{demarchesAttenteClient.length}</Badge>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Démarche</TableHead>
+                  <TableHead>Immat.</TableHead>
+                  <TableHead>Garage</TableHead>
+                  <TableHead>Mode</TableHead>
+                  <TableHead>Garage a payé</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead>Lien envoyé</TableHead>
+                  <TableHead>Expiration</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {demarchesAttenteClient.map((d: any) => {
+                  const tokenExpired = d.client_payment_token_expires_at && new Date(d.client_payment_token_expires_at) < new Date();
+                  return (
+                    <TableRow key={d.id} className="bg-amber-50/50 dark:bg-amber-950/10">
+                      <TableCell className="font-mono text-xs font-semibold text-amber-700">{d.numero_demarche}</TableCell>
+                      <TableCell className="font-medium">{d.immatriculation}</TableCell>
+                      <TableCell className="text-sm">{d.garages?.raison_sociale}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-amber-600 border-amber-400 text-xs">
+                          {d.payment_mode === 'split' ? 'Partagé' : d.payment_mode === 'client_pays_all' ? 'Client paie tout' : d.payment_mode}
+                        </Badge>
+                      </TableCell>
+                      {/* Garage a payé ? En attente_paiement_client = pro a payé (split) ou N/A (client_pays_all) */}
+                      <TableCell>
+                        {d.payment_mode === 'client_pays_all' ? (
+                          <Badge variant="outline" className="text-muted-foreground text-xs">N/A</Badge>
+                        ) : (
+                          <Badge className="bg-green-500 text-white text-xs">Oui</Badge>
+                        )}
+                      </TableCell>
+                      {/* Client */}
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="text-xs">{d.client_email || "—"}</div>
+                          {d.client_paid ? (
+                            <Badge className="bg-green-500 text-white text-xs">A payé</Badge>
+                          ) : (
+                            <Badge className="bg-amber-500 text-white text-xs">En attente</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      {/* Lien envoyé */}
+                      <TableCell>
+                        {d.client_payment_token ? (
+                          <Badge className="bg-blue-500 text-white text-xs">Envoyé</Badge>
+                        ) : (
+                          <Badge className="bg-red-500 text-white text-xs">Non envoyé</Badge>
+                        )}
+                      </TableCell>
+                      {/* Expiration du lien */}
+                      <TableCell className="text-xs">
+                        {d.client_payment_token_expires_at ? (
+                          <span className={tokenExpired ? "text-red-600 font-semibold" : "text-muted-foreground"}>
+                            {tokenExpired ? "Expiré" : new Date(d.client_payment_token_expires_at).toLocaleDateString('fr-FR')}
+                          </span>
+                        ) : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs">{new Date(d.created_at).toLocaleDateString('fr-FR')}</TableCell>
+                      <TableCell>
+                        <Link to={`/admin/demarche/${d.id}`}>
+                          <Button variant="outline" size="sm">Voir</Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+        )}
 
         {/* Section REFUSÉES - Démarches refusées */}
         <Card className="p-6 mb-8 border-2 border-red-500/20 bg-red-50/5">
