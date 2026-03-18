@@ -38,8 +38,8 @@ serve(async (req) => {
         });
       }
 
-      // Guest orders use Stripe 2 (carte grise fees)
-      const guestStripeKey = stripeKey2 || stripeKey1;
+      // Guest orders use Stripe 1 (frais de dossier)
+      const guestStripeKey = stripeKey1;
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
         headers: {

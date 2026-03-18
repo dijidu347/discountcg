@@ -191,8 +191,8 @@ const PaiementGuestOrder = () => {
       if (error) throw error;
       
       if (data?.publishableKey) {
-        // Guest orders use Stripe 2 (carte grise fees)
-        setStripePromise(loadStripe(data.publishableKey2 || data.publishableKey));
+        // Guest orders use Stripe 1
+        setStripePromise(loadStripe(data.publishableKey));
       }
     } catch (error) {
       console.error("Error loading Stripe:", error);
