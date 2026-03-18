@@ -30,6 +30,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SimpleDownloadButton } from "@/components/SimpleDownloadButton";
+import { GuestOrderChat } from "@/components/GuestOrderChat";
 import { cn } from "@/lib/utils";
 
 const SuiviCommande = () => {
@@ -996,6 +997,48 @@ const SuiviCommande = () => {
                     )}
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Messagerie */}
+          {order.id && (
+            <GuestOrderChat
+              orderId={order.id}
+              isAdmin={false}
+              trackingNumber={order.tracking_number}
+              guestEmail={order.email}
+              guestName={`${order.prenom} ${order.nom}`}
+            />
+          )}
+
+          {/* Contact */}
+          <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <Mail className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                <div className="space-y-2">
+                  <p className="font-semibold">Une question ? Contactez-nous</p>
+                  <p className="text-sm text-muted-foreground">
+                    Vous pouvez nous envoyer un message via la messagerie ci-dessus, ou nous contacter directement :
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <a
+                      href="mailto:contact@discountcartegrise.fr"
+                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      <Mail className="w-4 h-4" />
+                      contact@discountcartegrise.fr
+                    </a>
+                    <a
+                      href="tel:+33972137890"
+                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      <Phone className="w-4 h-4" />
+                      09 72 13 78 90
+                    </a>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>

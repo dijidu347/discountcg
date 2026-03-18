@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DocumentViewer } from "@/components/DocumentViewer";
+import { GuestOrderChat } from "@/components/GuestOrderChat";
 
 interface GuestOrder {
   id: string;
@@ -1425,6 +1426,15 @@ export default function GuestOrderDetail() {
             )}
           </CardContent>
         </Card>
+
+        {/* Messagerie client */}
+        <GuestOrderChat
+          orderId={order.id}
+          isAdmin={true}
+          trackingNumber={order.tracking_number}
+          guestEmail={order.email}
+          guestName={`${order.prenom} ${order.nom}`}
+        />
       </div>
     </div>
   );
