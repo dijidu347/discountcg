@@ -189,22 +189,6 @@ serve(async (req) => {
       console.log('No client_email on demarche, skipping email');
     }
 
-    // Insert notification in DB for garage (triggers real-time NotificationBell)
-    const { error: notifError } = await supabaseClient
-      .from('notifications')
-      .insert({
-        garage_id: demarche.garage_id,
-        demarche_id: demarcheId,
-        type: 'client_payment_link_sent',
-        message: `Lien de paiement envoyé à ${effectiveClientEmail || 'N/A'} pour ${realImmat}`,
-      });
-
-    if (notifError) {
-      console.error('Failed to create notification:', notifError);
-    } else {
-      console.log('Garage notification created');
-    }
-
     return new Response(
       JSON.stringify({
         paymentUrl,
