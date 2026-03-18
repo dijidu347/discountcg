@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -116,6 +117,10 @@ export default function TestEmail() {
 
   return (
     <div className="container mx-auto p-6">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin - Test email | Discount Carte Grise</title>
+      </Helmet>
       <Card>
         <CardHeader>
           <CardTitle>Test d'envoi d'email</CardTitle>

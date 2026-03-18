@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -125,6 +126,10 @@ export default function GuestOrders() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-8">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Commandes invités | Discount Carte Grise</title>
+      </Helmet>
       <div className="max-w-7xl mx-auto space-y-6">
         <Button variant="ghost" onClick={() => navigate("/admin")} className="mb-4">
           <ArrowLeft className="mr-2 h-4 w-4" />

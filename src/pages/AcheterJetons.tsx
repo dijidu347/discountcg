@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,6 +110,10 @@ export default function AcheterJetons() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Acheter des jetons | Discount Carte Grise</title>
+      </Helmet>
       {/* Header - Same as Dashboard */}
       <div className="bg-card border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">

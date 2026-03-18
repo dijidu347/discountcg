@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -288,6 +289,10 @@ export default function PaiementRecharge() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Paiement recharge | Discount Carte Grise</title>
+      </Helmet>
       {/* Header */}
       <div className="bg-card border-b sticky top-0 z-10 shadow-sm">
         <div className="container mx-auto px-4 py-4">

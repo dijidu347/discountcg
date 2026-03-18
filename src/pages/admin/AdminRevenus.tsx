@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -438,6 +439,10 @@ export default function AdminRevenus() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin revenus | Discount Carte Grise</title>
+      </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <Button variant="ghost" onClick={() => navigate("/admin")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" /> Retour

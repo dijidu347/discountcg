@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -151,6 +152,10 @@ export default function CompleteProfile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Compléter mon profil | Discount Carte Grise</title>
+      </Helmet>
       <div className="w-full max-w-lg">
         <Card className="shadow-xl">
           <CardHeader className="space-y-1">

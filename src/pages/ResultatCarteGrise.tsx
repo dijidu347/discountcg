@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -183,8 +184,12 @@ export default function ResultatCarteGrise() {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Résultat carte grise | Discount Carte Grise</title>
+      </Helmet>
       <Navbar />
-      
+
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <Button
           variant="ghost"

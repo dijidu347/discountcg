@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -410,6 +411,10 @@ const ManagePricingConfig = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-8">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin - Configuration tarifs | Discount Carte Grise</title>
+      </Helmet>
       <div className="max-w-6xl mx-auto space-y-6">
         <Button
           variant="ghost"

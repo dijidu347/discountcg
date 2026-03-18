@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -784,32 +785,44 @@ export default function GuestOrderDetail() {
           </CardContent>
         </Card>
 
-        {/* Options supplémentaires */}
-        {(order.dossier_prioritaire || order.certificat_non_gage) && (
-          <Card className="border-orange-200 dark:border-orange-800">
-            <CardHeader>
+        {/* Options supplémentaires & suivi — toujours visible */}
+        {(order.dossier_prioritaire || order.certificat_non_gage || order.email_notifications || order.sms_notifications) && (
+          <Card className="border-2 border-orange-400 dark:border-orange-600 bg-orange-50/50 dark:bg-orange-950/30 shadow-lg">
+            <CardHeader className="pb-3">
               <div className="flex items-center gap-2">
                 <AlertCircle className="h-5 w-5 text-orange-500" />
-                <CardTitle>Options supplémentaires</CardTitle>
+                <CardTitle className="text-orange-700 dark:text-orange-400">Options client</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {order.dossier_prioritaire && (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-orange-100 dark:bg-orange-950 border-2 border-orange-400 dark:border-orange-700">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-orange-500">Prioritaire</Badge>
-                    <span className="text-sm font-medium">Dossier Prioritaire</span>
+                    <Badge className="bg-orange-500 text-white text-xs">PRIORITAIRE</Badge>
+                    <span className="text-sm font-bold">Traitement prioritaire demandé</span>
                   </div>
-                  <span className="text-sm text-orange-600 font-medium">+5,00 €</span>
+                  <span className="text-sm text-orange-600 font-bold">+5,00 €</span>
                 </div>
               )}
               {order.certificat_non_gage && (
-                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-100 dark:bg-blue-950 border-2 border-blue-400 dark:border-blue-700">
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-500">Non-gage</Badge>
-                    <span className="text-sm font-medium">Certificat de non-gage</span>
+                    <Badge className="bg-blue-500 text-white text-xs">NON-GAGE</Badge>
+                    <span className="text-sm font-bold">Certificat de non-gage demandé</span>
                   </div>
-                  <span className="text-sm text-blue-600 font-medium">+10,00 €</span>
+                  <span className="text-sm text-blue-600 font-bold">+10,00 €</span>
+                </div>
+              )}
+              {order.email_notifications && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-100 dark:bg-green-950 border border-green-300 dark:border-green-700">
+                  <Badge className="bg-green-500 text-white text-xs">EMAIL</Badge>
+                  <span className="text-sm font-medium">Suivi par email activé</span>
+                </div>
+              )}
+              {order.sms_notifications && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-purple-100 dark:bg-purple-950 border border-purple-300 dark:border-purple-700">
+                  <Badge className="bg-purple-500 text-white text-xs">SMS</Badge>
+                  <span className="text-sm font-medium">Suivi par SMS activé</span>
                 </div>
               )}
             </CardContent>
@@ -1584,6 +1597,10 @@ function DocumentValidationCard({
 
   return (
     <div>
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin - Détail commande invité | Discount Carte Grise</title>
+      </Helmet>
       <div className="p-3 border rounded-lg space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 flex-1">

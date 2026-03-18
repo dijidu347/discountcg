@@ -76,14 +76,8 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
       const filteredData = (data || []).filter(t => t.code !== 'DA');
       setDemarcheTypes(filteredData);
       if (filteredData.length > 0) {
-        // Embedded mode: force CG. Otherwise use initialType or keep current or default to first
-        const typeToSelect = embedded
-          ? (filteredData.find(t => t.code === 'CG') ? 'CG' : filteredData[0].code)
-          : initialType && filteredData.find(t => t.code === initialType)
-            ? initialType
-            : selectedTypeCode && filteredData.find(t => t.code === selectedTypeCode)
-              ? selectedTypeCode
-              : filteredData[0].code;
+        // Always force CG - simulator is only for carte grise
+        const typeToSelect = filteredData.find(t => t.code === 'CG') ? 'CG' : filteredData[0].code;
         setSelectedTypeCode(typeToSelect);
       }
     } catch (error) {
@@ -251,7 +245,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
   }
 
   const simulatorContent = (
-    <div className={`bg-card border border-border shadow-xl rounded-2xl p-8 ${embedded ? "" : "max-w-xl mx-auto"}`}>
+    <div className={`bg-card border border-border shadow-xl rounded-2xl p-8 text-card-foreground ${embedded ? "" : "max-w-xl mx-auto"}`}>
           {embedded && (
             <h2 className="text-xl font-bold text-foreground text-center mb-6">Simulateur prix de carte grise</h2>
           )}
@@ -338,33 +332,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
 
           {/* Formulaire */}
           <div className="space-y-4">
-            {/* Type de démarche - hidden in embedded mode (CG forced) */}
-            {!embedded && (
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">Type de démarche</label>
-              <Select value={selectedTypeCode} onValueChange={setSelectedTypeCode}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Choisir une démarche" />
-                </SelectTrigger>
-                <SelectContent>
-                  {demarcheTypes.map((type) => {
-                    const Icon = getIconForCode(type.code);
-                    return (
-                      <SelectItem key={type.code} value={type.code}>
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-4 w-4" />
-                          <span>{type.titre}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {currentDemarche?.description && (
-                <p className="text-xs text-muted-foreground">{currentDemarche.description}</p>
-              )}
-            </div>
-            )}
+            {/* Type de démarche hidden - CG always forced */}
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Immatriculation</label>

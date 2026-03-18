@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -183,6 +184,10 @@ export default function ManageUsers() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background py-8">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin - Utilisateurs | Discount Carte Grise</title>
+      </Helmet>
       <div className="container mx-auto px-4">
         <Button 
           variant="ghost" 

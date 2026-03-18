@@ -8,6 +8,45 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { getDemarcheByCode } from "@/data/demarchesConfig";
 
+// Map DB action codes to demarchesConfig codes for SEO page linking
+const codeMap: Record<string, string> = {
+  // Pro suffixed codes
+  CHANGEMENT_ADRESSE_PRO: "CHGT_ADRESSE",
+  CHANGEMENT_ADRESSE_LOCATAIRE_PRO: "CHANGEMENT_ADRESSE_LOCATAIRE",
+  DUPLICATA_CG_PRO: "DUPLICATA",
+  CG_NEUF_PRO: "CG_NEUF",
+  SUCCESSION_PRO: "SUCCESSION",
+  SUCCESSION_HERITAGE_PRO: "SUCCESSION",
+  QUITUS_FISCAL_PRO: "QUITUS_FISCAL",
+  COTITULAIRE_PRO: "COTITULAIRE",
+  MODIF_CG_PRO: "MODIF_CG",
+  IMMAT_CYCLO_PRO: "IMMAT_CYCLO",
+  CYCLO_ANCIEN_PRO: "IMMAT_CYCLO",
+  WW_PROVISOIRE_PRO: "CPI_WW",
+  W_GARAGE_PRO: "W_GARAGE",
+  ANNULATION_CPI_WW_PRO: "ANNULATION_CPI_WW",
+  FIV_PRO: "FIV",
+  IMMAT_DEFINITIVE_PRO: "IMMAT_DEFINITIVE",
+  ANNULER_CORRIGER_DC_DA_PRO: "ANNULER_DC_DA",
+  // Direct codes
+  DA: "DA",
+  DC: "DC",
+  CPI_WW: "CPI_WW",
+  W_GARAGE: "W_GARAGE",
+  ANNULATION_CPI_WW: "ANNULATION_CPI_WW",
+  FIV: "FIV",
+  IMMAT_DEFINITIVE: "IMMAT_DEFINITIVE",
+  CHANGEMENT_ADRESSE_LOCATAIRE: "CHANGEMENT_ADRESSE_LOCATAIRE",
+  ANNULER_DC_DA: "ANNULER_DC_DA",
+};
+
+const getDemarcheLink = (code: string): string => {
+  if (code === "CG") return "/simulateur";
+  const mapped = codeMap[code] || code;
+  const demarche = getDemarcheByCode(mapped);
+  return demarche ? `/${demarche.slug}` : `/demarche-rapide?type=${code}`;
+};
+
 const Services = ({ embedded = false }: { embedded?: boolean }) => {
   const [actions, setActions] = useState<Tables<"actions_rapides">[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +155,7 @@ const Services = ({ embedded = false }: { embedded?: boolean }) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-2">
-                  <Link to={`/${getDemarcheByCode(action.code)?.slug || "simulateur?type=" + action.code}`}>
+                  <Link to={getDemarcheLink(action.code)}>
                     <Button
                       variant="outline"
                       className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors"

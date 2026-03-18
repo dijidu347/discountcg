@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { CheckCircle, Euro, FileCheck, ArrowRight } from "lucide-react";
@@ -32,6 +33,10 @@ export default function PaiementSoldeSucces() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 dark:from-green-950/20 dark:via-emerald-950/20 dark:to-teal-950/20 flex items-center justify-center p-4">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Paiement réussi | Discount Carte Grise</title>
+      </Helmet>
       <Card className="max-w-md w-full border-2 border-green-200 dark:border-green-800 shadow-xl">
         <CardContent className="pt-8 pb-6 px-6 text-center space-y-6">
           <motion.div

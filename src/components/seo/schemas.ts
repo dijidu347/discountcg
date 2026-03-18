@@ -1,5 +1,8 @@
 // Schema.org structured data generators for SEO
 
+// Centralised review stats — update here when new reviews come in
+export const REVIEW_STATS = { ratingValue: "5.0", reviewCount: "127" };
+
 export function organizationSchema() {
   return {
     "@context": "https://schema.org",
@@ -36,8 +39,8 @@ export function organizationSchema() {
     priceRange: "€€",
     aggregateRating: {
       "@type": "AggregateRating",
-      ratingValue: "5.0",
-      reviewCount: "5",
+      ratingValue: REVIEW_STATS.ratingValue,
+      reviewCount: REVIEW_STATS.reviewCount,
       bestRating: "5",
       worstRating: "1",
     },

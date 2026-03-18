@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect, useMemo } from "react";
 import DOMPurify from "dompurify";
 import { useNavigate } from "react-router-dom";
@@ -125,6 +126,10 @@ const ManageEmailTemplates = () => {
 
   return (
     <div className="min-h-screen bg-background p-6">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin - Templates email | Discount Carte Grise</title>
+      </Helmet>
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

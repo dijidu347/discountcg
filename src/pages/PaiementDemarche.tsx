@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -736,6 +737,10 @@ const PaiementDemarche = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Paiement démarche | Discount Carte Grise</title>
+      </Helmet>
       <Navbar />
 
       <div className="container mx-auto px-4 py-8 md:py-12">

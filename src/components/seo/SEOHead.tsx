@@ -15,7 +15,7 @@ export function SEOHead({
   description,
   canonical,
   type = "website",
-  image = "https://discountcartegrise.fr/og-image.jpg",
+  image = "https://discountcartegrise.fr/lovable-uploads/afe744c8-2491-4bc5-b822-6e18a95d9183.webp",
   schema,
   noindex = false,
 }: SEOHeadProps) {
@@ -36,9 +36,6 @@ export function SEOHead({
       ) : (
         <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
       )}
-
-      {/* SPA crawling hint */}
-      <meta name="fragment" content="!" />
 
       {/* Open Graph */}
       <meta property="og:type" content={type} />

@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -281,6 +282,10 @@ export default function DemarcheDetail() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Détail de la démarche | Discount Carte Grise</title>
+      </Helmet>
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"

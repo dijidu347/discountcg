@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -194,6 +195,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Admin tableau de bord | Discount Carte Grise</title>
+      </Helmet>
       <div className="container mx-auto px-4 py-8">
         <Button
           variant="ghost"

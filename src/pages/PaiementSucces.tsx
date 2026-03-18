@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { CheckCircle } from "lucide-react";
@@ -25,7 +26,11 @@ const PaiementSucces = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
-      <motion.div 
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Paiement réussi | Discount Carte Grise</title>
+      </Helmet>
+      <motion.div
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}

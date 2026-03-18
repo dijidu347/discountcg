@@ -102,12 +102,12 @@ const DemarchePage = () => {
         <div className="container mx-auto px-4 py-24 text-center">
           <h1 className="text-4xl font-bold text-foreground mb-4">Page introuvable</h1>
           <p className="text-muted-foreground mb-8">
-            La demarche que vous recherchez n'existe pas ou a ete deplacee.
+            La démarche que vous recherchez n'existe pas ou a été déplacée.
           </p>
           <Link to="/">
             <Button>
               <Home className="mr-2 h-4 w-4" />
-              Retour a l'accueil
+              Retour à l'accueil
             </Button>
           </Link>
         </div>
@@ -163,7 +163,7 @@ const DemarchePage = () => {
           <div className="flex flex-wrap gap-2 mb-6">
             <Badge variant="secondary" className="flex items-center gap-1">
               <Shield className="h-3 w-3" />
-              Agree par l'Etat
+              Agréé par l'État
             </Badge>
             <Badge variant="secondary" className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
@@ -213,7 +213,7 @@ const DemarchePage = () => {
                   rel="noopener noreferrer"
                   className="text-primary hover:underline"
                 >
-                  ANTS - Agence Nationale des Titres Securises
+                  ANTS - Agence Nationale des Titres Sécurisés
                 </a>
               </li>
             </ul>
@@ -223,7 +223,7 @@ const DemarchePage = () => {
             <ul className="space-y-1 text-sm">
               <li>
                 <Link to="/prix-carte-grise" className="text-primary hover:underline">
-                  Prix carte grise 2026 par departement
+                  Prix carte grise 2026 par département
                 </Link>
               </li>
               <li>
@@ -241,7 +241,7 @@ const DemarchePage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-              Documents necessaires
+              Documents nécessaires
             </h2>
             <Card className="p-6">
               <ul className="space-y-3">
@@ -289,7 +289,7 @@ const DemarchePage = () => {
             {isCG ? (
               <>
                 <p className="text-muted-foreground mb-6">
-                  Pour connaitre le prix exact de votre demarche,{" "}
+                  Pour connaître le prix exact de votre démarche,{" "}
                   <Link to="/simulateur" className="text-primary font-medium hover:underline">
                     simulez votre tarif en quelques clics
                   </Link>
@@ -317,7 +317,7 @@ const DemarchePage = () => {
       <section className="container mx-auto px-4 py-12">
         <div className="max-w-3xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Delai de traitement
+            Délai de traitement
           </h2>
           <Card className="p-6 flex items-start gap-4">
             <Clock className="h-6 w-6 text-primary shrink-0 mt-1" />
@@ -326,9 +326,9 @@ const DemarchePage = () => {
                 Traitement en {demarche.delai}
               </p>
               <p className="text-muted-foreground">
-                Des la validation de votre dossier, vous recevez un Certificat Provisoire
-                d'Immatriculation (CPI) par email, vous permettant de circuler immediatement.
-                Votre document definitif est ensuite envoye par courrier recommande sous 3 a 5
+                Dès la validation de votre dossier, vous recevez un Certificat Provisoire
+                d'Immatriculation (CPI) par email, vous permettant de circuler immédiatement.
+                Votre document définitif est ensuite envoyé par courrier recommandé sous 3 à 5
                 jours ouvrables.
               </p>
             </div>
@@ -342,7 +342,7 @@ const DemarchePage = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-                Questions frequentes sur {demarche.shortTitle.toLowerCase()}
+                Questions fréquentes sur {demarche.shortTitle.toLowerCase()}
               </h2>
               <Accordion type="single" collapsible className="w-full">
                 {demarche.faqs.map((faq, i) => (
@@ -372,7 +372,7 @@ const DemarchePage = () => {
               <div className="flex items-start gap-3">
                 <Shield className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-semibold text-foreground text-sm">Service agree par l'Etat</p>
+                  <p className="font-semibold text-foreground text-sm">Service agréé par l'État</p>
                   <p className="text-xs text-muted-foreground">Habilitation Prefecture N° 285046</p>
                 </div>
               </div>
@@ -382,7 +382,7 @@ const DemarchePage = () => {
                 <Clock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">Traitement rapide</p>
-                  <p className="text-xs text-muted-foreground">Votre dossier traite sous 24h maximum</p>
+                  <p className="text-xs text-muted-foreground">Votre dossier traité sous 24h maximum</p>
                 </div>
               </div>
             </Card>
@@ -391,7 +391,7 @@ const DemarchePage = () => {
                 <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">100% en ligne</p>
-                  <p className="text-xs text-muted-foreground">Plus besoin de se deplacer en prefecture</p>
+                  <p className="text-xs text-muted-foreground">Plus besoin de se déplacer en préfecture</p>
                 </div>
               </div>
             </Card>
@@ -400,7 +400,7 @@ const DemarchePage = () => {
                 <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">Meilleur prix garanti</p>
-                  <p className="text-xs text-muted-foreground">Carte grise pas chere, frais des 19,90 euros</p>
+                  <p className="text-xs text-muted-foreground">Carte grise pas chère, frais dès 19,90 euros</p>
                 </div>
               </div>
             </Card>
@@ -412,7 +412,7 @@ const DemarchePage = () => {
       <section className="container mx-auto px-4 py-12">
         <div className="max-w-4xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Autres demarches
+            Autres démarches
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {otherDemarches.map((d) => (
@@ -434,11 +434,11 @@ const DemarchePage = () => {
       <section className="bg-primary py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-4">
-            Pret a commencer ?
+            Prêt à commencer ?
           </h2>
           <p className="text-primary-foreground/80 mb-8 max-w-xl mx-auto">
             Faites votre {demarche.shortTitle.toLowerCase()} en ligne en quelques minutes.
-            Service agree par l'Etat, traitement rapide et securise.
+            Service agréé par l'État, traitement rapide et sécurisé.
           </p>
           <Button size="lg" variant="secondary" className="text-base" onClick={handleStartDemarche} disabled={starting}>
             {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { REVIEW_STATS } from "@/components/seo/schemas";
 
 const reviews = [
   {
@@ -77,14 +78,14 @@ export const GoogleReviewsCarousel = () => {
               Avis Clients Google
             </h2>
           </div>
-          <div className="flex items-center justify-center gap-2 mb-2">
+          <div className="flex items-center justify-center gap-2 mb-2" role="img" aria-label="Note moyenne : 5 étoiles sur 5">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" />
+              <Star key={i} className="w-6 h-6 fill-yellow-400 text-yellow-400" aria-hidden="true" />
             ))}
-            <span className="text-2xl font-bold text-foreground ml-2">5.0</span>
+            <span className="text-2xl font-bold text-foreground ml-2">{REVIEW_STATS.ratingValue}</span>
           </div>
           <p className="text-muted-foreground">
-            Basé sur des centaines d'avis vérifiés
+            Basé sur {REVIEW_STATS.reviewCount} avis vérifiés
           </p>
         </div>
 

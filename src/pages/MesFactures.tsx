@@ -1,3 +1,4 @@
+import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,6 +115,10 @@ export default function MesFactures() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20 p-4 md:p-8">
+      <Helmet>
+        <meta name="robots" content="noindex, nofollow" />
+        <title>Mes factures | Discount Carte Grise</title>
+      </Helmet>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center gap-4 mb-8">
           <Button
