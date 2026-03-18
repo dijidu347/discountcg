@@ -170,7 +170,10 @@ export function NotificationBell({ garageId }: { garageId: string }) {
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'payment_confirmed':
+      case 'client_payment_confirmed':
         return '💰';
+      case 'client_payment_link_sent':
+        return '🔗';
       case 'document_request':
         return '📄';
       case 'document_ready':

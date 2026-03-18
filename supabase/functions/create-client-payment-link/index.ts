@@ -127,6 +127,25 @@ serve(async (req) => {
 
     const paymentUrl = `https://discountcartegrise.fr/paiement-client/${clientPaymentToken}`;
 
+    // Resolve immatriculation for notification message
+    const notifImmat = realImmat || demarche.immatriculation;
+
+    // Insert in-app notification for the garage (realtime NotificationBell)
+    const { error: notifError } = await supabaseClient
+      .from("notifications")
+      .insert({
+        garage_id: demarche.garage_id,
+        demarche_id: demarcheId,
+        type: "client_payment_link_sent",
+        message: `Lien de paiement envoyé au client pour la démarche ${demarche.numero_demarche || demarcheId} (${notifImmat})`,
+      });
+
+    if (notifError) {
+      console.error("❌ Failed to insert client_payment_link_sent notification:", notifError);
+    } else {
+      console.log("✅ Notification client_payment_link_sent inserted for garage");
+    }
+
     // Send email to client - use clientEmail from body as fallback
     const effectiveClientEmail = clientEmail || demarche.client_email;
     if (effectiveClientEmail) {
