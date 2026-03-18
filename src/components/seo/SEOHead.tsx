@@ -30,7 +30,7 @@ export function SEOHead({
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
       <link rel="canonical" href={url} />
-      <link rel="alternate" hreflang="fr" href={url} />
+      <link rel="alternate" hrefLang="fr" href={url} />
       {noindex ? (
         <meta name="robots" content="noindex, nofollow" />
       ) : (

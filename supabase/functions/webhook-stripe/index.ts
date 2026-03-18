@@ -842,21 +842,6 @@ async function handleClientPayment(
     }
     console.log("✅ Admin notification emails sent");
 
-    // Insert notification in DB for garage (triggers real-time NotificationBell)
-    const { error: notifError } = await supabase
-      .from("notifications")
-      .insert({
-        garage_id: demarche.garage_id,
-        demarche_id: demarcheId,
-        type: "client_payment_confirmed",
-        message: `Le client ${demarche.client_email || ""} a payé ${clientActualAmount.toFixed(2)}€ pour ${realImmat}`,
-      });
-
-    if (notifError) {
-      console.error("❌ Failed to create garage notification:", notifError);
-    } else {
-      console.log("✅ Garage notification created in DB");
-    }
   }
 }
 
