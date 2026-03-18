@@ -895,6 +895,44 @@ export type Database = {
           },
         ]
       }
+      guest_order_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          order_id: string
+          sender_email: string | null
+          sender_type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          order_id: string
+          sender_email?: string | null
+          sender_type: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          order_id?: string
+          sender_email?: string | null
+          sender_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_order_messages_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "guest_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_order_required_documents: {
         Row: {
           actif: boolean
