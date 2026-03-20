@@ -25,10 +25,11 @@ Outil d'archivage de factures fournisseurs pour les professionnels de l'automobi
 | Colonne | Type | Description |
 |---------|------|-------------|
 | id | uuid PK | |
-| garage_id | uuid FK -> garages | |
+| garage_id | uuid FK -> garages, UNIQUE | Un seul abonnement par garage |
 | stripe_subscription_id | text | ID abonnement Stripe |
 | stripe_customer_id | text | ID client Stripe |
 | status | text | `trialing`, `active`, `canceled`, `past_due` |
+| cancel_at_period_end | boolean default false | Annulation programmee en fin de periode |
 | trial_start | timestamptz | Debut essai gratuit |
 | trial_end | timestamptz | Fin essai (trial_start + 30 jours) |
 | current_period_start | timestamptz | |
@@ -42,9 +43,9 @@ Outil d'archivage de factures fournisseurs pour les professionnels de l'automobi
 |---------|------|-------------|
 | id | uuid PK | |
 | garage_id | uuid FK -> garages | |
-| category | text | Enum: `achats_vehicules`, `pieces_accessoires`, `carburant`, `entretien`, `transport`, `frais_divers` |
+| category | text CHECK (category IN ('achats_vehicules','pieces_accessoires','carburant','entretien','transport','frais_divers')) | Categorie du document |
 | title | text | Nom fournisseur ou titre libre |
-| amount | numeric | Montant (nullable) |
+| amount | numeric(10,2) | Montant en EUR (nullable) |
 | document_date | date | Date du document |
 | note | text | Note libre (nullable) |
 | file_path | text | Chemin dans le bucket Supabase |
@@ -54,26 +55,49 @@ Outil d'archivage de factures fournisseurs pour les professionnels de l'automobi
 | created_at | timestamptz | |
 | updated_at | timestamptz | |
 
+#### Index et triggers
+
+- Index `coffre_documents(garage_id, document_date DESC)` pour les requetes filtrées
+- Index `coffre_documents(garage_id, created_at DESC)` pour la pagination
+- Trigger `moddatetime` sur `updated_at` pour les deux tables
+
 ### Storage
 
 - **Bucket** : `coffre-fort-documents` (prive)
-- **Chemin** : `{garage_id}/{uuid}_{filename}`
+- **Chemin** : `{garage_id}/{uuid}.{ext}` (le nom original est conserve dans `file_name` en base, pas dans le chemin Storage pour eviter les caracteres speciaux)
 
 ### RLS (Row-Level Security)
 
-- SELECT : garage ne voit que ses propres documents (meme si abo expire)
-- INSERT : garage avec abonnement actif (`status IN ('trialing', 'active')`) uniquement
-- UPDATE/DELETE : garage ne modifie/supprime que ses propres documents
+**Note** : `auth.uid()` correspond a `garages.id` dans ce projet (le garage est cree avec l'ID de l'utilisateur authentifie).
+
+**Table `coffre_subscriptions`** :
+- SELECT : garage ne voit que son propre abonnement (`garage_id = auth.uid()`)
+- INSERT/UPDATE/DELETE : interdit cote client. Gere exclusivement par les Edge Functions via `service_role`
 - Admin : acces complet via `has_role('admin')`
+
+**Table `coffre_documents`** :
+- SELECT : garage ne voit que ses propres documents (meme si abo expire — l'utilisateur garde l'acces en lecture)
+- INSERT : garage avec abonnement actif uniquement. Policy avec sous-requete : `EXISTS (SELECT 1 FROM coffre_subscriptions WHERE garage_id = auth.uid() AND status IN ('trialing', 'active'))`. Note : fenetre de latence acceptable entre echec paiement et mise a jour webhook
+- UPDATE : garage ne modifie que ses propres documents (autorise meme si abo expire — renommer, editer note)
+- DELETE : garage ne supprime que ses propres documents (autorise meme si abo expire — l'utilisateur reste maitre de ses donnees)
+- Admin : acces complet via `has_role('admin')`
+
+**Bucket `coffre-fort-documents`** :
+- INSERT : autorise si `auth.uid()` correspond au `garage_id` du chemin ET abonnement actif (sous-requete identique)
+- SELECT : autorise si `auth.uid()` correspond au `garage_id` du chemin
+- DELETE : autorise si `auth.uid()` correspond au `garage_id` du chemin
+- Le chemin `{garage_id}/...` sert de cle de partitionnement pour le controle d'acces
 
 ### Edge Functions
 
 | Fonction | Methode | Description |
 |----------|---------|-------------|
 | `create-coffre-subscription` | POST | Cree/recupere Stripe Customer, cree Subscription avec trial 30j, insere dans `coffre_subscriptions` |
-| `webhook-stripe-coffre` | POST | Ecoute `customer.subscription.updated`, `.deleted`, `invoice.payment_failed`. Met a jour `status` dans `coffre_subscriptions` |
-| `export-coffre-documents` | POST | Recoit `{ ids: string[] }` ou `{ all: true }` ou `{ year: number }`. Genere ZIP en memoire (JSZip), retourne le fichier. Limite ~50 Mo |
-| `get-coffre-signed-url` | POST | Genere signed URL temporaire pour visualiser un document prive |
+| `webhook-stripe-coffre` | POST | Ecoute `customer.subscription.updated`, `.deleted`, `invoice.payment_failed`, `invoice.paid`. Met a jour `status` et `cancel_at_period_end` dans `coffre_subscriptions` |
+| `export-coffre-documents` | POST | Recoit `{ ids: string[] }` ou `{ all: true }` ou `{ year: number }`. Genere ZIP en memoire (JSZip) via `service_role` pour acceder au Storage. Si taille totale > 100 Mo, retourne erreur 413 avec message "Veuillez selectionner moins de documents". Calcule la taille totale avant de commencer la generation. Contrainte Edge Function : ~150 Mo RAM, 2 min timeout |
+| `get-coffre-signed-url` | POST | Genere signed URL temporaire (TTL: 300 secondes) pour visualiser un document prive |
+
+**Securite webhook** : `webhook-stripe-coffre` verifie la signature Stripe (`stripe-signature` header + `STRIPE_WEBHOOK_SECRET`) pour empecher les events usurpes.
 
 ### Compression
 
@@ -83,6 +107,10 @@ Outil d'archivage de factures fournisseurs pour les professionnels de l'automobi
   - Conversion en JPEG
   - Gain typique : 5-8 Mo -> 200-400 Ko
 - **PDF** : pas de compression (deja compresse)
+- **HEIC** : conversion via `heic2any` polyfill (Chrome ne decode pas nativement HEIC) avant compression
+- **Types acceptes** : `image/jpeg`, `image/png`, `image/heic`, `image/webp`, `application/pdf` uniquement
+- **Taille max upload** : 20 Mo par fichier (avant compression)
+- **Fichiers non supportes** : rejet avec toast d'erreur "Format non supporte. Utilisez une image ou un PDF."
 
 ## Ecrans et parcours UX
 
@@ -113,6 +141,7 @@ Outil d'archivage de factures fournisseurs pour les professionnels de l'automobi
 - Grille de cartes : miniature (couleur par categorie), titre, montant, date, badge categorie
 - Mode selection : checkboxes sur les cartes, bouton export selection apparait
 - FAB mobile : bouton + flottant en bas a droite
+- Pagination : infinite scroll, 20 documents par page
 
 ### 5. Wizard ajout document (modale 4 etapes)
 
@@ -127,6 +156,8 @@ Barre de progression en haut (4 segments colores).
 **Etape 4 — Optionnel + Save** : recap complet (fichier + categorie + date). Champs montant (optionnel) + note (optionnel). Bouton "Enregistrer".
 
 **Temps cible** : moins de 20 secondes pour le parcours complet.
+
+**Gestion d'erreurs** : toast d'erreur en cas d'echec upload/compression/reseau. Bouton "Reessayer" sur l'etape 1. Si abonnement expire pendant l'upload, toast "Votre abonnement a expire" + redirection vers la page de vente.
 
 ### 6. Detail document
 
