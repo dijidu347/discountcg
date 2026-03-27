@@ -238,7 +238,7 @@ export default function CoffreFort() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
         <Helmet><meta name="robots" content="noindex, nofollow" /><title>Document | Coffre-fort</title></Helmet>
-        <NavBar />
+        {NavBar()}
         <div className="container mx-auto px-4 py-4 md:py-6">
           <Button variant="ghost" size="sm" onClick={() => setDetailDoc(null)} className="mb-4 h-11">
             <ChevronLeft className="mr-1 h-4 w-4" /> Retour aux documents
@@ -346,7 +346,7 @@ export default function CoffreFort() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
       <Helmet><meta name="robots" content="noindex, nofollow" /><title>Coffre-fort factures | Discount Carte Grise</title></Helmet>
-      <NavBar />
+      {NavBar()}
 
       <div className="container mx-auto px-4 py-4 md:py-6">
         {/* Header: mobile = colonne, desktop = ligne */}
