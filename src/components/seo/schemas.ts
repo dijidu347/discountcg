@@ -17,7 +17,7 @@ export function organizationSchema() {
       height: 60,
     },
     image: "https://discountcartegrise.fr/logo.png",
-    description: "Service de carte grise en ligne agree par l'Etat. Traitement sous 24h. Habilitation Prefecture N° 285046.",
+    description: "Service de carte grise en ligne agréé par l'État. Traitement sous 24h. Habilitation Préfecture N° 285046.",
     address: {
       "@type": "PostalAddress",
       streetAddress: "24 RUE DU CROUZET",
@@ -47,20 +47,20 @@ export function organizationSchema() {
     hasCredential: [
       {
         "@type": "GovernmentPermit",
-        name: "Habilitation Prefecture",
+        name: "Habilitation Préfecture",
         identifier: "285046",
         issuedBy: {
           "@type": "GovernmentOrganization",
-          name: "Prefecture de l'Herault",
+          name: "Préfecture de l'Hérault",
         },
       },
       {
         "@type": "GovernmentPermit",
-        name: "Agrement Tresor Public",
+        name: "Agrément Trésor Public",
         identifier: "63198",
         issuedBy: {
           "@type": "GovernmentOrganization",
-          name: "Tresor Public",
+          name: "Trésor Public",
         },
       },
     ],
@@ -100,7 +100,7 @@ export function serviceSchema(
     "@type": "Service",
     name,
     description,
-    serviceType: "Demarche d'immatriculation",
+    serviceType: "Démarche d'immatriculation",
     provider: {
       "@type": "Organization",
       name: "Discount Carte Grise",

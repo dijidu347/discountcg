@@ -59,6 +59,8 @@ const MentionsLegales = React.lazy(() => import("./pages/MentionsLegales"));
 const CGV = React.lazy(() => import("./pages/CGV"));
 const PolitiqueConfidentialite = React.lazy(() => import("./pages/PolitiqueConfidentialite"));
 const Cookies = React.lazy(() => import("./pages/Cookies"));
+const CoffreFort = React.lazy(() => import("./pages/CoffreFort"));
+const CoffreFortSales = React.lazy(() => import("./pages/CoffreFortSales"));
 const NotFound = React.lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -100,6 +102,8 @@ const App = () => (
             <Route path="/paiement-recharge" element={<PaiementRecharge />} />
             <Route path="/paiement-recharge-succes" element={<PaiementRechargeSucces />} />
             <Route path="/paiement-solde-succes/:demarcheId" element={<PaiementSoldeSucces />} />
+            <Route path="/coffre-fort" element={<CoffreFort />} />
+            <Route path="/coffre-fort-sales" element={<CoffreFortSales />} />
             <Route path="/support" element={<Support />} />
             <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/admin/demarches" element={<AllDemarches />} />

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Helmet } from "react-helmet-async";
 import { Card, CardContent } from "@/components/ui/card";
 import { Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -64,7 +65,30 @@ export const GoogleReviewsCarousel = () => {
     setCurrentIndex(prev => (prev + 1) % reviews.length);
   };
 
+  const reviewSchema = {
+    "@context": "https://schema.org",
+    "@type": "LocalBusiness",
+    name: "Discount Carte Grise",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: REVIEW_STATS.ratingValue,
+      reviewCount: REVIEW_STATS.reviewCount,
+      bestRating: "5",
+      worstRating: "1",
+    },
+    review: reviews.map((r) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: r.name },
+      reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
+      reviewBody: r.text,
+    })),
+  };
+
   return (
+    <>
+    <Helmet>
+      <script type="application/ld+json">{JSON.stringify(reviewSchema)}</script>
+    </Helmet>
     <section className="py-16 bg-gradient-to-b from-background to-primary/5">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
@@ -183,5 +207,6 @@ export const GoogleReviewsCarousel = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };

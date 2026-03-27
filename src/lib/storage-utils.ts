@@ -1,9 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // Valid bucket names
-export type StorageBucket = "demarche-documents" | "guest-order-documents" | "factures";
+export type StorageBucket = "demarche-documents" | "guest-order-documents" | "factures" | "coffre-fort-documents";
 
-const VALID_BUCKETS: StorageBucket[] = ["demarche-documents", "guest-order-documents", "factures"];
+const VALID_BUCKETS: StorageBucket[] = ["demarche-documents", "guest-order-documents", "factures", "coffre-fort-documents"];
 
 /**
  * Get a signed URL for a file in a private storage bucket

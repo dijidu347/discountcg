@@ -186,7 +186,7 @@ const DemarchePage = () => {
       <section className="container mx-auto px-4 py-12">
         <div className="max-w-3xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Qu'est-ce que la {demarche.shortTitle.toLowerCase()} ?
+            {demarche.title} : de quoi s'agit-il ?
           </h2>
           <div className="prose prose-lg text-muted-foreground">
             {demarche.longDescription.split("\n\n").map((paragraph, i) => (
@@ -236,6 +236,22 @@ const DemarchePage = () => {
         </div>
       </section>
 
+      {/* SEO Content */}
+      {demarche.seoContent && (
+        <section className="container mx-auto px-4 py-12 border-t">
+          <div className="max-w-3xl">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
+              Tout savoir sur votre {demarche.shortTitle.toLowerCase()}
+            </h2>
+            <div className="prose prose-lg text-muted-foreground">
+              {demarche.seoContent.split("\n\n").map((paragraph, i) => (
+                <p key={i}>{paragraph}</p>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">
         <div className="container mx-auto px-4">
@@ -261,7 +277,7 @@ const DemarchePage = () => {
       <section className="container mx-auto px-4 py-12">
         <div className="max-w-3xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-            Comment faire votre {demarche.shortTitle.toLowerCase()} en ligne ?
+            Comment effectuer votre {demarche.shortTitle.toLowerCase()} en ligne ?
           </h2>
           <div className="space-y-4">
             {demarche.steps.map((step, i) => (
@@ -281,7 +297,7 @@ const DemarchePage = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-              Prix de la {demarche.shortTitle.toLowerCase()}
+              Tarif de votre {demarche.shortTitle.toLowerCase()}
             </h2>
             <p className="text-muted-foreground mb-4">
               {demarche.prixDescription}
@@ -342,7 +358,7 @@ const DemarchePage = () => {
           <div className="container mx-auto px-4">
             <div className="max-w-3xl">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
-                Questions fréquentes sur {demarche.shortTitle.toLowerCase()}
+                Questions fréquentes — {demarche.title}
               </h2>
               <Accordion type="single" collapsible className="w-full">
                 {demarche.faqs.map((faq, i) => (

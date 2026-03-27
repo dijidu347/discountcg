@@ -123,10 +123,24 @@ serve(async (req) => {
             .select("id")
             .eq("user_id", user.id)
             .single();
-          
+
           if (garageData) {
             isAuthorized = true;
             console.log("✅ Garage owner authorized for bucket:", bucket);
+          }
+        }
+
+        // Check if user owns the garage (for coffre-fort-documents)
+        if (!isAuthorized && bucket === "coffre-fort-documents") {
+          const { data: garageData } = await supabase
+            .from("garages")
+            .select("id")
+            .eq("user_id", user.id)
+            .single();
+
+          if (garageData && path.startsWith(garageData.id)) {
+            isAuthorized = true;
+            console.log("✅ Garage owner authorized for coffre-fort-documents bucket");
           }
         }
       } else {
