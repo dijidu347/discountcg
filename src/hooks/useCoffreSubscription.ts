@@ -62,7 +62,7 @@ export function useCoffreSubscription() {
         console.error("Error fetching coffre subscription:", error);
         return null;
       }
-      return data as CoffreSubscription | null;
+      return data as unknown as CoffreSubscription | null;
     },
     enabled: !!garageId,
   });
