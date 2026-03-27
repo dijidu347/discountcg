@@ -1734,6 +1734,7 @@ export type Database = {
       generate_demarche_numero: { Args: never; Returns: string }
       generate_facture_numero: { Args: never; Returns: string }
       generate_tracking_number: { Args: never; Returns: string }
+      get_public_garage_count: { Args: never; Returns: number }
       get_user_garage_id: { Args: never; Returns: string }
       has_role: {
         Args: {
