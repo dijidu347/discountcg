@@ -5,12 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
+import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 
 export default function Dashboard() {
   const {
@@ -31,6 +33,8 @@ export default function Dashboard() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [missingDocsCount, setMissingDocsCount] = useState(3);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
+  const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -149,6 +153,13 @@ export default function Dashboard() {
                   <Receipt className="mr-2 h-4 w-4" />
                   Mes factures
                 </Button>
+                {coffreBeta && (
+                  <Button variant="ghost" size="sm" onClick={() => navigate(coffreLink)} className="relative bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20">
+                    <Archive className="mr-2 h-4 w-4" />
+                    Coffre-fort
+                    <Badge className="absolute -top-2 -right-3 bg-amber-500 text-white text-[9px] px-1.5 py-0 h-4 leading-4 animate-pulse">Nouveau</Badge>
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => navigate("/support")}>
                   Support
                 </Button>
@@ -199,9 +210,20 @@ export default function Dashboard() {
                       <Receipt className="mr-2 h-4 w-4" />
                       Mes factures
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start" 
+                    {coffreBeta && (
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start"
+                        onClick={() => { setMobileMenuOpen(false); navigate(coffreLink); }}
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        Coffre-fort
+                        <Badge className="ml-2 bg-amber-500 text-white text-[9px] px-1.5 py-0 h-4 leading-4">Nouveau</Badge>
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start"
                       onClick={() => { setMobileMenuOpen(false); navigate("/support"); }}
                     >
                       <HelpCircle className="mr-2 h-4 w-4" />
@@ -333,6 +355,13 @@ export default function Dashboard() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Coffre-fort Widget — beta only */}
+        {coffreBeta && (
+          <div className="mb-8">
+            <CoffreWidget />
+          </div>
         )}
 
         {/* Quick Actions */}

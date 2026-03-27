@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Users, TrendingUp } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { getSupabaseErrorMessage } from "@/lib/error-messages";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,6 +18,13 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [garageCount, setGarageCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    supabase.rpc("get_public_garage_count" as any).then(({ data }) => {
+      if (data !== null) setGarageCount(data as number);
+    });
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -91,6 +99,22 @@ export default function Login() {
           <ArrowLeft className="h-4 w-4" />
           Retour à l'accueil
         </Button>
+
+        {/* Compteur garages — bien mis en avant */}
+        {garageCount !== null && garageCount > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20 rounded-2xl px-6 py-4 flex items-center justify-center gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/15 flex-shrink-0">
+              <TrendingUp className="h-6 w-6 text-primary" />
+            </div>
+            <div className="text-center sm:text-left">
+              <div className="flex items-baseline gap-1.5 justify-center sm:justify-start">
+                <span className="text-3xl font-extrabold text-primary">{garageCount}</span>
+                <span className="text-base font-semibold text-foreground">pros nous font confiance</span>
+              </div>
+              <p className="text-sm text-muted-foreground">Garages professionnels inscrits sur la plateforme</p>
+            </div>
+          </div>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Bloc Connexion */}
