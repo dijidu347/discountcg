@@ -60,7 +60,7 @@ export function useCoffreDocuments(filters: DocumentFilters = {}) {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data as CoffreDocument[]) || [];
+      return (data as unknown as CoffreDocument[]) || [];
     },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.length < PAGE_SIZE) return undefined;

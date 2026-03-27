@@ -238,6 +238,115 @@ export type Database = {
         }
         Relationships: []
       }
+      coffre_documents: {
+        Row: {
+          amount: number | null
+          category: string
+          created_at: string
+          document_date: string
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          garage_id: string
+          id: string
+          note: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          category: string
+          created_at?: string
+          document_date?: string
+          file_name: string
+          file_path: string
+          file_size?: number
+          file_type: string
+          garage_id: string
+          id?: string
+          note?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          category?: string
+          created_at?: string
+          document_date?: string
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          garage_id?: string
+          id?: string
+          note?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coffre_documents_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coffre_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          garage_id: string
+          id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          garage_id: string
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          garage_id?: string
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coffre_subscriptions_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: true
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demarche_questionnaire_responses: {
         Row: {
           answer_text: string
@@ -1625,6 +1734,8 @@ export type Database = {
       generate_demarche_numero: { Args: never; Returns: string }
       generate_facture_numero: { Args: never; Returns: string }
       generate_tracking_number: { Args: never; Returns: string }
+      get_public_garage_count: { Args: never; Returns: number }
+      get_user_garage_id: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
