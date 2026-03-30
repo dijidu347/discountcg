@@ -395,39 +395,50 @@ export default function CoffreFort() {
             <div className="mb-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <div className="flex items-center gap-3 mb-1">
+                  <div className="flex items-center gap-2.5 mb-1.5">
                     <Archive className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
                     <h2 className="text-xl md:text-2xl font-bold">Mon coffre-fort</h2>
-                    <Badge variant="secondary" className="text-muted-foreground text-xs">
-                      {Object.values(countsByCategory).reduce((a, b) => a + b, 0)} doc{Object.values(countsByCategory).reduce((a, b) => a + b, 0) !== 1 ? "s" : ""}
-                    </Badge>
+                    {(() => {
+                      const total = Object.values(countsByCategory).reduce((a, b) => a + b, 0);
+                      return (
+                        <span className="inline-flex items-center gap-1 bg-primary/10 text-primary text-xs font-semibold px-2.5 py-1 rounded-full">
+                          <span className="text-sm font-bold leading-none">{total}</span>
+                          <span className="opacity-70">{total !== 1 ? "docs" : "doc"}</span>
+                        </span>
+                      );
+                    })()}
                   </div>
-                  <p className="text-sm text-muted-foreground flex items-center gap-1.5 ml-0.5">
-                    <Shield className="h-3.5 w-3.5 text-primary/60" />
+                  <p className="text-sm text-muted-foreground/80 flex items-center gap-1.5">
+                    <Shield className="h-3.5 w-3.5 text-primary/50 flex-shrink-0" />
                     Bienvenue dans votre espace coffre-fort — sauvegardez vos factures en toute sécurité.
                   </p>
                 </div>
 
-                {/* Boutons export */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 gap-1.5 text-xs"
+                {/* Boutons export — design moderne */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Tout exporter */}
+                  <button
                     onClick={() => handleExport("all")}
                     disabled={isExporting}
+                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground text-xs font-medium transition-colors disabled:opacity-50"
                   >
                     {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                     Tout exporter
-                  </Button>
+                  </button>
 
+                  {/* Séparateur */}
+                  <div className="h-5 w-px bg-border mx-0.5" />
+
+                  {/* Par année */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs" disabled={isExporting}>
-                        <Download className="h-3.5 w-3.5" />
+                      <button
+                        disabled={isExporting}
+                        className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground text-xs font-medium transition-colors disabled:opacity-50"
+                      >
                         Par année
-                        <ChevronDown className="h-3 w-3 opacity-50" />
-                      </Button>
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-36">
                       {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
@@ -438,13 +449,16 @@ export default function CoffreFort() {
                     </DropdownMenuContent>
                   </DropdownMenu>
 
+                  {/* Par mois */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs" disabled={isExporting}>
-                        <Download className="h-3.5 w-3.5" />
+                      <button
+                        disabled={isExporting}
+                        className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground text-xs font-medium transition-colors disabled:opacity-50"
+                      >
                         Par mois
-                        <ChevronDown className="h-3 w-3 opacity-50" />
-                      </Button>
+                        <ChevronDown className="h-3 w-3 opacity-60" />
+                      </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-44">
                       {Array.from({ length: 12 }, (_, i) => {
