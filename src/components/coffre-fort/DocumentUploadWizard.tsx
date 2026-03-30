@@ -23,14 +23,15 @@ interface Props {
     garageId: string;
   }) => void;
   isUploading: boolean;
+  initialCategory?: string;
 }
 
-export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, isUploading }: Props) {
+export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, isUploading, initialCategory }: Props) {
   const [step, setStep] = useState(1);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [compressed, setCompressed] = useState<CompressedFile | null>(null);
   const [isCompressing, setIsCompressing] = useState(false);
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(initialCategory ?? "");
   const [title, setTitle] = useState("");
   const [documentDate, setDocumentDate] = useState(new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState("");
@@ -42,7 +43,7 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
     setStep(1);
     setSelectedFile(null);
     setCompressed(null);
-    setCategory("");
+    setCategory(initialCategory ?? "");
     setTitle("");
     setDocumentDate(new Date().toISOString().split("T")[0]);
     setAmount("");
@@ -66,7 +67,12 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
     try {
       const result = await compressFile(file);
       setCompressed(result);
-      setStep(2);
+      if (initialCategory) {
+        setCategory(initialCategory);
+        setStep(3);
+      } else {
+        setStep(2);
+      }
     } catch (err) {
       toast.error("Erreur lors de la compression. Réessayez.");
       setSelectedFile(null);

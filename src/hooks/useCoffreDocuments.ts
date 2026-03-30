@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -69,6 +69,24 @@ export function useCoffreDocuments(filters: DocumentFilters = {}) {
     initialPageParam: 0,
     enabled: !!user,
     staleTime: 60_000,
+    retry: false,
+  });
+
+  const categoryCountsQuery = useQuery({
+    queryKey: ["coffre-category-counts", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("coffre_documents" as any)
+        .select("category");
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      ((data as any[]) || []).forEach((d: any) => {
+        counts[d.category] = (counts[d.category] || 0) + 1;
+      });
+      return counts;
+    },
+    enabled: !!user,
+    staleTime: 30_000,
     retry: false,
   });
 
@@ -191,5 +209,6 @@ export function useCoffreDocuments(filters: DocumentFilters = {}) {
     deleteDocument,
     updateDocument,
     totalCount: allDocuments.length,
+    countsByCategory: categoryCountsQuery.data || {} as Record<string, number>,
   };
 }
