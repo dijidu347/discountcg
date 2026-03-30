@@ -74,6 +74,10 @@ export default function CoffreFort() {
   const [deleteConfirmDoc, setDeleteConfirmDoc] = useState<CoffreDocument | null>(null);
   const [editingTitle, setEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState("");
+  const [editingAmount, setEditingAmount] = useState(false);
+  const [editAmount, setEditAmount] = useState("");
+  const [editingNote, setEditingNote] = useState(false);
+  const [editNote, setEditNote] = useState("");
 
   const filters = homeView ? {} : {
     category: selectedCategory || undefined,
@@ -186,6 +190,23 @@ export default function CoffreFort() {
   const closeAddModal = () => {
     setAddModalOpen(false);
     setInitialCategory("");
+  };
+
+  // Lazy thumbnail for document cards
+  const DocThumb = ({ doc }: { doc: CoffreDocument }) => {
+    const [src, setThumbSrc] = useState<string | null>(null);
+    useEffect(() => {
+      if (doc.file_type !== "application/pdf") {
+        getSignedUrl("coffre-fort-documents", doc.file_path).then(setThumbSrc);
+      }
+    }, [doc.file_path]);
+    if (doc.file_type === "application/pdf") {
+      return <FileText className="h-10 w-10 text-muted-foreground/40" />;
+    }
+    if (src) {
+      return <img src={src} alt={doc.title} className="absolute inset-0 w-full h-full object-cover" />;
+    }
+    return <Loader2 className="h-6 w-6 animate-spin text-muted-foreground/40" />;
   };
 
   if (subLoading) {
@@ -322,18 +343,72 @@ export default function CoffreFort() {
                       <span className="text-muted-foreground">Date</span>
                       <span className="font-semibold">{new Date(detailDoc.document_date).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</span>
                     </div>
-                    {detailDoc.amount && (
-                      <div className="flex justify-between py-3 border-b">
-                        <span className="text-muted-foreground">Montant</span>
-                        <span className="font-semibold text-destructive">{Number(detailDoc.amount).toFixed(2)} €</span>
-                      </div>
-                    )}
-                    {detailDoc.note && (
-                      <div className="flex justify-between py-3 border-b">
-                        <span className="text-muted-foreground">Note</span>
-                        <span className="font-semibold text-right max-w-[180px]">{detailDoc.note}</span>
-                      </div>
-                    )}
+                    <div className="flex justify-between items-center py-3 border-b">
+                      <span className="text-muted-foreground">Montant</span>
+                      {editingAmount ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={editAmount}
+                            onChange={(e) => setEditAmount(e.target.value)}
+                            className="h-8 w-28 text-sm text-right"
+                            autoFocus
+                            placeholder="0.00"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                const val = parseFloat(editAmount);
+                                updateDocument.mutate({ id: detailDoc.id, amount: isNaN(val) ? null : val }, {
+                                  onSuccess: () => { setDetailDoc({ ...detailDoc, amount: isNaN(val) ? null : val }); setEditingAmount(false); }
+                                });
+                              }
+                              if (e.key === "Escape") setEditingAmount(false);
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => {
+                            const val = parseFloat(editAmount);
+                            updateDocument.mutate({ id: detailDoc.id, amount: isNaN(val) ? null : val }, {
+                              onSuccess: () => { setDetailDoc({ ...detailDoc, amount: isNaN(val) ? null : val }); setEditingAmount(false); }
+                            });
+                          }}>OK</Button>
+                        </div>
+                      ) : (
+                        <span
+                          className={`font-semibold cursor-pointer hover:text-primary ${detailDoc.amount ? "text-destructive" : "text-muted-foreground/50 italic text-xs"}`}
+                          onClick={() => { setEditAmount(detailDoc.amount ? String(detailDoc.amount) : ""); setEditingAmount(true); }}
+                        >
+                          {detailDoc.amount ? `${Number(detailDoc.amount).toFixed(2)} €` : "— Ajouter"}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-start py-3 border-b">
+                      <span className="text-muted-foreground flex-shrink-0">Note</span>
+                      {editingNote ? (
+                        <div className="flex items-start gap-1 ml-4 flex-1">
+                          <textarea
+                            value={editNote}
+                            onChange={(e) => setEditNote(e.target.value)}
+                            className="flex-1 text-sm border rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary resize-none min-h-[60px]"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") setEditingNote(false);
+                            }}
+                          />
+                          <Button size="sm" variant="ghost" className="h-8 px-2 flex-shrink-0" onClick={() => {
+                            updateDocument.mutate({ id: detailDoc.id, note: editNote.trim() || null } as any, {
+                              onSuccess: () => { setDetailDoc({ ...detailDoc, note: editNote.trim() || null }); setEditingNote(false); }
+                            });
+                          }}>OK</Button>
+                        </div>
+                      ) : (
+                        <span
+                          className={`cursor-pointer hover:text-primary text-right max-w-[180px] ${detailDoc.note ? "font-semibold" : "text-muted-foreground/50 italic text-xs"}`}
+                          onClick={() => { setEditNote(detailDoc.note || ""); setEditingNote(true); }}
+                        >
+                          {detailDoc.note || "— Ajouter une note"}
+                        </span>
+                      )}
+                    </div>
                     <div className="flex justify-between py-3 border-b">
                       <span className="text-muted-foreground">Fichier</span>
                       <span className="font-semibold">{detailDoc.file_type === "application/pdf" ? "PDF" : "Image"} ({(detailDoc.file_size / 1024).toFixed(0)} Ko)</span>
@@ -577,91 +652,135 @@ export default function CoffreFort() {
               </Button>
             </div>
 
-            {/* Export bar */}
-            <div className="flex items-center gap-2 mb-4">
-              <Button
-                variant={selectMode ? "default" : "outline"}
-                size="sm"
-                className="h-11 flex-1 md:flex-none"
-                onClick={() => { setSelectMode(!selectMode); setSelectedDocs([]); }}
-              >
-                {selectMode ? "Annuler" : "Sélectionner"}
-              </Button>
+            {/* Toolbar : search + filters + actions */}
+            <div className="flex flex-col gap-2.5 mb-5">
 
-              {selectMode && selectedDocs.length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-11 flex-1 md:flex-none"
-                  onClick={() => handleExport("selection")}
-                  disabled={isExporting}
+              {/* Row 1 : search + add + export */}
+              <div className="flex items-center gap-2">
+                {/* Search */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input
+                    placeholder="Rechercher..."
+                    className="pl-9 h-10 text-sm bg-muted/40 border-0 focus-visible:ring-1 focus-visible:ring-primary/40"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+
+                {/* Add (mobile) */}
+                <button
+                  onClick={() => openAddModal(selectedCategory)}
+                  className="md:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
                 >
-                  {isExporting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
-                  Exporter ({selectedDocs.length})
-                </Button>
-              )}
+                  <Plus className="h-4 w-4" />
+                </button>
 
-              <div className="hidden md:flex items-center gap-2">
-                <Button variant="outline" size="sm" className="h-11" onClick={() => handleExport("all")} disabled={isExporting}>
-                  {isExporting ? <Loader2 className="mr-1 h-3 w-3 animate-spin" /> : <Download className="mr-1 h-3 w-3" />}
-                  Tout exporter (ZIP)
-                </Button>
-                <select
-                  className="flex h-11 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
-                  defaultValue=""
-                  onChange={(e) => { if (e.target.value) handleExport("year", parseInt(e.target.value)); e.target.value = ""; }}
+                {/* Add (desktop) */}
+                <button
+                  onClick={() => openAddModal(selectedCategory)}
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
                 >
-                  <option value="" disabled>Exporter par année...</option>
-                  {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                    <option key={y} value={y}>Exporter {y}</option>
-                  ))}
-                </select>
-              </div>
+                  <Plus className="h-4 w-4" /> Ajouter
+                </button>
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-11 w-11 md:hidden flex-shrink-0">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
-                  <DropdownMenuItem onClick={() => handleExport("all")} disabled={isExporting}>
-                    <Download className="mr-2 h-4 w-4" /> Tout exporter (ZIP)
-                  </DropdownMenuItem>
-                  {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                    <DropdownMenuItem key={y} onClick={() => handleExport("year", y)} disabled={isExporting}>
-                      <Download className="mr-2 h-4 w-4" /> Exporter {y}
+                {/* Export dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      disabled={isExporting}
+                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition-colors flex-shrink-0 disabled:opacity-50"
+                    >
+                      {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                      <span className="hidden md:inline">Exporter</span>
+                      <ChevronDown className="h-3 w-3 opacity-60" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem onClick={() => handleExport("all")} disabled={isExporting}>
+                      <Download className="mr-2 h-3.5 w-3.5" /> Tout exporter (ZIP)
                     </DropdownMenuItem>
+                    {selectMode && selectedDocs.length > 0 && (
+                      <DropdownMenuItem onClick={() => handleExport("selection")} disabled={isExporting}>
+                        <Download className="mr-2 h-3.5 w-3.5" /> Sélection ({selectedDocs.length})
+                      </DropdownMenuItem>
+                    )}
+                    <div className="h-px bg-border my-1" />
+                    {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                      <DropdownMenuItem key={y} onClick={() => handleExport("year", y)} disabled={isExporting}>
+                        <Download className="mr-2 h-3.5 w-3.5" /> {y}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Select mode toggle */}
+                <button
+                  onClick={() => { setSelectMode(!selectMode); setSelectedDocs([]); }}
+                  className={`inline-flex items-center h-10 px-3.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+                    selectMode
+                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                      : "bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground"
+                  }`}
+                >
+                  {selectMode ? "Annuler" : <span className="hidden md:inline">Sélectionner</span>}
+                  {!selectMode && <span className="md:hidden">✓</span>}
+                </button>
+              </div>
+
+              {/* Row 2 : filters (category + dates) */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Category pills */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    onClick={() => setSelectedCategory("")}
+                    className={`h-8 px-3 rounded-full text-xs font-medium transition-colors ${
+                      !selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/60 hover:text-foreground hover:bg-muted/80"
+                    }`}
+                  >
+                    Toutes
+                  </button>
+                  {COFFRE_CATEGORIES.map(c => (
+                    <button
+                      key={c.key}
+                      onClick={() => setSelectedCategory(c.key === selectedCategory ? "" : c.key)}
+                      className={`h-8 px-3 rounded-full text-xs font-medium transition-colors ${
+                        selectedCategory === c.key ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/60 hover:text-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
                   ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                </div>
 
-            {/* Filters */}
-            <div className="flex flex-col gap-3 mb-5 md:mb-6">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="flex h-12 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring md:max-w-[220px]"
-              >
-                <option value="">Toutes les catégories</option>
-                {COFFRE_CATEGORIES.map(c => <option key={c.key} value={c.key}>{c.label}</option>)}
-              </select>
-
-              <div className="grid grid-cols-2 gap-3">
-                <Input type="date" className="h-12 text-sm" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                <Input type="date" className="h-12 text-sm" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                {/* Date range */}
+                <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+                  <Input type="date" className="h-8 text-xs w-36 bg-muted/40 border-0 focus-visible:ring-1" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                  <span className="text-muted-foreground text-xs">→</span>
+                  <Input type="date" className="h-8 text-xs w-36 bg-muted/40 border-0 focus-visible:ring-1" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                  {(dateFrom || dateTo) && (
+                    <button
+                      onClick={() => { setDateFrom(""); setDateTo(""); }}
+                      className="h-8 w-8 rounded-full bg-muted hover:bg-destructive/10 hover:text-destructive flex items-center justify-center text-muted-foreground transition-colors text-xs"
+                    >✕</button>
+                  )}
+                </div>
               </div>
 
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Rechercher par fournisseur, note..."
-                  className="pl-10 h-12 text-sm"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+              {/* Selection info bar */}
+              {selectMode && selectedDocs.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-sm">
+                  <span className="text-primary font-medium">{selectedDocs.length} sélectionné{selectedDocs.length > 1 ? "s" : ""}</span>
+                  <button
+                    onClick={() => handleExport("selection")}
+                    disabled={isExporting}
+                    className="ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                  >
+                    {isExporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
+                    Exporter ZIP
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Document list */}
@@ -718,13 +837,13 @@ export default function CoffreFort() {
                           className={`overflow-hidden cursor-pointer hover:shadow-md transition-shadow relative hidden md:block ${isSelected ? 'ring-2 ring-primary' : ''}`}
                           onClick={() => selectMode ? toggleDocSelection(doc.id) : setDetailDoc(doc)}
                         >
-                          <div className={`h-32 flex items-center justify-center bg-gradient-to-br ${cat.bgGradient}`}>
+                          <div className={`h-36 relative flex items-center justify-center bg-gradient-to-br ${cat.bgGradient} overflow-hidden`}>
                             {selectMode && (
-                              <div className={`absolute top-2 left-2 w-5 h-5 rounded border-2 flex items-center justify-center text-xs ${isSelected ? 'bg-primary border-primary text-white' : 'border-muted-foreground/30 bg-white'}`}>
+                              <div className={`absolute top-2 left-2 z-10 w-5 h-5 rounded border-2 flex items-center justify-center text-xs ${isSelected ? 'bg-primary border-primary text-white' : 'border-muted-foreground/30 bg-white'}`}>
                                 {isSelected && "✓"}
                               </div>
                             )}
-                            {doc.file_type === "application/pdf" ? <FileText className="h-12 w-12 text-muted-foreground/40" /> : <Camera className="h-12 w-12 text-muted-foreground/40" />}
+                            <DocThumb doc={doc} />
                           </div>
                           <CardContent className="p-4">
                             <div className="flex justify-between items-start mb-1">
