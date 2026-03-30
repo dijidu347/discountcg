@@ -672,146 +672,97 @@ export default function CoffreFort() {
               )}
             </div>
 
-            {/* Toolbar */}
-            <div className="flex flex-col gap-2 mb-5">
+            {/* ── Toolbar ── */}
+            <div className="rounded-xl border border-border/60 bg-card shadow-sm mb-6 overflow-hidden">
 
-              {/* Row 1 : search + date range + actions */}
-              <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
-
-                {/* Search */}
-                <div className="relative flex-1 min-w-0">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input
-                    placeholder="Rechercher un fournisseur, note..."
-                    className="pl-9 h-10 text-sm bg-muted/40 border-0 focus-visible:ring-1 focus-visible:ring-primary/40"
+              {/* Ligne 1 : search + actions */}
+              <div className="flex items-center gap-0 border-b border-border/60">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <input
+                    placeholder="Rechercher un fournisseur, une note..."
+                    className="w-full pl-10 pr-4 h-12 text-sm bg-transparent outline-none placeholder:text-muted-foreground/60"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-
-                {/* Date range — inline next to search */}
-                <div className="hidden md:flex items-center gap-1.5 bg-muted/40 rounded-lg px-3 h-10 flex-shrink-0">
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">Du</span>
-                  <input
-                    type="date"
-                    className="bg-transparent text-xs border-0 outline-none focus:ring-0 w-[118px] text-foreground"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
-                  <span className="text-xs text-muted-foreground">au</span>
-                  <input
-                    type="date"
-                    className="bg-transparent text-xs border-0 outline-none focus:ring-0 w-[118px] text-foreground"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
-                  {(dateFrom || dateTo) && (
-                    <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-muted-foreground hover:text-destructive transition-colors ml-1">
-                      <span className="text-xs">✕</span>
-                    </button>
-                  )}
-                </div>
-
-                {/* Add */}
-                <button
-                  onClick={() => openAddModal(selectedCategory)}
-                  className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
-                >
-                  <Plus className="h-4 w-4" />
-                  <span className="hidden sm:inline">Ajouter</span>
-                </button>
-
-                {/* Export dropdown */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button
-                      disabled={isExporting}
-                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground text-sm font-medium transition-colors flex-shrink-0 disabled:opacity-50"
-                    >
-                      {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                      <span className="hidden sm:inline">Exporter</span>
-                      <ChevronDown className="h-3 w-3 opacity-60" />
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuItem onClick={() => handleExport("all")} disabled={isExporting}>
-                      <Download className="mr-2 h-3.5 w-3.5" /> Tout exporter (ZIP)
-                    </DropdownMenuItem>
-                    {selectMode && selectedDocs.length > 0 && (
-                      <DropdownMenuItem onClick={() => handleExport("selection")} disabled={isExporting}>
-                        <Download className="mr-2 h-3.5 w-3.5" /> Sélection ({selectedDocs.length})
-                      </DropdownMenuItem>
-                    )}
-                    <div className="h-px bg-border my-1" />
-                    {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                      <DropdownMenuItem key={y} onClick={() => handleExport("year", y)} disabled={isExporting}>
-                        <Download className="mr-2 h-3.5 w-3.5" /> {y}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                {/* Select mode */}
-                <button
-                  onClick={() => { setSelectMode(!selectMode); setSelectedDocs([]); }}
-                  className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                    selectMode ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground"
-                  }`}
-                >
-                  {selectMode ? "Annuler" : "Sélectionner"}
-                </button>
-              </div>
-
-              {/* Row 2 : category pills */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Category pills */}
-                <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="flex items-center border-l border-border/60 divide-x divide-border/60">
                   <button
-                    onClick={() => setSelectedCategory("")}
-                    className={`h-8 px-3 rounded-full text-xs font-medium transition-colors ${
-                      !selectedCategory ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/60 hover:text-foreground hover:bg-muted/80"
+                    onClick={() => openAddModal(selectedCategory)}
+                    className="inline-flex items-center gap-2 h-12 px-5 bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors"
+                  >
+                    <Plus className="h-4 w-4" /> Ajouter
+                  </button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button disabled={isExporting} className="inline-flex items-center gap-1.5 h-12 px-4 text-sm text-foreground/70 hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50">
+                        {isExporting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                        <span className="hidden md:inline">Exporter</span>
+                        <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                      </button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem onClick={() => handleExport("all")} disabled={isExporting}>
+                        <Download className="mr-2 h-3.5 w-3.5" /> Tout exporter (ZIP)
+                      </DropdownMenuItem>
+                      {selectMode && selectedDocs.length > 0 && (
+                        <DropdownMenuItem onClick={() => handleExport("selection")} disabled={isExporting}>
+                          <Download className="mr-2 h-3.5 w-3.5" /> Sélection ({selectedDocs.length})
+                        </DropdownMenuItem>
+                      )}
+                      <div className="h-px bg-border my-1" />
+                      {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                        <DropdownMenuItem key={y} onClick={() => handleExport("year", y)} disabled={isExporting}>
+                          <Download className="mr-2 h-3.5 w-3.5" /> {y}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <button
+                    onClick={() => { setSelectMode(!selectMode); setSelectedDocs([]); }}
+                    className={`inline-flex items-center gap-1.5 h-12 px-4 text-sm font-medium transition-colors ${
+                      selectMode ? "text-primary bg-primary/5" : "text-foreground/60 hover:text-foreground hover:bg-muted/50"
                     }`}
                   >
-                    Toutes
+                    {selectMode ? "Annuler" : "Sélectionner"}
                   </button>
-                  {COFFRE_CATEGORIES.map(c => (
-                    <button
-                      key={c.key}
-                      onClick={() => setSelectedCategory(c.key === selectedCategory ? "" : c.key)}
-                      className={`h-8 px-3 rounded-full text-xs font-medium transition-colors ${
-                        selectedCategory === c.key ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/60 hover:text-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {c.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Date range */}
-                <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
-                  <Input type="date" className="h-8 text-xs w-36 bg-muted/40 border-0 focus-visible:ring-1" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                  <span className="text-muted-foreground text-xs">→</span>
-                  <Input type="date" className="h-8 text-xs w-36 bg-muted/40 border-0 focus-visible:ring-1" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-                  {(dateFrom || dateTo) && (
-                    <button
-                      onClick={() => { setDateFrom(""); setDateTo(""); }}
-                      className="h-8 w-8 rounded-full bg-muted hover:bg-destructive/10 hover:text-destructive flex items-center justify-center text-muted-foreground transition-colors text-xs"
-                    >✕</button>
-                  )}
                 </div>
               </div>
 
-              {/* Selection info bar */}
-              {selectMode && selectedDocs.length > 0 && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 text-sm">
-                  <span className="text-primary font-medium">{selectedDocs.length} sélectionné{selectedDocs.length > 1 ? "s" : ""}</span>
+              {/* Ligne 2 : catégories + date */}
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border/60 flex-wrap">
+                {[{ key: "", label: "Toutes" }, ...COFFRE_CATEGORIES.map(c => ({ key: c.key, label: c.label }))].map(c => (
                   <button
-                    onClick={() => handleExport("selection")}
-                    disabled={isExporting}
-                    className="ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+                    key={c.key}
+                    onClick={() => setSelectedCategory(c.key === selectedCategory ? "" : c.key)}
+                    className={`h-7 px-3 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                      selectedCategory === c.key || (!c.key && !selectedCategory)
+                        ? "bg-primary text-primary-foreground"
+                        : "text-foreground/60 hover:text-foreground hover:bg-muted"
+                    }`}
                   >
-                    {isExporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                    Exporter ZIP
+                    {c.label}
+                  </button>
+                ))}
+                <div className="ml-auto flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span>Du</span>
+                    <input type="date" className="bg-transparent text-xs border-0 outline-none w-[115px] text-foreground" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                    <span>au</span>
+                    <input type="date" className="bg-transparent text-xs border-0 outline-none w-[115px] text-foreground" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                    {(dateFrom || dateTo) && (
+                      <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors">✕</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Ligne 3 : sélection active */}
+              {selectMode && selectedDocs.length > 0 && (
+                <div className="flex items-center gap-3 px-4 py-2.5 bg-primary/5 border-b border-primary/15">
+                  <span className="text-sm text-primary font-medium">{selectedDocs.length} document{selectedDocs.length > 1 ? "s" : ""} sélectionné{selectedDocs.length > 1 ? "s" : ""}</span>
+                  <button onClick={() => handleExport("selection")} disabled={isExporting} className="ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50">
+                    {isExporting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />} Exporter ZIP
                   </button>
                 </div>
               )}
