@@ -77,13 +77,29 @@ export function useCoffreDocuments(filters: DocumentFilters = {}) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("coffre_documents" as any)
-        .select("category");
+        .select("category, amount, document_date");
       if (error) throw error;
+
+      const now = new Date();
+      const thisMonth = now.getMonth();
+      const thisYear = now.getFullYear();
+
       const counts: Record<string, number> = {};
+      const monthlyAmounts: Record<string, number> = {};
+
       ((data as any[]) || []).forEach((d: any) => {
         counts[d.category] = (counts[d.category] || 0) + 1;
+
+        // Monthly amount: sum amounts where document_date is in current month
+        if (d.amount) {
+          const docDate = new Date(d.document_date);
+          if (docDate.getMonth() === thisMonth && docDate.getFullYear() === thisYear) {
+            monthlyAmounts[d.category] = (monthlyAmounts[d.category] || 0) + Number(d.amount);
+          }
+        }
       });
-      return counts;
+
+      return { counts, monthlyAmounts };
     },
     enabled: !!user,
     staleTime: 30_000,
@@ -209,6 +225,7 @@ export function useCoffreDocuments(filters: DocumentFilters = {}) {
     deleteDocument,
     updateDocument,
     totalCount: allDocuments.length,
-    countsByCategory: categoryCountsQuery.data || {} as Record<string, number>,
+    countsByCategory: categoryCountsQuery.data?.counts || {} as Record<string, number>,
+    monthlyAmountsByCategory: categoryCountsQuery.data?.monthlyAmounts || {} as Record<string, number>,
   };
 }

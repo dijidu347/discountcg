@@ -88,7 +88,7 @@ export default function CoffreFort() {
 
   const {
     documents, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage,
-    uploadDocument, deleteDocument, updateDocument, countsByCategory,
+    uploadDocument, deleteDocument, updateDocument, countsByCategory, monthlyAmountsByCategory,
   } = useCoffreDocuments(filters);
 
   // Redirect non-beta or non-subscribers
@@ -587,6 +587,19 @@ export default function CoffreFort() {
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {CATEGORY_DESCRIPTIONS[cat.key]}
                         </p>
+                        {/* Monthly spend */}
+                        {(() => {
+                          const monthlyTotal = monthlyAmountsByCategory[cat.key] || 0;
+                          const monthLabel = new Date().toLocaleDateString("fr-FR", { month: "long" });
+                          return (
+                            <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-dashed" style={{ borderColor: `${color}30` }}>
+                              <span className="text-xs text-muted-foreground capitalize">{monthLabel} :</span>
+                              <span className="text-sm font-bold" style={{ color: monthlyTotal > 0 ? color : undefined }}>
+                                {monthlyTotal > 0 ? `${monthlyTotal.toFixed(2)} €` : <span className="text-muted-foreground/50 font-normal text-xs">aucune dépense</span>}
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
                       <div className="flex gap-2">
                         <Button
