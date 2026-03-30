@@ -10,7 +10,6 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PaymentDetailsSummary, type PaymentCalculationResult } from "@/components/payment/PaymentDetailsSummary";
@@ -732,8 +731,6 @@ const PaiementDemarche = () => {
   // Vérifier si le paiement par solde est possible (utiliser finalAmount au lieu de calculatedTotal)
   const canPayWithBalance = garage && finalAmount > 0 && garage.token_balance >= finalAmount;
   
-  // PayPal 4x désactivé si montant < 30€
-  const canUsePayPal4x = finalAmount >= 30;
 
   return (
     <div className="min-h-screen bg-background">
@@ -885,76 +882,6 @@ const PaiementDemarche = () => {
                     />
                   </Elements>
                 </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
-                  </div>
-                </div>
-
-                {/* 3. PayPal */}
-                {canUsePayPal4x ? (
-                  // PayPal avec option 4x (montant >= 30€)
-                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Paiement recommandé</p>
-                        <h3 className="text-xl font-bold">Payez en 4x sans frais</h3>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{formatPrice(finalAmount / 4)} €</p>
-                        <p className="text-sm text-muted-foreground">par mois</p>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground">
-                      soit 4 mensualités de <span className="font-semibold text-foreground">{formatPrice(finalAmount / 4)} €</span>
-                    </p>
-                    
-                    <PayPalButton
-                      amount={finalAmount}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        console.error("PayPal error:", error);
-                        toast({
-                          title: "Erreur PayPal",
-                          description: "Impossible de charger PayPal",
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                  </div>
-                ) : (
-                  // PayPal sans option 4x (montant < 30€)
-                  <div className="border rounded-lg p-6 space-y-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">PayPal</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Paiement sécurisé via PayPal
-                      </p>
-                    </div>
-                    
-                    <PayPalButton
-                      amount={finalAmount}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        console.error("PayPal error:", error);
-                        toast({
-                          title: "Erreur PayPal",
-                          description: "Impossible de charger PayPal",
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                    
-                    <p className="text-xs text-muted-foreground">
-                      Le paiement en 4x est disponible à partir de 30€
-                    </p>
-                  </div>
-                )}
 
                 <p className="text-xs text-muted-foreground text-center pt-2">
                   🔒 Tous les paiements sont sécurisés et cryptés

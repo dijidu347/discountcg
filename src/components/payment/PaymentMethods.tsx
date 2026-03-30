@@ -4,7 +4,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -218,80 +217,9 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
     );
   }
 
-  const monthlyAmount = formatPrice(amount / 4);
-  
-  // PayPal 4x désactivé si montant < 30€
-  const canUsePayPal4x = amount >= 30;
-
   return (
     <Card>
       <CardContent className="pt-6 space-y-6">
-        {canUsePayPal4x ? (
-          // PayPal avec option 4x (montant >= 30€)
-          <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Paiement recommandé</p>
-                <h3 className="text-2xl font-bold">Payez en 4x sans frais</h3>
-              </div>
-              <div className="text-right">
-                <p className="text-3xl font-bold text-primary">{monthlyAmount} €</p>
-                <p className="text-sm text-muted-foreground">par mois</p>
-              </div>
-            </div>
-            
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                soit 4 mensualités de <span className="font-semibold text-foreground">{monthlyAmount} €</span>
-              </p>
-              <PayPalButton
-                amount={amount}
-                onSuccess={handleInternalSuccess}
-                onError={(error) => {
-                  console.error("PayPal error:", error);
-                  toast({
-                    title: "Erreur PayPal",
-                    description: "Une erreur est survenue lors du paiement",
-                    variant: "destructive",
-                  });
-                }}
-              />
-            </div>
-          </div>
-        ) : (
-          // PayPal sans option 4x (montant < 30€)
-          <div className="border rounded-lg p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-bold">Payer avec PayPal</h3>
-              <p className="text-2xl font-bold text-primary">{formatPrice(amount)} €</p>
-            </div>
-            <PayPalButton
-              amount={amount}
-              onSuccess={handleInternalSuccess}
-              onError={(error) => {
-                console.error("PayPal error:", error);
-                toast({
-                  title: "Erreur PayPal",
-                  description: "Une erreur est survenue lors du paiement",
-                  variant: "destructive",
-                });
-              }}
-            />
-            <p className="text-xs text-muted-foreground text-center">
-              Le paiement en 4x est disponible à partir de 30€
-            </p>
-          </div>
-        )}
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Autres moyens de paiement</span>
-          </div>
-        </div>
-
         {stripePromise && (
           <div className="space-y-3">
             <h3 className="font-medium text-sm text-muted-foreground">Paiement rapide</h3>
