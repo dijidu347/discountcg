@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, Upload, FileText, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { COFFRE_CATEGORIES, getCategoryInfo } from "@/lib/coffre-categories";
-import { isAcceptedFileType, isFileTooLarge, compressFile, type CompressedFile } from "@/lib/coffre-compression";
+import { isAcceptedFileType, isFileTooLarge, isPdfTooBig, compressFile, type CompressedFile } from "@/lib/coffre-compression";
 
 interface Props {
   open: boolean;
@@ -57,8 +57,11 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
       return;
     }
     if (isFileTooLarge(file)) {
-      toast.error("Le fichier dépasse la taille maximale de 20 Mo.");
+      toast.error("Le fichier dépasse la taille maximale de 50 Mo.");
       return;
+    }
+    if (isPdfTooBig(file)) {
+      toast.warning("PDF volumineux détecté. Pour réduire la taille, compressez-le sur smallpdf.com avant l'ajout. Le fichier sera quand même accepté.");
     }
 
     setSelectedFile(file);

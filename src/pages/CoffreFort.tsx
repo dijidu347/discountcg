@@ -594,13 +594,12 @@ export default function CoffreFort() {
                           return (
                             <div className="mt-2.5 pt-2.5 border-t border-dashed" style={{ borderColor: `${color}30` }}>
                               {monthlyTotal > 0 ? (
-                                <p className="text-xs text-muted-foreground">
-                                  Vous avez dépensé{" "}
-                                  <span className="font-bold text-sm" style={{ color }}>{monthlyTotal.toFixed(2)} €</span>
-                                  {" "}en <span className="capitalize">{monthLabel}</span>
+                                <p className="text-sm font-medium text-foreground/80">
+                                  Dépensé en <span className="capitalize">{monthLabel}</span>{" "}:{" "}
+                                  <span className="font-bold" style={{ color }}>{monthlyTotal.toFixed(2)} €</span>
                                 </p>
                               ) : (
-                                <p className="text-xs text-muted-foreground/50 italic">Aucune dépense en {monthLabel}</p>
+                                <p className="text-xs text-muted-foreground/60">Aucune dépense en <span className="capitalize">{monthLabel}</span></p>
                               )}
                             </div>
                           );

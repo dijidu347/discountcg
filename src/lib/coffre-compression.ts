@@ -9,7 +9,8 @@ const ACCEPTED_TYPES = [
   "application/pdf",
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+const PDF_WARN_SIZE = 10 * 1024 * 1024;  // warn above 10 MB for PDFs
 
 export interface CompressedFile {
   file: File;
@@ -27,10 +28,14 @@ export function isFileTooLarge(file: File): boolean {
   return file.size > MAX_FILE_SIZE;
 }
 
+export function isPdfTooBig(file: File): boolean {
+  return file.type === "application/pdf" && file.size > PDF_WARN_SIZE;
+}
+
 export async function compressFile(file: File): Promise<CompressedFile> {
   const originalSize = file.size;
 
-  // PDF: no compression
+  // PDF: pass through (true PDF compression requires server-side tools)
   if (file.type === "application/pdf") {
     return { file, originalSize, compressedSize: file.size };
   }
