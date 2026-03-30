@@ -414,28 +414,26 @@ export default function CoffreFort() {
                   </p>
                 </div>
 
-                {/* Boutons export — design moderne */}
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  {/* Tout exporter */}
+                {/* Boutons export */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Tout exporter — CTA principal */}
                   <button
                     onClick={() => handleExport("all")}
                     disabled={isExporting}
-                    className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground text-xs font-medium transition-colors disabled:opacity-50"
+                    className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm disabled:opacity-50"
                   >
                     {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
                     Tout exporter
                   </button>
-
-                  {/* Séparateur */}
-                  <div className="h-5 w-px bg-border mx-0.5" />
 
                   {/* Par année */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <button
                         disabled={isExporting}
-                        className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground text-xs font-medium transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors disabled:opacity-50"
                       >
+                        <Download className="h-3.5 w-3.5" />
                         Par année
                         <ChevronDown className="h-3 w-3 opacity-60" />
                       </button>
@@ -454,8 +452,9 @@ export default function CoffreFort() {
                     <DropdownMenuTrigger asChild>
                       <button
                         disabled={isExporting}
-                        className="inline-flex items-center gap-1 h-9 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground/80 hover:text-foreground text-xs font-medium transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-xs font-medium hover:bg-primary/10 transition-colors disabled:opacity-50"
                       >
+                        <Download className="h-3.5 w-3.5" />
                         Par mois
                         <ChevronDown className="h-3 w-3 opacity-60" />
                       </button>

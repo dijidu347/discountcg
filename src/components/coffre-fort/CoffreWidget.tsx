@@ -75,44 +75,62 @@ export function CoffreWidget() {
   const recentDocs = documents.slice(0, 3);
 
   return (
-    <div className="border border-emerald-200 bg-gradient-to-r from-emerald-50/50 to-emerald-100/30 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Archive className="h-5 w-5 text-emerald-600" />
-          <h3 className="font-bold">Coffre-fort factures</h3>
-          {isTrialing && <Badge variant="secondary" className="text-xs">Essai gratuit</Badge>}
+    <div className="rounded-xl border border-primary/10 bg-primary/5 p-5">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Archive className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm leading-none">Coffre-fort</h3>
+            {isTrialing && <p className="text-[11px] text-primary/70 mt-0.5">Essai gratuit en cours</p>}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => navigate("/coffre-fort")}>
-            <Plus className="mr-1 h-4 w-4" /> Ajouter
-          </Button>
-          <Button size="sm" variant="outline" onClick={() => navigate("/coffre-fort")}>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => navigate("/coffre-fort")}
+            className="inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" /> Ajouter
+          </button>
+          <button
+            onClick={() => navigate("/coffre-fort")}
+            className="inline-flex items-center h-8 px-3 rounded-lg bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground text-xs font-medium transition-colors"
+          >
             Voir tout
-          </Button>
+          </button>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-4 text-sm">
+      {/* Stats */}
+      <div className="flex gap-5 mb-4">
         <div>
-          <p className="text-2xl font-bold">{documents.length}</p>
-          <p className="text-muted-foreground">documents</p>
+          <p className="text-2xl font-bold leading-none">{documents.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">documents</p>
         </div>
+        <div className="w-px bg-border" />
         <div>
-          <p className="text-2xl font-bold">{thisMonth.length}</p>
-          <p className="text-muted-foreground">ce mois-ci</p>
+          <p className="text-2xl font-bold leading-none">{thisMonth.length}</p>
+          <p className="text-xs text-muted-foreground mt-1">ce mois-ci</p>
         </div>
       </div>
 
+      {/* Recent docs */}
       {recentDocs.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5 pt-3 border-t border-primary/10">
           {recentDocs.map(doc => (
-            <div key={doc.id} className="flex items-center gap-2 text-sm bg-white/60 rounded-md p-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="flex-1 truncate font-medium">{doc.title}</span>
-              {doc.amount && <span className="text-destructive font-semibold">{Number(doc.amount).toFixed(2)} &euro;</span>}
+            <div key={doc.id} className="flex items-center gap-2 text-xs bg-background/60 rounded-lg px-3 py-2">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+              <span className="flex-1 truncate font-medium text-foreground/80">{doc.title}</span>
+              {doc.amount && <span className="text-destructive font-semibold flex-shrink-0">{Number(doc.amount).toFixed(2)} €</span>}
             </div>
           ))}
         </div>
+      )}
+
+      {recentDocs.length === 0 && (
+        <p className="text-xs text-muted-foreground/60 text-center py-2">Aucun document — ajoutez votre première facture</p>
       )}
     </div>
   );
