@@ -592,11 +592,16 @@ export default function CoffreFort() {
                           const monthlyTotal = monthlyAmountsByCategory[cat.key] || 0;
                           const monthLabel = new Date().toLocaleDateString("fr-FR", { month: "long" });
                           return (
-                            <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-dashed" style={{ borderColor: `${color}30` }}>
-                              <span className="text-xs text-muted-foreground capitalize">{monthLabel} :</span>
-                              <span className="text-sm font-bold" style={{ color: monthlyTotal > 0 ? color : undefined }}>
-                                {monthlyTotal > 0 ? `${monthlyTotal.toFixed(2)} €` : <span className="text-muted-foreground/50 font-normal text-xs">aucune dépense</span>}
-                              </span>
+                            <div className="mt-2.5 pt-2.5 border-t border-dashed" style={{ borderColor: `${color}30` }}>
+                              {monthlyTotal > 0 ? (
+                                <p className="text-xs text-muted-foreground">
+                                  Vous avez dépensé{" "}
+                                  <span className="font-bold text-sm" style={{ color }}>{monthlyTotal.toFixed(2)} €</span>
+                                  {" "}en <span className="capitalize">{monthLabel}</span>
+                                </p>
+                              ) : (
+                                <p className="text-xs text-muted-foreground/50 italic">Aucune dépense en {monthLabel}</p>
+                              )}
                             </div>
                           );
                         })()}
@@ -638,63 +643,83 @@ export default function CoffreFort() {
             </Button>
 
             {/* Header */}
-            <div className="flex flex-col gap-3 mb-5 md:flex-row md:items-center md:justify-between md:gap-4 md:mb-6">
-              <div className="flex items-center gap-3">
-                {selectedCategory ? (() => {
-                  const cat = getCategoryInfo(selectedCategory);
-                  const CatIcon = cat.icon;
-                  const color = CATEGORY_HEX_COLORS[selectedCategory] || "#6366f1";
-                  return (
-                    <>
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
-                        <CatIcon className="h-4 w-4" style={{ color }} />
-                      </div>
-                      <h2 className="text-xl md:text-2xl font-bold">{cat.label}</h2>
-                    </>
-                  );
-                })() : (
+            <div className="flex items-center gap-3 mb-5">
+              {selectedCategory ? (() => {
+                const cat = getCategoryInfo(selectedCategory);
+                const CatIcon = cat.icon;
+                const color = CATEGORY_HEX_COLORS[selectedCategory] || "#6366f1";
+                return (
                   <>
-                    <Archive className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
-                    <h2 className="text-xl md:text-2xl font-bold">Mes documents</h2>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}15` }}>
+                      <CatIcon className="h-5 w-5" style={{ color }} />
+                    </div>
+                    <h2 className="text-xl md:text-2xl font-bold">{cat.label}</h2>
+                    <span
+                      className="inline-flex items-center font-bold text-xs px-2.5 py-1 rounded-full"
+                      style={{ backgroundColor: `${color}18`, color }}
+                    >
+                      {documents.length}
+                    </span>
                   </>
-                )}
-                <Badge variant="secondary" className="text-muted-foreground text-xs">{documents.length}</Badge>
-              </div>
-              <Button onClick={() => openAddModal(selectedCategory)} className="hidden md:flex h-11">
-                <Plus className="mr-2 h-4 w-4" /> Ajouter un document
-              </Button>
+                );
+              })() : (
+                <>
+                  <Archive className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
+                  <h2 className="text-xl md:text-2xl font-bold">Mes documents</h2>
+                  <span className="inline-flex items-center font-bold text-xs px-2.5 py-1 rounded-full bg-primary/10 text-primary">
+                    {documents.length}
+                  </span>
+                </>
+              )}
             </div>
 
-            {/* Toolbar : search + filters + actions */}
-            <div className="flex flex-col gap-2.5 mb-5">
+            {/* Toolbar */}
+            <div className="flex flex-col gap-2 mb-5">
 
-              {/* Row 1 : search + add + export */}
-              <div className="flex items-center gap-2">
+              {/* Row 1 : search + date range + actions */}
+              <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+
                 {/* Search */}
-                <div className="relative flex-1">
+                <div className="relative flex-1 min-w-0">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                   <Input
-                    placeholder="Rechercher..."
+                    placeholder="Rechercher un fournisseur, note..."
                     className="pl-9 h-10 text-sm bg-muted/40 border-0 focus-visible:ring-1 focus-visible:ring-primary/40"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
 
-                {/* Add (mobile) */}
+                {/* Date range — inline next to search */}
+                <div className="hidden md:flex items-center gap-1.5 bg-muted/40 rounded-lg px-3 h-10 flex-shrink-0">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">Du</span>
+                  <input
+                    type="date"
+                    className="bg-transparent text-xs border-0 outline-none focus:ring-0 w-[118px] text-foreground"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                  <span className="text-xs text-muted-foreground">au</span>
+                  <input
+                    type="date"
+                    className="bg-transparent text-xs border-0 outline-none focus:ring-0 w-[118px] text-foreground"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                  {(dateFrom || dateTo) && (
+                    <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="text-muted-foreground hover:text-destructive transition-colors ml-1">
+                      <span className="text-xs">✕</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Add */}
                 <button
                   onClick={() => openAddModal(selectedCategory)}
-                  className="md:hidden inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
+                  className="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
                 >
                   <Plus className="h-4 w-4" />
-                </button>
-
-                {/* Add (desktop) */}
-                <button
-                  onClick={() => openAddModal(selectedCategory)}
-                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex-shrink-0"
-                >
-                  <Plus className="h-4 w-4" /> Ajouter
+                  <span className="hidden sm:inline">Ajouter</span>
                 </button>
 
                 {/* Export dropdown */}
@@ -702,10 +727,10 @@ export default function CoffreFort() {
                   <DropdownMenuTrigger asChild>
                     <button
                       disabled={isExporting}
-                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg border border-primary/30 bg-primary/5 text-primary text-sm font-medium hover:bg-primary/10 transition-colors flex-shrink-0 disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground text-sm font-medium transition-colors flex-shrink-0 disabled:opacity-50"
                     >
                       {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
-                      <span className="hidden md:inline">Exporter</span>
+                      <span className="hidden sm:inline">Exporter</span>
                       <ChevronDown className="h-3 w-3 opacity-60" />
                     </button>
                   </DropdownMenuTrigger>
@@ -727,21 +752,18 @@ export default function CoffreFort() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Select mode toggle */}
+                {/* Select mode */}
                 <button
                   onClick={() => { setSelectMode(!selectMode); setSelectedDocs([]); }}
-                  className={`inline-flex items-center h-10 px-3.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
-                    selectMode
-                      ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                      : "bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground"
+                  className={`inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg text-sm font-medium transition-colors flex-shrink-0 ${
+                    selectMode ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80 text-foreground/70 hover:text-foreground"
                   }`}
                 >
-                  {selectMode ? "Annuler" : <span className="hidden md:inline">Sélectionner</span>}
-                  {!selectMode && <span className="md:hidden">✓</span>}
+                  {selectMode ? "Annuler" : "Sélectionner"}
                 </button>
               </div>
 
-              {/* Row 2 : filters (category + dates) */}
+              {/* Row 2 : category pills */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Category pills */}
                 <div className="flex items-center gap-1.5 flex-wrap">
