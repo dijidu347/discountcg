@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Archive, Camera, Search, Download, Trash2, FileText,
-  ArrowLeft, Plus, Eye, LayoutDashboard, Receipt, HelpCircle, Menu, LogOut, ChevronLeft, Loader2, Edit2, MoreVertical
+  ArrowLeft, Plus, Eye, LayoutDashboard, Receipt, HelpCircle, Menu, LogOut, ChevronLeft, Loader2, Edit2, MoreVertical, ChevronDown, Shield
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
@@ -113,13 +113,19 @@ export default function CoffreFort() {
     getSignedUrl("coffre-fort-documents", detailDoc.file_path).then(setPreviewUrl);
   }, [detailDoc]);
 
-  const handleExport = async (mode: "selection" | "all" | "year", year?: number) => {
+  const handleExport = async (mode: "selection" | "all" | "year" | "month", year?: number, monthStr?: string) => {
     setIsExporting(true);
     try {
       const body: any = {};
       if (mode === "selection") body.ids = selectedDocs;
       else if (mode === "all") body.all = true;
       else if (mode === "year") body.year = year;
+      else if (mode === "month" && monthStr) {
+        const [y, m] = monthStr.split("-");
+        const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+        body.dateFrom = `${y}-${m}-01`;
+        body.dateTo = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+      }
 
       const { data, error } = await supabase.functions.invoke("export-coffre-documents", { body });
       if (error) throw error;
@@ -128,7 +134,9 @@ export default function CoffreFort() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = mode === "year" ? `coffre-fort-${year}.zip` : "coffre-fort-documents.zip";
+      a.download = mode === "year" ? `coffre-fort-${year}.zip`
+        : mode === "month" ? `coffre-fort-${monthStr}.zip`
+        : "coffre-fort-documents.zip";
       a.click();
       URL.revokeObjectURL(url);
       toast.success("Export terminé !");
@@ -383,13 +391,79 @@ export default function CoffreFort() {
         {homeView ? (
           // ===== HOME VIEW: Category Cards =====
           <>
-            <div className="flex flex-col gap-3 mb-6 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <Archive className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
-                <h2 className="text-xl md:text-2xl font-bold">Mes documents</h2>
-                <Badge variant="secondary" className="text-muted-foreground text-xs">
-                  {Object.values(countsByCategory).reduce((a, b) => a + b, 0)}
-                </Badge>
+            {/* Header avec titre + sous-titre + exports */}
+            <div className="mb-6">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <div className="flex items-center gap-3 mb-1">
+                    <Archive className="h-5 w-5 md:h-6 md:w-6 text-primary flex-shrink-0" />
+                    <h2 className="text-xl md:text-2xl font-bold">Mon coffre-fort</h2>
+                    <Badge variant="secondary" className="text-muted-foreground text-xs">
+                      {Object.values(countsByCategory).reduce((a, b) => a + b, 0)} doc{Object.values(countsByCategory).reduce((a, b) => a + b, 0) !== 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground flex items-center gap-1.5 ml-0.5">
+                    <Shield className="h-3.5 w-3.5 text-primary/60" />
+                    Bienvenue dans votre espace coffre-fort — sauvegardez vos factures en toute sécurité.
+                  </p>
+                </div>
+
+                {/* Boutons export */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 gap-1.5 text-xs"
+                    onClick={() => handleExport("all")}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                    Tout exporter
+                  </Button>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs" disabled={isExporting}>
+                        <Download className="h-3.5 w-3.5" />
+                        Par année
+                        <ChevronDown className="h-3 w-3 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-36">
+                      {Array.from({ length: new Date().getFullYear() - 2023 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                        <DropdownMenuItem key={y} onClick={() => handleExport("year", y)}>
+                          <Download className="mr-2 h-3.5 w-3.5" /> {y}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="h-9 gap-1.5 text-xs" disabled={isExporting}>
+                        <Download className="h-3.5 w-3.5" />
+                        Par mois
+                        <ChevronDown className="h-3 w-3 opacity-50" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const d = new Date();
+                        d.setDate(1);
+                        d.setMonth(d.getMonth() - i);
+                        const y = d.getFullYear();
+                        const m = String(d.getMonth() + 1).padStart(2, "0");
+                        const label = d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
+                        return { key: `${y}-${m}`, label };
+                      }).map(({ key, label }) => (
+                        <DropdownMenuItem key={key} onClick={() => handleExport("month", undefined, key)}>
+                          <Download className="mr-2 h-3.5 w-3.5" />
+                          <span className="capitalize">{label}</span>
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </div>
             </div>
 
@@ -404,6 +478,8 @@ export default function CoffreFort() {
                     className="relative overflow-hidden border-2"
                     style={{ borderColor: `${color}40` }}
                   >
+                    {/* Archive icon top-right */}
+                    <Archive className="absolute top-3 right-3 h-4 w-4 opacity-20" style={{ color }} />
                     <CardHeader className="pb-2">
                       <CardTitle className="text-lg flex items-center gap-2">
                         <div

@@ -115,10 +115,8 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
       ">
         <div className="px-5 pt-5 pb-0 flex-shrink-0">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>Ajouter un document</span>
-              <span className="text-xs font-normal text-muted-foreground">Étape {step}/4</span>
-            </DialogTitle>
+            <DialogTitle className="pr-8">Ajouter un document</DialogTitle>
+            <p className="text-xs text-muted-foreground mt-1">Étape {step}/4</p>
           </DialogHeader>
 
           {/* Progress bar */}
