@@ -7,6 +7,7 @@ interface CoffreSubscription {
   id: string;
   garage_id: string;
   status: "trialing" | "active" | "canceled" | "past_due";
+  payment_mode: "stripe" | "tokens";
   cancel_at_period_end: boolean;
   trial_start: string | null;
   trial_end: string | null;
@@ -91,6 +92,23 @@ export function useCoffreSubscription() {
     },
   });
 
+  // Subscribe with tokens (deducts 9.99€ from token_balance)
+  const subscribeWithTokens = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("activate-coffre-with-tokens");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coffre-subscription"] });
+      toast.success("Coffre-fort activé avec vos jetons !");
+    },
+    onError: (error: any) => {
+      const message = error?.message || "Erreur lors de l'activation";
+      toast.error(message);
+    },
+  });
+
   // Cancel: sets cancel_at_period_end
   const cancel = useMutation({
     mutationFn: async () => {
@@ -117,6 +135,7 @@ export function useCoffreSubscription() {
     isCanceled,
     isPastDue,
     subscribe,
+    subscribeWithTokens,
     cancel,
   };
 }

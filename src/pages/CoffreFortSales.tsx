@@ -6,17 +6,37 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Archive, Camera, FolderOpen, Cloud, Search, Download, Zap,
-  ArrowLeft, Receipt, HelpCircle, Menu, LogOut, LayoutDashboard, FileText, Settings, Loader2
+  ArrowLeft, Receipt, HelpCircle, Menu, LogOut, LayoutDashboard, FileText, Settings, Loader2, Coins
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+
+const COFFRE_MONTHLY_PRICE = 9.99;
 
 export default function CoffreFortSales() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isActive, isBetaAllowed, isLoading: subLoading, subscribe } = useCoffreSubscription();
+  const { isActive, isBetaAllowed, isLoading: subLoading, subscribe, subscribeWithTokens } = useCoffreSubscription();
+
+  // Load token balance
+  const { data: tokenBalance } = useQuery({
+    queryKey: ["garage-token-balance", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("garages")
+        .select("token_balance")
+        .eq("user_id", user!.id)
+        .single();
+      return Number(data?.token_balance) || 0;
+    },
+    enabled: !!user,
+  });
+
+  const hasEnoughTokens = (tokenBalance ?? 0) >= COFFRE_MONTHLY_PRICE;
 
   // Redirect non-beta users + already subscribed
   useEffect(() => {
@@ -27,6 +47,10 @@ export default function CoffreFortSales() {
 
   const handleSubscribe = () => {
     subscribe.mutate();
+  };
+
+  const handleSubscribeWithTokens = () => {
+    subscribeWithTokens.mutate();
   };
 
   return (
@@ -105,11 +129,43 @@ export default function CoffreFortSales() {
           <div className="inline-flex items-center bg-white/15 rounded-lg px-4 py-2 text-sm mb-6">
             <Zap className="h-4 w-4 mr-1.5 flex-shrink-0" /> 1er mois offert &middot; Sans engagement
           </div>
-          <div>
-            <Button size="lg" variant="secondary" className="text-base font-bold px-8 h-13 w-full sm:w-auto" onClick={handleSubscribe} disabled={subscribe.isPending}>
+          <div className="flex flex-col items-center gap-3">
+            <Button size="lg" variant="secondary" className="text-base font-bold px-8 h-13 w-full sm:w-auto" onClick={handleSubscribe} disabled={subscribe.isPending || subscribeWithTokens.isPending}>
               {subscribe.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Activer mon coffre-fort
             </Button>
+
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <div className="flex-1 h-px bg-white/20 sm:w-16" />
+              <span className="text-white/50 text-xs">ou</span>
+              <div className="flex-1 h-px bg-white/20 sm:w-16" />
+            </div>
+
+            {hasEnoughTokens ? (
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base font-semibold px-8 h-13 w-full sm:w-auto border-white/40 text-white hover:bg-white/10 hover:text-white bg-white/5"
+                onClick={handleSubscribeWithTokens}
+                disabled={subscribe.isPending || subscribeWithTokens.isPending}
+              >
+                {subscribeWithTokens.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Coins className="mr-2 h-4 w-4" />}
+                Payer avec mes jetons ({(tokenBalance ?? 0).toFixed(2)}€ disponibles)
+              </Button>
+            ) : (
+              <div className="text-center">
+                <p className="text-white/50 text-sm">
+                  Solde jetons : <span className="text-white/80 font-semibold">{(tokenBalance ?? 0).toFixed(2)}€</span>
+                  {" "}— il vous faut <span className="text-amber-300 font-semibold">{COFFRE_MONTHLY_PRICE}€</span> minimum
+                </p>
+                <button
+                  className="text-xs text-white/40 underline underline-offset-2 mt-1 hover:text-white/70 transition-colors"
+                  onClick={() => navigate("/acheter-jetons")}
+                >
+                  Recharger mes jetons →
+                </button>
+              </div>
+            )}
           </div>
           <p className="text-sm text-white/60 mt-4">Rejoint par + de 180 garages professionnels</p>
         </div>
@@ -144,10 +200,24 @@ export default function CoffreFortSales() {
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-xl md:text-2xl font-bold text-white mb-3">Ne perdez plus une seule facture</h2>
           <p className="text-white/80 mb-6 text-sm md:text-base">1er mois gratuit, puis 9,99 &euro;/mois. Annulable &agrave; tout moment.</p>
-          <Button size="lg" variant="secondary" className="text-base font-bold px-8 h-13 w-full sm:w-auto" onClick={handleSubscribe} disabled={subscribe.isPending}>
-            {subscribe.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Activer mon coffre-fort
-          </Button>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Button size="lg" variant="secondary" className="text-base font-bold px-8 h-13 w-full sm:w-auto" onClick={handleSubscribe} disabled={subscribe.isPending || subscribeWithTokens.isPending}>
+              {subscribe.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Activer mon coffre-fort
+            </Button>
+            {hasEnoughTokens && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="text-base font-semibold px-8 h-13 w-full sm:w-auto border-white/40 text-white hover:bg-white/10 hover:text-white bg-white/5"
+                onClick={handleSubscribeWithTokens}
+                disabled={subscribe.isPending || subscribeWithTokens.isPending}
+              >
+                {subscribeWithTokens.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Coins className="mr-2 h-4 w-4" />}
+                Payer avec mes jetons
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>
