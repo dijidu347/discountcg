@@ -63,6 +63,35 @@ export function useCoffreSubscription() {
         console.error("Error fetching coffre subscription:", error);
         return null;
       }
+
+      // Beta/admin users: auto-create an 'active' row if none exists
+      // so DB-level checks (storage RLS, etc.) pass correctly
+      if (!data && (adminQuery.data === true || BETA_EMAILS.includes(user?.email || ""))) {
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setFullYear(periodEnd.getFullYear() + 10); // long-lived for beta
+        await supabase.from("coffre_subscriptions" as any).upsert({
+          garage_id: garageId,
+          status: "active",
+          payment_mode: "beta",
+          cancel_at_period_end: false,
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+        }, { onConflict: "garage_id" });
+
+        return {
+          id: "",
+          garage_id: garageId!,
+          status: "active",
+          payment_mode: "beta",
+          cancel_at_period_end: false,
+          trial_start: null,
+          trial_end: null,
+          current_period_start: now.toISOString(),
+          current_period_end: periodEnd.toISOString(),
+        };
+      }
+
       return data as unknown as CoffreSubscription | null;
     },
     enabled: !!garageId,
