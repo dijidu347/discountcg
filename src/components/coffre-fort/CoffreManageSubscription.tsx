@@ -42,12 +42,8 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
       : "Carte bancaire (Stripe)";
 
   const handleStartCancel = () => {
-    // If trialing: skip retention, just ask once
-    if (isTrialing) {
-      setCancelStep("confirm2");
-    } else {
-      setCancelStep("confirm1");
-    }
+    // Always go through the full retention flow (confirm1 → offer → confirm2)
+    setCancelStep("confirm1");
   };
 
   const handleConfirm1 = () => setCancelStep("retention_offer");
@@ -226,10 +222,18 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
             <div className="rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/30 p-5 text-center space-y-2">
               <div className="text-4xl font-black text-emerald-600">-50%</div>
               <p className="font-semibold text-foreground">sur votre prochain mois</p>
-              <p className="text-sm text-muted-foreground">
-                Au lieu de <span className="line-through">9,99 €</span>, payez seulement{" "}
-                <span className="font-bold text-emerald-600">4,99 €</span> le mois prochain.
-              </p>
+              {isTrialing ? (
+                <p className="text-sm text-muted-foreground">
+                  Votre essai gratuit est toujours en cours. À la fin, profitez de{" "}
+                  <span className="font-bold text-emerald-600">4,99 € au lieu de 9,99 €</span>{" "}
+                  pour votre premier mois payant.
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Au lieu de <span className="line-through">9,99 €</span>, payez seulement{" "}
+                  <span className="font-bold text-emerald-600">4,99 €</span> le mois prochain.
+                </p>
+              )}
               <p className="text-xs text-muted-foreground">
                 Offre valable une seule fois. Prix normal repris ensuite.
               </p>
