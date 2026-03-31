@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,8 +56,10 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 
 export default function CoffreFort() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { signOut } = useAuth();
   const { isActive, isBetaAllowed, isLoading: subLoading, garageId } = useCoffreSubscription();
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [homeView, setHomeView] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -93,12 +95,24 @@ export default function CoffreFort() {
     uploadDocument, deleteDocument, updateDocument, countsByCategory, monthlyAmountsByCategory,
   } = useCoffreDocuments(filters);
 
-  // Redirect non-beta or non-subscribers
+  // When Stripe redirects back with ?subscribed=true, sync subscription from Stripe
   useEffect(() => {
-    if (subLoading) return;
+    if (!searchParams.get("subscribed")) return;
+    setIsSyncing(true);
+    supabase.functions.invoke("sync-coffre-subscription").then(() => {
+      // Remove the query param cleanly, then reload subscription data
+      navigate("/coffre-fort", { replace: true });
+    }).catch(() => {
+      navigate("/coffre-fort", { replace: true });
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Redirect non-subscribers (but not while syncing)
+  useEffect(() => {
+    if (subLoading || isSyncing) return;
     if (!isBetaAllowed) { navigate("/dashboard", { replace: true }); return; }
     if (!isActive) navigate("/coffre-fort-sales", { replace: true });
-  }, [subLoading, isBetaAllowed, isActive, navigate]);
+  }, [subLoading, isSyncing, isBetaAllowed, isActive, navigate]);
 
   // Infinite scroll observer
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -215,6 +229,22 @@ export default function CoffreFort() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // While syncing after Stripe redirect, show a simple loading screen
+  if (isSyncing || (searchParams.get("subscribed") && subLoading)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
+          <Archive className="h-7 w-7 text-primary animate-pulse" />
+        </div>
+        <div className="text-center">
+          <p className="font-semibold text-lg">Activation en cours…</p>
+          <p className="text-sm text-muted-foreground mt-1">Nous confirmons votre abonnement avec Stripe</p>
+        </div>
+        <Loader2 className="h-5 w-5 animate-spin text-primary/60" />
       </div>
     );
   }
