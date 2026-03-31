@@ -19,10 +19,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")!;
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
 
     // Authenticate user
     const authHeader = req.headers.get("authorization");
@@ -60,27 +58,33 @@ serve(async (req) => {
     // Get subscription
     const { data: sub } = await supabase
       .from("coffre_subscriptions")
-      .select("stripe_subscription_id")
+      .select("id, stripe_subscription_id, payment_mode")
       .eq("garage_id", garage.id)
       .in("status", ["active", "trialing"])
       .single();
 
-    if (!sub?.stripe_subscription_id) {
+    if (!sub) {
       return new Response(JSON.stringify({ error: "Aucun abonnement actif" }), {
         status: 404, headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
 
-    // Cancel at period end
-    await stripe.subscriptions.update(sub.stripe_subscription_id, {
-      cancel_at_period_end: true,
-    });
+    // Handle Stripe subscriptions
+    if (sub.payment_mode === "stripe" && sub.stripe_subscription_id) {
+      const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY")!;
+      const stripe = new Stripe(stripeSecretKey, { apiVersion: "2023-10-16" });
+      await stripe.subscriptions.update(sub.stripe_subscription_id, {
+        cancel_at_period_end: true,
+      });
+    }
 
-    // Update local DB
+    // Update local DB (works for both stripe and tokens)
     await supabase
       .from("coffre_subscriptions")
       .update({ cancel_at_period_end: true })
       .eq("garage_id", garage.id);
+
+    console.log(`Coffre subscription canceled for garage ${garage.id} (mode: ${sub.payment_mode})`);
 
     return new Response(JSON.stringify({ canceled: true }), {
       status: 200, headers: { "Content-Type": "application/json", ...corsHeaders },
