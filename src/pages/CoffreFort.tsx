@@ -23,6 +23,7 @@ import { useCoffreDocuments, type CoffreDocument } from "@/hooks/useCoffreDocume
 import { getCategoryInfo, COFFRE_CATEGORIES } from "@/lib/coffre-categories";
 import { getSignedUrl, downloadPrivateFile } from "@/lib/storage-utils";
 import { DocumentUploadWizard } from "@/components/coffre-fort/DocumentUploadWizard";
+import { CoffreManageSubscription } from "@/components/coffre-fort/CoffreManageSubscription";
 import { useAuth } from "@/hooks/useAuth";
 import {
   AlertDialog,
@@ -78,6 +79,7 @@ export default function CoffreFort() {
   const [editAmount, setEditAmount] = useState("");
   const [editingNote, setEditingNote] = useState(false);
   const [editNote, setEditNote] = useState("");
+  const [manageSubOpen, setManageSubOpen] = useState(false);
 
   const filters = homeView ? {} : {
     category: selectedCategory || undefined,
@@ -487,6 +489,12 @@ export default function CoffreFort() {
                     <Shield className="h-3.5 w-3.5 text-primary/50 flex-shrink-0" />
                     Bienvenue dans votre espace coffre-fort — sauvegardez vos factures en toute sécurité.
                   </p>
+                  <button
+                    onClick={() => setManageSubOpen(true)}
+                    className="text-xs text-muted-foreground/60 hover:text-primary underline underline-offset-2 mt-1 transition-colors w-fit"
+                  >
+                    Gérer mon abonnement
+                  </button>
                 </div>
 
                 {/* Boutons export */}
@@ -884,6 +892,9 @@ export default function CoffreFort() {
           isUploading={uploadDocument.isPending}
         />
       )}
+
+      {/* Manage subscription dialog */}
+      <CoffreManageSubscription open={manageSubOpen} onClose={() => setManageSubOpen(false)} />
 
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteConfirmDoc} onOpenChange={(open) => !open && setDeleteConfirmDoc(null)}>

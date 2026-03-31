@@ -34,7 +34,7 @@ export function useCoffreSubscription() {
     enabled: !!user,
   });
 
-  // First, get the garage_id for this user
+  // Get garage_id for this user
   const garageQuery = useQuery({
     queryKey: ["garage-id", user?.id],
     queryFn: async () => {
@@ -45,7 +45,7 @@ export function useCoffreSubscription() {
         .single();
       return data?.id || null;
     },
-    enabled: !!user && !adminQuery.data,
+    enabled: !!user,
   });
 
   const garageId = garageQuery.data;
@@ -64,12 +64,11 @@ export function useCoffreSubscription() {
         return null;
       }
 
-      // Beta/admin users: auto-create an 'active' row if none exists
-      // so DB-level checks (storage RLS, etc.) pass correctly
-      if (!data && (adminQuery.data === true || BETA_EMAILS.includes(user?.email || ""))) {
+      // Admin only: auto-create active row
+      if (!data && adminQuery.data === true) {
         const now = new Date();
         const periodEnd = new Date(now);
-        periodEnd.setFullYear(periodEnd.getFullYear() + 10); // long-lived for beta
+        periodEnd.setFullYear(periodEnd.getFullYear() + 10);
         await supabase.from("coffre_subscriptions" as any).upsert({
           garage_id: garageId,
           status: "active",
@@ -98,14 +97,14 @@ export function useCoffreSubscription() {
   });
 
   const isAdmin = adminQuery.data === true;
-  const BETA_EMAILS = ["mathieugaillac4@gmail.com"];
-  const isBetaAllowed = isAdmin || (!!user?.email && BETA_EMAILS.includes(user.email));
-  const isActive = isBetaAllowed && (isAdmin || query.data?.status === "active" || query.data?.status === "trialing");
+  // Feature accessible to everyone (no more beta gate)
+  const isBetaAllowed = true;
+  const isActive = isAdmin || query.data?.status === "active" || query.data?.status === "trialing";
   const isTrialing = query.data?.status === "trialing";
   const isCanceled = query.data?.status === "canceled";
   const isPastDue = query.data?.status === "past_due";
 
-  // Subscribe: redirects to Stripe Checkout
+  // Subscribe via Stripe Checkout (with 30-day free trial)
   const subscribe = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("create-coffre-subscription");
@@ -138,7 +137,7 @@ export function useCoffreSubscription() {
     },
   });
 
-  // Cancel: sets cancel_at_period_end
+  // Cancel subscription at period end
   const cancel = useMutation({
     mutationFn: async () => {
       const { data, error } = await supabase.functions.invoke("cancel-coffre-subscription");
@@ -154,6 +153,39 @@ export function useCoffreSubscription() {
     },
   });
 
+  // Apply retention discount (-50% next month)
+  const applyRetentionDiscount = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("apply-coffre-retention-discount");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coffre-subscription"] });
+      toast.success("Super ! -50% appliqué sur votre prochain mois 🎉");
+    },
+    onError: (error: any) => {
+      const message = error?.message || "Erreur lors de l'application de la remise";
+      toast.error(message);
+    },
+  });
+
+  // Reactivate (undo cancel_at_period_end)
+  const reactivate = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("reactivate-coffre-subscription");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["coffre-subscription"] });
+      toast.success("Votre abonnement a été réactivé !");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la réactivation");
+    },
+  });
+
   return {
     subscription: query.data,
     garageId,
@@ -166,5 +198,7 @@ export function useCoffreSubscription() {
     subscribe,
     subscribeWithTokens,
     cancel,
+    applyRetentionDiscount,
+    reactivate,
   };
 }
