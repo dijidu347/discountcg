@@ -6,8 +6,8 @@ import { toast } from "sonner";
 interface CoffreSubscription {
   id: string;
   garage_id: string;
-  status: "trialing" | "active" | "canceled" | "past_due";
-  payment_mode: "stripe" | "tokens";
+  status: "trialing" | "active" | "canceled" | "past_due" | "pending" | "expired";
+  payment_mode: "stripe" | "tokens" | "beta";
   cancel_at_period_end: boolean;
   trial_start: string | null;
   trial_end: string | null;

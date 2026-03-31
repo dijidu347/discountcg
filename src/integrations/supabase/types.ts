@@ -302,6 +302,7 @@ export type Database = {
           current_period_start: string | null
           garage_id: string
           id: string
+          payment_mode: string
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -316,6 +317,7 @@ export type Database = {
           current_period_start?: string | null
           garage_id: string
           id?: string
+          payment_mode?: string
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -330,6 +332,7 @@ export type Database = {
           current_period_start?: string | null
           garage_id?: string
           id?: string
+          payment_mode?: string
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -1743,6 +1746,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      renew_coffre_token_subscriptions: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "staff" | "garage"
