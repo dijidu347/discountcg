@@ -40,53 +40,45 @@ export function CoffreWidget() {
             100% { transform: translateX(200%); }
           }
           @keyframes glow-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.25), 0 4px 24px rgba(59,130,246,0.4); }
-            50% { box-shadow: 0 0 0 6px rgba(255,255,255,0.08), 0 4px 32px rgba(59,130,246,0.6); }
+            0%, 100% { box-shadow: 0 4px 24px rgba(59,130,246,0.35); }
+            50% { box-shadow: 0 4px 48px rgba(59,130,246,0.65), 0 0 0 6px rgba(59,130,246,0.12); }
           }
           .btn-glow { animation: glow-pulse 2.2s ease-in-out infinite; }
           .btn-shimmer::after {
             content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
             animation: shimmer 2.4s ease-in-out infinite;
           }
         `}</style>
 
-        <div className="relative overflow-hidden rounded-2xl shadow-xl"
-          style={{ background: "linear-gradient(135deg, #0f1e3c 0%, #1a3460 50%, #1e4080 100%)" }}>
-
-          {/* Subtle grid overlay */}
-          <div className="absolute inset-0 opacity-[0.04]"
-            style={{ backgroundImage: "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)", backgroundSize: "32px 32px" }} />
+        <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-lg shadow-blue-100/50">
 
           {/* NOUVEAU badge */}
           <div className="absolute top-3 right-3 z-10">
-            <span className="inline-flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow-lg uppercase tracking-wide">
+            <span className="inline-flex items-center gap-1 bg-amber-400 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-full shadow uppercase tracking-wide">
               <Sparkles className="h-2.5 w-2.5" /> Nouveau
             </span>
           </div>
 
-          <div className="relative z-10 flex flex-col md:flex-row gap-0">
+          <div className="flex flex-col md:flex-row">
 
             {/* LEFT: content */}
             <div className="flex-1 p-5 md:p-6">
-              {/* Icon + title */}
               <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                  <Archive className="h-4.5 w-4.5 text-white" style={{ width: 18, height: 18 }} />
+                <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <Archive className="h-[18px] w-[18px] text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-[10px] text-blue-300/80 font-semibold uppercase tracking-wider">Coffre-fort factures</p>
-                  <h3 className="font-black text-white text-base leading-tight">Ne perdez plus JAMAIS une facture</h3>
+                  <p className="text-[10px] text-blue-500 font-semibold uppercase tracking-wider">Coffre-fort factures</p>
+                  <h3 className="font-black text-gray-900 text-base leading-tight">Ne perdez plus JAMAIS une facture</h3>
                 </div>
               </div>
 
-              <p className="text-sm text-white/65 mb-3 leading-snug">
+              <p className="text-sm text-gray-500 mb-3 leading-snug">
                 Photographiez → classé automatiquement → exportez en 1 clic.
               </p>
 
-              {/* Benefits */}
               <ul className="space-y-1.5 mb-4">
                 {[
                   "Photo en 2 secondes depuis votre téléphone",
@@ -94,19 +86,17 @@ export function CoffreWidget() {
                   "Export comptable CSV / ZIP",
                   "Recherche instantanée de vos factures",
                 ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-white/80">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-400 flex-shrink-0" />
+                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                     {item}
                   </li>
                 ))}
               </ul>
 
-              {/* Price + CTA */}
               <div className="flex flex-wrap items-center gap-3">
-                {/* Animated CTA button */}
                 <button
                   onClick={() => navigate("/coffre-fort-sales")}
-                  className="btn-glow btn-shimmer relative overflow-hidden inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-white text-primary font-black text-sm transition-transform hover:scale-105 active:scale-95"
+                  className="btn-glow btn-shimmer relative overflow-hidden inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-blue-600 text-white font-black text-sm transition-transform hover:scale-105 active:scale-95"
                 >
                   <span className="relative z-10 flex items-center gap-2">
                     <Sparkles className="h-3.5 w-3.5" />
@@ -114,20 +104,19 @@ export function CoffreWidget() {
                   </span>
                 </button>
                 <div className="text-left">
-                  <p className="text-xs font-bold text-white">9,99€/mois</p>
-                  <p className="text-[10px] text-amber-300 font-semibold">1er mois OFFERT ✦</p>
+                  <p className="text-xs font-bold text-gray-700">9,99€/mois</p>
+                  <p className="text-[10px] text-amber-600 font-semibold">1er mois OFFERT ✦</p>
                 </div>
               </div>
 
-              <p className="text-[10px] text-white/30 mt-2.5">+ de 180 garages professionnels déjà inscrits</p>
+              <p className="text-[10px] text-gray-400 mt-2.5">+ de 180 garages professionnels déjà inscrits</p>
             </div>
 
             {/* RIGHT: mini category preview */}
-            <div className="md:w-64 lg:w-72 flex-shrink-0 border-t md:border-t-0 md:border-l border-white/8 p-4 relative">
-              {/* Lock overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#0f1e3c]/60 rounded-b-2xl md:rounded-r-2xl md:rounded-bl-none pointer-events-none z-10" />
+            <div className="md:w-60 lg:w-64 flex-shrink-0 border-t md:border-t-0 md:border-l border-blue-100 p-4 relative bg-white/60">
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/80 rounded-b-2xl md:rounded-r-2xl md:rounded-bl-none pointer-events-none z-10" />
 
-              <p className="text-[10px] text-white/40 font-semibold uppercase tracking-widest mb-3 flex items-center gap-1.5">
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <Lock className="h-3 w-3" /> Accès avec l'abonnement
               </p>
 
@@ -137,21 +126,21 @@ export function CoffreWidget() {
                   const color = CATEGORY_HEX_COLORS[cat.key];
                   return (
                     <div key={cat.key}
-                      className="rounded-lg p-2 flex flex-col gap-1 relative overflow-hidden"
-                      style={{ backgroundColor: `${color}12`, border: `1px solid ${color}20` }}>
+                      className="rounded-lg p-2 flex flex-col gap-1 bg-white border"
+                      style={{ borderColor: `${color}25` }}>
                       <div className="flex items-center gap-1.5">
                         <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: `${color}20` }}>
+                          style={{ backgroundColor: `${color}18` }}>
                           <CatIcon className="h-3 w-3" style={{ color }} />
                         </div>
-                        <span className="text-[10px] font-semibold text-white/80 leading-tight line-clamp-1">
+                        <span className="text-[10px] font-semibold text-gray-700 leading-tight line-clamp-1">
                           {cat.label}
                         </span>
                       </div>
-                      <div className="h-1 rounded-full w-full" style={{ backgroundColor: `${color}20` }}>
+                      <div className="h-1 rounded-full w-full bg-gray-100">
                         <div className="h-1 rounded-full w-0" style={{ backgroundColor: color }} />
                       </div>
-                      <span className="text-[9px] text-white/30">0 document</span>
+                      <span className="text-[9px] text-gray-400">0 document</span>
                     </div>
                   );
                 })}
