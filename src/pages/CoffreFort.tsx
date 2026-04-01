@@ -112,9 +112,10 @@ export default function CoffreFort() {
     if (!searchParams.get("subscribed")) return;
     setIsSyncing(true);
     supabase.functions.invoke("sync-coffre-subscription").then(() => {
-      // Remove the query param cleanly, then reload subscription data
+      setIsSyncing(false);
       navigate("/coffre-fort", { replace: true });
     }).catch(() => {
+      setIsSyncing(false);
       navigate("/coffre-fort", { replace: true });
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
