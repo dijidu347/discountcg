@@ -128,7 +128,9 @@ serve(async (req) => {
       status: 200,
       headers: {
         ...corsHeaders,
-        "Content-Type": "application/zip",
+        // Must use application/octet-stream — supabase-js parses application/zip as text
+        // which corrupts the binary data and makes the ZIP unreadable
+        "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="coffre-fort-export.zip"`,
       },
     });

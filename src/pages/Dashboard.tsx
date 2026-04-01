@@ -408,17 +408,24 @@ export default function Dashboard() {
                       )}
                     </div>
                     <p className="text-sm text-muted-foreground">{action.description}</p>
-                    <Button
-                      className="w-full"
-                      style={{
-                        backgroundColor: actionColor,
-                        borderColor: actionColor,
-                      }}
-                      onClick={() => navigate(`/nouvelle-demarche?type=${action.code}`)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Créer
-                    </Button>
+                    {action.code === 'CG' ? (
+                      <div className="text-center py-2">
+                        <p className="text-sm font-medium text-amber-600">Reviens très bientôt !</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Maintenance en cours</p>
+                      </div>
+                    ) : (
+                      <Button
+                        className="w-full"
+                        style={{
+                          backgroundColor: actionColor,
+                          borderColor: actionColor,
+                        }}
+                        onClick={() => navigate(`/nouvelle-demarche?type=${action.code}`)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Créer
+                      </Button>
+                    )}
                   </CardContent>
                 </Card>
               );

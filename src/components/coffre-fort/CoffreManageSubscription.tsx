@@ -258,7 +258,7 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
           </>
         )}
 
-        {/* ── STEP: confirm2 (confirmation finale) ── */}
+        {/* ── STEP: confirm2 (confirmation finale — avertissement suppression) ── */}
         {cancelStep === "confirm2" && (
           <>
             <DialogHeader>
@@ -266,27 +266,39 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
                 <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
                   <AlertTriangle className="h-4 w-4 text-destructive" />
                 </div>
-                <DialogTitle>Confirmation définitive</DialogTitle>
+                <DialogTitle>Attention : vos documents seront supprimés</DialogTitle>
               </div>
               <DialogDescription>
-                {isTrialing
-                  ? "Votre essai gratuit sera arrêté. Vous perdrez l'accès à votre coffre-fort."
-                  : "Dernière chance. Votre abonnement sera résilié à la fin de la période en cours."}
+                En confirmant la résiliation, tous vos documents stockés dans le coffre-fort seront définitivement supprimés.
               </DialogDescription>
             </DialogHeader>
 
+            <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 space-y-3">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div className="text-sm space-y-2">
+                  <p className="font-semibold text-destructive">Conséquences irréversibles :</p>
+                  <ul className="space-y-1.5 text-foreground/80 list-disc pl-4">
+                    <li>Tous vos documents (factures, cartes grises, assurances...) seront <strong className="text-destructive">supprimés définitivement</strong></li>
+                    <li>Aucune récupération possible après la suppression</li>
+                    <li>Pensez à <strong>télécharger vos documents</strong> avant de confirmer</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
             {periodEnd && (
-              <div className="rounded-xl bg-destructive/5 border border-destructive/20 p-4 text-sm text-center">
+              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-center">
                 {isTrialing
-                  ? "Votre accès sera coupé immédiatement."
-                  : <>Vous conservez l'accès jusqu'au <strong>{periodEnd}</strong>.<br />Aucun remboursement ne sera effectué.</>
+                  ? "Votre accès sera coupé immédiatement et vos documents supprimés."
+                  : <>Vous conservez l'accès jusqu'au <strong>{periodEnd}</strong> pour télécharger vos documents.<br />Après cette date, tout sera supprimé.</>
                 }
               </div>
             )}
 
             <div className="flex gap-2 mt-2">
               <Button variant="outline" className="flex-1" onClick={() => setCancelStep("idle")}>
-                Non, je reste
+                Non, je garde mes documents
               </Button>
               <Button
                 variant="destructive"
@@ -294,7 +306,7 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
                 onClick={handleFinalCancel}
                 disabled={cancel.isPending}
               >
-                {cancel.isPending ? "Résiliation..." : "Oui, résilier définitivement"}
+                {cancel.isPending ? "Résiliation..." : "Supprimer mes documents et résilier"}
               </Button>
             </div>
           </>
@@ -310,16 +322,16 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
               </DialogDescription>
             </DialogHeader>
 
-            <div className="py-4 text-center space-y-2">
+            <div className="py-4 text-center space-y-3">
               {periodEnd && (
                 <p className="text-sm text-muted-foreground">
                   Vous conservez l'accès à votre coffre-fort jusqu'au{" "}
                   <strong className="text-foreground">{periodEnd}</strong>.
                 </p>
               )}
-              <p className="text-sm text-muted-foreground">
-                Nous espérons vous revoir bientôt. Vos documents restent disponibles jusqu'à la fin de votre accès.
-              </p>
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-amber-800 dark:text-amber-200">
+                <strong>Important :</strong> Pensez à télécharger tous vos documents avant la fin de votre accès. Après cette date, ils seront définitivement supprimés.
+              </div>
             </div>
 
             <Button className="w-full" onClick={handleClose}>

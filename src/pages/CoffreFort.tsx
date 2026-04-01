@@ -161,8 +161,12 @@ export default function CoffreFort() {
 
       const { data, error } = await supabase.functions.invoke("export-coffre-documents", { body });
       if (error) throw error;
+      if (!data) throw new Error("Aucune donnée reçue");
 
-      const blob = data instanceof Blob ? data : new Blob([data], { type: "application/zip" });
+      // supabase-js returns a Blob for application/octet-stream responses
+      const blob = data instanceof Blob
+        ? new Blob([data], { type: "application/zip" })
+        : new Blob([data], { type: "application/zip" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
