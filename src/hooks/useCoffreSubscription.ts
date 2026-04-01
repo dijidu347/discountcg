@@ -64,32 +64,8 @@ export function useCoffreSubscription() {
         return null;
       }
 
-      // Admin only: auto-create active row
-      if (!data && adminQuery.data === true) {
-        const now = new Date();
-        const periodEnd = new Date(now);
-        periodEnd.setFullYear(periodEnd.getFullYear() + 10);
-        await supabase.from("coffre_subscriptions" as any).upsert({
-          garage_id: garageId,
-          status: "active",
-          payment_mode: "beta",
-          cancel_at_period_end: false,
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-        }, { onConflict: "garage_id" });
-
-        return {
-          id: "",
-          garage_id: garageId!,
-          status: "active",
-          payment_mode: "beta",
-          cancel_at_period_end: false,
-          trial_start: null,
-          trial_end: null,
-          current_period_start: now.toISOString(),
-          current_period_end: periodEnd.toISOString(),
-        };
-      }
+      // Admin auto-create disabled for testing
+      // if (!data && adminQuery.data === true) { ... }
 
       return data as unknown as CoffreSubscription | null;
     },

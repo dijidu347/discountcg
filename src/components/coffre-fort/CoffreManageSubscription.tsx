@@ -263,50 +263,42 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
           <>
             <DialogHeader>
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center flex-shrink-0">
                   <AlertTriangle className="h-4 w-4 text-destructive" />
                 </div>
-                <DialogTitle>Attention : vos documents seront supprimés</DialogTitle>
+                <DialogTitle className="text-base leading-tight">Vos documents seront supprimés</DialogTitle>
               </div>
-              <DialogDescription>
-                En confirmant la résiliation, tous vos documents stockés dans le coffre-fort seront définitivement supprimés.
-              </DialogDescription>
             </DialogHeader>
 
-            <div className="rounded-xl bg-destructive/10 border border-destructive/30 p-4 space-y-3">
-              <div className="flex items-start gap-2.5">
-                <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                <div className="text-sm space-y-2">
-                  <p className="font-semibold text-destructive">Conséquences irréversibles :</p>
-                  <ul className="space-y-1.5 text-foreground/80 list-disc pl-4">
-                    <li>Tous vos documents (factures, cartes grises, assurances...) seront <strong className="text-destructive">supprimés définitivement</strong></li>
-                    <li>Aucune récupération possible après la suppression</li>
-                    <li>Pensez à <strong>télécharger vos documents</strong> avant de confirmer</li>
-                  </ul>
-                </div>
-              </div>
+            <div className="rounded-lg bg-destructive/10 border border-destructive/30 p-3 text-sm space-y-1.5">
+              <p className="font-semibold text-destructive text-xs">Conséquences irréversibles :</p>
+              <ul className="space-y-1 text-foreground/80 list-disc pl-4 text-xs">
+                <li>Tous vos documents seront <strong className="text-destructive">supprimés définitivement</strong></li>
+                <li>Aucune récupération possible</li>
+                <li>Pensez à <strong>tout télécharger</strong> avant</li>
+              </ul>
             </div>
 
             {periodEnd && (
-              <div className="rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 p-3 text-sm text-center">
+              <p className="text-xs text-center text-muted-foreground">
                 {isTrialing
-                  ? "Votre accès sera coupé immédiatement et vos documents supprimés."
-                  : <>Vous conservez l'accès jusqu'au <strong>{periodEnd}</strong> pour télécharger vos documents.<br />Après cette date, tout sera supprimé.</>
+                  ? "Accès coupé immédiatement."
+                  : <>Accès jusqu'au <strong className="text-foreground">{periodEnd}</strong> pour télécharger.</>
                 }
-              </div>
+              </p>
             )}
 
-            <div className="flex gap-2 mt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setCancelStep("idle")}>
-                Non, je garde mes documents
+            <div className="flex flex-col sm:flex-row gap-2 mt-1">
+              <Button variant="outline" className="flex-1 text-sm" onClick={() => setCancelStep("idle")}>
+                Garder mes documents
               </Button>
               <Button
                 variant="destructive"
-                className="flex-1"
+                className="flex-1 text-sm"
                 onClick={handleFinalCancel}
                 disabled={cancel.isPending}
               >
-                {cancel.isPending ? "Résiliation..." : "Supprimer mes documents et résilier"}
+                {cancel.isPending ? "Résiliation..." : "Supprimer et résilier"}
               </Button>
             </div>
           </>
