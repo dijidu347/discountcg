@@ -108,7 +108,8 @@ export default function ResultatCarteGrise() {
         const calc = calculatePrice(
           tarifData.tarif,
           vehicleData.chevauxFiscaux,
-          vehicleData.dateMiseEnCirculation
+          vehicleData.dateMiseEnCirculation,
+          vehicleData.genre
         );
 
         setCalculation(calc);

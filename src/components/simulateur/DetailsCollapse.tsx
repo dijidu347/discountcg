@@ -75,6 +75,12 @@ export const DetailsCollapse = ({
                 </div>
               )}
               
+              {calculation.taxeParafiscale > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Taxe parafiscale (Y.2)</span>
+                  <span className="font-medium">{formatPrice(calculation.taxeParafiscale)} €</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Taxe de gestion</span>
                 <span className="font-medium">{formatPrice(calculation.fraisGestion)} €</span>

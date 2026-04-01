@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Archive, Camera, Search, Download, Trash2, FileText,
-  ArrowLeft, Plus, Eye, LayoutDashboard, Receipt, HelpCircle, Menu, LogOut, ChevronLeft, Loader2, Edit2, MoreVertical, ChevronDown, Shield
+  ArrowLeft, Plus, Eye, LayoutDashboard, Receipt, HelpCircle, Menu, LogOut, ChevronLeft, Loader2, Edit2, MoreVertical, ChevronDown, Shield, CalendarIcon, X
 } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { fr } from "date-fns/locale";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import {
   DropdownMenu,
@@ -94,6 +97,15 @@ export default function CoffreFort() {
     documents, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage,
     uploadDocument, deleteDocument, updateDocument, countsByCategory, monthlyAmountsByCategory,
   } = useCoffreDocuments(filters);
+
+  // Navigate directly to a category if ?category= param is present
+  useEffect(() => {
+    const cat = searchParams.get("category");
+    if (cat) {
+      setHomeView(false);
+      setSelectedCategory(cat);
+    }
+  }, []);
 
   // When Stripe redirects back with ?subscribed=true, sync subscription from Stripe
   useEffect(() => {
@@ -724,6 +736,48 @@ export default function CoffreFort() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
+                <div className="flex items-center gap-1.5 px-4 border-l border-border/60 text-xs text-muted-foreground whitespace-nowrap h-12">
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                  <span className="font-medium text-foreground/70">Période</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={`h-7 px-2.5 rounded-lg border text-xs font-medium transition-colors ${dateFrom ? "border-primary/40 bg-primary/5 text-primary" : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"}`}>
+                        {dateFrom ? new Date(dateFrom).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "Début"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateFrom ? new Date(dateFrom) : undefined}
+                        onSelect={(d) => setDateFrom(d ? d.toISOString().split("T")[0] : "")}
+                        locale={fr}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <span className="text-muted-foreground">→</span>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <button className={`h-7 px-2.5 rounded-lg border text-xs font-medium transition-colors ${dateTo ? "border-primary/40 bg-primary/5 text-primary" : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"}`}>
+                        {dateTo ? new Date(dateTo).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" }) : "Fin"}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dateTo ? new Date(dateTo) : undefined}
+                        onSelect={(d) => setDateTo(d ? d.toISOString().split("T")[0] : "")}
+                        locale={fr}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {(dateFrom || dateTo) && (
+                    <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
                 <div className="flex items-center border-l border-border/60 divide-x divide-border/60">
                   <button
                     onClick={() => openAddModal(selectedCategory)}
@@ -782,17 +836,6 @@ export default function CoffreFort() {
                     {c.label}
                   </button>
                 ))}
-                <div className="ml-auto flex items-center gap-2 flex-shrink-0">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <span>Du</span>
-                    <input type="date" className="bg-transparent text-xs border-0 outline-none w-[115px] text-foreground" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-                    <span>au</span>
-                    <input type="date" className="bg-transparent text-xs border-0 outline-none w-[115px] text-foreground" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-                    {(dateFrom || dateTo) && (
-                      <button onClick={() => { setDateFrom(""); setDateTo(""); }} className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors">✕</button>
-                    )}
-                  </div>
-                </div>
               </div>
 
               {/* Ligne 3 : sélection active */}

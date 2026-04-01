@@ -149,6 +149,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
         const vehicleData = {
           dateMiseEnCirculation: apiResponse.data.date_mec,
           chevauxFiscaux: apiResponse.data.puissance_fiscale,
+          genre: apiResponse.data.genre,
         };
         
         if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {

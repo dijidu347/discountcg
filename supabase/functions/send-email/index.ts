@@ -384,7 +384,7 @@ const getEmailTemplate = (type: string, data: any) => {
             <h1 style="color: #22c55e;">Démarche soumise avec succès !</h1>
             <p>Bonjour ${data.garage_name},</p>
             <p>Votre démarche a bien été enregistrée et sera traitée dans les plus brefs délais.</p>
-            
+
             <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 8px 0;"><strong>Type :</strong> ${data.type}</p>
               <p style="margin: 8px 0;"><strong>Référence :</strong> ${data.reference}</p>
@@ -393,10 +393,11 @@ const getEmailTemplate = (type: string, data: any) => {
               ${data.is_free_token ? '<p style="margin: 8px 0; color: #22c55e;"><strong>🎁 Démarche offerte (jeton gratuit utilisé)</strong></p>' : ''}
             </div>
 
+            <p style="margin: 0;"><strong>📎 Votre facture est jointe à cet email</strong></p>
             <p>Vous pouvez suivre l'avancement de votre démarche depuis votre espace garage.</p>
 
-            <a href="https://discountcartegrise.fr/mes-demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Voir mes démarches
+            <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir ma démarche
             </a>
 
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
@@ -511,8 +512,8 @@ const getEmailTemplate = (type: string, data: any) => {
 
             <p>Le traitement de votre démarche va commencer.</p>
 
-            <a href="https://discountcartegrise.fr/mes-demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Voir mes démarches
+            <a href="${baseUrl}/demarche/${data.demarche_uuid || data.demarche_id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir ma démarche
             </a>
 
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
@@ -739,8 +740,10 @@ const getEmailTemplate = (type: string, data: any) => {
 
             <p>Le dossier est désormais complet et <strong>en cours de traitement</strong>.</p>
 
-            <a href="https://discountcartegrise.fr/mes-demarches" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Voir mes démarches
+            <p style="margin: 0;"><strong>📎 La facture est jointe à cet email</strong></p>
+
+            <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir la démarche
             </a>
 
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
@@ -764,7 +767,7 @@ const getEmailTemplate = (type: string, data: any) => {
               <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
                 <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
               </div>
-              <a href="https://discountcartegrise.fr/mes-demarches" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+              <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
                 Voir la conversation
               </a>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
@@ -790,7 +793,7 @@ const getEmailTemplate = (type: string, data: any) => {
             <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
               <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
             </div>
-            <a href="https://discountcartegrise.fr/admin" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
+            <a href="https://discountcartegrise.fr/admin/demarche/${data.demarche_id}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
               Voir dans l'admin
             </a>
           </div>

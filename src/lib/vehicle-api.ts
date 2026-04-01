@@ -11,6 +11,7 @@ export interface NormalizedVehicleData {
   co2?: number;
   immatriculation?: string;
   vin?: string;
+  genre?: string; // VP, CTTE, etc. — détermine la taxe parafiscale Y.2
 }
 
 interface VehicleApiResponse {

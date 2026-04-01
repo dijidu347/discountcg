@@ -468,6 +468,7 @@ const PaiementDemarche = () => {
             data: {
               garage_name: garage.raison_sociale,
               demarche_id: demarche.numero_demarche,
+              demarche_uuid: demarche.id,
               immatriculation: demarche.immatriculation,
               amount: amountToPay,
               new_balance: newBalance,

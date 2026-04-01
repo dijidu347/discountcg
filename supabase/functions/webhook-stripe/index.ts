@@ -97,18 +97,27 @@ async function hasEmailTracking(supabaseClient: SupabaseClient, demarcheId: stri
   return data !== null && data.length > 0;
 }
 
+// Convert Uint8Array PDF bytes to base64 string
+function pdfToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
+}
+
 async function sendEmail(
-  type: string, 
-  to: string, 
-  data: Record<string, unknown>
+  type: string,
+  to: string,
+  data: Record<string, unknown>,
+  attachments?: Array<{ filename: string; content: string }>
 ): Promise<void> {
   try {
     console.log(`📧 Sending email type: ${type} to: ${to}`);
-    console.log("📧 Email data:", JSON.stringify(data));
-    
+
     // Use service role key for internal service-to-service authentication
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    
+
     const response = await fetch(
       `${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`,
       {
@@ -118,7 +127,7 @@ async function sendEmail(
           "Authorization": `Bearer ${serviceRoleKey}`,
           "apikey": serviceRoleKey,
         },
-        body: JSON.stringify({ type, to, data }),
+        body: JSON.stringify({ type, to, data, attachments }),
       }
     );
     
@@ -260,6 +269,134 @@ async function generateDemarcheFacturePDF(
 }
 
 // -----------------------------
+// PDF GENERATOR FOR GUEST ORDERS
+// -----------------------------
+
+async function generateGuestFacturePDF(
+  facture: Facture,
+  order: GuestOrder
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]);
+  const { width, height } = page.getSize();
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const blue = rgb(0.145, 0.388, 0.922);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const margin = 50;
+  let y = height - margin;
+
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 24, font: fontBold, color: blue });
+  const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+
+  y -= 40;
+  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  y -= 20;
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(`${order.prenom} ${order.nom}`, { x: width / 2, y, size: 12, font: fontBold, color: black });
+  y -= 18;
+  page.drawText("Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(order.email, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 28, color: blue });
+  page.drawText("DÉSIGNATION", { x: margin + 10, y: y + 8, size: 10, font: fontBold, color: rgb(1,1,1) });
+  page.drawText("MONTANT", { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: rgb(1,1,1) });
+
+  y -= 35;
+  page.drawText(`Carte grise - ${order.immatriculation}`, { x: margin + 10, y: y + 8, size: 10, font: fontRegular, color: black });
+  page.drawText(`Réf: ${order.tracking_number}`, { x: margin + 10, y: y - 8, size: 9, font: fontRegular, color: gray });
+  page.drawText(`${facture.montant_ttc.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: blue });
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 2, color: gray });
+  y -= 25;
+  page.drawText("TOTAL TTC", { x: width / 2, y: y + 8, size: 12, font: fontBold, color: black });
+  page.drawText(`${facture.montant_ttc.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 14, font: fontBold, color: blue });
+
+  y -= 60;
+  page.drawText("Merci pour votre confiance !", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  y -= 15;
+  page.drawText("DISCOUNT DRIVER - SAS - Service de cartes grises en ligne", { x: margin, y, size: 9, font: fontRegular, color: gray });
+
+  return await pdfDoc.save();
+}
+
+// -----------------------------
+// PDF GENERATOR FOR TOKEN PURCHASES
+// -----------------------------
+
+async function generateTokenFacturePDF(
+  facture: Facture,
+  garage: Garage,
+  creditAmount: number,
+  pricePaid: number
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]);
+  const { width, height } = page.getSize();
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const blue = rgb(0.145, 0.388, 0.922);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const margin = 50;
+  let y = height - margin;
+
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 24, font: fontBold, color: blue });
+  const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+
+  y -= 40;
+  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  y -= 20;
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(garage.raison_sociale || "Garage", { x: width / 2, y, size: 12, font: fontBold, color: black });
+  y -= 18;
+  page.drawText("Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(garage.email, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  if (garage.siret) {
+    y -= 15;
+    page.drawText(`SIRET : ${garage.siret}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  }
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 28, color: blue });
+  page.drawText("DÉSIGNATION", { x: margin + 10, y: y + 8, size: 10, font: fontBold, color: rgb(1,1,1) });
+  page.drawText("MONTANT", { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: rgb(1,1,1) });
+
+  y -= 35;
+  page.drawText(`Recharge de solde — ${creditAmount} €`, { x: margin + 10, y: y + 8, size: 10, font: fontRegular, color: black });
+  page.drawText("Crédit utilisable pour démarches carte grise", { x: margin + 10, y: y - 8, size: 9, font: fontRegular, color: gray });
+  page.drawText(`${pricePaid.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: blue });
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 2, color: gray });
+  y -= 25;
+  page.drawText("TOTAL TTC", { x: width / 2, y: y + 8, size: 12, font: fontBold, color: black });
+  page.drawText(`${pricePaid.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 14, font: fontBold, color: blue });
+
+  y -= 60;
+  page.drawText("Merci pour votre confiance !", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  y -= 15;
+  page.drawText("DISCOUNT DRIVER - SAS - Service de cartes grises en ligne", { x: margin, y, size: 9, font: fontRegular, color: gray });
+
+  return await pdfDoc.save();
+}
+
+// -----------------------------
 // DEMARCHE PAYMENT HANDLER
 // -----------------------------
 
@@ -371,6 +508,8 @@ async function handleDemarchePayment(
     .select()
     .single();
 
+  let demarchePdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
   if (factureError) {
     console.error("❌ Failed to create facture:", factureError);
   } else {
@@ -380,6 +519,9 @@ async function handleDemarchePayment(
     try {
       const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage);
       const pdfFileName = `facture_${facture.numero}.pdf`;
+
+      // Keep bytes for email attachment
+      demarchePdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
 
       const { error: uploadError } = await supabase.storage
         .from("factures")
@@ -416,7 +558,7 @@ async function handleDemarchePayment(
       .eq("id", demarcheId);
   }
 
-  // Send client confirmation email FIRST (always send to garage)
+  // Send confirmation email to garage WITH invoice attached
   if (garage?.email) {
     await sendEmail("garage_demarche_confirmation", garage.email, {
       type: demarche.type,
@@ -425,8 +567,9 @@ async function handleDemarchePayment(
       garage_name: garage.raison_sociale,
       montant_ttc: actualAmount.toFixed(2),
       is_free_token: demarche.is_free_token || false,
-    });
-    console.log("✅ Client confirmation email sent");
+      demarche_id: demarcheId,
+    }, demarchePdfAttachment);
+    console.log("✅ Confirmation email with invoice sent to garage");
   }
 
   // Send admin notification emails with delays to avoid rate limiting
@@ -511,13 +654,35 @@ async function handleGuestOrderPayment(
     .select()
     .single();
 
+  let guestPdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
   if (factureError) {
     console.error("❌ Failed to create facture:", factureError);
   } else {
     console.log("✅ Facture created:", facture?.numero);
+
+    // Generate and upload guest order PDF
+    try {
+      const pdfBytes = await generateGuestFacturePDF(facture, order);
+      const pdfFileName = `facture_${facture.numero}.pdf`;
+
+      guestPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+      const { error: uploadError } = await supabase.storage
+        .from("factures")
+        .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+        await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+        console.log("✅ Guest PDF uploaded:", pdfFileName);
+      }
+    } catch (pdfError) {
+      console.error("❌ Guest PDF generation failed:", pdfError);
+    }
   }
 
-  // Send client confirmation email FIRST
+  // Send client confirmation email WITH invoice attached
   if (order.email) {
     await sendEmail("payment_confirmed", order.email, {
       tracking_number: order.tracking_number,
@@ -525,8 +690,8 @@ async function handleGuestOrderPayment(
       nom: order.nom,
       immatriculation: order.immatriculation,
       montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
-    });
-    console.log("✅ Client confirmation email sent");
+    }, guestPdfAttachment);
+    console.log("✅ Client confirmation email with invoice sent");
   }
 
   // Send admin notification emails with delays to avoid rate limiting
@@ -610,16 +775,54 @@ async function handleTokenPurchase(
     console.log("✅ Balance recharge recorded");
   }
 
-  // Send confirmation email to garage
+  // Send confirmation email to garage WITH invoice attached
   const pricePaid = paymentIntent.amount / 100;
+
+  // Generate token invoice PDF
+  let tokenPdfAttachment: Array<{ filename: string; content: string }> | undefined;
+  try {
+    // Create facture record for tokens
+    const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+    const { data: tokenFacture } = await supabase
+      .from("factures")
+      .insert({
+        numero: factureNumero,
+        garage_id: garageId,
+        montant_ht: pricePaid,
+        montant_ttc: pricePaid,
+        tva: 0,
+      })
+      .select()
+      .single();
+
+    if (tokenFacture) {
+      const pdfBytes = await generateTokenFacturePDF(tokenFacture, garage, creditAmount, pricePaid);
+      const pdfFileName = `facture_${tokenFacture.numero}.pdf`;
+
+      tokenPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+      const { error: uploadError } = await supabase.storage
+        .from("factures")
+        .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+        await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", tokenFacture.id);
+        console.log("✅ Token invoice PDF uploaded:", pdfFileName);
+      }
+    }
+  } catch (pdfError) {
+    console.error("❌ Token PDF generation failed:", pdfError);
+  }
+
   if (garage.email) {
     await sendEmail("recharge_confirmed", garage.email, {
       garage_name: garage.raison_sociale,
       amount: creditAmount,
       price: pricePaid,
       new_balance: newBalance,
-    });
-    console.log("✅ Balance recharge confirmation email sent");
+    }, tokenPdfAttachment);
+    console.log("✅ Recharge confirmation email with invoice sent");
   }
 
   // Send admin notification emails with proper delays to avoid Resend rate limits (2 req/sec)
@@ -744,6 +947,8 @@ async function handleClientPayment(
       .select()
       .single();
 
+    let clientPdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
     if (factureError) {
       console.error("❌ Failed to create facture:", factureError);
     } else {
@@ -754,25 +959,16 @@ async function handleClientPayment(
         const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage);
         const pdfFileName = `facture_${facture.numero}.pdf`;
 
+        // Keep for email attachment
+        clientPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
         const { error: uploadError } = await supabase.storage
           .from("factures")
-          .upload(pdfFileName, pdfBytes, {
-            contentType: "application/pdf",
-            upsert: true,
-          });
+          .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
 
-        if (uploadError) {
-          console.error("❌ PDF upload failed:", uploadError);
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from("factures")
-            .getPublicUrl(pdfFileName);
-
-          await supabase
-            .from("factures")
-            .update({ pdf_url: publicUrl })
-            .eq("id", facture.id);
-
+        if (!uploadError) {
+          const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+          await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
           console.log("✅ PDF uploaded:", pdfFileName);
         }
       } catch (pdfError) {
@@ -788,7 +984,7 @@ async function handleClientPayment(
         .eq("id", demarcheId);
     }
 
-    // Send confirmation email to client
+    // Send confirmation email to client (no invoice for client in split — it's the garage's facture)
     if (demarche.client_email) {
       await sendEmail("client_payment_confirmed", demarche.client_email, {
         immatriculation: realImmat,
@@ -798,7 +994,7 @@ async function handleClientPayment(
       console.log("✅ Client payment confirmation email sent to", demarche.client_email);
     }
 
-    // Send notification to garage: client has paid
+    // Send notification to garage WITH invoice attached
     await delay(600);
     if (garage?.email) {
       await sendEmail("garage_client_paid", garage.email, {
@@ -807,8 +1003,9 @@ async function handleClientPayment(
         immatriculation: realImmat,
         montant_ttc: clientActualAmount.toFixed(2),
         reference: demarche.numero_demarche,
-      });
-      console.log("✅ Garage notified: client paid");
+        demarche_id: demarcheId,
+      }, clientPdfAttachment);
+      console.log("✅ Garage notified with invoice: client paid");
     }
 
     // Insert in-app notification for the garage (realtime NotificationBell)
