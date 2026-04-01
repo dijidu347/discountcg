@@ -69,9 +69,16 @@ serve(async (req) => {
 
     const apiResponse = await response.json();
     console.log('Vehicle lookup successful for plate:', cleanPlate);
+    console.log('RAW API RESPONSE:', JSON.stringify(apiResponse, null, 2));
     
     // Normalize the data from the API
     const vehicleData = apiResponse.data;
+    console.log('RAW vehicleData keys:', vehicleData ? Object.keys(vehicleData) : 'null');
+    console.log('puissance_fiscale field:', vehicleData?.AWN_puissance_fiscale);
+    console.log('puiss_fisc field:', vehicleData?.AWN_puiss_fisc);
+    console.log('puissance field:', vehicleData?.AWN_puissance);
+    console.log('chevaux_fiscaux field:', vehicleData?.AWN_chevaux_fiscaux);
+    
     const normalizedData = {
       marque: vehicleData?.AWN_marque,
       modele: vehicleData?.AWN_modele,
