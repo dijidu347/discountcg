@@ -28,6 +28,7 @@ export default function AdminDashboard() {
     demarchesTodayTokens: 0,
     demarchesAttenteClient: 0,
     coffreAbonnes: 0,
+    coffrePaying: 0,
     coffreStripe: 0,
     coffreTokens: 0,
     coffreBeta: 0,
@@ -162,6 +163,7 @@ export default function AdminDashboard() {
       demarchesTodayTokens: demarchesTodayTokens.length,
       demarchesAttenteClient: demarchesAttenteClient.length,
       coffreAbonnes: coffreActive.length,
+      coffrePaying: coffreActive.filter(s => s.status === 'active' && s.payment_mode !== 'beta').length,
       coffreStripe: coffreActive.filter(s => s.payment_mode === 'stripe').length,
       coffreTokens: coffreActive.filter(s => s.payment_mode === 'tokens').length,
       coffreBeta: coffreActive.filter(s => s.payment_mode === 'beta').length,
@@ -393,7 +395,7 @@ export default function AdminDashboard() {
               </Button>
             </div>
             <CardDescription>
-              Revenu total: {stats.totalPaiements.toFixed(2)} € · Coffre-fort: {stats.coffreAbonnes} abonné{stats.coffreAbonnes > 1 ? 's' : ''} ({((stats.coffreStripe + stats.coffreTokens) * 9.99).toFixed(2)} €/mois)
+              Revenu total: {stats.totalPaiements.toFixed(2)} € · Coffre-fort: {stats.coffreAbonnes} abonné{stats.coffreAbonnes > 1 ? 's' : ''} (MRR: {(stats.coffrePaying * 9.99).toFixed(2)} €/mois)
             </CardDescription>
           </CardHeader>
         </Card>

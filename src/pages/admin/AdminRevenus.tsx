@@ -98,7 +98,7 @@ export default function AdminRevenus() {
   const [tokenPurchases, setTokenPurchases] = useState<RawTokenPurchase[]>([]);
   const [demarches, setDemarches] = useState<RawDemarche[]>([]);
   const [garageNames, setGarageNames] = useState<Record<string, string>>({});
-  const [coffreStats, setCoffreStats] = useState({ total: 0, stripe: 0, tokens: 0, beta: 0 });
+  const [coffreStats, setCoffreStats] = useState({ total: 0, stripe: 0, tokens: 0, beta: 0, paying: 0, trialing: 0 });
   const [coffreSubs, setCoffreSubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<string>("30");
@@ -156,12 +156,15 @@ export default function AdminRevenus() {
 
     const allCoffreSubs = (cRes.data as any[]) || [];
     const coffreActive = allCoffreSubs.filter((s: any) => s.status === "active" || s.status === "trialing");
+    const coffrePaying = coffreActive.filter((s: any) => s.status === "active" && s.payment_mode !== "beta");
     setCoffreSubs(allCoffreSubs);
     setCoffreStats({
       total: coffreActive.length,
       stripe: coffreActive.filter((s: any) => s.payment_mode === "stripe").length,
       tokens: coffreActive.filter((s: any) => s.payment_mode === "tokens").length,
       beta: coffreActive.filter((s: any) => s.payment_mode === "beta").length,
+      paying: coffrePaying.length,
+      trialing: coffreActive.filter((s: any) => s.status === "trialing").length,
     });
 
     setLoading(false);
@@ -623,7 +626,7 @@ export default function AdminRevenus() {
                   Abonnements Coffre-fort
                 </CardTitle>
                 <CardDescription>
-                  {coffreStats.total} abonné{coffreStats.total > 1 ? "s" : ""} actif{coffreStats.total > 1 ? "s" : ""} · MRR : {((coffreStats.stripe + coffreStats.tokens) * 9.99).toFixed(2)} €/mois
+                  {coffreStats.total} abonné{coffreStats.total > 1 ? "s" : ""} ({coffreStats.trialing > 0 ? `${coffreStats.trialing} en essai` : ""}){coffreStats.trialing > 0 && coffreStats.paying > 0 ? " · " : ""}{coffreStats.paying > 0 ? `MRR : ${(coffreStats.paying * 9.99).toFixed(2)} €/mois` : coffreStats.trialing > 0 ? " · MRR : 0 €" : ""}
                 </CardDescription>
               </div>
               <div className="grid grid-cols-3 gap-2">
