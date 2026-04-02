@@ -394,9 +394,7 @@ export default function AdminDashboard() {
                 Voir les statistiques détaillées →
               </Button>
             </div>
-            <CardDescription>
-              Revenu total: {stats.totalPaiements.toFixed(2)} € · Coffre-fort: {stats.coffreAbonnes} abonné{stats.coffreAbonnes > 1 ? 's' : ''} (MRR: {(stats.coffrePaying * 9.99).toFixed(2)} €/mois)
-            </CardDescription>
+            <CardDescription>Revenu total: {stats.totalPaiements.toFixed(2)} €</CardDescription>
           </CardHeader>
         </Card>
 
