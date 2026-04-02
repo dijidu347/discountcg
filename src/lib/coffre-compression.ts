@@ -48,12 +48,18 @@ export async function compressFile(file: File): Promise<CompressedFile> {
 
   // HEIC conversion — some browsers report empty MIME type for HEIC files
   if (isHeic) {
-    const heic2any = (await import("heic2any")).default;
-    const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.7 });
-    const converted = Array.isArray(blob) ? blob[0] : blob;
-    imageFile = new File([converted], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
-      type: "image/jpeg",
-    });
+    try {
+      const heic2any = (await import("heic2any")).default;
+      const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.7 });
+      const converted = Array.isArray(blob) ? blob[0] : blob;
+      imageFile = new File([converted], file.name.replace(/\.(heic|heif)$/i, ".jpg"), {
+        type: "image/jpeg",
+      });
+    } catch (heicErr) {
+      console.warn("HEIC conversion failed, uploading original file:", heicErr);
+      // Fallback: upload the raw HEIC file without conversion
+      return { file, originalSize, compressedSize: file.size };
+    }
   }
 
   // Compress image
