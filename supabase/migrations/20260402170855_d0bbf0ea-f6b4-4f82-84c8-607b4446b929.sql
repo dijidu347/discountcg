@@ -1,0 +1,1 @@
+ALTER TABLE coffre_subscriptions ADD COLUMN IF NOT EXISTS retention_discount_applied boolean DEFAULT false;
