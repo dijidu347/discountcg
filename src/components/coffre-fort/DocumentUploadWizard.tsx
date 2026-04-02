@@ -170,7 +170,7 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
                   <input
                     ref={cameraInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/heic,image/heif,image/webp"
+                    accept="image/jpeg,image/png,image/heic,image/heif,image/webp,.heic,.heif"
                     capture="environment"
                     className="hidden"
                     onChange={(e) => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); e.target.value = ""; }}
@@ -178,7 +178,7 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
                   <input
                     ref={fileInputRef}
                     type="file"
-                    accept="image/jpeg,image/png,image/heic,image/heif,image/webp,application/pdf"
+                    accept="image/jpeg,image/png,image/heic,image/heif,image/webp,application/pdf,.heic,.heif"
                     className="hidden"
                     onChange={(e) => { if (e.target.files?.[0]) handleFileSelect(e.target.files[0]); e.target.value = ""; }}
                   />
