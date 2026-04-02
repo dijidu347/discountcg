@@ -303,6 +303,7 @@ export type Database = {
           garage_id: string
           id: string
           payment_mode: string
+          retention_discount_applied: boolean | null
           status: string
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
@@ -318,6 +319,7 @@ export type Database = {
           garage_id: string
           id?: string
           payment_mode?: string
+          retention_discount_applied?: boolean | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
@@ -333,6 +335,7 @@ export type Database = {
           garage_id?: string
           id?: string
           payment_mode?: string
+          retention_discount_applied?: boolean | null
           status?: string
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
