@@ -46,7 +46,14 @@ export function CoffreManageSubscription({ open, onClose }: Props) {
     setCancelStep("confirm1");
   };
 
-  const handleConfirm1 = () => setCancelStep("retention_offer");
+  const handleConfirm1 = () => {
+    // Skip retention offer if already used once on this account
+    if (subscription?.retention_discount_applied) {
+      setCancelStep("confirm2");
+    } else {
+      setCancelStep("retention_offer");
+    }
+  };
 
   const handleAcceptDiscount = async () => {
     await applyRetentionDiscount.mutateAsync();

@@ -80,15 +80,15 @@ export function CoffreWidget() {
               </div>
 
               <p className="text-sm text-gray-500 mb-3 leading-snug">
-                Photographiez → classé automatiquement → exportez en 1 clic.
+                Importez une facture, un scan ou une photo depuis votre téléphone ou votre ordinateur.
               </p>
 
               <ul className="space-y-1.5 mb-4">
                 {[
-                  "Photo en 2 secondes depuis votre téléphone",
-                  "Classement automatique par catégorie",
-                  "Export comptable CSV / ZIP",
-                  "Recherche instantanée de vos factures",
+                  "Ne perdez plus jamais une facture",
+                  "Gagnez du temps sur votre bilan comptable",
+                  "Export ZIP par mois et par année",
+                  "Recherche instantanée par fournisseur",
                 ].map((item) => (
                   <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
                     <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
@@ -108,8 +108,8 @@ export function CoffreWidget() {
                   </span>
                 </button>
                 <div className="text-left">
-                  <p className="text-xs font-bold text-gray-700">9,99€/mois</p>
-                  <p className="text-[10px] text-amber-600 font-semibold">1er mois OFFERT ✦</p>
+                  <p className="text-sm font-black text-amber-600">1er mois OFFERT</p>
+                  <p className="text-[10px] text-gray-400">puis 9,99€/mois</p>
                 </div>
               </div>
 

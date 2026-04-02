@@ -161,6 +161,7 @@ export function useCoffreDocuments(filters: DocumentFilters = {}) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["coffre-documents"] });
+      queryClient.invalidateQueries({ queryKey: ["coffre-category-counts"] });
       toast.success("Document enregistré !");
     },
     onError: (error: any) => {

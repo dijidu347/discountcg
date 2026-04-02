@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Upload, FileText, Loader2 } from "lucide-react";
+import { Camera, Upload, FileText, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { COFFRE_CATEGORIES, getCategoryInfo } from "@/lib/coffre-categories";
 import { isAcceptedFileType, isFileTooLarge, isPdfTooBig, compressFile, type CompressedFile } from "@/lib/coffre-compression";
@@ -36,6 +36,7 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
   const [documentDate, setDocumentDate] = useState(new Date().toISOString().split("T")[0]);
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -43,6 +44,8 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
     setStep(1);
     setSelectedFile(null);
     setCompressed(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
     setCategory(initialCategory ?? "");
     setTitle("");
     setDocumentDate(new Date().toISOString().split("T")[0]);
@@ -65,6 +68,8 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
     }
 
     setSelectedFile(file);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(URL.createObjectURL(file));
     setIsCompressing(true);
 
     try {
@@ -85,7 +90,7 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
   };
 
   const handleSubmit = () => {
-    if (!compressed || !category || !title) return;
+    if (!compressed || !category) return;
 
     onUpload({
       file: compressed.file,
@@ -186,15 +191,24 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
           {step === 2 && compressed && (
             <div>
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border mb-5">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
+                {previewUrl && selectedFile?.type.startsWith("image/") ? (
+                  <img src={previewUrl} alt="Aperçu" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{selectedFile?.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatSize(compressed.originalSize)} → {formatSize(compressed.compressedSize)} (compressé)
                   </p>
                 </div>
+                {previewUrl && (
+                  <button onClick={() => window.open(previewUrl, "_blank")} className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0" title="Aperçu">
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
               </div>
 
               <p className="text-sm font-semibold mb-3">Dans quelle catégorie ?</p>
@@ -224,20 +238,29 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
           {step === 3 && (
             <div>
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border mb-5">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
+                {previewUrl && selectedFile?.type.startsWith("image/") ? (
+                  <img src={previewUrl} alt="Aperçu" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{selectedFile?.name}</p>
                   <Badge variant="secondary" className={`text-xs ${getCategoryInfo(category).color}`}>
                     {getCategoryInfo(category).label}
                   </Badge>
                 </div>
+                {previewUrl && (
+                  <button onClick={() => window.open(previewUrl, "_blank")} className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0" title="Aperçu">
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-semibold mb-2 block">Fournisseur</label>
+                  <label className="text-sm font-semibold mb-2 block">Fournisseur <span className="font-normal text-muted-foreground">(optionnel)</span></label>
                   <Input
                     placeholder="Ex: Autodistribution, TotalEnergies..."
                     value={title}
@@ -260,7 +283,7 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
 
               <div className="flex justify-between mt-6 gap-3">
                 <Button variant="ghost" size="sm" className="h-12" onClick={() => setStep(2)}>← Retour</Button>
-                <Button className="h-12 flex-1" onClick={() => setStep(4)} disabled={!title.trim()}>Continuer →</Button>
+                <Button className="h-12 flex-1" onClick={() => setStep(4)}>Continuer →</Button>
               </div>
             </div>
           )}
@@ -269,9 +292,13 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
           {step === 4 && (
             <div>
               <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border mb-5">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-muted-foreground" />
-                </div>
+                {previewUrl && selectedFile?.type.startsWith("image/") ? (
+                  <img src={previewUrl} alt="Aperçu" className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">{selectedFile?.name}</p>
                   <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -281,6 +308,11 @@ export function DocumentUploadWizard({ open, onOpenChange, garageId, onUpload, i
                     <span className="text-xs text-muted-foreground">· {new Date(documentDate).toLocaleDateString("fr-FR")}</span>
                   </div>
                 </div>
+                {previewUrl && (
+                  <button onClick={() => window.open(previewUrl, "_blank")} className="p-2 rounded-lg hover:bg-muted transition-colors flex-shrink-0" title="Aperçu">
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
               </div>
 
               <p className="text-sm text-muted-foreground mb-4">Informations complémentaires (optionnel)</p>

@@ -28,7 +28,7 @@ const CATEGORIES = [
 
 const FEATURES = [
   { icon: Camera, title: "Photo en 2 secondes", desc: "Prenez en photo votre facture depuis votre téléphone. C'est rangé instantanément.", color: "#3b82f6" },
-  { icon: FolderOpen, title: "Classé automatiquement", desc: "6 catégories dédiées aux garages. Zéro effort de rangement.", color: "#f59e0b" },
+  { icon: FolderOpen, title: "6 catégories dédiées", desc: "Classez vos factures par type : véhicules, pièces, carburant, entretien...", color: "#f59e0b" },
   { icon: Zap, title: "Stockage illimité", desc: "Archivez tous vos documents sans jamais vous soucier de l'espace.", color: "#ef4444" },
   { icon: Search, title: "Recherche instantanée", desc: "Retrouvez n'importe quelle facture en tapant le fournisseur ou la date.", color: "#10b981" },
   { icon: Download, title: "Export comptable en 1 clic", desc: "Envoyez votre dossier comptable par sélection, année ou tout en ZIP.", color: "#6366f1" },
@@ -161,7 +161,7 @@ export default function CoffreFortSales() {
               </h1>
 
               <p className="text-gray-500 text-base md:text-lg mb-6 max-w-md mx-auto lg:mx-0">
-                Photographiez votre facture → elle est classée, stockée et exportable en 1 clic.
+                Importez une facture, un scan ou une photo depuis votre téléphone ou votre ordinateur.
               </p>
 
               <ul className="space-y-2.5 mb-8 max-w-sm mx-auto lg:mx-0">
@@ -214,7 +214,7 @@ export default function CoffreFortSales() {
                       ? <Loader2 className="h-4 w-4 animate-spin" />
                       : <Coins className="h-4 w-4 text-amber-500" />
                     }
-                    Payer avec mes jetons ({(tokenBalance ?? 0).toFixed(2)}€)
+                    Payer avec mes jetons
                   </button>
                 )}
               </div>

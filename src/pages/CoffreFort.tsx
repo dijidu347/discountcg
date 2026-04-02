@@ -178,7 +178,12 @@ export default function CoffreFort() {
       URL.revokeObjectURL(url);
       toast.success("Export terminé !");
     } catch (err: any) {
-      toast.error(err.message || "Erreur lors de l'export");
+      const msg = err.message || "";
+      if (msg.includes("Aucun document") || msg.includes("404")) {
+        toast.info("Aucun document disponible pour cette période");
+      } else {
+        toast.error(msg || "Erreur lors de l'export");
+      }
     } finally {
       setIsExporting(false);
     }

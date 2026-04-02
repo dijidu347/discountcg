@@ -19,9 +19,10 @@ export interface CompressedFile {
 }
 
 export function isAcceptedFileType(file: File): boolean {
-  return ACCEPTED_TYPES.includes(file.type) ||
-    file.name.toLowerCase().endsWith(".heic") ||
-    file.name.toLowerCase().endsWith(".heif");
+  const lowerName = file.name.toLowerCase();
+  // Some browsers (desktop) report empty or "application/octet-stream" MIME type for HEIC
+  if (lowerName.endsWith(".heic") || lowerName.endsWith(".heif")) return true;
+  return ACCEPTED_TYPES.includes(file.type);
 }
 
 export function isFileTooLarge(file: File): boolean {
@@ -34,6 +35,9 @@ export function isPdfTooBig(file: File): boolean {
 
 export async function compressFile(file: File): Promise<CompressedFile> {
   const originalSize = file.size;
+  const lowerName = file.name.toLowerCase();
+  const isHeic = file.type === "image/heic" || file.type === "image/heif" ||
+    lowerName.endsWith(".heic") || lowerName.endsWith(".heif");
 
   // PDF: pass through (true PDF compression requires server-side tools)
   if (file.type === "application/pdf") {
@@ -42,13 +46,8 @@ export async function compressFile(file: File): Promise<CompressedFile> {
 
   let imageFile = file;
 
-  // HEIC conversion
-  if (
-    file.type === "image/heic" ||
-    file.type === "image/heif" ||
-    file.name.toLowerCase().endsWith(".heic") ||
-    file.name.toLowerCase().endsWith(".heif")
-  ) {
+  // HEIC conversion — some browsers report empty MIME type for HEIC files
+  if (isHeic) {
     const heic2any = (await import("heic2any")).default;
     const blob = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.7 });
     const converted = Array.isArray(blob) ? blob[0] : blob;

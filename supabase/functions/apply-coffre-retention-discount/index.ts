@@ -31,16 +31,20 @@ serve(async (req) => {
 
     const { data: sub } = await supabase
       .from("coffre_subscriptions")
-      .select("stripe_subscription_id, payment_mode")
+      .select("stripe_subscription_id, payment_mode, retention_discount_applied")
       .eq("garage_id", garage.id)
       .in("status", ["active", "trialing"])
       .single();
 
     if (!sub) return new Response(JSON.stringify({ error: "Aucun abonnement actif" }), { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } });
 
+    // Only allow one retention discount per account
+    if (sub.retention_discount_applied) {
+      return new Response(JSON.stringify({ error: "Offre déjà utilisée" }), { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } });
+    }
+
     // Stripe subscriptions: apply 50% coupon for one month
     if (sub.payment_mode === "stripe" && sub.stripe_subscription_id) {
-      // Create a one-time 50% coupon
       const coupon = await stripe.coupons.create({
         percent_off: 50,
         duration: "once",
@@ -53,13 +57,11 @@ serve(async (req) => {
       });
     }
 
-    // Token subscriptions: flag next renewal at half price
-    if (sub.payment_mode === "tokens") {
-      await supabase
-        .from("coffre_subscriptions")
-        .update({ retention_discount_applied: true } as any)
-        .eq("garage_id", garage.id);
-    }
+    // Always flag as used (Stripe + tokens + beta)
+    await supabase
+      .from("coffre_subscriptions")
+      .update({ retention_discount_applied: true } as any)
+      .eq("garage_id", garage.id);
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
 

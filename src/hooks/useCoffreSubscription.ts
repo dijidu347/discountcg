@@ -9,6 +9,7 @@ interface CoffreSubscription {
   status: "trialing" | "active" | "canceled" | "past_due" | "pending" | "expired";
   payment_mode: "stripe" | "tokens" | "beta";
   cancel_at_period_end: boolean;
+  retention_discount_applied?: boolean;
   trial_start: string | null;
   trial_end: string | null;
   current_period_start: string | null;
