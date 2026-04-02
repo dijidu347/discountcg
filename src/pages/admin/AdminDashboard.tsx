@@ -381,51 +381,21 @@ export default function AdminDashboard() {
         </div>
 
         {/* Revenue Stats Section - Link to full page */}
-        <Card className="mb-8">
+        <Card className="mb-8 cursor-pointer hover:border-primary transition-colors" onClick={() => navigate("/admin/revenus")}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
                 <CardTitle>Revenus</CardTitle>
               </div>
-              <Button variant="outline" size="sm" onClick={() => navigate("/admin/revenus")}>
+              <Button variant="outline" size="sm">
                 Voir les statistiques détaillées →
               </Button>
             </div>
-            <CardDescription>Revenu total: {stats.totalPaiements.toFixed(2)} €</CardDescription>
+            <CardDescription>
+              Revenu total: {stats.totalPaiements.toFixed(2)} € · Coffre-fort: {stats.coffreAbonnes} abonné{stats.coffreAbonnes > 1 ? 's' : ''} ({((stats.coffreStripe + stats.coffreTokens) * 9.99).toFixed(2)} €/mois)
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Abonnements Coffre-fort */}
-            <div className="rounded-xl border p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Archive className="h-4 w-4 text-blue-600" />
-                  <span className="font-semibold text-sm">Abonnements Coffre-fort</span>
-                </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-green-600">{((stats.coffreStripe + stats.coffreTokens) * 9.99).toFixed(2)} €<span className="text-xs font-normal text-muted-foreground">/mois</span></p>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="text-center p-2 rounded-lg bg-blue-50 border border-blue-100">
-                  <CreditCard className="h-4 w-4 text-blue-600 mx-auto mb-0.5" />
-                  <p className="text-xl font-bold text-blue-700">{stats.coffreStripe}</p>
-                  <p className="text-[10px] text-blue-600">Carte</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-amber-50 border border-amber-100">
-                  <Coins className="h-4 w-4 text-amber-600 mx-auto mb-0.5" />
-                  <p className="text-xl font-bold text-amber-700">{stats.coffreTokens}</p>
-                  <p className="text-[10px] text-amber-600">Jetons</p>
-                </div>
-                <div className="text-center p-2 rounded-lg bg-gray-50 border border-gray-100">
-                  <Archive className="h-4 w-4 text-gray-500 mx-auto mb-0.5" />
-                  <p className="text-xl font-bold text-gray-600">{stats.coffreBeta}</p>
-                  <p className="text-[10px] text-gray-500">Beta</p>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground text-center">{stats.coffreAbonnes} abonné{stats.coffreAbonnes > 1 ? 's' : ''} actif{stats.coffreAbonnes > 1 ? 's' : ''} · MRR récurrent : {((stats.coffreStripe + stats.coffreTokens) * 9.99).toFixed(2)} €</p>
-            </div>
-          </CardContent>
         </Card>
 
         {/* Section Particuliers */}

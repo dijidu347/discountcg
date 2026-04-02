@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import {
   ArrowLeft, DollarSign, TrendingUp, TrendingDown, Minus,
   CreditCard, Coins, Calendar as CalendarIcon, BarChart3, Users, FileText,
-  ArrowUpRight, ArrowDownRight, Activity, Euro, Eye
+  ArrowUpRight, ArrowDownRight, Activity, Euro, Eye, Archive
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -99,6 +99,7 @@ export default function AdminRevenus() {
   const [demarches, setDemarches] = useState<RawDemarche[]>([]);
   const [garageNames, setGarageNames] = useState<Record<string, string>>({});
   const [coffreStats, setCoffreStats] = useState({ total: 0, stripe: 0, tokens: 0, beta: 0 });
+  const [coffreSubs, setCoffreSubs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<string>("30");
   const [viewMode, setViewMode] = useState<string>("daily");
@@ -140,8 +141,7 @@ export default function AdminRevenus() {
         .select("id, raison_sociale, ville"),
       supabase
         .from("coffre_subscriptions")
-        .select("status, payment_mode")
-        .in("status", ["active", "trialing"]),
+        .select("id, status, payment_mode, cancel_at_period_end, retention_discount_applied, current_period_start, current_period_end, trial_start, trial_end, garage_id, created_at"),
     ]);
 
     setPaiements((pRes.data as any) || []);
@@ -154,7 +154,9 @@ export default function AdminRevenus() {
     });
     setGarageNames(names);
 
-    const coffreActive = (cRes.data as any[]) || [];
+    const allCoffreSubs = (cRes.data as any[]) || [];
+    const coffreActive = allCoffreSubs.filter((s: any) => s.status === "active" || s.status === "trialing");
+    setCoffreSubs(allCoffreSubs);
     setCoffreStats({
       total: coffreActive.length,
       stripe: coffreActive.filter((s: any) => s.payment_mode === "stripe").length,
@@ -610,6 +612,95 @@ export default function AdminRevenus() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Coffre-fort Subscriptions Detail */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Archive className="h-5 w-5 text-indigo-600" />
+                  Abonnements Coffre-fort
+                </CardTitle>
+                <CardDescription>
+                  {coffreStats.total} abonné{coffreStats.total > 1 ? "s" : ""} actif{coffreStats.total > 1 ? "s" : ""} · MRR : {((coffreStats.stripe + coffreStats.tokens) * 9.99).toFixed(2)} €/mois
+                </CardDescription>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className="text-center px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100">
+                  <p className="text-lg font-bold text-blue-700">{coffreStats.stripe}</p>
+                  <p className="text-[10px] text-blue-600">Carte</p>
+                </div>
+                <div className="text-center px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100">
+                  <p className="text-lg font-bold text-amber-700">{coffreStats.tokens}</p>
+                  <p className="text-[10px] text-amber-600">Jetons</p>
+                </div>
+                <div className="text-center px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-100">
+                  <p className="text-lg font-bold text-gray-600">{coffreStats.beta}</p>
+                  <p className="text-[10px] text-gray-500">Beta</p>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Garage</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Paiement</TableHead>
+                  <TableHead>Période</TableHead>
+                  <TableHead>Résiliation</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {coffreSubs.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Aucun abonnement</TableCell>
+                  </TableRow>
+                ) : (
+                  coffreSubs
+                    .sort((a, b) => (a.status === "active" || a.status === "trialing" ? -1 : 1))
+                    .map((sub) => (
+                      <TableRow key={sub.id}>
+                        <TableCell className="font-medium">{garageNames[sub.garage_id] || sub.garage_id}</TableCell>
+                        <TableCell>
+                          <Badge variant={sub.status === "active" ? "default" : sub.status === "trialing" ? "secondary" : "outline"}
+                            className={
+                              sub.status === "active" ? "bg-green-100 text-green-700 border-green-200" :
+                              sub.status === "trialing" ? "bg-blue-100 text-blue-700 border-blue-200" :
+                              sub.status === "canceled" ? "bg-red-100 text-red-700 border-red-200" :
+                              ""
+                            }>
+                            {sub.status === "active" ? "Actif" : sub.status === "trialing" ? "Essai" : sub.status === "canceled" ? "Résilié" : sub.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1.5">
+                            {sub.payment_mode === "stripe" && <><CreditCard className="h-3.5 w-3.5 text-blue-500" /><span className="text-sm">Carte</span></>}
+                            {sub.payment_mode === "tokens" && <><Coins className="h-3.5 w-3.5 text-amber-500" /><span className="text-sm">Jetons</span></>}
+                            {sub.payment_mode === "beta" && <><Archive className="h-3.5 w-3.5 text-gray-400" /><span className="text-sm">Beta</span></>}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {sub.current_period_end ? (
+                            <>jusqu'au {new Date(sub.current_period_end).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })}</>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {sub.cancel_at_period_end ? (
+                            <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">Programmée</Badge>
+                          ) : sub.retention_discount_applied ? (
+                            <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">-50% utilisé</Badge>
+                          ) : "—"}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
         {/* Token Usage Stats */}
         <Card className="mb-8">
