@@ -98,6 +98,7 @@ export default function AdminRevenus() {
   const [tokenPurchases, setTokenPurchases] = useState<RawTokenPurchase[]>([]);
   const [demarches, setDemarches] = useState<RawDemarche[]>([]);
   const [garageNames, setGarageNames] = useState<Record<string, string>>({});
+  const [coffreStats, setCoffreStats] = useState({ total: 0, stripe: 0, tokens: 0, beta: 0 });
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState<string>("30");
   const [viewMode, setViewMode] = useState<string>("daily");
@@ -122,7 +123,7 @@ export default function AdminRevenus() {
   };
 
   const loadData = async () => {
-    const [pRes, tRes, dRes, gRes] = await Promise.all([
+    const [pRes, tRes, dRes, gRes, cRes] = await Promise.all([
       supabase
         .from("paiements")
         .select("montant, status, created_at, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
@@ -137,6 +138,10 @@ export default function AdminRevenus() {
       supabase
         .from("garages")
         .select("id, raison_sociale, ville"),
+      supabase
+        .from("coffre_subscriptions")
+        .select("status, payment_mode")
+        .in("status", ["active", "trialing"]),
     ]);
 
     setPaiements((pRes.data as any) || []);
@@ -148,6 +153,15 @@ export default function AdminRevenus() {
       names[g.id] = `${g.raison_sociale}${g.ville ? ` (${g.ville})` : ''}`;
     });
     setGarageNames(names);
+
+    const coffreActive = (cRes.data as any[]) || [];
+    setCoffreStats({
+      total: coffreActive.length,
+      stripe: coffreActive.filter((s: any) => s.payment_mode === "stripe").length,
+      tokens: coffreActive.filter((s: any) => s.payment_mode === "tokens").length,
+      beta: coffreActive.filter((s: any) => s.payment_mode === "beta").length,
+    });
+
     setLoading(false);
   };
 
@@ -509,7 +523,7 @@ export default function AdminRevenus() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           <Card className="border-l-4 border-l-emerald-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -572,6 +586,26 @@ export default function AdminRevenus() {
                 <span>{tokenPaidDemarches.length} par jetons</span>
                 <span>·</span>
                 <span>{freeTokenDemarches.length} gratuits</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-indigo-500">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Coffre-fort</p>
+                  <p className="text-3xl font-bold text-indigo-600 mt-1">{coffreStats.total}</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                  <FileText className="h-6 w-6 text-indigo-600" />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
+                <span>{coffreStats.stripe} carte</span>
+                <span>·</span>
+                <span>{coffreStats.tokens} jetons</span>
+                {coffreStats.beta > 0 && <><span>·</span><span>{coffreStats.beta} beta</span></>}
               </div>
             </CardContent>
           </Card>

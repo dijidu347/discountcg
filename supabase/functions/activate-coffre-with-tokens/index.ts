@@ -1,5 +1,8 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
+import { Resend } from "https://esm.sh/resend@2.0.0";
+
+const ADMIN_EMAIL = "mathieugaillac4@gmail.com";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,7 +31,7 @@ serve(async (req) => {
     // Récupérer le garage et le solde de jetons
     const { data: garage } = await supabase
       .from("garages")
-      .select("id, token_balance")
+      .select("id, token_balance, raison_sociale, email")
       .eq("user_id", user.id)
       .single();
 
@@ -63,6 +66,33 @@ serve(async (req) => {
       }, { onConflict: "garage_id" });
 
     if (upsertError) throw upsertError;
+
+    // Send admin notification email
+    try {
+      const resendKey = Deno.env.get("RESEND_API_KEY");
+      if (resendKey) {
+        const resend = new Resend(resendKey);
+        await resend.emails.send({
+          from: "Jimmy Admin <noreply@discountcartegrise.fr>",
+          to: [ADMIN_EMAIL],
+          subject: `🪙 Coffre-fort — Abonnement jetons : ${garage.raison_sociale || "Garage"}`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto;">
+              <h2 style="color: #1e3a5f;">🪙 Nouvel abonnement coffre-fort (jetons)</h2>
+              <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                <tr><td style="padding: 6px 0; color: #6b7280;">Garage</td><td style="font-weight: bold;">${garage.raison_sociale || "—"}</td></tr>
+                <tr><td style="padding: 6px 0; color: #6b7280;">Email</td><td>${garage.email || "—"}</td></tr>
+                <tr><td style="padding: 6px 0; color: #6b7280;">Paiement</td><td>Jetons (${MONTHLY_PRICE}€)</td></tr>
+                <tr><td style="padding: 6px 0; color: #6b7280;">Nouveau solde</td><td>${(balance - MONTHLY_PRICE).toFixed(2)}€</td></tr>
+                <tr><td style="padding: 6px 0; color: #6b7280;">Date</td><td>${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}</td></tr>
+              </table>
+            </div>
+          `,
+        });
+      }
+    } catch (emailErr) {
+      console.error("Failed to send admin notification:", emailErr);
+    }
 
     return new Response(JSON.stringify({ success: true, period_end: periodEnd.toISOString() }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
 

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2, Euro, ClipboardList, Clock } from "lucide-react";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2, Euro, ClipboardList, Clock, Archive, CreditCard, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
@@ -26,7 +26,11 @@ export default function AdminDashboard() {
     garagesAVerifier: 0,
     demarchesToday: 0,
     demarchesTodayTokens: 0,
-    demarchesAttenteClient: 0
+    demarchesAttenteClient: 0,
+    coffreAbonnes: 0,
+    coffreStripe: 0,
+    coffreTokens: 0,
+    coffreBeta: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -104,6 +108,12 @@ export default function AdminDashboard() {
       .from('token_purchases')
       .select('amount');
 
+    // Fetch coffre-fort subscriptions
+    const { data: coffreSubs } = await supabase
+      .from('coffre_subscriptions')
+      .select('status, payment_mode')
+      .in('status', ['active', 'trialing']);
+
     // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées ET pas refusées ET pas en attente client
     const demarchesATraiter = demarches?.filter(d =>
       d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse' && d.status !== 'en_attente_paiement_client'
@@ -140,6 +150,7 @@ export default function AdminDashboard() {
     
     const creditsTotal = tokenPurchases?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
 
+    const coffreActive = coffreSubs || [];
     setStats({
       totalGarages: garages?.length || 0,
       totalDemarches: totalDemarchesCount || demarches?.length || 0,
@@ -149,7 +160,11 @@ export default function AdminDashboard() {
       garagesAVerifier: garagesAVerifier.length,
       demarchesToday: demarchesTodayPaid.length,
       demarchesTodayTokens: demarchesTodayTokens.length,
-      demarchesAttenteClient: demarchesAttenteClient.length
+      demarchesAttenteClient: demarchesAttenteClient.length,
+      coffreAbonnes: coffreActive.length,
+      coffreStripe: coffreActive.filter(s => s.payment_mode === 'stripe').length,
+      coffreTokens: coffreActive.filter(s => s.payment_mode === 'tokens').length,
+      coffreBeta: coffreActive.filter(s => s.payment_mode === 'beta').length,
     });
 
     setLoading(false);
@@ -379,6 +394,38 @@ export default function AdminDashboard() {
             </div>
             <CardDescription>Revenu total: {stats.totalPaiements.toFixed(2)} €</CardDescription>
           </CardHeader>
+        </Card>
+
+        {/* Coffre-fort Subscriptions */}
+        <Card className="mb-8">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Archive className="h-5 w-5 text-blue-600" />
+              <CardTitle>Abonnements Coffre-fort</CardTitle>
+            </div>
+            <CardDescription>
+              {stats.coffreAbonnes} abonné{stats.coffreAbonnes > 1 ? 's' : ''} actif{stats.coffreAbonnes > 1 ? 's' : ''}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center p-3 rounded-lg bg-blue-50 border border-blue-100">
+                <CreditCard className="h-5 w-5 text-blue-600 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-blue-700">{stats.coffreStripe}</p>
+                <p className="text-xs text-blue-600">Carte (Stripe)</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-amber-50 border border-amber-100">
+                <Coins className="h-5 w-5 text-amber-600 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-amber-700">{stats.coffreTokens}</p>
+                <p className="text-xs text-amber-600">Jetons</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-green-50 border border-green-100">
+                <Archive className="h-5 w-5 text-green-600 mx-auto mb-1" />
+                <p className="text-2xl font-bold text-green-700">{stats.coffreBeta}</p>
+                <p className="text-xs text-green-600">Beta / Admin</p>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
         {/* Section Particuliers */}
