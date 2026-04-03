@@ -417,9 +417,10 @@ export default function AdminRevenus() {
   }, [filteredPaiements, filteredTokens, garageNames]);
 
   // Recent transactions
+  // Dernières transactions: toujours les plus récentes (pas filtrées par période)
   const recentTransactions = useMemo(() => {
     const all: { date: string; type: string; amount: number; source: string }[] = [];
-    filteredPaiements.slice(0, 50).forEach(p => {
+    paiements.filter(p => getRevenueAmount(p) > 0).forEach(p => {
       all.push({
         date: p.created_at,
         type: p.demarches?.type || "?",
@@ -427,7 +428,7 @@ export default function AdminRevenus() {
         source: "Paiement CB",
       });
     });
-    filteredTokens.slice(0, 50).forEach(t => {
+    tokenPurchases.forEach(t => {
       all.push({
         date: t.created_at,
         type: `${t.quantity}€ jetons`,
@@ -436,7 +437,7 @@ export default function AdminRevenus() {
       });
     });
     return all.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 20);
-  }, [filteredPaiements, filteredTokens]);
+  }, [paiements, tokenPurchases]);
 
   const renderTrend = (value: number) => {
     if (Math.abs(value) < 0.1) return null;
