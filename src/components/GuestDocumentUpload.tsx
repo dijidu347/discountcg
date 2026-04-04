@@ -25,7 +25,10 @@ interface GuestDocumentUploadProps {
   onUploadComplete?: () => void;
   isBlocked?: boolean;
   blockedMessage?: string;
-  rectoOnly?: boolean; // Nouveau prop pour documents recto uniquement
+  rectoOnly?: boolean;
+  trackingNumber?: string;
+  clientName?: string;
+  orderIdForNotif?: string;
 }
 
 export function GuestDocumentUpload({ 
