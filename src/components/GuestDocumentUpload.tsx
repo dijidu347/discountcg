@@ -39,7 +39,10 @@ export function GuestDocumentUpload({
   onUploadComplete,
   isBlocked = false,
   blockedMessage,
-  rectoOnly = false
+  rectoOnly = false,
+  trackingNumber,
+  clientName,
+  orderIdForNotif
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
   const rectoInputRef = useRef<HTMLInputElement>(null);
