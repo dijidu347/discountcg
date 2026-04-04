@@ -87,6 +87,7 @@ const App = () => (
           <Route path="/demarche-simple" element={<DemarcheSimple />} />
         <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
         <Route path="/paiement/:orderId" element={<PaiementGuestOrder />} />
+        <Route path="/merci/:trackingNumber" element={<MerciGuestOrder />} />
         <Route path="/paiement-demarche/:demarcheId" element={<PaiementDemarche />} />
         <Route path="/paiement-succes/:demarcheId" element={<PaiementSucces />} />
         <Route path="/recherche-suivi" element={<RechercheSuivi />} />
