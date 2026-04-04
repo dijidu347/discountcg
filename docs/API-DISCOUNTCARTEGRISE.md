@@ -1,14 +1,14 @@
-# API DiscountCarteGrise — Documentation complète
+# API DiscountCarteGrise — Documentation Garages
 
 ## Sommaire
 1. [Configuration](#1-configuration)
 2. [Authentification](#2-authentification)
 3. [Endpoints](#3-endpoints)
 4. [Types de démarches](#4-types-de-démarches)
-5. [Documents requis par démarche](#5-documents-requis-par-démarche)
-6. [Questions conditionnelles](#6-questions-conditionnelles)
-7. [Calcul des prix](#7-calcul-des-prix)
-8. [Statuts de commande](#8-statuts-de-commande)
+5. [Modes de paiement](#5-modes-de-paiement)
+6. [Système de jetons](#6-système-de-jetons)
+7. [Statuts de démarche](#7-statuts-de-démarche)
+8. [Documents requis](#8-documents-requis)
 9. [Flux complet d'intégration](#9-flux-complet-dintégration)
 10. [Exemples de code](#10-exemples-de-code)
 
@@ -22,36 +22,38 @@ https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external
 ```
 
 ### Clé API
+À configurer dans Supabase Dashboard → Edge Functions → Secrets :
 ```
-EXTERNAL_API_KEY = edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4
+EXTERNAL_API_KEY = <votre_clé>
 ```
-
-> **Important** : Cette clé doit être ajoutée dans Supabase Dashboard → Edge Functions → Secrets sous le nom `EXTERNAL_API_KEY`.
 
 ---
 
 ## 2. Authentification
 
-Toutes les requêtes doivent inclure la clé API dans le header `x-api-key` :
-
+Header `x-api-key` obligatoire sur toutes les requêtes :
 ```
 POST /functions/v1/api-external
 Content-Type: application/json
-x-api-key: edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4
-```
-
-**Erreur 401** si la clé est absente ou invalide :
-```json
-{ "success": false, "error": "Clé API invalide ou manquante" }
+x-api-key: VOTRE_CLE_API
 ```
 
 ---
 
 ## 3. Endpoints
 
-Tous les endpoints utilisent la même URL. L'action est spécifiée dans le body JSON.
+| Action | Description |
+|--------|-------------|
+| `get_types` | Lister les types de démarches disponibles + prix |
+| `get_garage` | Info d'un garage (solde jetons, statut vérification) |
+| `create_demarche` | Créer une démarche pour un garage |
+| `pay_with_tokens` | Payer une démarche avec le solde jetons |
+| `get_demarche` | Récupérer le détail d'une démarche |
+| `list_demarches` | Lister les démarches d'un garage |
 
-### 3.1 `get_types` — Lister les démarches disponibles
+---
+
+### 3.1 `get_types` — Types de démarches disponibles
 
 ```json
 // Request
@@ -62,168 +64,225 @@ Tous les endpoints utilisent la même URL. L'action est spécifiée dans le body
   "success": true,
   "types": [
     {
-      "code": "CG",
-      "titre": "Carte Grise (Changement de titulaire)",
-      "description": "Demande de nouvelle carte grise suite à un changement de propriétaire",
-      "prix_base": 30,
-      "actif": true,
+      "id": "uuid",
+      "type": "DA",
+      "titre": "Déclaration d'achat",
+      "description": "...",
+      "prix": 5.00,
+      "categorie": "rapide",
       "ordre": 1
     },
     {
-      "code": "DA",
-      "titre": "Déclaration d'Achat",
-      "description": "Déclaration d'achat d'un véhicule d'occasion",
-      "prix_base": 19.90,
-      "actif": true,
-      "ordre": 2
+      "type": "DC",
+      "titre": "Déclaration de cession",
+      "prix": 5.00
     },
     {
-      "code": "DC",
-      "titre": "Déclaration de Cession",
-      "description": "Déclaration de vente d'un véhicule",
-      "prix_base": 19.90,
-      "actif": true,
-      "ordre": 3
+      "type": "CG",
+      "titre": "Carte grise",
+      "prix": 29.00
     }
+    // ... autres types PRO
   ]
 }
 ```
 
 ---
 
-### 3.2 `create_order` — Créer une commande
+### 3.2 `get_garage` — Informations garage
 
 ```json
 // Request
-{
-  "action": "create_order",
-  "immatriculation": "AB-123-CD",    // OBLIGATOIRE - Plaque d'immat
-  "demarche_type": "CG",             // OBLIGATOIRE - Code démarche (CG, DA, DC)
-  "email": "client@email.com",       // OBLIGATOIRE - Email du client
-
-  // Optionnels (peuvent être remplis plus tard par le client)
-  "nom": "Dupont",
-  "prenom": "Jean",
-  "telephone": "0612345678",
-  "adresse": "12 rue de la Paix",
-  "code_postal": "75001",
-  "ville": "Paris",
-  "montant_ht": 150.00,              // Si non fourni, utilise prix_base du type
-  "frais_dossier": 30,               // Défaut: 30€
-  "source": "monautresite.fr"        // Pour tracker l'origine dans l'admin
-}
+{ "action": "get_garage", "garage_id": "uuid-du-garage" }
 
 // Response
 {
   "success": true,
-  "order_id": "a1b2c3d4-e5f6-...",
-  "tracking_number": "TRK-2026-000123",
-  "tracking_url": "https://discountcartegrise.fr/suivi/TRK-2026-000123",
-  "payment_url": "https://discountcartegrise.fr/demarche-simple?orderId=a1b2c3d4&type=CG&plaque=AB-123-CD",
-  "order": {
-    "id": "a1b2c3d4-e5f6-...",
-    "tracking_number": "TRK-2026-000123",
-    "immatriculation": "AB-123-CD",
-    "montant_ht": 150.00,
-    "montant_ttc": 180.00,
-    "frais_dossier": 30,
-    "status": "en_attente",
-    "created_at": "2026-04-05T10:00:00Z",
-    "demarche_type": "CG",
-    "email": "client@email.com"
+  "garage": {
+    "id": "uuid",
+    "raison_sociale": "Garage Dupont",
+    "email": "garage@email.com",
+    "telephone": "0612345678",
+    "token_balance": 15,
+    "free_token_available": true,
+    "unlimited_free_tokens": false,
+    "verified": true,
+    "siret": "12345678901234",
+    "ville": "Paris"
   }
 }
 ```
 
-**Ce qui se passe automatiquement :**
-- Un numéro de suivi TRK-XXXX-XXXXXX est généré
-- Un email de confirmation est envoyé au client
-- Un email de notification est envoyé à l'admin
-
 ---
 
-### 3.3 `get_order` — Récupérer le statut d'une commande
+### 3.3 `create_demarche` — Créer une démarche
 
 ```json
-// Request (par tracking_number OU order_id)
-{ "action": "get_order", "tracking_number": "TRK-2026-000123" }
-// ou
-{ "action": "get_order", "order_id": "a1b2c3d4-e5f6-..." }
+// Request
+{
+  "action": "create_demarche",
+  "garage_id": "uuid-du-garage",        // OBLIGATOIRE
+  "type": "CG",                          // OBLIGATOIRE (DA, DC, CG, etc.)
+  "immatriculation": "AB-123-CD",        // OBLIGATOIRE
+
+  // Optionnels
+  "payment_mode": "pro_pays_all",        // Défaut: "pro_pays_all"
+  "client_email": "client@email.com",    // OBLIGATOIRE si client_pays_all ou split
+  "client_phone": "0612345678",          // Optionnel
+  "commentaire": "Note interne",         // Optionnel
+  "prix_carte_grise": 250.00             // Optionnel (taxe régionale pour CG)
+}
 
 // Response
 {
   "success": true,
-  "order": {
-    "id": "a1b2c3d4-...",
-    "tracking_number": "TRK-2026-000123",
-    "status": "paye",
+  "demarche_id": "uuid",
+  "numero_demarche": "DEM-2026-000456",
+  "demarche_url": "https://discountcartegrise.fr/demarche/uuid",
+  "payment_url": "https://discountcartegrise.fr/paiement-demarche/uuid",
+  "demarche": {
+    "id": "uuid",
+    "numero_demarche": "DEM-2026-000456",
+    "type": "CG",
     "immatriculation": "AB-123-CD",
-    "demarche_type": "CG",
-    "email": "client@email.com",
-    "nom": "Dupont",
-    "prenom": "Jean",
-    "telephone": "0612345678",
-    "montant_ht": 150.00,
-    "montant_ttc": 180.00,
-    "frais_dossier": 30,
+    "status": "en_saisie",
+    "frais_dossier": 29.00,
+    "prix_carte_grise": 250.00,
+    "montant_ht": 29.00,
+    "montant_ttc": 279.00,
+    "is_free_token": false,
+    "payment_mode": "pro_pays_all",
+    "garage_id": "uuid",
+    "created_at": "2026-04-05T10:00:00Z"
+  }
+}
+```
+
+**Selon le mode de paiement, l'URL retournée change :**
+- `pro_pays_all` → `payment_url` (le garage paie tout)
+- `client_pays_all` → `client_payment_url` (le client paie tout)
+- `split` → `pro_payment_url` (le garage paie sa part, puis le client)
+
+---
+
+### 3.4 `pay_with_tokens` — Payer avec les jetons
+
+```json
+// Request
+{
+  "action": "pay_with_tokens",
+  "garage_id": "uuid-du-garage",
+  "demarche_id": "uuid-de-la-demarche"
+}
+
+// Response (succès)
+{
+  "success": true,
+  "paid": true,
+  "method": "tokens",           // ou "free_token" si jeton gratuit
+  "tokens_used": 6,
+  "tokens_remaining": 9
+}
+
+// Response (solde insuffisant)
+{
+  "success": false,
+  "error": "Solde insuffisant. Requis: 6 jetons, Disponible: 3"
+}
+```
+
+**Calcul jetons :** 1 jeton = 5€, arrondi au supérieur.
+- Frais de dossier 29€ → 6 jetons
+- Frais de dossier 5€ → 1 jeton
+
+---
+
+### 3.5 `get_demarche` — Détail d'une démarche
+
+```json
+// Request (par ID ou numéro)
+{ "action": "get_demarche", "demarche_id": "uuid" }
+// ou
+{ "action": "get_demarche", "numero_demarche": "DEM-2026-000456" }
+// + optionnel: "garage_id": "uuid" (pour filtrer)
+
+// Response
+{
+  "success": true,
+  "demarche": {
+    "id": "uuid",
+    "numero_demarche": "DEM-2026-000456",
+    "garage_id": "uuid",
+    "type": "CG",
+    "status": "en_cours",
+    "immatriculation": "AB-123-CD",
+    "frais_dossier": 29.00,
+    "prix_carte_grise": 250.00,
+    "montant_ht": 29.00,
+    "montant_ttc": 279.00,
     "paye": true,
-    "paid_at": "2026-04-05T10:05:00Z",
+    "paid_with_tokens": true,
+    "is_free_token": false,
+    "payment_mode": "pro_pays_all",
+    "client_email": null,
+    "client_paid": false,
     "documents_complets": true,
-    "created_at": "2026-04-05T10:00:00Z",
-    "updated_at": "2026-04-05T10:05:00Z"
+    "is_draft": false,
+    "created_at": "...",
+    "updated_at": "..."
   },
   "documents": [
     {
-      "id": "...",
-      "type_document": "Carte grise (recto)",
-      "nom_fichier": "carte_grise_recto.pdf",
+      "id": "uuid",
+      "type_document": "carte_grise",
+      "nom_fichier": "cg_recto.pdf",
       "validation_status": "approved",
-      "rejection_reason": null,
-      "side": "recto",
-      "created_at": "2026-04-05T10:03:00Z"
-    }
-  ],
-  "admin_documents": [
-    {
-      "id": "...",
-      "nom_fichier": "carte_grise_finale.pdf",
-      "description": "Votre nouvelle carte grise",
-      "created_at": "2026-04-06T14:00:00Z"
+      "validation_comment": null,
+      "created_at": "..."
     }
   ],
   "facture": {
-    "id": "...",
-    "numero_facture": "F-2026-000456",
-    "montant_ht": 150.00,
-    "montant_ttc": 180.00,
-    "created_at": "2026-04-05T10:05:00Z"
+    "id": "uuid",
+    "numero": "F-2026-000789",
+    "montant_ht": 29.00,
+    "montant_ttc": 279.00,
+    "pdf_url": "https://...",
+    "created_at": "..."
   }
 }
 ```
 
 ---
 
-### 3.4 `create_payment_link` — Générer un lien de paiement
+### 3.6 `list_demarches` — Lister les démarches d'un garage
 
 ```json
 // Request
-{ "action": "create_payment_link", "tracking_number": "TRK-2026-000123" }
-// ou
-{ "action": "create_payment_link", "order_id": "a1b2c3d4-..." }
-
-// Response (pas encore payé)
 {
-  "success": true,
-  "already_paid": false,
-  "payment_url": "https://discountcartegrise.fr/demarche-simple?orderId=...&type=CG&plaque=AB-123-CD",
-  "tracking_url": "https://discountcartegrise.fr/suivi/TRK-2026-000123"
+  "action": "list_demarches",
+  "garage_id": "uuid-du-garage",
+  "status": "en_cours",          // Optionnel: filtrer par statut
+  "limit": 20                    // Optionnel: défaut 50
 }
 
-// Response (déjà payé)
+// Response
 {
   "success": true,
-  "already_paid": true,
-  "tracking_url": "https://discountcartegrise.fr/suivi/TRK-2026-000123"
+  "demarches": [
+    {
+      "id": "uuid",
+      "numero_demarche": "DEM-2026-000456",
+      "type": "CG",
+      "immatriculation": "AB-123-CD",
+      "status": "en_cours",
+      "montant_ttc": 279.00,
+      "paye": true,
+      "is_free_token": false,
+      "payment_mode": "pro_pays_all",
+      "created_at": "..."
+    }
+  ],
+  "count": 1
 }
 ```
 
@@ -231,333 +290,299 @@ Tous les endpoints utilisent la même URL. L'action est spécifiée dans le body
 
 ## 4. Types de démarches
 
-| Code | Titre | Prix de base | Infos véhicule | Taxe régionale |
-|------|-------|-------------|----------------|----------------|
-| `CG` | Carte Grise (Changement de titulaire) | 30€ (frais dossier) + taxe régionale | Oui (marque, modèle, énergie, puissance, date MEC) | Oui (varie par département) |
-| `DA` | Déclaration d'Achat | 19.90€ | Oui (immatriculation) | Non |
-| `DC` | Déclaration de Cession | 19.90€ | Oui (immatriculation) | Non |
+### Démarches standard
 
-### Détail par type
+| Type | Titre | Prix (frais dossier) | Jeton gratuit possible |
+|------|-------|---------------------|----------------------|
+| `DA` | Déclaration d'Achat | 5€ | Oui |
+| `DC` | Déclaration de Cession | 5€ | Oui |
+| `CG` | Carte Grise (changement titulaire) | 29€ | Non |
+
+### Démarches PRO
+
+| Type | Titre | Prix |
+|------|-------|------|
+| `WW_PROVISOIRE_PRO` | WW Provisoire | Variable |
+| `W_GARAGE_PRO` | W Garage | Variable |
+| `QUITUS_FISCAL_PRO` | Quitus Fiscal | Variable |
+| `CHANGEMENT_ADRESSE_PRO` | Changement d'adresse | Variable |
+| `DUPLICATA_CG_PRO` | Duplicata carte grise | Variable |
+| `FIV_PRO` | Fiche d'Identification Véhicule | Variable |
+| `CG_NEUF_PRO` | Carte grise véhicule neuf | Variable |
+| `MODIF_CG_PRO` | Modification carte grise | Variable |
+| `SUCCESSION_HERITAGE_PRO` | Succession/Héritage | Variable |
+| `COTITULAIRE_PRO` | Ajout co-titulaire | Variable |
+| `CYCLO_ANCIEN_PRO` | Immatriculation cyclomoteur ancien | Variable |
+
+> Utilisez `get_types` pour avoir la liste à jour avec les prix actuels.
+
+---
+
+## 5. Modes de paiement
+
+| Mode | Qui paie | Frais dossier | Carte grise | Requis |
+|------|---------|---------------|-------------|--------|
+| `pro_pays_all` | Le garage | Stripe 1 | Stripe 1 | Rien de spécial |
+| `client_pays_all` | Le client | Stripe 2 | Stripe 2 | `client_email` |
+| `split` | Les deux | Garage: Stripe 1 | Client: Stripe 2 | `client_email` |
+
+### Paiement par jetons (alternative)
+Au lieu de payer par Stripe, le garage peut utiliser ses jetons :
+- Appeler `pay_with_tokens` après `create_demarche`
+- 1 jeton = 5€ (arrondi supérieur)
+- DA/DC avec jeton gratuit : 0 jeton
+
+### Paiement par Stripe
+- Rediriger le garage vers `payment_url` retourné par `create_demarche`
+- Le garage paie sur discountcartegrise.fr
+- La démarche passe automatiquement en `paye: true`
+
+---
+
+## 6. Système de jetons
+
+| Propriété | Description |
+|-----------|-------------|
+| `token_balance` | Nombre de jetons disponibles |
+| `free_token_available` | Le garage a un jeton gratuit (1ère DA/DC) |
+| `unlimited_free_tokens` | Jetons gratuits illimités (offre spéciale) |
+
+### Calcul du coût en jetons
+```
+Coût = ceil(frais_dossier / 5)
+
+Exemples:
+  DA (5€)  → 1 jeton
+  DC (5€)  → 1 jeton
+  CG (29€) → 6 jetons
+```
+
+### Jeton gratuit
+- S'applique uniquement aux DA et DC
+- Déduit automatiquement si `free_token_available = true`
+- Si `unlimited_free_tokens = true` → jamais consommé
+
+---
+
+## 7. Statuts de démarche
+
+| Statut | Description |
+|--------|-------------|
+| `en_saisie` | Brouillon, en cours de création |
+| `en_attente_paiement` | En attente du paiement pro |
+| `en_attente_paiement_client` | En attente du paiement client |
+| `en_attente_documents` | En attente de documents |
+| `en_attente_validation` | Soumise, en attente de validation admin |
+| `en_cours` | En cours de traitement |
+| `acceptee` | Acceptée / terminée |
+| `rejetee` | Refusée par l'admin |
+
+### Emails automatiques
+
+| Événement | Email garage | Email admin |
+|-----------|-------------|-------------|
+| Démarche créée | Confirmation + facture | Nouvelle demande |
+| Paiement reçu | Confirmation paiement | Paiement reçu |
+| Documents validés | - | - |
+| Carte grise prête | Document disponible | - |
+| Démarche acceptée | Notification complétion | - |
+| Message admin | Nouveau message | - |
+
+---
+
+## 8. Documents requis
+
+### Par type de démarche
 
 #### CG — Carte Grise
-- **Usage** : Changement de propriétaire d'un véhicule
-- **Prix** : Taxe régionale (calculée par département + puissance fiscale) + 30€ frais de dossier
-- **Infos véhicule requises** : marque, modèle, énergie, puissance fiscale, date de mise en circulation
-- **Documents** : Carte grise recto+verso, pièce d'identité recto+verso, justificatif de domicile
+1. Carte grise originale (recto + verso)
+2. Pièce d'identité du titulaire (recto + verso)
+3. Justificatif de domicile (< 6 mois)
+4. Cerfa de demande de certificat d'immatriculation
+5. Si co-titulaire : pièce d'identité co-titulaire
 
 #### DA — Déclaration d'Achat
-- **Usage** : Déclarer l'achat d'un véhicule d'occasion (professionnel)
-- **Prix fixe** : 19.90€
-- **Infos véhicule requises** : immatriculation uniquement
-- **Documents** : Carte grise recto+verso, pièce d'identité recto+verso, justificatif de domicile
+1. Carte grise originale (recto + verso)
+2. Pièce d'identité (recto + verso)
 
 #### DC — Déclaration de Cession
-- **Usage** : Déclarer la vente d'un véhicule
-- **Prix fixe** : 19.90€
-- **Infos véhicule requises** : immatriculation uniquement
-- **Documents** : Carte grise recto+verso, pièce d'identité recto+verso, justificatif de domicile
+1. Carte grise originale (recto + verso)
+2. Pièce d'identité du vendeur (recto + verso)
+3. Cerfa 15776 (déclaration de cession)
 
----
-
-## 5. Documents requis par démarche
-
-### Documents par défaut (type CG)
-
-| # | Document | Recto/Verso | Obligatoire |
-|---|----------|-------------|-------------|
-| 1 | Carte grise (recto) | Recto seul | Oui |
-| 2 | Carte grise (verso) | Verso seul | Oui |
-| 3 | Pièce d'identité (recto) | Recto seul | Oui |
-| 4 | Pièce d'identité (verso) | Verso seul | Oui |
-| 5 | Justificatif de domicile | Recto seul | Oui |
-
-### Détection recto/verso automatique
-
-Les documents suivants nécessitent RECTO + VERSO (détection automatique par mot-clé) :
-- Pièce d'identité
-- Carte d'identité
-- Permis de conduire
-- Permis du titulaire
-- Permis du co-titulaire
-
-Tous les autres documents sont recto uniquement.
-
-### Formats acceptés
-- PDF (`.pdf`)
-- Images (`.jpg`, `.jpeg`, `.png`)
-
-### Stockage
-Les documents sont uploadés par le client sur la page de suivi après le paiement. Ils sont stockés dans Supabase Storage sous `guest-order-documents/{orderId}/`.
-
----
-
-## 6. Questions conditionnelles
-
-Après le paiement, le client remplit un formulaire avec des questions conditionnelles qui peuvent déclencher des champs supplémentaires :
-
-| Question | Champ DB | Type | Si "Oui" |
-|----------|----------|------|----------|
-| "Y a-t-il un co-titulaire sur la carte grise ?" | `has_cotitulaire` | Boolean | Demande `cotitulaire_nom` + `cotitulaire_prenom` + pièce d'identité co-titulaire |
-| "Le véhicule a-t-il été acheté chez un professionnel ?" | `vehicule_pro` | Boolean | Aucun champ supplémentaire (info pour le traitement) |
-| "Le véhicule est-il en leasing/LLD/LOA ?" | `vehicule_leasing` | Boolean | Aucun champ supplémentaire |
-| "Le titulaire est-il mineur ?" | `is_mineur` | Boolean | Aucun champ supplémentaire |
-| "Le titulaire est-il hébergé ?" | `is_heberge` | Boolean | Demande attestation d'hébergement dans les docs |
-
-### Champs du formulaire client complet
-
-**Obligatoires :**
-- `nom` — Nom de famille
-- `prenom` — Prénom
-- `email` — Adresse email
-- `telephone` — Numéro de téléphone
-- `adresse` — Adresse postale
-- `code_postal` — Code postal
-- `ville` — Ville
-
-**Conditionnels (si co-titulaire) :**
-- `cotitulaire_nom` — Nom du co-titulaire
-- `cotitulaire_prenom` — Prénom du co-titulaire
-
----
-
-## 7. Calcul des prix
-
-### Formule
-
-```
-Total TTC = Prix carte grise (montant_ht) + Frais de dossier + SMS (optionnel)
-```
-
-**PAS DE TVA** — Le total est calculé sans TVA.
-
-### Composants du prix
-
-| Composant | Montant | Notes |
-|-----------|---------|-------|
-| Prix carte grise (`montant_ht`) | Variable (CG) ou fixe (DA/DC) | Pour CG : dépend du département + puissance fiscale |
-| Frais de dossier (`frais_dossier`) | 30€ par défaut | Peut être modifié via l'API |
-| Suivi SMS (`sms_notifications`) | +5€ | Optionnel, choix du client |
-| Suivi email (`email_notifications`) | Gratuit | Activé par défaut |
-
-### Pour les DA/DC (prix fixe)
-```
-Total = 19.90€ (prix_base inclut les frais de dossier)
-```
-
-### Pour les CG (prix variable)
-```
-Total = Taxe régionale (calculée) + 30€ (frais dossier) + 5€ (si SMS)
-```
-
-La taxe régionale est calculée automatiquement côté discountcartegrise.fr en fonction du département et de la puissance fiscale du véhicule.
-
----
-
-## 8. Statuts de commande
-
-| Statut | Description | Déclenché par |
-|--------|-------------|---------------|
-| `en_attente` | Commande créée, en attente de paiement | Création de la commande |
-| `paye` | Paiement reçu | Paiement Stripe validé |
-| `en_traitement` | Dossier en cours de traitement | Admin (tous les docs validés) |
-| `valide` | Commande validée | Admin |
-| `finalise` | Carte grise prête, envoyée au client | Admin (upload carte grise finale) |
-| `refuse` | Commande refusée | Admin |
-
-### Emails automatiques par statut
-
-| Événement | Email client | Email admin |
-|-----------|-------------|-------------|
-| Commande créée | "Commande enregistrée" | "Nouvelle commande particulier" |
-| Paiement reçu | "Paiement confirmé" + facture PDF | "Nouvelle demande à traiter" |
-| Documents validés | "Documents validés" | — |
-| Document refusé | "Documents à corriger" (avec motif) | — |
-| Dossier en traitement | "Dossier en traitement" | — |
-| Carte grise prête | "Votre carte grise est prête" | — |
-| Message client | — | "Message client particulier" |
-| Message admin | "Nouveau message" | — |
-| Document re-uploadé | — | "Document re-envoyé" |
+### Upload des documents
+Les documents sont uploadés par le garage depuis discountcartegrise.fr après la création de la démarche, via la page `/demarche/{id}`.
 
 ---
 
 ## 9. Flux complet d'intégration
 
-### Scénario type : Le client veut une carte grise
+### Scénario 1 : DA/DC avec jeton gratuit
 
 ```
 TON SITE                                    DISCOUNTCARTEGRISE
 ────────                                    ──────────────────
 
-1. Le client choisit sa démarche
-   et entre sa plaque + email
+1. Garage choisit DA ou DC
+   et entre la plaque
          │
          ▼
-2. Tu appelles create_order ────────────►  Commande créée en DB
-   avec immatriculation, type, email        Tracking number généré
-         │                                  Email confirmation envoyé
-         ▼                                  Email admin envoyé
-3. Tu reçois payment_url
+2. create_demarche ──────────────────────►  Démarche créée
+   garage_id + type=DA + immat               (is_free_token: true)
          │
          ▼
-4. Tu rediriges le client ─────────────►  Page de paiement
-   vers payment_url                        (discountcartegrise.fr)
-                                                  │
-                                                  ▼
-                                           5. Client entre email
-                                              (pré-rempli si fourni)
-                                                  │
-                                                  ▼
-                                           6. Client paie (Stripe)
-                                                  │
-                                                  ▼
-                                           7. Client remplit ses infos
-                                              (nom, prénom, adresse...)
-                                                  │
-                                                  ▼
-                                           8. Client upload ses documents
-                                              (carte grise, identité, domicile)
-                                                  │
-                                                  ▼
-                                           9. Admin valide les documents
-                                                  │
-                                                  ▼
-                                           10. Admin traite le dossier
-                                                  │
-                                                  ▼
-                                           11. Admin envoie la carte grise
-                                               finale au client par email
-
+3. pay_with_tokens ──────────────────────►  Paiement gratuit
+   garage_id + demarche_id                   Jeton déduit
          │
-         ▼ (optionnel)
-12. Tu vérifies le statut ─────────────►  Retourne l'état actuel
-    avec get_order                         de la commande
+         ▼
+4. Rediriger le garage ──────────────────►  Page démarche
+   vers demarche_url                        Upload documents
+                                            Suivi en temps réel
 ```
 
-### Ce que tu dois coder sur ton site
+### Scénario 2 : CG avec paiement Stripe (pro_pays_all)
 
-1. **Page de choix démarche** : formulaire avec type de démarche + plaque + email
-2. **Appel API `create_order`** : crée la commande
-3. **Redirection** : envoie le client vers `payment_url`
-4. **Page de confirmation (optionnel)** : affiche le tracking_number au retour
+```
+TON SITE                                    DISCOUNTCARTEGRISE
+────────                                    ──────────────────
 
-### Ce que DiscountCarteGrise gère automatiquement
+1. Garage choisit CG
+   entre la plaque + prix carte grise
+         │
+         ▼
+2. create_demarche ──────────────────────►  Démarche créée
+   garage_id + type=CG + immat              (montant_ttc calculé)
+   + prix_carte_grise=250
+         │
+         ▼
+3. Rediriger le garage ──────────────────►  Page paiement Stripe
+   vers payment_url                          Garage paie 279€
+                                                  │
+                                                  ▼
+                                            Upload documents
+                                            Suivi en temps réel
+                                            Facture PDF générée
+```
 
-- Paiement Stripe (carte bancaire, Google Pay, Apple Pay)
-- Collecte des infos personnelles complètes
-- Upload et validation des documents
-- Communication par email à chaque étape
-- Chat client ↔ admin
-- Suivi de commande avec tracking number
-- Facture PDF
-- Envoi de la carte grise finale
+### Scénario 3 : CG avec paiement client (client_pays_all)
+
+```
+TON SITE                                    DISCOUNTCARTEGRISE
+────────                                    ──────────────────
+
+1. Garage choisit CG
+   + email client
+         │
+         ▼
+2. create_demarche ──────────────────────►  Démarche créée
+   type=CG + payment_mode=client_pays_all    Email envoyé au client
+   + client_email=xxx                        avec lien de paiement
+         │
+         ▼
+3. Rediriger le garage ──────────────────►  Page démarche (suivi)
+   vers demarche_url
+                                            Le client paie de son côté
+                                            via le lien reçu par email
+```
 
 ---
 
 ## 10. Exemples de code
 
-### JavaScript/TypeScript (Frontend ou Node.js)
+### JavaScript/TypeScript
 
 ```javascript
 const API_URL = 'https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external';
-const API_KEY = 'edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4';
+const API_KEY = 'VOTRE_CLE_API';
 
-// Helper function
 async function callAPI(body) {
   const res = await fetch(API_URL, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': API_KEY,
-    },
+    headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
     body: JSON.stringify(body),
   });
   return res.json();
 }
 
-// 1. Lister les démarches
+// 1. Voir les types de démarches
 const { types } = await callAPI({ action: 'get_types' });
-console.log(types);
-// → [{ code: "CG", titre: "Carte Grise", prix_base: 30 }, ...]
 
-// 2. Créer une commande
+// 2. Vérifier le solde du garage
+const { garage } = await callAPI({ action: 'get_garage', garage_id: 'UUID' });
+console.log(`Jetons: ${garage.token_balance}, Gratuit: ${garage.free_token_available}`);
+
+// 3. Créer une DA avec jeton gratuit
 const result = await callAPI({
-  action: 'create_order',
+  action: 'create_demarche',
+  garage_id: 'UUID',
+  type: 'DA',
   immatriculation: 'AB-123-CD',
-  demarche_type: 'CG',
-  email: 'jean.dupont@email.com',
-  nom: 'Dupont',
-  prenom: 'Jean',
-  telephone: '0612345678',
-  source: 'monautresite.fr',
 });
 
-console.log(result.tracking_number); // TRK-2026-000123
-console.log(result.payment_url);     // URL vers discountcartegrise.fr
+// 4. Payer avec jeton
+const payment = await callAPI({
+  action: 'pay_with_tokens',
+  garage_id: 'UUID',
+  demarche_id: result.demarche_id,
+});
+// → payment.method = "free_token"
 
-// 3. Rediriger le client vers le paiement
-window.location.href = result.payment_url;
+// 5. Rediriger vers la page de la démarche
+window.location.href = result.demarche_url;
 
-// 4. Vérifier le statut plus tard
-const { order } = await callAPI({
-  action: 'get_order',
-  tracking_number: 'TRK-2026-000123',
+// 6. Créer une CG avec paiement client
+const cg = await callAPI({
+  action: 'create_demarche',
+  garage_id: 'UUID',
+  type: 'CG',
+  immatriculation: 'CD-456-EF',
+  payment_mode: 'client_pays_all',
+  client_email: 'client@email.com',
+  prix_carte_grise: 250.00,
+});
+// → Le client reçoit un email avec le lien de paiement
+
+// 7. Lister les démarches du garage
+const { demarches } = await callAPI({
+  action: 'list_demarches',
+  garage_id: 'UUID',
+  status: 'en_cours',
 });
 
-console.log(order.status);   // "paye", "en_traitement", "finalise"...
-console.log(order.paye);     // true/false
-```
-
-### Python
-
-```python
-import requests
-
-API_URL = 'https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external'
-API_KEY = 'edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4'
-
-headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': API_KEY,
-}
-
-# Lister les démarches
-res = requests.post(API_URL, json={'action': 'get_types'}, headers=headers)
-types = res.json()['types']
-
-# Créer une commande
-res = requests.post(API_URL, json={
-    'action': 'create_order',
-    'immatriculation': 'AB-123-CD',
-    'demarche_type': 'CG',
-    'email': 'client@email.com',
-    'source': 'mon-site-python.fr',
-}, headers=headers)
-
-data = res.json()
-print(f"Tracking: {data['tracking_number']}")
-print(f"Paiement: {data['payment_url']}")
+// 8. Vérifier une démarche
+const { demarche } = await callAPI({
+  action: 'get_demarche',
+  demarche_id: 'UUID',
+});
+console.log(demarche.status); // "acceptee"
 ```
 
 ### cURL
 
 ```bash
 # Lister les types
-curl -X POST https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external \
+curl -X POST $API_URL \
   -H "Content-Type: application/json" \
-  -H "x-api-key: edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4" \
+  -H "x-api-key: $API_KEY" \
   -d '{"action":"get_types"}'
 
-# Créer une commande
-curl -X POST https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external \
+# Info garage
+curl -X POST $API_URL \
   -H "Content-Type: application/json" \
-  -H "x-api-key: edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4" \
-  -d '{"action":"create_order","immatriculation":"AB-123-CD","demarche_type":"CG","email":"test@email.com","source":"test-curl"}'
+  -H "x-api-key: $API_KEY" \
+  -d '{"action":"get_garage","garage_id":"UUID"}'
 
-# Vérifier le statut
-curl -X POST https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external \
+# Créer une DA
+curl -X POST $API_URL \
   -H "Content-Type: application/json" \
-  -H "x-api-key: edb52633206761a242359346e4f367a91c59aee90a65689cfb3eda3b43949aa4" \
-  -d '{"action":"get_order","tracking_number":"TRK-2026-000123"}'
+  -H "x-api-key: $API_KEY" \
+  -d '{"action":"create_demarche","garage_id":"UUID","type":"DA","immatriculation":"AB-123-CD"}'
+
+# Payer avec jetons
+curl -X POST $API_URL \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: $API_KEY" \
+  -d '{"action":"pay_with_tokens","garage_id":"UUID","demarche_id":"UUID"}'
 ```
 
 ---
@@ -566,23 +591,20 @@ curl -X POST https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/api-external 
 
 | Code | Message | Cause |
 |------|---------|-------|
-| 401 | "Clé API invalide ou manquante" | Header `x-api-key` absent ou mauvais |
-| 400 | "immatriculation est requis" | Champ obligatoire manquant |
-| 400 | "email invalide" | Format email incorrect |
-| 400 | "Action inconnue: xxx" | Action non reconnue |
-| 404 | "Commande introuvable" | tracking_number ou order_id inexistant |
-| 500 | "Erreur interne" | Erreur serveur (voir logs Supabase) |
+| 401 | Clé API invalide ou manquante | Header `x-api-key` absent ou incorrect |
+| 400 | garage_id est requis | Champ obligatoire manquant |
+| 400 | client_email est requis pour le mode... | Mode split/client sans email |
+| 402 | Solde insuffisant | Pas assez de jetons |
+| 403 | Cette démarche n'appartient pas à ce garage | garage_id ne matche pas |
+| 404 | Garage/Démarche introuvable | ID inexistant |
 
 ---
 
 ## Notes importantes
 
-1. **La clé API ne doit JAMAIS être exposée côté client** (navigateur). Utilisez-la uniquement côté serveur (backend Node.js, Python, PHP, etc.) ou dans des variables d'environnement.
-
-2. **Le `payment_url` redirige vers discountcartegrise.fr** où le client effectue le paiement et le reste du processus (infos, documents). Tout est géré automatiquement.
-
-3. **Le champ `source`** est stocké dans le commentaire admin de la commande. Il permet de savoir de quel site vient chaque commande.
-
-4. **Les emails sont envoyés automatiquement** à chaque étape (confirmation, paiement, validation, etc.). Le client reçoit aussi un lien de suivi.
-
-5. **Pour les CG** (carte grise), si vous ne fournissez pas `montant_ht`, le prix sera calculé automatiquement côté discountcartegrise.fr en fonction du département et de la puissance fiscale du véhicule.
+1. **La clé API est côté serveur uniquement** — ne jamais l'exposer dans le navigateur
+2. **Le `garage_id`** est l'UUID du garage dans Supabase. Le garage doit d'abord avoir un compte sur discountcartegrise.fr
+3. **Les documents sont uploadés sur discountcartegrise.fr** — l'API crée la démarche, le garage upload ses docs via le site
+4. **Le prix carte grise** pour les CG dépend du département et de la puissance fiscale. Si non fourni, il sera 0 et devra être complété sur le site
+5. **Les factures sont générées automatiquement** après paiement (PDF disponible via `get_demarche`)
+6. **Les emails sont envoyés automatiquement** à chaque étape (confirmation, paiement, validation)

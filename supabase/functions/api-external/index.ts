@@ -34,244 +34,309 @@ function errorResponse(message: string, status = 400) {
 
 // ─── Actions ───
 
+// List available demarche types (actions_rapides)
 async function handleGetTypes() {
   const { data, error } = await supabase
-    .from("guest_demarche_types")
-    .select("code, titre, description, prix_base, actif, ordre")
+    .from("actions_rapides")
+    .select("id, type, titre, description, prix, icon, categorie, questionnaire_id, ordre")
     .eq("actif", true)
     .order("ordre");
 
   if (error) throw error;
-
   return jsonResponse({ success: true, types: data });
 }
 
-async function handleCreateOrder(body: any) {
-  const { immatriculation, demarche_type, email } = body;
+// Get garage info by API key or garage_id
+async function handleGetGarage(body: any) {
+  const { garage_id } = body;
+  if (!garage_id) return errorResponse("garage_id est requis");
 
-  // Validation
-  if (!immatriculation) return errorResponse("immatriculation est requis");
-  if (!demarche_type) return errorResponse("demarche_type est requis");
-  if (!email) return errorResponse("email est requis");
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) return errorResponse("email invalide");
-
-  // Get price from demarche type if not provided
-  let montantHt = body.montant_ht;
-  let fraisDossier = body.frais_dossier ?? 30;
-
-  if (!montantHt) {
-    const { data: typeData } = await supabase
-      .from("guest_demarche_types")
-      .select("prix_base")
-      .eq("code", demarche_type)
-      .single();
-
-    montantHt = typeData?.prix_base || 0;
-  }
-
-  const montantTtc = montantHt + fraisDossier;
-
-  // Create guest order
-  const { data: order, error } = await supabase
-    .from("guest_orders")
-    .insert({
-      immatriculation: immatriculation.toUpperCase().trim(),
-      demarche_type,
-      email,
-      nom: body.nom || null,
-      prenom: body.prenom || null,
-      telephone: body.telephone || null,
-      adresse: body.adresse || null,
-      code_postal: body.code_postal || null,
-      ville: body.ville || null,
-      montant_ht: montantHt,
-      montant_ttc: montantTtc,
-      frais_dossier: fraisDossier,
-      email_notifications: true,
-      status: "en_attente",
-      commentaire: body.source ? `Source: ${body.source}` : null,
-    })
-    .select("id, tracking_number, immatriculation, montant_ht, montant_ttc, frais_dossier, status, created_at")
+  const { data, error } = await supabase
+    .from("garages")
+    .select("id, raison_sociale, email, telephone, token_balance, free_token_available, unlimited_free_tokens, verified, siret, ville")
+    .eq("id", garage_id)
     .single();
 
-  if (error) {
-    console.error("Insert error:", error);
-    throw error;
+  if (error || !data) return errorResponse("Garage introuvable", 404);
+
+  return jsonResponse({ success: true, garage: data });
+}
+
+// Create a demarche for a garage
+async function handleCreateDemarche(body: any) {
+  const { garage_id, type, immatriculation, payment_mode, client_email, client_phone, commentaire, prix_carte_grise } = body;
+
+  // Validation
+  if (!garage_id) return errorResponse("garage_id est requis");
+  if (!type) return errorResponse("type est requis (DA, DC, CG, etc.)");
+  if (!immatriculation) return errorResponse("immatriculation est requis");
+
+  // Verify garage exists
+  const { data: garage, error: garageError } = await supabase
+    .from("garages")
+    .select("id, raison_sociale, email, token_balance, free_token_available, unlimited_free_tokens, verified")
+    .eq("id", garage_id)
+    .single();
+
+  if (garageError || !garage) return errorResponse("Garage introuvable", 404);
+
+  // Get action details for pricing
+  const { data: action } = await supabase
+    .from("actions_rapides")
+    .select("prix, titre, type")
+    .eq("type", type)
+    .eq("actif", true)
+    .single();
+
+  const fraisDossier = action?.prix || 0;
+  const carteGrise = prix_carte_grise || 0;
+  const totalHt = fraisDossier;
+  const totalTtc = carteGrise + fraisDossier;
+
+  // Check if free token applies (DA/DC only)
+  const isFreeToken = (type === 'DA' || type === 'DC') && (garage.free_token_available || garage.unlimited_free_tokens);
+
+  // Determine payment mode
+  const effectivePaymentMode = payment_mode || 'pro_pays_all';
+
+  // Validate client_email for client payment modes
+  if ((effectivePaymentMode === 'client_pays_all' || effectivePaymentMode === 'split') && !client_email) {
+    return errorResponse("client_email est requis pour le mode de paiement " + effectivePaymentMode);
+  }
+
+  // Create demarche
+  const { data: demarche, error: insertError } = await supabase
+    .from("demarches")
+    .insert({
+      garage_id,
+      type,
+      immatriculation: immatriculation.toUpperCase().trim(),
+      commentaire: commentaire || null,
+      prix_carte_grise: carteGrise,
+      frais_dossier: isFreeToken ? 0 : fraisDossier,
+      montant_ht: isFreeToken ? 0 : totalHt,
+      montant_ttc: isFreeToken ? 0 : totalTtc,
+      status: "en_saisie",
+      is_draft: true,
+      paye: false,
+      is_free_token: isFreeToken,
+      payment_mode: effectivePaymentMode,
+      client_email: client_email || null,
+      client_phone: client_phone || null,
+    })
+    .select("id, numero_demarche, type, immatriculation, status, frais_dossier, prix_carte_grise, montant_ht, montant_ttc, is_free_token, payment_mode, created_at")
+    .single();
+
+  if (insertError) {
+    console.error("Insert error:", insertError);
+    throw insertError;
   }
 
   const baseUrl = "https://discountcartegrise.fr";
-  const trackingUrl = `${baseUrl}/suivi/${order.tracking_number}`;
-  const paymentUrl = `${baseUrl}/demarche-simple?orderId=${order.id}&type=${demarche_type}&plaque=${encodeURIComponent(immatriculation)}`;
 
-  // Send admin notification (non-blocking)
+  // Build response with useful URLs
+  const response: any = {
+    success: true,
+    demarche_id: demarche.id,
+    numero_demarche: demarche.numero_demarche,
+    demarche_url: `${baseUrl}/demarche/${demarche.id}`,
+    demarche: {
+      ...demarche,
+      garage_id,
+      is_free_token: isFreeToken,
+    },
+  };
+
+  // Add payment URL based on mode
+  if (effectivePaymentMode === 'client_pays_all') {
+    response.client_payment_url = `${baseUrl}/paiement-demarche/${demarche.id}?mode=client_pays_all`;
+  } else if (effectivePaymentMode === 'split') {
+    response.pro_payment_url = `${baseUrl}/paiement-demarche/${demarche.id}?mode=split`;
+  } else {
+    response.payment_url = `${baseUrl}/paiement-demarche/${demarche.id}`;
+  }
+
+  // Send admin notification
   try {
     await supabase.functions.invoke("send-email", {
       body: {
-        type: "admin_new_guest_order",
+        type: "admin_new_demarche",
         to: "contact@discountcartegrise.fr",
         data: {
-          client_name: body.prenom && body.nom ? `${body.prenom} ${body.nom}` : email,
-          client_email: email,
-          client_phone: body.telephone || "Non renseigné",
-          tracking_number: order.tracking_number,
-          immatriculation: order.immatriculation,
-          demarche_type,
-          order_id: order.id,
-          documents_count: 0,
+          type: type,
+          reference: demarche.numero_demarche || demarche.id,
+          immatriculation,
+          client_name: garage.raison_sociale,
+          montant_ttc: totalTtc.toFixed(2),
+          is_free_token: isFreeToken,
         },
       },
     });
-  } catch (e) {
-    console.error("Admin notification failed:", e);
+  } catch (e) { console.error("Admin notif failed:", e); }
+
+  return jsonResponse(response);
+}
+
+// Pay with tokens (balance)
+async function handlePayWithTokens(body: any) {
+  const { garage_id, demarche_id } = body;
+
+  if (!garage_id) return errorResponse("garage_id est requis");
+  if (!demarche_id) return errorResponse("demarche_id est requis");
+
+  // Get garage
+  const { data: garage, error: gErr } = await supabase
+    .from("garages")
+    .select("id, token_balance, free_token_available, unlimited_free_tokens")
+    .eq("id", garage_id)
+    .single();
+
+  if (gErr || !garage) return errorResponse("Garage introuvable", 404);
+
+  // Get demarche
+  const { data: demarche, error: dErr } = await supabase
+    .from("demarches")
+    .select("id, frais_dossier, paye, type, is_free_token, garage_id")
+    .eq("id", demarche_id)
+    .single();
+
+  if (dErr || !demarche) return errorResponse("Démarche introuvable", 404);
+  if (demarche.garage_id !== garage_id) return errorResponse("Cette démarche n'appartient pas à ce garage", 403);
+  if (demarche.paye) return jsonResponse({ success: true, already_paid: true });
+
+  // Free token for DA/DC
+  if (demarche.is_free_token) {
+    // Consume free token
+    if (!garage.unlimited_free_tokens) {
+      await supabase.from("garages").update({ free_token_available: false }).eq("id", garage_id);
+    }
+    await supabase.from("demarches").update({
+      paye: true, paid_with_tokens: true, is_draft: false, status: "en_saisie",
+    }).eq("id", demarche_id);
+
+    return jsonResponse({ success: true, paid: true, method: "free_token" });
   }
 
-  // Send client confirmation email (non-blocking)
-  try {
-    await supabase.functions.invoke("send-email", {
-      body: {
-        type: "guest_order_submitted",
-        to: email,
-        data: {
-          prenom: body.prenom || "Client",
-          nom: body.nom || "",
-          tracking_number: order.tracking_number,
-          immatriculation: order.immatriculation,
-        },
-      },
-    });
-  } catch (e) {
-    console.error("Client email failed:", e);
+  // Token cost: 1 token = 5€
+  const tokenCost = Math.ceil((demarche.frais_dossier || 0) / 5);
+
+  if (garage.token_balance < tokenCost) {
+    return errorResponse(`Solde insuffisant. Requis: ${tokenCost} jetons, Disponible: ${garage.token_balance}`, 402);
   }
+
+  // Deduct tokens
+  await supabase.from("garages").update({
+    token_balance: garage.token_balance - tokenCost,
+  }).eq("id", garage_id);
+
+  // Mark as paid
+  await supabase.from("demarches").update({
+    paye: true, paid_with_tokens: true, is_draft: false,
+  }).eq("id", demarche_id);
 
   return jsonResponse({
     success: true,
-    order_id: order.id,
-    tracking_number: order.tracking_number,
-    tracking_url: trackingUrl,
-    payment_url: paymentUrl,
-    order: {
-      ...order,
-      demarche_type,
-      email,
-    },
+    paid: true,
+    method: "tokens",
+    tokens_used: tokenCost,
+    tokens_remaining: garage.token_balance - tokenCost,
   });
 }
 
-async function handleGetOrder(body: any) {
-  const { tracking_number, order_id } = body;
+// Get demarche status
+async function handleGetDemarche(body: any) {
+  const { demarche_id, numero_demarche, garage_id } = body;
 
-  if (!tracking_number && !order_id) {
-    return errorResponse("tracking_number ou order_id est requis");
+  if (!demarche_id && !numero_demarche) {
+    return errorResponse("demarche_id ou numero_demarche est requis");
   }
 
-  // Fetch order
-  let query = supabase.from("guest_orders").select("*");
-  if (tracking_number) {
-    query = query.eq("tracking_number", tracking_number);
+  let query = supabase.from("demarches").select("*");
+  if (demarche_id) {
+    query = query.eq("id", demarche_id);
   } else {
-    query = query.eq("id", order_id);
+    query = query.eq("numero_demarche", numero_demarche);
+  }
+  if (garage_id) {
+    query = query.eq("garage_id", garage_id);
   }
 
-  const { data: order, error } = await query.single();
-  if (error || !order) return errorResponse("Commande introuvable", 404);
+  const { data: demarche, error } = await query.single();
+  if (error || !demarche) return errorResponse("Démarche introuvable", 404);
 
-  // Fetch documents
+  // Get documents
   const { data: documents } = await supabase
-    .from("guest_order_documents")
-    .select("id, type_document, nom_fichier, validation_status, rejection_reason, side, created_at")
-    .eq("order_id", order.id)
+    .from("documents")
+    .select("id, type_document, nom_fichier, validation_status, validation_comment, created_at")
+    .eq("demarche_id", demarche.id)
     .order("created_at");
 
-  // Fetch admin documents
-  const { data: adminDocuments } = await supabase
-    .from("guest_order_admin_documents")
-    .select("id, nom_fichier, description, created_at")
-    .eq("order_id", order.id)
-    .order("created_at");
-
-  // Fetch invoice
+  // Get facture
   const { data: facture } = await supabase
     .from("factures")
-    .select("id, numero_facture, montant_ht, montant_ttc, created_at")
-    .eq("guest_order_id", order.id)
+    .select("id, numero, montant_ht, montant_ttc, pdf_url, created_at")
+    .eq("demarche_id", demarche.id)
     .single();
-
-  // Strip sensitive fields
-  const safeOrder = {
-    id: order.id,
-    tracking_number: order.tracking_number,
-    status: order.status,
-    immatriculation: order.immatriculation,
-    demarche_type: order.demarche_type,
-    email: order.email,
-    nom: order.nom,
-    prenom: order.prenom,
-    telephone: order.telephone,
-    montant_ht: order.montant_ht,
-    montant_ttc: order.montant_ttc,
-    frais_dossier: order.frais_dossier,
-    paye: order.paye,
-    paid_at: order.paid_at,
-    documents_complets: order.documents_complets,
-    created_at: order.created_at,
-    updated_at: order.updated_at,
-  };
 
   return jsonResponse({
     success: true,
-    order: safeOrder,
+    demarche: {
+      id: demarche.id,
+      numero_demarche: demarche.numero_demarche,
+      garage_id: demarche.garage_id,
+      type: demarche.type,
+      status: demarche.status,
+      immatriculation: demarche.immatriculation,
+      frais_dossier: demarche.frais_dossier,
+      prix_carte_grise: demarche.prix_carte_grise,
+      montant_ht: demarche.montant_ht,
+      montant_ttc: demarche.montant_ttc,
+      paye: demarche.paye,
+      paid_with_tokens: demarche.paid_with_tokens,
+      is_free_token: demarche.is_free_token,
+      payment_mode: demarche.payment_mode,
+      client_email: demarche.client_email,
+      client_paid: demarche.client_paid,
+      documents_complets: demarche.documents_complets,
+      is_draft: demarche.is_draft,
+      created_at: demarche.created_at,
+      updated_at: demarche.updated_at,
+    },
     documents: documents || [],
-    admin_documents: adminDocuments || [],
     facture: facture || null,
   });
 }
 
-async function handleCreatePaymentLink(body: any) {
-  const { order_id, tracking_number } = body;
+// List demarches for a garage
+async function handleListDemarches(body: any) {
+  const { garage_id, status, limit: queryLimit } = body;
 
-  if (!order_id && !tracking_number) {
-    return errorResponse("order_id ou tracking_number est requis");
+  if (!garage_id) return errorResponse("garage_id est requis");
+
+  let query = supabase
+    .from("demarches")
+    .select("id, numero_demarche, type, immatriculation, status, montant_ttc, paye, is_free_token, payment_mode, created_at")
+    .eq("garage_id", garage_id)
+    .order("created_at", { ascending: false })
+    .limit(queryLimit || 50);
+
+  if (status) {
+    query = query.eq("status", status);
   }
 
-  let query = supabase.from("guest_orders").select("id, tracking_number, demarche_type, immatriculation, paye");
-  if (order_id) {
-    query = query.eq("id", order_id);
-  } else {
-    query = query.eq("tracking_number", tracking_number);
-  }
+  const { data, error } = await query;
+  if (error) throw error;
 
-  const { data: order, error } = await query.single();
-  if (error || !order) return errorResponse("Commande introuvable", 404);
-
-  if (order.paye) {
-    return jsonResponse({
-      success: true,
-      already_paid: true,
-      tracking_url: `https://discountcartegrise.fr/suivi/${order.tracking_number}`,
-    });
-  }
-
-  const paymentUrl = `https://discountcartegrise.fr/demarche-simple?orderId=${order.id}&type=${order.demarche_type}&plaque=${encodeURIComponent(order.immatriculation)}`;
-
-  return jsonResponse({
-    success: true,
-    already_paid: false,
-    payment_url: paymentUrl,
-    tracking_url: `https://discountcartegrise.fr/suivi/${order.tracking_number}`,
-  });
+  return jsonResponse({ success: true, demarches: data, count: data?.length || 0 });
 }
 
 // ─── Main Handler ───
 
 const handler = async (req: Request): Promise<Response> => {
-  // CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Auth check
   if (!validateApiKey(req)) {
     return errorResponse("Clé API invalide ou manquante", 401);
   }
@@ -285,19 +350,19 @@ const handler = async (req: Request): Promise<Response> => {
     switch (action) {
       case "get_types":
         return await handleGetTypes();
-
-      case "create_order":
-        return await handleCreateOrder(body);
-
-      case "get_order":
-        return await handleGetOrder(body);
-
-      case "create_payment_link":
-        return await handleCreatePaymentLink(body);
-
+      case "get_garage":
+        return await handleGetGarage(body);
+      case "create_demarche":
+        return await handleCreateDemarche(body);
+      case "pay_with_tokens":
+        return await handlePayWithTokens(body);
+      case "get_demarche":
+        return await handleGetDemarche(body);
+      case "list_demarches":
+        return await handleListDemarches(body);
       default:
         return errorResponse(
-          `Action inconnue: ${action}. Actions disponibles: get_types, create_order, get_order, create_payment_link`
+          `Action inconnue: ${action}. Actions: get_types, get_garage, create_demarche, pay_with_tokens, get_demarche, list_demarches`
         );
     }
   } catch (error: any) {
