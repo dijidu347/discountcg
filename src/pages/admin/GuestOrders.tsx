@@ -25,7 +25,10 @@ interface GuestOrder {
   nom: string;
   prenom: string;
   email: string;
+  montant_ht: number;
   montant_ttc: number;
+  frais_dossier: number;
+  sms_notifications?: boolean;
   status: string;
   paye: boolean;
   documents_complets: boolean;
@@ -203,7 +206,9 @@ export default function GuestOrders() {
                           </div>
                         </TableCell>
                         <TableCell className="font-mono">{order.immatriculation}</TableCell>
-                        <TableCell>{order.montant_ttc.toFixed(2)} €</TableCell>
+                        <TableCell>
+                          {((order.montant_ht || 0) + (order.frais_dossier || 30) + (order.sms_notifications ? 5 : 0)).toFixed(2)} €
+                        </TableCell>
                         <TableCell>{getStatusBadge(order.status)}</TableCell>
                         <TableCell>
                           <Badge variant={order.paye ? "default" : "secondary"}>
