@@ -21,6 +21,13 @@ export default function DevisCarteGrise() {
   const [selectedPayment, setSelectedPayment] = useState<"stripe" | "paypal" | "wallet" | null>(null);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
+  // Redirect to /commander flow so email/info is collected BEFORE payment
+  useEffect(() => {
+    if (orderId) {
+      navigate(`/commander/${orderId}`, { replace: true });
+    }
+  }, [orderId, navigate]);
+
   useEffect(() => {
     initializeStripe();
     if (orderId) {
