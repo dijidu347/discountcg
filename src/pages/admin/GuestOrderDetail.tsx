@@ -1499,12 +1499,44 @@ function DocumentValidationCard({
 
       const allApproved = allDocs?.every(d => d.validation_status === 'approved');
 
-      // If all documents approved, update order status to processing
+      // If all documents approved, update order status to processing and send email
       if (allApproved) {
         await supabase
           .from("guest_orders")
           .update({ status: "en_traitement" })
           .eq("id", order.id);
+
+        // Send documents validated email to client
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'guest_documents_validated',
+              to: order.email,
+              data: {
+                prenom: order.prenom,
+                nom: order.nom,
+                tracking_number: order.tracking_number,
+                immatriculation: order.immatriculation,
+              }
+            }
+          });
+        } catch (e) { console.error('Documents validated email failed:', e); }
+
+        // Send processing email to client
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'guest_order_processing',
+              to: order.email,
+              data: {
+                prenom: order.prenom,
+                nom: order.nom,
+                tracking_number: order.tracking_number,
+                immatriculation: order.immatriculation,
+              }
+            }
+          });
+        } catch (e) { console.error('Processing email failed:', e); }
       }
 
       toast({
