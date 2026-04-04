@@ -101,7 +101,7 @@ const CheckoutForm = ({ order }: { order: any }) => {
           variant: "success" as any,
         });
 
-        navigate(`/suivi/${order.tracking_number}`);
+        navigate(`/merci/${order.tracking_number}`);
       }
     } catch (error: any) {
       console.error("Payment error:", error);

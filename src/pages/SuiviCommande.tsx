@@ -889,6 +889,9 @@ const SuiviCommande = () => {
                               existingFiles={[]}
                               isBlocked={isBlocked}
                               blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
+                              trackingNumber={order.tracking_number}
+                              clientName={`${order.prenom} ${order.nom}`}
+                              orderIdForNotif={order.id}
                               onUploadComplete={() => {
                                 setReuploadedDocs(prev => new Set([...prev, docType]));
                                 loadDocuments();

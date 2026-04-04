@@ -25,7 +25,10 @@ interface GuestDocumentUploadProps {
   onUploadComplete?: () => void;
   isBlocked?: boolean;
   blockedMessage?: string;
-  rectoOnly?: boolean; // Nouveau prop pour documents recto uniquement
+  rectoOnly?: boolean;
+  trackingNumber?: string;
+  clientName?: string;
+  orderIdForNotif?: string;
 }
 
 export function GuestDocumentUpload({ 
@@ -36,7 +39,10 @@ export function GuestDocumentUpload({
   onUploadComplete,
   isBlocked = false,
   blockedMessage,
-  rectoOnly = false
+  rectoOnly = false,
+  trackingNumber,
+  clientName,
+  orderIdForNotif
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
   const rectoInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +119,25 @@ export function GuestDocumentUpload({
         title: "Document téléchargé",
         description: `Le ${side} a été téléchargé avec succès`
       });
+
+      // Notify admin of document reupload
+      if (trackingNumber) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'admin_guest_document_reupload',
+              to: 'contact@discountcartegrise.fr',
+              data: {
+                client_name: clientName || '',
+                tracking_number: trackingNumber,
+                document_type: documentType,
+                side: side,
+                order_id: orderIdForNotif || '',
+              }
+            }
+          });
+        } catch (e) { console.error('Admin reupload notif failed:', e); }
+      }
 
       if (onUploadComplete) onUploadComplete();
     } catch (error: any) {
