@@ -78,6 +78,19 @@ interface EmailRequest {
   attachments?: EmailAttachment[];
 }
 
+// Bloc "répondez à ce mail" pour les emails client particulier
+const guestReplyBlock = `
+  <div style="background: #f0f7ff; border-left: 4px solid #0047AB; padding: 16px; margin: 20px 0; border-radius: 0 4px 4px 0;">
+    <p style="font-weight: bold; margin: 0 0 8px 0;">Une question ?</p>
+    <p style="margin: 0;">Répondez directement à ce mail, notre équipe vous répond sous 24h.</p>
+  </div>
+`;
+
+const guestFooter = `
+  <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+  <p style="color: #6b7280; font-size: 14px;">L'équipe DiscountCarteGrise</p>
+`;
+
 const getEmailTemplate = (type: string, data: any) => {
   const baseUrl = "https://discountcartegrise.fr";
   const trackingUrl = data?.tracking_number ? `${baseUrl}/suivi/${data.tracking_number}` : "";
@@ -103,8 +116,8 @@ const getEmailTemplate = (type: string, data: any) => {
               Suivre ma commande
             </a>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };
@@ -129,13 +142,13 @@ const getEmailTemplate = (type: string, data: any) => {
             </div>
 
             <p>Nous allons maintenant traiter votre dossier. Vous recevrez un email dès qu'il y aura du nouveau.</p>
-            
+
             <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Suivre ma commande
             </a>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };
@@ -161,13 +174,13 @@ const getEmailTemplate = (type: string, data: any) => {
             </div>
 
             <p>Veuillez télécharger les documents corrigés via votre espace de suivi :</p>
-            
+
             <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Accéder à mon suivi
             </a>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };
@@ -192,8 +205,8 @@ const getEmailTemplate = (type: string, data: any) => {
 
             <p style="margin-top: 20px;">Merci de votre confiance !</p>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };
@@ -219,8 +232,8 @@ const getEmailTemplate = (type: string, data: any) => {
               Payer et renvoyer mes documents
             </a>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };
@@ -343,8 +356,8 @@ const getEmailTemplate = (type: string, data: any) => {
               Accéder à mon suivi
             </a>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };
@@ -817,9 +830,10 @@ const getEmailTemplate = (type: string, data: any) => {
               <a href="https://discountcartegrise.fr/suivi/${data.tracking_number}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
                 Voir ma commande
               </a>
+              ${guestReplyBlock}
             </div>
             <div style="padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-              <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+              <p style="color: #6b7280; font-size: 14px;">L'équipe DiscountCarteGrise</p>
             </div>
           </div>
         `,
@@ -842,6 +856,138 @@ const getEmailTemplate = (type: string, data: any) => {
             <a href="https://discountcartegrise.fr/admin/guest-orders" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
               Voir dans l'admin
             </a>
+          </div>
+        `,
+      };
+
+    // === GUEST ORDER - NEW TEMPLATES ===
+    case "guest_order_submitted":
+      return {
+        subject: `📋 Commande enregistrée - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">Commande enregistrée !</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Votre commande pour la carte grise du véhicule <strong>${data.immatriculation}</strong> a bien été enregistrée.</p>
+
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Numéro de suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;"><strong>Immatriculation :</strong> ${data.immatriculation}</p>
+            </div>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #1e40af;">Prochaine étape</h3>
+              <p style="margin: 0;">Nous allons vérifier vos documents. Vous recevrez un email dès que la vérification sera terminée.</p>
+            </div>
+
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Suivre ma commande
+            </a>
+
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+
+    case "guest_documents_validated":
+      return {
+        subject: `✅ Documents validés - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Documents validés !</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Tous vos documents pour la commande <strong>${data.tracking_number}</strong> ont été vérifiés et validés.</p>
+
+            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #166534;">Prochaine étape</h3>
+              <p style="margin: 0;">Votre dossier va maintenant être traité. Vous recevrez un email à chaque avancement.</p>
+            </div>
+
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #22c55e; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Suivre ma commande
+            </a>
+
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+
+    case "guest_order_processing":
+      return {
+        subject: `🔄 Dossier en traitement - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">Dossier en cours de traitement</h1>
+            <p>Bonjour ${data.prenom} ${data.nom},</p>
+            <p>Votre dossier pour le véhicule <strong>${data.immatriculation}</strong> est maintenant en cours de traitement auprès de l'ANTS.</p>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>Numéro de suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;"><strong>Délai estimé :</strong> 24 à 48h ouvrées</p>
+            </div>
+
+            <p>Vous recevrez un email dès que votre carte grise sera prête.</p>
+
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Suivre ma commande
+            </a>
+
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+
+    case "admin_new_guest_order":
+      return {
+        subject: `🆕 Nouvelle commande particulier - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #3b82f6;">Nouvelle commande particulier</h1>
+            <p>Un nouveau client particulier vient de soumettre une commande.</p>
+
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>👤 Client :</strong> ${data.client_name}</p>
+              <p style="margin: 8px 0;"><strong>📧 Email :</strong> ${data.client_email}</p>
+              <p style="margin: 8px 0;"><strong>📞 Téléphone :</strong> ${data.client_phone}</p>
+              <p style="margin: 8px 0;"><strong>🚗 Immatriculation :</strong> ${data.immatriculation}</p>
+              <p style="margin: 8px 0;"><strong>📋 Type :</strong> ${data.demarche_type || 'CG'}</p>
+              <p style="margin: 8px 0;"><strong>📄 Documents :</strong> ${data.documents_count} fichier(s)</p>
+              <p style="margin: 8px 0;"><strong>🔢 Suivi :</strong> ${data.tracking_number}</p>
+            </div>
+
+            <a href="https://discountcartegrise.fr/admin/guest-order/${data.order_id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir la commande
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Notification automatique - DiscountCarteGrise</p>
+          </div>
+        `,
+      };
+
+    case "admin_guest_document_reupload":
+      return {
+        subject: `📄 Document re-envoyé - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #f59e0b;">Document re-envoyé</h1>
+            <p>Un client particulier a renvoyé un document.</p>
+
+            <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
+              <p style="margin: 8px 0;"><strong>👤 Client :</strong> ${data.client_name}</p>
+              <p style="margin: 8px 0;"><strong>🔢 Suivi :</strong> ${data.tracking_number}</p>
+              <p style="margin: 8px 0;"><strong>📄 Document :</strong> ${data.document_type}${data.side ? ` (${data.side})` : ''}</p>
+            </div>
+
+            <a href="https://discountcartegrise.fr/admin/guest-order/${data.order_id}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Voir la commande
+            </a>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="color: #6b7280; font-size: 14px;">Notification automatique - DiscountCarteGrise</p>
           </div>
         `,
       };

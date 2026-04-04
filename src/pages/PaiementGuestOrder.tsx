@@ -245,6 +245,17 @@ const PaiementGuestOrder = () => {
       return;
     }
 
+    // Email obligatoire avant paiement
+    if (!data.email) {
+      toast({
+        title: "Email requis",
+        description: "Veuillez renseigner votre email avant de payer",
+        variant: "destructive",
+      });
+      navigate(`/commander/${orderId}`);
+      return;
+    }
+
     setOrder(data);
     setIsLoading(false);
   };

@@ -382,7 +382,7 @@ const CommanderSansCompte = () => {
         });
       }
 
-      // Notify admin
+      // Notify admin of new guest order
       try {
         await supabase.functions.invoke('send-email', {
           body: {

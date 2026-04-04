@@ -1057,11 +1057,12 @@ async function handleResubmissionPayment(
   if (!isResubmission) return;
 
   console.log("📋 Processing resubmission payment");
+  const actualAmount = paymentIntent.amount / 100;
 
   if (demarcheId) {
     await supabase
       .from("demarches")
-      .update({ 
+      .update({
         resubmission_paid: true,
         requires_resubmission_payment: false,
         updated_at: new Date().toISOString()
@@ -1069,12 +1070,84 @@ async function handleResubmissionPayment(
       .eq("id", demarcheId);
 
     console.log("✅ Demarche resubmission payment processed");
+
+    // Fetch demarche + garage for facture & email
+    const { data: demarche } = await supabase
+      .from("demarches")
+      .select("*, garages(*), vehicules(immatriculation)")
+      .eq("id", demarcheId)
+      .single();
+
+    if (demarche) {
+      const garage = demarche.garages as Garage;
+      const realImmat = (demarche.immatriculation === 'TEMP' && (demarche as any).vehicules?.immatriculation)
+        ? (demarche as any).vehicules.immatriculation
+        : demarche.immatriculation;
+
+      // Create facture
+      const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+      const { data: facture, error: factureError } = await supabase
+        .from("factures")
+        .insert({
+          numero: factureNumero,
+          demarche_id: demarcheId,
+          garage_id: demarche.garage_id,
+          montant_ht: actualAmount,
+          montant_ttc: actualAmount,
+          tva: 0,
+        })
+        .select()
+        .single();
+
+      let pdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
+      if (factureError) {
+        console.error("❌ Failed to create resubmission facture:", factureError);
+      } else {
+        console.log("✅ Resubmission facture created:", facture?.numero);
+
+        try {
+          const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage);
+          const pdfFileName = `facture_${facture.numero}.pdf`;
+          pdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+          const { error: uploadError } = await supabase.storage
+            .from("factures")
+            .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+          if (uploadError) {
+            console.error("❌ Resubmission PDF upload failed:", uploadError);
+          } else {
+            const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+            await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+            console.log("✅ Resubmission PDF uploaded:", pdfFileName);
+          }
+        } catch (pdfError) {
+          console.error("❌ Resubmission PDF generation failed:", pdfError);
+        }
+      }
+
+      // Send confirmation email to garage with invoice
+      if (garage?.email) {
+        await sendEmail("garage_demarche_confirmation", garage.email, {
+          type: demarche.type,
+          reference: demarche.numero_demarche,
+          immatriculation: realImmat,
+          garage_name: garage.raison_sociale,
+          montant_ttc: actualAmount.toFixed(2),
+          is_free_token: false,
+          demarche_id: demarcheId,
+          is_resubmission: true,
+        }, pdfAttachment);
+        console.log("✅ Resubmission confirmation email with invoice sent to garage");
+      }
+    }
   }
 
   if (orderId) {
     await supabase
       .from("guest_orders")
-      .update({ 
+      .update({
         resubmission_paid: true,
         requires_resubmission_payment: false,
         updated_at: new Date().toISOString()
@@ -1082,6 +1155,68 @@ async function handleResubmissionPayment(
       .eq("id", orderId);
 
     console.log("✅ Guest order resubmission payment processed");
+
+    // Fetch guest order for facture & email
+    const { data: order } = await supabase
+      .from("guest_orders")
+      .select("*")
+      .eq("id", orderId)
+      .single();
+
+    if (order) {
+      // Create facture
+      const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+      const { data: facture, error: factureError } = await supabase
+        .from("factures")
+        .insert({
+          numero: factureNumero,
+          guest_order_id: orderId,
+          montant_ht: actualAmount,
+          montant_ttc: actualAmount,
+          tva: 0,
+        })
+        .select()
+        .single();
+
+      let pdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
+      if (factureError) {
+        console.error("❌ Failed to create guest resubmission facture:", factureError);
+      } else {
+        console.log("✅ Guest resubmission facture created:", facture?.numero);
+
+        try {
+          const pdfBytes = await generateGuestFacturePDF(facture, order as GuestOrder);
+          const pdfFileName = `facture_${facture.numero}.pdf`;
+          pdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+          const { error: uploadError } = await supabase.storage
+            .from("factures")
+            .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+          if (uploadError) {
+            console.error("❌ Guest resubmission PDF upload failed:", uploadError);
+          } else {
+            const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+            await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+          }
+        } catch (pdfError) {
+          console.error("❌ Guest resubmission PDF generation failed:", pdfError);
+        }
+      }
+
+      // Send confirmation email to guest
+      if (order.email) {
+        await sendEmail("payment_confirmed", order.email, {
+          prenom: order.prenom,
+          nom: order.nom,
+          tracking_number: order.tracking_number,
+          immatriculation: order.immatriculation,
+          montant_ttc: actualAmount.toFixed(2),
+        }, pdfAttachment);
+        console.log("✅ Guest resubmission confirmation email sent");
+      }
+    }
   }
 }
 
@@ -1186,7 +1321,21 @@ serve(async (req: Request): Promise<Response> => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("❌ Error processing webhook:", errorMessage);
-    // Don't return error to Stripe to prevent retries for processing errors
+
+    // Notify admin par email
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      await fetch(`${supabaseUrl}/functions/v1/notify-error`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}`, 'apikey': supabaseKey },
+        body: JSON.stringify({
+          source: 'webhook-stripe',
+          error: errorMessage,
+          context: { eventType: event?.type || 'unknown', eventId: event?.id || 'N/A' },
+        }),
+      });
+    } catch (_) { /* silent */ }
   }
 
   return new Response(JSON.stringify({ received: true }), {

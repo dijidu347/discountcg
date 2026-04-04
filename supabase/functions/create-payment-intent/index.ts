@@ -38,8 +38,9 @@ serve(async (req) => {
         });
       }
 
-      // Guest orders use Stripe 1 (frais de dossier)
-      const guestStripeKey = stripeKey1;
+      // Guest orders use Stripe 2 (carte grise fees) — same as client payments
+      const guestStripeKey = stripeKey2 || stripeKey1;
+      console.log('Guest order: using', stripeKey2 ? 'Stripe2' : 'Stripe1 (fallback)');
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
         headers: {
@@ -65,9 +66,10 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ 
+        JSON.stringify({
           clientSecret: paymentIntent.client_secret,
-          paymentIntentId: paymentIntent.id
+          paymentIntentId: paymentIntent.id,
+          useStripe2: true,
         }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -213,9 +215,10 @@ serve(async (req) => {
     // Paiement record is created by the webhook on payment success (upsert by stripe_payment_id)
     console.log('Returning client secret to frontend');
     return new Response(
-      JSON.stringify({ 
+      JSON.stringify({
         clientSecret: paymentIntent.client_secret,
-        paymentIntentId: paymentIntent.id
+        paymentIntentId: paymentIntent.id,
+        useStripe2,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -223,6 +226,22 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error('Error in create-payment-intent:', error);
+
+    // Notify admin par email
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      await fetch(`${supabaseUrl}/functions/v1/notify-error`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}`, 'apikey': supabaseKey },
+        body: JSON.stringify({
+          source: 'create-payment-intent',
+          error: error?.message || 'Unknown error',
+          context: { demarcheId: body?.demarcheId || 'N/A', paymentType: body?.paymentType || 'N/A', paymentMode: body?.paymentMode || 'N/A' },
+        }),
+      });
+    } catch (_) { /* silent */ }
+
     return new Response(
       JSON.stringify({ error: error?.message || 'Unknown error' }),
       {

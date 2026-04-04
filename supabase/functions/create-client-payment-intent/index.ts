@@ -155,6 +155,21 @@ serve(async (req) => {
     );
   } catch (error: any) {
     console.error('Error in create-client-payment-intent:', error);
+
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      await fetch(`${supabaseUrl}/functions/v1/notify-error`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${supabaseKey}`, 'apikey': supabaseKey },
+        body: JSON.stringify({
+          source: 'create-client-payment-intent',
+          error: error?.message || 'Unknown error',
+          context: { token: body?.token || 'N/A' },
+        }),
+      });
+    } catch (_) { /* silent */ }
+
     return new Response(
       JSON.stringify({ error: error?.message || 'Unknown error' }),
       {

@@ -31,10 +31,10 @@ interface GuestDocumentUploadProps {
   orderIdForNotif?: string;
 }
 
-export function GuestDocumentUpload({ 
-  orderId, 
-  documentType, 
-  label, 
+export function GuestDocumentUpload({
+  orderId,
+  documentType,
+  label,
   existingFiles,
   onUploadComplete,
   isBlocked = false,

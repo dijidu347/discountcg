@@ -272,16 +272,7 @@ const PaiementDemarche = () => {
         throw new Error("Impossible de charger la clé Stripe");
       }
 
-      // Stripe 1: frais de dossier only (split mode, OR no carte grise price = DA/DC)
-      // Stripe 2: includes carte grise fees (pro_pays_all with actual CG price)
-      const prixCG = Number(demarcheData.prix_carte_grise) || 0;
-      const useStripe2 = paymentMode !== 'split' && prixCG > 0;
-      const stripeKey = useStripe2 && keyData.publishableKey2 ? keyData.publishableKey2 : keyData.publishableKey;
-      console.log('Using Stripe account:', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)', 'prixCG:', prixCG);
-      const stripe = await loadStripe(stripeKey);
-      setStripePromise(stripe);
-
-      // Créer le payment intent (pass paymentMode for split override)
+      // Créer le payment intent d'abord — le backend détermine quel Stripe utiliser
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         "create-payment-intent",
         {
@@ -296,6 +287,13 @@ const PaiementDemarche = () => {
       if (paymentError || !paymentData?.clientSecret) {
         throw new Error("Impossible de créer le paiement");
       }
+
+      // Charger le bon Stripe basé sur le compte utilisé par le backend
+      const useStripe2 = paymentData.useStripe2;
+      const stripeKey = useStripe2 && keyData.publishableKey2 ? keyData.publishableKey2 : keyData.publishableKey;
+      console.log('Using Stripe account (from backend):', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)');
+      const stripe = await loadStripe(stripeKey);
+      setStripePromise(stripe);
 
       setClientSecret(paymentData.clientSecret);
       setIsLoading(false);
