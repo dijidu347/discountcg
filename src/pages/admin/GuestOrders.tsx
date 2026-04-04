@@ -25,7 +25,10 @@ interface GuestOrder {
   nom: string;
   prenom: string;
   email: string;
+  montant_ht: number;
   montant_ttc: number;
+  frais_dossier: number;
+  sms_notifications?: boolean;
   status: string;
   paye: boolean;
   documents_complets: boolean;
