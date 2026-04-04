@@ -201,6 +201,42 @@ const CommanderSansCompte = () => {
         });
       }
 
+      // Notify admin of new guest order
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'admin_new_guest_order',
+            to: 'contact@discountcartegrise.fr',
+            data: {
+              client_name: `${formData.prenom} ${formData.nom}`,
+              client_email: formData.email,
+              client_phone: formData.telephone,
+              tracking_number: order.tracking_number,
+              immatriculation: order.immatriculation,
+              demarche_type: order.demarche_type,
+              order_id: order.id,
+              documents_count: Object.keys(uploadedDocs).length,
+            }
+          }
+        });
+      } catch (e) { console.error('Admin notif failed:', e); }
+
+      // Send client submitted email
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'guest_order_submitted',
+            to: formData.email,
+            data: {
+              prenom: formData.prenom,
+              nom: formData.nom,
+              tracking_number: order.tracking_number,
+              immatriculation: order.immatriculation,
+            }
+          }
+        });
+      } catch (e) { console.error('Client submitted email failed:', e); }
+
       // Check if Stripe is configured
       const hasStripe = !!import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
       

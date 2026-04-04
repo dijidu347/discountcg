@@ -120,6 +120,25 @@ export function GuestDocumentUpload({
         description: `Le ${side} a été téléchargé avec succès`
       });
 
+      // Notify admin of document reupload
+      if (trackingNumber) {
+        try {
+          await supabase.functions.invoke('send-email', {
+            body: {
+              type: 'admin_guest_document_reupload',
+              to: 'contact@discountcartegrise.fr',
+              data: {
+                client_name: clientName || '',
+                tracking_number: trackingNumber,
+                document_type: documentType,
+                side: side,
+                order_id: orderIdForNotif || '',
+              }
+            }
+          });
+        } catch (e) { console.error('Admin reupload notif failed:', e); }
+      }
+
       if (onUploadComplete) onUploadComplete();
     } catch (error: any) {
       toast({
