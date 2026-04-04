@@ -254,7 +254,7 @@ serve(async (req) => {
         body: JSON.stringify({
           source: 'create-payment-intent',
           error: error?.message || 'Unknown error',
-          context: { demarcheId: body?.demarcheId || 'N/A', paymentType: body?.paymentType || 'N/A', paymentMode: body?.paymentMode || 'N/A' },
+          context: { info: 'see logs for details' },
         }),
       });
     } catch (_) { /* silent */ }
