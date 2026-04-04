@@ -22,6 +22,7 @@ const GarageSettings = React.lazy(() => import("./pages/GarageSettings"));
 const Support = React.lazy(() => import("./pages/Support"));
 const CommanderSansCompte = React.lazy(() => import("./pages/CommanderSansCompte"));
 const PaiementGuestOrder = React.lazy(() => import("./pages/PaiementGuestOrder"));
+const MerciGuestOrder = React.lazy(() => import("./pages/MerciGuestOrder"));
 const PaiementDemarche = React.lazy(() => import("./pages/PaiementDemarche"));
 const PaiementSucces = React.lazy(() => import("./pages/PaiementSucces"));
 const SuiviCommande = React.lazy(() => import("./pages/SuiviCommande"));
