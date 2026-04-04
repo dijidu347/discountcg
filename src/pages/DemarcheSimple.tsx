@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Mail } from "lucide-react";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
@@ -60,6 +63,9 @@ export default function DemarcheSimple() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
   const [isInfoCompleted, setIsInfoCompleted] = useState(false);
+  const [email, setEmail] = useState<string>("");
+  const [isEmailSaved, setIsEmailSaved] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
 
   const fraisHT = demarcheTypeInfo?.prix_base || 0;
   const totalTTC = fraisHT; // Pas de TVA pour DA/DC
@@ -99,7 +105,7 @@ export default function DemarcheSimple() {
         // Vérifier si la commande existe et son statut
         const { data: order, error } = await supabase
           .from('guest_orders')
-          .select('paye, nom, prenom')
+          .select('paye, nom, prenom, email')
           .eq('id', orderIdParam)
           .single();
 
@@ -110,6 +116,10 @@ export default function DemarcheSimple() {
         }
         if (order?.nom && order?.prenom) {
           setIsInfoCompleted(true);
+        }
+        if (order?.email) {
+          setEmail(order.email);
+          setIsEmailSaved(true);
         }
 
       } catch (error) {
@@ -126,6 +136,48 @@ export default function DemarcheSimple() {
 
     loadData();
   }, [searchParams, navigate, toast]);
+
+  const handleSaveEmail = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({ title: "Email invalide", description: "Veuillez saisir une adresse email valide", variant: "destructive" });
+      return;
+    }
+    setIsSavingEmail(true);
+    try {
+      const { error } = await supabase
+        .from('guest_orders')
+        .update({ email, updated_at: new Date().toISOString() })
+        .eq('id', orderId);
+      if (error) throw error;
+      setIsEmailSaved(true);
+      toast({ title: "Email enregistré", description: "Vous pouvez maintenant procéder au paiement" });
+
+      // Notify admin
+      try {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'admin_new_guest_order',
+            to: 'contact@discountcartegrise.fr',
+            data: {
+              client_name: email,
+              client_email: email,
+              client_phone: '',
+              tracking_number: '',
+              immatriculation: plaque,
+              demarche_type: demarcheType,
+              order_id: orderId,
+              documents_count: 0,
+            }
+          }
+        });
+      } catch (e) { console.error('Admin notif failed:', e); }
+    } catch (error) {
+      toast({ title: "Erreur", description: "Impossible de sauvegarder l'email", variant: "destructive" });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
 
   const handlePaymentSuccess = () => {
     setIsPaid(true);
@@ -194,16 +246,107 @@ export default function DemarcheSimple() {
         </Card>
 
         <div className="space-y-8">
-          {/* Step 1: Informations personnelles */}
+          {/* Step 1: Email */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${isInfoCompleted ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'}`}>
-                {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '1'}
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${isEmailSaved ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'}`}>
+                {isEmailSaved ? <CheckCircle className="w-5 h-5" /> : '1'}
               </div>
-              <h2 className="text-2xl font-bold">Informations personnelles</h2>
+              <h2 className="text-2xl font-bold">Votre email</h2>
             </div>
 
-            {!isInfoCompleted && (
+            {!isEmailSaved ? (
+              <Card>
+                <CardContent className="pt-6 space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="flex items-center gap-2">
+                      <Mail className="w-4 h-4" />
+                      Adresse email *
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="votre@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSaveEmail()}
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Pour recevoir votre suivi de commande et votre facture
+                    </p>
+                  </div>
+                  <Button onClick={handleSaveEmail} disabled={isSavingEmail || !email} size="lg" className="w-full">
+                    {isSavingEmail ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Continuer
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="border-green-500/50 bg-green-500/10">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 text-green-600">
+                      <CheckCircle className="w-6 h-6" />
+                      <span className="font-medium">{email}</span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEmailSaved(false)}>
+                      Modifier
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Step 2: Paiement */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
+                !isEmailSaved ? 'bg-muted text-muted-foreground' :
+                isPaid ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+              }`}>
+                {isPaid ? <CheckCircle className="w-5 h-5" /> : '2'}
+              </div>
+              <h2 className={`text-2xl font-bold ${!isEmailSaved ? 'text-muted-foreground' : ''}`}>
+                Paiement
+              </h2>
+            </div>
+
+            {isEmailSaved && !isPaid && (
+              <PaymentMethods
+                orderId={orderId}
+                amount={totalTTC}
+                onPaymentSuccess={handlePaymentSuccess}
+              />
+            )}
+
+            {isPaid && (
+              <Card className="border-green-500/50 bg-green-500/10">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 text-green-600">
+                    <CheckCircle className="w-6 h-6" />
+                    <span className="font-medium">Paiement validé !</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          {/* Step 3: Informations personnelles */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
+                !isPaid ? 'bg-muted text-muted-foreground' :
+                isInfoCompleted ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+              }`}>
+                {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '3'}
+              </div>
+              <h2 className={`text-2xl font-bold ${!isPaid ? 'text-muted-foreground' : ''}`}>
+                Informations personnelles
+              </h2>
+            </div>
+
+            {isPaid && !isInfoCompleted && (
               <GuestOrderInfoForm
                 orderId={orderId}
                 onComplete={handleInfoComplete}
@@ -223,13 +366,13 @@ export default function DemarcheSimple() {
             )}
           </div>
 
-          {/* Step 2: Documents */}
+          {/* Step 4: Documents */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
                 !isInfoCompleted ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'
               }`}>
-                2
+                4
               </div>
               <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>
                 Documents
@@ -242,40 +385,6 @@ export default function DemarcheSimple() {
                 isPaid={isPaid}
                 demarcheType={demarcheType}
               />
-            )}
-          </div>
-
-          {/* Step 3: Paiement */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                !isInfoCompleted ? 'bg-muted text-muted-foreground' :
-                isPaid ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
-              }`}>
-                {isPaid ? <CheckCircle className="w-5 h-5" /> : '3'}
-              </div>
-              <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>
-                Paiement
-              </h2>
-            </div>
-
-            {isInfoCompleted && !isPaid && (
-              <PaymentMethods
-                orderId={orderId}
-                amount={totalTTC}
-                onPaymentSuccess={handlePaymentSuccess}
-              />
-            )}
-
-            {isPaid && (
-              <Card className="border-green-500/50 bg-green-500/10">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 text-green-600">
-                    <CheckCircle className="w-6 h-6" />
-                    <span className="font-medium">Paiement validé !</span>
-                  </div>
-                </CardContent>
-              </Card>
             )}
           </div>
         </div>
