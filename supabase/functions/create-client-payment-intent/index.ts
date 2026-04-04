@@ -165,7 +165,7 @@ serve(async (req) => {
         body: JSON.stringify({
           source: 'create-client-payment-intent',
           error: error?.message || 'Unknown error',
-          context: { token: body?.token || 'N/A' },
+          context: { token: 'N/A' },
         }),
       });
     } catch (_) { /* silent */ }
