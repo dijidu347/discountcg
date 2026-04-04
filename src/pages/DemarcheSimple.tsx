@@ -194,55 +194,23 @@ export default function DemarcheSimple() {
         </Card>
 
         <div className="space-y-8">
-          {/* Step 1: Paiement */}
+          {/* Step 1: Informations personnelles */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${isPaid ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'}`}>
-                {isPaid ? <CheckCircle className="w-5 h-5" /> : '1'}
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${isInfoCompleted ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'}`}>
+                {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '1'}
               </div>
-              <h2 className="text-2xl font-bold">Paiement</h2>
+              <h2 className="text-2xl font-bold">Informations personnelles</h2>
             </div>
-            
-            {!isPaid ? (
-              <PaymentMethods 
-                orderId={orderId}
-                amount={totalTTC}
-                onPaymentSuccess={handlePaymentSuccess}
-              />
-            ) : (
-              <Card className="border-green-500/50 bg-green-500/10">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 text-green-600">
-                    <CheckCircle className="w-6 h-6" />
-                    <span className="font-medium">Paiement validé !</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
 
-          {/* Step 2: Informations personnelles */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                !isPaid ? 'bg-muted text-muted-foreground' :
-                isInfoCompleted ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
-              }`}>
-                {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '2'}
-              </div>
-              <h2 className={`text-2xl font-bold ${!isPaid ? 'text-muted-foreground' : ''}`}>
-                Informations personnelles
-              </h2>
-            </div>
-            
-          {isPaid && !isInfoCompleted && (
-              <GuestOrderInfoForm 
-                orderId={orderId} 
+            {!isInfoCompleted && (
+              <GuestOrderInfoForm
+                orderId={orderId}
                 onComplete={handleInfoComplete}
                 isPaid={isPaid}
               />
             )}
-            
+
             {isInfoCompleted && (
               <Card className="border-green-500/50 bg-green-500/10">
                 <CardContent className="pt-6">
@@ -255,25 +223,59 @@ export default function DemarcheSimple() {
             )}
           </div>
 
-          {/* Step 3: Documents */}
+          {/* Step 2: Documents */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
                 !isInfoCompleted ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'
               }`}>
-                3
+                2
               </div>
               <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>
                 Documents
               </h2>
             </div>
-            
+
             {isInfoCompleted && (
-              <UploadListSimple 
+              <UploadListSimple
                 orderId={orderId}
                 isPaid={isPaid}
                 demarcheType={demarcheType}
               />
+            )}
+          </div>
+
+          {/* Step 3: Paiement */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
+                !isInfoCompleted ? 'bg-muted text-muted-foreground' :
+                isPaid ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+              }`}>
+                {isPaid ? <CheckCircle className="w-5 h-5" /> : '3'}
+              </div>
+              <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>
+                Paiement
+              </h2>
+            </div>
+
+            {isInfoCompleted && !isPaid && (
+              <PaymentMethods
+                orderId={orderId}
+                amount={totalTTC}
+                onPaymentSuccess={handlePaymentSuccess}
+              />
+            )}
+
+            {isPaid && (
+              <Card className="border-green-500/50 bg-green-500/10">
+                <CardContent className="pt-6">
+                  <div className="flex items-center gap-3 text-green-600">
+                    <CheckCircle className="w-6 h-6" />
+                    <span className="font-medium">Paiement validé !</span>
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
