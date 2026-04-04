@@ -147,7 +147,7 @@ export default function DemarcheSimple() {
     try {
       const { error } = await supabase
         .from('guest_orders')
-        .update({ email, updated_at: new Date().toISOString() })
+        .update({ email, email_notifications: true, updated_at: new Date().toISOString() })
         .eq('id', orderId);
       if (error) throw error;
       setIsEmailSaved(true);

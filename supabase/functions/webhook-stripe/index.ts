@@ -686,8 +686,8 @@ async function handleGuestOrderPayment(
   if (order.email) {
     await sendEmail("payment_confirmed", order.email, {
       tracking_number: order.tracking_number,
-      prenom: order.prenom,
-      nom: order.nom,
+      prenom: order.prenom || "Client",
+      nom: order.nom || "",
       immatriculation: order.immatriculation,
       montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
     }, guestPdfAttachment);
@@ -698,12 +698,12 @@ async function handleGuestOrderPayment(
   for (let i = 0; i < ADMIN_EMAILS.length; i++) {
     // Wait 600ms between each email to stay under 2 req/sec limit
     await delay(600);
-    
+
     await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
       type: order.demarche_type || "CG",
       reference: order.tracking_number,
       immatriculation: order.immatriculation,
-      client_name: `${order.prenom} ${order.nom}`,
+      client_name: `${order.prenom || ""} ${order.nom || ""}`.trim() || order.email || "Client",
       montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
       is_free_token: false,
     });

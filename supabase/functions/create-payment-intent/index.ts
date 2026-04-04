@@ -41,21 +41,38 @@ serve(async (req) => {
       // Guest orders use Stripe 2 (carte grise fees) — same as client payments
       const guestStripeKey = stripeKey2 || stripeKey1;
       console.log('Guest order: using', stripeKey2 ? 'Stripe2' : 'Stripe1 (fallback)');
+
+      // Fetch customer email for Stripe receipt
+      let receiptEmail = '';
+      try {
+        const { data: orderData } = await supabaseClient
+          .from('guest_orders')
+          .select('email')
+          .eq('id', metadata.order_id)
+          .single();
+        receiptEmail = orderData?.email || '';
+      } catch (e) { console.error('Could not fetch email:', e); }
+
+      const piParams: Record<string, string> = {
+        amount: amount.toString(),
+        currency: 'eur',
+        'automatic_payment_methods[enabled]': 'true',
+        'metadata[order_id]': metadata.order_id || '',
+        'metadata[guest_order_id]': metadata.order_id || '',
+        'metadata[tracking_number]': metadata.tracking_number || '',
+        'metadata[type]': 'guest_order',
+      };
+      if (receiptEmail) {
+        piParams['receipt_email'] = receiptEmail;
+      }
+
       const response = await fetch('https://api.stripe.com/v1/payment_intents', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${guestStripeKey}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: new URLSearchParams({
-          amount: amount.toString(),
-          currency: 'eur',
-          'automatic_payment_methods[enabled]': 'true',
-          'metadata[order_id]': metadata.order_id || '',
-          'metadata[guest_order_id]': metadata.order_id || '',
-          'metadata[tracking_number]': metadata.tracking_number || '',
-          'metadata[type]': 'guest_order',
-        }),
+        body: new URLSearchParams(piParams),
       });
 
       const paymentIntent = await response.json();
