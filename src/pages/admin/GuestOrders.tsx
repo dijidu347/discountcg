@@ -57,7 +57,7 @@ export default function GuestOrders() {
   const [orders, setOrders] = useState<GuestOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeTab, setActiveTab] = useState("to_process");
 
   useEffect(() => {
     if (user) checkAdminAndLoadData();
@@ -87,12 +87,14 @@ export default function GuestOrders() {
   };
 
   const isToProcess = (o: GuestOrder) => o.paye && o.documents_complets && !['valide', 'en_traitement', 'finalise'].includes(o.status);
+  const isPaid = (o: GuestOrder) => o.paye;
   const isWaiting = (o: GuestOrder) => !o.paye || !o.documents_complets;
   const isInProgress = (o: GuestOrder) => ['valide', 'en_traitement'].includes(o.status);
   const isDone = (o: GuestOrder) => o.status === 'finalise';
   const isRefused = (o: GuestOrder) => o.status === 'refuse';
 
   const toProcessCount = orders.filter(isToProcess).length;
+  const paidCount = orders.filter(isPaid).length;
   const waitingCount = orders.filter(isWaiting).length;
   const inProgressCount = orders.filter(isInProgress).length;
   const doneCount = orders.filter(isDone).length;
@@ -101,6 +103,7 @@ export default function GuestOrders() {
   const getFilteredOrders = () => {
     let filtered = orders;
     if (activeTab === "to_process") filtered = orders.filter(isToProcess);
+    else if (activeTab === "paid") filtered = orders.filter(isPaid);
     else if (activeTab === "waiting") filtered = orders.filter(isWaiting);
     else if (activeTab === "in_progress") filtered = orders.filter(isInProgress);
     else if (activeTab === "done") filtered = orders.filter(isDone);
@@ -221,12 +224,13 @@ export default function GuestOrders() {
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <TabsList className="flex-wrap h-auto">
-              <TabsTrigger value="all">Toutes ({orders.length})</TabsTrigger>
               <TabsTrigger value="to_process">À traiter ({toProcessCount})</TabsTrigger>
+              <TabsTrigger value="paid">Payées ({paidCount})</TabsTrigger>
               <TabsTrigger value="waiting">En attente ({waitingCount})</TabsTrigger>
               <TabsTrigger value="in_progress">En cours ({inProgressCount})</TabsTrigger>
               <TabsTrigger value="done">Terminées ({doneCount})</TabsTrigger>
               <TabsTrigger value="refused">Refusées ({refusedCount})</TabsTrigger>
+              <TabsTrigger value="all">Toutes ({orders.length})</TabsTrigger>
             </TabsList>
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -240,7 +244,7 @@ export default function GuestOrders() {
           </div>
 
           {/* Table content for all tabs */}
-          {["all", "to_process", "waiting", "in_progress", "done", "refused"].map(tab => (
+          {["to_process", "paid", "waiting", "in_progress", "done", "refused", "all"].map(tab => (
             <TabsContent key={tab} value={tab}>
               <Card>
                 <CardContent className="p-0">
