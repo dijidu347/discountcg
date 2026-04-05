@@ -657,6 +657,30 @@ export default function GuestOrderDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6 lg:sticky lg:top-20 lg:self-start">
+            {/* Change status */}
+            <Card>
+              <CardHeader><CardTitle>Statut de la commande</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <select
+                  value={order.status}
+                  onChange={async (e) => {
+                    const newStatus = e.target.value;
+                    await supabase.from("guest_orders").update({ status: newStatus }).eq("id", order.id);
+                    toast({ title: `Statut mis à jour : ${newStatus}` });
+                    loadOrderData();
+                  }}
+                  className="w-full p-2 border rounded-lg bg-background text-sm"
+                >
+                  <option value="en_attente">En attente</option>
+                  <option value="paye">Payé</option>
+                  <option value="en_traitement">En cours de traitement</option>
+                  <option value="valide">Validé</option>
+                  <option value="finalise">Terminé</option>
+                  <option value="refuse">Refusé</option>
+                </select>
+              </CardContent>
+            </Card>
+
             {/* Quick actions */}
             <Card>
               <CardHeader><CardTitle>Actions rapides</CardTitle></CardHeader>
