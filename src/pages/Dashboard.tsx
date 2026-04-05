@@ -53,13 +53,13 @@ export default function Dashboard() {
 
   // Full-page video coffre-fort — une seule fois par garage
   useEffect(() => {
-    if (garage?.id && !coffreActive) {
+    if (garage?.id) {
       const key = `coffre_video_seen_${garage.id}`;
       if (!localStorage.getItem(key)) {
         setShowVideoAutoPopup(true);
       }
     }
-  }, [garage?.id, coffreActive]);
+  }, [garage?.id]);
 
   const handleDismissVideoPage = () => {
     setShowVideoAutoPopup(false);
