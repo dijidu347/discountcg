@@ -1033,13 +1033,6 @@ const SuiviCommande = () => {
                       <Mail className="w-4 h-4" />
                       contact@discountcartegrise.fr
                     </a>
-                    <a
-                      href="tel:+33972137890"
-                      className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      <Phone className="w-4 h-4" />
-                      09 72 13 78 90
-                    </a>
                   </div>
                 </div>
               </div>
