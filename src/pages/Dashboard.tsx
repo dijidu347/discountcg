@@ -5,11 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Play, Sparkles } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
@@ -33,6 +34,8 @@ export default function Dashboard() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [missingDocsCount, setMissingDocsCount] = useState(3);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [showVideoAutoPopup, setShowVideoAutoPopup] = useState(false);
   const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
   const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
 
@@ -47,6 +50,24 @@ export default function Dashboard() {
       loadData();
     }
   }, [user]);
+
+  // Auto-popup video coffre-fort une seule fois par garage
+  useEffect(() => {
+    if (garage?.id && !coffreActive) {
+      const key = `coffre_video_seen_${garage.id}`;
+      if (!localStorage.getItem(key)) {
+        const timer = setTimeout(() => setShowVideoAutoPopup(true), 1500);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [garage?.id, coffreActive]);
+
+  const handleCloseAutoPopup = () => {
+    setShowVideoAutoPopup(false);
+    if (garage?.id) {
+      localStorage.setItem(`coffre_video_seen_${garage.id}`, 'true');
+    }
+  };
 
   const loadData = async () => {
     if (!user) return;
@@ -363,6 +384,84 @@ export default function Dashboard() {
             <CoffreWidget />
           </div>
         )}
+
+        {/* Coffre-fort Video CTA */}
+        {!coffreActive && (
+          <div className="mb-8">
+            <Card className="relative overflow-hidden border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center animate-pulse">
+                    <Play className="w-6 h-6 text-white ml-0.5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">Coffre-fort Numérique</h3>
+                    <p className="text-sm text-muted-foreground">Ne perdez plus jamais une facture. Découvrez la solution en 1 minute.</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowVideoModal(true)}
+                  className="relative bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 whitespace-nowrap"
+                >
+                  <Sparkles className="w-4 h-4 mr-2 animate-spin" style={{ animationDuration: '3s' }} />
+                  Voir la démo
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping" />
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Video Modal (CTA button) */}
+        <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-0">
+            <div className="relative">
+              <video
+                src="/videos/coffre-fort-promo.mp4"
+                controls
+                autoPlay
+                className="w-full"
+                style={{ maxHeight: '80vh' }}
+              />
+            </div>
+            <div className="p-4 bg-white dark:bg-gray-900 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">Coffre-fort Numérique — 9,99€/mois, 1er mois offert</p>
+              <Button onClick={() => { setShowVideoModal(false); navigate(coffreLink); }} className="bg-blue-600 hover:bg-blue-700">
+                <Sparkles className="w-4 h-4 mr-2" />
+                J'active mon coffre-fort
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Auto-popup Video (first visit only) */}
+        <Dialog open={showVideoAutoPopup} onOpenChange={(open) => { if (!open) handleCloseAutoPopup(); }}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-0">
+            <div className="relative">
+              <video
+                src="/videos/coffre-fort-promo.mp4"
+                controls
+                autoPlay
+                className="w-full"
+                style={{ maxHeight: '80vh' }}
+              />
+            </div>
+            <div className="p-6 bg-white dark:bg-gray-900 text-center space-y-4">
+              <h3 className="text-xl font-bold">Ne perdez plus jamais une facture</h3>
+              <p className="text-muted-foreground">Stockage illimité, scan automatique, export comptable — 9,99€/mois, 1er mois offert</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button onClick={() => { handleCloseAutoPopup(); navigate(coffreLink); }} className="bg-blue-600 hover:bg-blue-700 font-bold px-8">
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  J'active mon coffre-fort
+                </Button>
+                <Button variant="ghost" onClick={handleCloseAutoPopup}>
+                  Plus tard
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Quick Actions */}
         <div className="mb-8">

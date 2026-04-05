@@ -6,7 +6,7 @@ import {
   Archive, Camera, FolderOpen, Cloud, Search, Download, Zap,
   Receipt, HelpCircle, Menu, LogOut, LayoutDashboard,
   FileText, Loader2, Coins, Sparkles, CheckCircle2, Lock, Car,
-  Wrench, Fuel, Settings, Truck, Wallet,
+  Wrench, Fuel, Settings, Truck, Wallet, Play,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -296,6 +296,34 @@ export default function CoffreFortSales() {
               </div>
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      {/* ── VIDEO PRESENTATION ──────────────────────────────────────────── */}
+      <div className="container mx-auto px-4 py-14 md:py-20">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
+          <h2 className="text-3xl md:text-4xl font-black">
+            Découvrez le coffre-fort en <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">1 minute</span>
+          </h2>
+          <p className="text-lg text-muted-foreground">
+            Voyez comment simplifier la gestion de vos documents en quelques clics
+          </p>
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-gray-200 bg-black group">
+            <video
+              id="coffre-video"
+              src="/videos/coffre-fort-promo.mp4"
+              className="w-full"
+              style={{ maxHeight: '500px' }}
+              controls
+              playsInline
+              preload="metadata"
+              poster=""
+              onClick={(e) => {
+                const vid = e.target as HTMLVideoElement;
+                if (vid.paused) vid.play(); else vid.pause();
+              }}
+            />
           </div>
         </div>
       </div>
