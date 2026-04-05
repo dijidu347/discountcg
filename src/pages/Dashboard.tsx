@@ -518,56 +518,6 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Coffre-fort Video CTA */}
-        {!coffreActive && (
-          <div className="mb-8">
-            <Card className="relative overflow-hidden border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
-              <CardContent className="flex flex-col sm:flex-row items-center justify-between gap-4 py-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center animate-pulse">
-                    <Play className="w-6 h-6 text-white ml-0.5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg">Coffre-fort Numérique</h3>
-                    <p className="text-sm text-muted-foreground">Ne perdez plus jamais une facture. Découvrez la solution en 1 minute.</p>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => setShowVideoModal(true)}
-                  className="relative bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all hover:scale-105 whitespace-nowrap"
-                >
-                  <Sparkles className="w-4 h-4 mr-2 animate-spin" style={{ animationDuration: '3s' }} />
-                  Voir la démo
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping" />
-                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full" />
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Video Modal (CTA button) */}
-        <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
-          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-0">
-            <div className="relative">
-              <video
-                src="/videos/coffre-fort-promo.mp4"
-                controls
-                autoPlay
-                className="w-full"
-                style={{ maxHeight: '80vh' }}
-              />
-            </div>
-            <div className="p-4 bg-white dark:bg-gray-900 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">Coffre-fort Numérique — 9,99€/mois, 1er mois offert</p>
-              <Button onClick={() => { setShowVideoModal(false); navigate(coffreLink); }} className="bg-blue-600 hover:bg-blue-700">
-                <Sparkles className="w-4 h-4 mr-2" />
-                J'active mon coffre-fort
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Actions rapides</h2>

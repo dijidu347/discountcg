@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Archive, Plus, CheckCircle2, Sparkles, Lock, ChevronDown, ChevronUp } from "lucide-react";
+import { Archive, Plus, CheckCircle2, Sparkles, Lock, ChevronDown, ChevronUp, Play, Volume2, VolumeX } from "lucide-react";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 import { useCoffreDocuments } from "@/hooks/useCoffreDocuments";
 import { COFFRE_CATEGORIES } from "@/lib/coffre-categories";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const CATEGORY_HEX_COLORS: Record<string, string> = {
   achats_vehicules: "#3b82f6",
@@ -31,29 +32,19 @@ export function CoffreWidget() {
 
   const toggleCollapsed = () => setCollapsed((v) => !v);
 
+  const [showVideo, setShowVideo] = useState(false);
+
   if (subLoading) return null;
 
-  // ── Non-subscriber: redesigned teaser ──────────────────────────────────
+  // ── Non-subscriber: teaser with video ──────────────────────────────────
   if (!isActive) {
     return (
       <>
-        {/* Shimmer keyframe */}
         <style>{`
-          @keyframes shimmer {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(200%); }
-          }
-          @keyframes glow-pulse {
-            0%, 100% { box-shadow: 0 4px 24px rgba(59,130,246,0.35); }
-            50% { box-shadow: 0 4px 48px rgba(59,130,246,0.65), 0 0 0 6px rgba(59,130,246,0.12); }
-          }
+          @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+          @keyframes glow-pulse { 0%, 100% { box-shadow: 0 4px 24px rgba(59,130,246,0.35); } 50% { box-shadow: 0 4px 48px rgba(59,130,246,0.65), 0 0 0 6px rgba(59,130,246,0.12); } }
           .btn-glow { animation: glow-pulse 2.2s ease-in-out infinite; }
-          .btn-shimmer::after {
-            content: '';
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
-            animation: shimmer 2.4s ease-in-out infinite;
-          }
+          .btn-shimmer::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); animation: shimmer 2.4s ease-in-out infinite; }
         `}</style>
 
         <div className="relative overflow-hidden rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-indigo-50 shadow-lg shadow-blue-100/50">
@@ -67,7 +58,7 @@ export function CoffreWidget() {
 
           <div className="flex flex-col md:flex-row">
 
-            {/* LEFT: content */}
+            {/* LEFT: video + content */}
             <div className="flex-1 p-5 md:p-6">
               <div className="flex items-center gap-2.5 mb-3">
                 <div className="w-9 h-9 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -79,23 +70,28 @@ export function CoffreWidget() {
                 </div>
               </div>
 
-              <p className="text-sm text-gray-500 mb-3 leading-snug">
-                Importez une facture, un scan ou une photo depuis votre téléphone ou votre ordinateur.
-              </p>
-
-              <ul className="space-y-1.5 mb-4">
-                {[
-                  "Ne perdez plus jamais une facture",
-                  "Gagnez du temps sur votre bilan comptable",
-                  "Export ZIP par mois et par année",
-                  "Recherche instantanée par fournisseur",
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
+              {/* Video thumbnail — click to open */}
+              <div
+                className="relative rounded-xl overflow-hidden bg-gray-900 cursor-pointer group mb-4 border border-gray-200 shadow-md"
+                onClick={() => setShowVideo(true)}
+              >
+                <video
+                  src="/videos/coffre-fort-promo.mp4"
+                  className="w-full opacity-80 group-hover:opacity-100 transition-opacity"
+                  style={{ maxHeight: '180px', objectFit: 'cover' }}
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/40 group-hover:scale-110 transition-transform">
+                    <Play className="w-6 h-6 text-white ml-0.5" />
+                  </div>
+                </div>
+                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                  ▶ Voir la démo — 1 min
+                </div>
+              </div>
 
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -112,34 +108,26 @@ export function CoffreWidget() {
                   <p className="text-[10px] text-gray-400">puis 9,99€/mois</p>
                 </div>
               </div>
-
               <p className="text-[10px] text-gray-400 mt-2.5">+ de 180 garages professionnels déjà inscrits</p>
             </div>
 
             {/* RIGHT: mini category preview */}
             <div className="md:w-60 lg:w-64 flex-shrink-0 border-t md:border-t-0 md:border-l border-blue-100 p-4 relative bg-white/60">
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-white/80 rounded-b-2xl md:rounded-r-2xl md:rounded-bl-none pointer-events-none z-10" />
-
               <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mb-3 flex items-center gap-1.5">
                 <Lock className="h-3 w-3" /> Accès avec l'abonnement
               </p>
-
               <div className="grid grid-cols-2 gap-1.5">
                 {COFFRE_CATEGORIES.map((cat) => {
                   const CatIcon = cat.icon;
                   const color = CATEGORY_HEX_COLORS[cat.key];
                   return (
-                    <div key={cat.key}
-                      className="rounded-lg p-2 flex flex-col gap-1 bg-white border"
-                      style={{ borderColor: `${color}25` }}>
+                    <div key={cat.key} className="rounded-lg p-2 flex flex-col gap-1 bg-white border" style={{ borderColor: `${color}25` }}>
                       <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: `${color}18` }}>
+                        <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}18` }}>
                           <CatIcon className="h-3 w-3" style={{ color }} />
                         </div>
-                        <span className="text-[10px] font-semibold text-gray-700 leading-tight line-clamp-1">
-                          {cat.label}
-                        </span>
+                        <span className="text-[10px] font-semibold text-gray-700 leading-tight line-clamp-1">{cat.label}</span>
                       </div>
                       <div className="h-1 rounded-full w-full bg-gray-100">
                         <div className="h-1 rounded-full w-0" style={{ backgroundColor: color }} />
@@ -152,6 +140,32 @@ export function CoffreWidget() {
             </div>
           </div>
         </div>
+
+        {/* Video popup */}
+        <Dialog open={showVideo} onOpenChange={setShowVideo}>
+          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-0">
+            <video
+              src="/videos/coffre-fort-promo.mp4"
+              controls
+              autoPlay
+              playsInline
+              className="w-full"
+              style={{ maxHeight: '80vh' }}
+            />
+            <div className="p-4 bg-white dark:bg-gray-900 flex items-center justify-between">
+              <p className="text-sm text-gray-500">Coffre-fort Numérique — 9,99€/mois, 1er mois offert</p>
+              <button
+                onClick={() => { setShowVideo(false); navigate("/coffre-fort-sales"); }}
+                className="btn-glow btn-shimmer relative overflow-hidden inline-flex items-center gap-2 h-10 px-5 rounded-xl bg-blue-600 text-white font-black text-sm transition-transform hover:scale-105"
+              >
+                <span className="relative z-10 flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  J'active mon coffre-fort
+                </span>
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
