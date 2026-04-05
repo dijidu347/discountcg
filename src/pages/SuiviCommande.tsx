@@ -1063,7 +1063,6 @@ const SuiviCommande = () => {
                   </Button>
                 </div>
               </div>
-              </div>
             </CardContent>
           </Card>
 
