@@ -150,97 +150,132 @@ export default function Dashboard() {
 
   // Full-page video intro — shown once per garage before dashboard
   if (showVideoAutoPopup) {
+    const INTRO_CATEGORIES = [
+      { label: "Achats véhicules", color: "#3b82f6", count: 8, amount: 2400 },
+      { label: "Pièces & accessoires", color: "#f59e0b", count: 5, amount: 860 },
+      { label: "Carburant", color: "#ef4444", count: 4, amount: 320 },
+      { label: "Entretien / garage", color: "#10b981", count: 3, amount: 450 },
+      { label: "Transport", color: "#6366f1", count: 2, amount: 180 },
+      { label: "Frais divers", color: "#8b5cf6", count: 2, amount: 290 },
+    ];
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900 text-white">
+      <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col overflow-hidden">
         <Helmet>
           <meta name="robots" content="noindex, nofollow" />
-          <title>Découvrez le Coffre-fort | Discount Carte Grise</title>
+          <title>Coffre-fort Numérique | Discount Carte Grise</title>
         </Helmet>
 
         {/* Top bar */}
-        <div className="flex justify-between items-center px-6 py-4">
+        <div className="flex justify-between items-center px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur flex-shrink-0">
           <div className="flex items-center gap-2">
-            <Archive className="w-6 h-6 text-blue-400" />
-            <span className="font-bold text-lg">DiscountCarteGrise</span>
+            <Archive className="w-5 h-5 text-blue-600" />
+            <span className="font-bold text-gray-800">DiscountCarteGrise</span>
           </div>
-          <Button
-            variant="ghost"
-            onClick={handleDismissVideoPage}
-            className="text-white/50 hover:text-white hover:bg-white/10 text-sm"
-          >
-            Accéder au tableau de bord →
-          </Button>
-        </div>
-
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          {/* Header */}
-          <div className="text-center mb-8 space-y-3">
-            <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-500/30 rounded-full px-4 py-1.5 text-sm text-blue-300">
-              <Sparkles className="w-4 h-4" />
-              Nouveau — Exclusif pour les professionnels
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black leading-tight">
-              Découvrez votre{' '}
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                Coffre-fort Numérique
-              </span>
-            </h1>
-            <p className="text-xl text-white/60 max-w-2xl mx-auto">
-              Stockez, organisez et retrouvez tous vos documents en quelques secondes
-            </p>
-          </div>
-
-          {/* Video */}
-          <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20 border border-white/10 mb-10">
-            <video
-              src="/videos/coffre-fort-promo.mp4"
-              controls
-              autoPlay
-              playsInline
-              className="w-full"
-              style={{ maxHeight: '55vh' }}
-            />
-          </div>
-
-          {/* Benefits grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mb-10">
-            {[
-              { icon: Camera, title: "Scan intelligent", desc: "Photographiez, le coffre-fort classe automatiquement" },
-              { icon: FolderOpen, title: "6 catégories", desc: "Factures, entretiens, assurances, cartes grises, contrôles, amendes" },
-              { icon: Download, title: "Export comptable", desc: "Exportez par mois ou par année en 1 clic" },
-            ].map((item, i) => (
-              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 text-center space-y-2">
-                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mx-auto">
-                  <item.icon className="w-5 h-5 text-blue-400" />
-                </div>
-                <h3 className="font-bold">{item.title}</h3>
-                <p className="text-sm text-white/50">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* CTA */}
-          <div className="text-center space-y-4">
+          <div className="flex items-center gap-3">
             <Button
               onClick={() => { handleDismissVideoPage(); navigate("/coffre-fort-sales"); }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg px-12 py-7 rounded-xl shadow-lg shadow-blue-600/30 hover:shadow-xl hover:scale-105 transition-all"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 shadow-lg shadow-blue-600/20 hover:scale-105 transition-all"
             >
-              <Sparkles className="w-5 h-5 mr-2" />
-              J'active mon coffre-fort — 1er mois offert
+              <Sparkles className="w-4 h-4 mr-2" />
+              J'active mon coffre-fort
             </Button>
-            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-white/40">
-              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> 9,99€/mois</span>
-              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> Sans engagement</span>
-              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> Annulable à tout moment</span>
-              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> +180 garages inscrits</span>
-            </div>
             <Button
               variant="ghost"
               onClick={handleDismissVideoPage}
-              className="text-white/40 hover:text-white hover:bg-white/10 mt-2"
+              className="text-gray-400 hover:text-gray-700 text-sm"
             >
-              Passer et accéder au tableau de bord
+              Passer →
             </Button>
+          </div>
+        </div>
+
+        {/* Main content — no scroll */}
+        <div className="flex-1 flex flex-col lg:flex-row items-center gap-6 px-6 py-6 min-h-0">
+
+          {/* LEFT — Video */}
+          <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full">
+            <div className="mb-3 text-center">
+              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mb-2">
+                <Sparkles className="h-3.5 w-3.5" />
+                Nouveau — Exclusif professionnels
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">
+                Ne perdez plus{' '}
+                <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">JAMAIS</span>
+                {' '}une facture
+              </h1>
+            </div>
+            <div className="w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-gray-200 bg-black">
+              <video
+                src="/videos/coffre-fort-promo.mp4"
+                controls
+                autoPlay
+                muted
+                playsInline
+                preload="auto"
+                className="w-full"
+                style={{ maxHeight: '55vh' }}
+              />
+            </div>
+            <p className="text-xs text-gray-400 mt-2 flex items-center gap-3 justify-center">
+              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> 9,99€/mois</span>
+              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> 1er mois offert</span>
+              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> Sans engagement</span>
+            </p>
+          </div>
+
+          {/* RIGHT — Category cards (same as CoffreFortSales) */}
+          <div className="lg:w-[340px] xl:w-[380px] flex-shrink-0 hidden lg:block">
+            <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-xl shadow-blue-100/50">
+              {/* Mac-style top bar */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Archive className="h-3 w-3 text-blue-600" />
+                  <span className="text-xs font-bold text-gray-700">Mon coffre-fort</span>
+                  <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">24 docs</span>
+                </div>
+                <div className="w-10" />
+              </div>
+
+              {/* Category grid */}
+              <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-100">
+                {INTRO_CATEGORIES.map((cat, i) => (
+                  <div key={cat.label} className="p-3 hover:bg-gray-50/80 transition-colors" style={{ background: i === 0 ? `${cat.color}06` : undefined }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${cat.color}18` }}>
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                      </div>
+                      <span className="text-[11px] font-bold text-gray-700 leading-tight">{cat.label}</span>
+                    </div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[11px] font-black" style={{ color: cat.color }}>{cat.count} docs</span>
+                      <span className="text-[10px] text-gray-400">{cat.amount.toLocaleString("fr-FR")} €</span>
+                    </div>
+                    <div className="h-1 rounded-full w-full bg-gray-100">
+                      <div className="h-1 rounded-full" style={{ backgroundColor: cat.color, width: `${(cat.count / 8) * 100}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Bottom CTA */}
+              <div className="p-4 border-t border-gray-100 text-center">
+                <Button
+                  onClick={() => { handleDismissVideoPage(); navigate("/coffre-fort-sales"); }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-600/20 hover:scale-[1.02] transition-all"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Activer — 1er mois offert
+                </Button>
+                <p className="text-[10px] text-gray-400 mt-2">+ de 180 garages utilisent le coffre-fort</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
