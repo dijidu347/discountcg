@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, Send } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -61,6 +62,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
+  const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
+  const [newDocName, setNewDocName] = useState("");
 
   const loadData = async () => {
     setIsLoading(true);
@@ -92,6 +95,23 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
           rejection_reason: doc.rejection_reason || undefined,
           type_document: doc.type_document
         })));
+
+        // Detect additional docs already uploaded (not in required list)
+        if (docsConfig) {
+          const requiredNames = new Set(docsConfig.map((d: any) => d.nom_document));
+          const extraTypes = [...new Set(
+            existingDocs
+              .filter(d => !requiredNames.has(d.type_document))
+              .map(d => d.type_document)
+          )];
+          if (extraTypes.length > 0) {
+            setAdditionalDocs(prev => {
+              const existing = new Set(prev);
+              const newOnes = extraTypes.filter(t => !existing.has(t));
+              return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+            });
+          }
+        }
       }
 
       // Get order info
@@ -109,6 +129,26 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleAddDocument = () => {
+    const name = newDocName.trim();
+    if (!name) return;
+    if (additionalDocs.includes(name)) {
+      toast({ title: "Document déjà ajouté", variant: "destructive" });
+      return;
+    }
+    setAdditionalDocs(prev => [...prev, name]);
+    setNewDocName("");
+  };
+
+  const handleRemoveAdditionalDoc = (docName: string) => {
+    const filesForDoc = uploadedFiles.filter(f => f.type_document === docName);
+    if (filesForDoc.length > 0) {
+      toast({ title: "Supprimez d'abord le fichier uploadé", variant: "destructive" });
+      return;
+    }
+    setAdditionalDocs(prev => prev.filter(d => d !== docName));
   };
 
   const handleSubmit = async () => {
@@ -225,21 +265,73 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Required documents */}
         {requiredDocuments.map((doc) => {
           const filesForDoc = uploadedFiles.filter(f => f.type_document === doc.nom_document);
-          
+
           return (
-            <GuestDocumentUpload
-              key={doc.id}
-              orderId={orderId}
-              documentType={doc.nom_document}
-              label={`${doc.nom_document}${!doc.obligatoire ? ' (facultatif)' : ''}`}
-              existingFiles={filesForDoc}
-              onUploadComplete={loadData}
-              rectoOnly={isRectoOnly(doc.nom_document)}
-            />
+            <div key={doc.id}>
+              {doc.obligatoire && (
+                <p className="text-xs font-semibold text-red-500 mb-1">* Obligatoire</p>
+              )}
+              <GuestDocumentUpload
+                orderId={orderId}
+                documentType={doc.nom_document}
+                label={`${doc.nom_document}${!doc.obligatoire ? ' (facultatif)' : ''}`}
+                existingFiles={filesForDoc}
+                onUploadComplete={loadData}
+                rectoOnly={isRectoOnly(doc.nom_document)}
+              />
+            </div>
           );
         })}
+
+        {/* Separator */}
+        <div className="border-t pt-4 mt-4">
+          <p className="text-sm font-medium mb-3">Pièces jointes supplémentaires</p>
+
+          {/* Additional docs already added */}
+          {additionalDocs.map((docName) => {
+            const filesForDoc = uploadedFiles.filter(f => f.type_document === docName);
+            return (
+              <div key={docName} className="relative mb-3">
+                <GuestDocumentUpload
+                  orderId={orderId}
+                  documentType={docName}
+                  label={docName}
+                  existingFiles={filesForDoc}
+                  onUploadComplete={loadData}
+                  rectoOnly={true}
+                />
+                {filesForDoc.length === 0 && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveAdditionalDoc(docName)}
+                    className="absolute top-2 right-2 h-6 w-6"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Add new doc input */}
+          <div className="flex gap-2">
+            <Input
+              placeholder="Nom du document (ex: Cerfa, Procuration...)"
+              value={newDocName}
+              onChange={(e) => setNewDocName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddDocument()}
+              className="flex-1"
+            />
+            <Button variant="outline" onClick={handleAddDocument} disabled={!newDocName.trim()}>
+              <Plus className="w-4 h-4 mr-1" />
+              Ajouter
+            </Button>
+          </div>
+        </div>
 
         {/* Submit button */}
         <div className="pt-4 border-t">

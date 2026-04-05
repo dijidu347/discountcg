@@ -7,12 +7,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  Loader2, 
-  CheckCircle, 
-  Clock, 
-  Package, 
-  Truck, 
+import {
+  Loader2,
+  CheckCircle,
+  Clock,
+  Package,
+  Truck,
   FileCheck,
   Mail,
   Phone,
@@ -24,8 +24,12 @@ import {
   Ban,
   Upload,
   Send,
-  CheckCircle2
+  CheckCircle2,
+  Eye,
+  Plus,
+  X
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
@@ -47,6 +51,10 @@ const SuiviCommande = () => {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [reuploadedDocs, setReuploadedDocs] = useState<Set<string>>(new Set());
   const [isSubmittingReupload, setIsSubmittingReupload] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string>("");
+  const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
+  const [newDocName, setNewDocName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -753,6 +761,14 @@ const SuiviCommande = () => {
                               Refusé
                             </Badge>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => { setPreviewUrl(doc.url); setPreviewName(doc.type_document + (doc.side ? ` (${doc.side})` : '')); }}
+                            title="Aperçu"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
                           <SimpleDownloadButton
                             url={doc.url}
                             filename={doc.nom_fichier || doc.type_document}
@@ -1001,8 +1017,76 @@ const SuiviCommande = () => {
                   </div>
                 )}
               </div>
+
+              {/* Section ajout documents supplémentaires */}
+              <div className="border-t pt-4 mt-4">
+                <p className="text-sm font-medium mb-3">Ajouter un document supplémentaire</p>
+
+                {additionalDocs.map((docName) => {
+                  const filesForDoc = documents.filter((d: any) => d.type_document === docName);
+                  return (
+                    <div key={docName} className="relative mb-3">
+                      <GuestDocumentUpload
+                        orderId={order.id}
+                        documentType={docName}
+                        label={docName}
+                        existingFiles={filesForDoc.map((f: any) => ({
+                          id: f.id, fileName: f.nom_fichier, side: f.side || '',
+                          validation_status: f.validation_status || 'pending',
+                          rejection_reason: f.rejection_reason,
+                        }))}
+                        onUploadComplete={() => { loadDocuments(); loadOrder(); }}
+                        rectoOnly={true}
+                        trackingNumber={order.tracking_number}
+                        clientName={`${order.prenom || ''} ${order.nom || ''}`}
+                      />
+                      {filesForDoc.length === 0 && (
+                        <Button variant="ghost" size="icon" onClick={() => setAdditionalDocs(prev => prev.filter(d => d !== docName))} className="absolute top-2 right-2 h-6 w-6">
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  );
+                })}
+
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Nom du document (ex: Procuration, Cerfa...)"
+                    value={newDocName}
+                    onChange={(e) => setNewDocName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && newDocName.trim()) { setAdditionalDocs(prev => [...prev, newDocName.trim()]); setNewDocName(""); } }}
+                    className="flex-1"
+                  />
+                  <Button variant="outline" onClick={() => { if (newDocName.trim()) { setAdditionalDocs(prev => [...prev, newDocName.trim()]); setNewDocName(""); } }} disabled={!newDocName.trim()}>
+                    <Plus className="w-4 h-4 mr-1" />
+                    Ajouter
+                  </Button>
+                </div>
+              </div>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Modal aperçu document */}
+          {previewUrl && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={() => setPreviewUrl(null)}>
+              <div className="bg-white dark:bg-gray-900 rounded-lg shadow-2xl max-w-4xl max-h-[90vh] w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between p-4 border-b">
+                  <h3 className="font-semibold">{previewName}</h3>
+                  <Button variant="ghost" size="icon" onClick={() => setPreviewUrl(null)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+                <div className="p-4 flex items-center justify-center min-h-[400px] max-h-[75vh] overflow-auto">
+                  {previewUrl.match(/\.pdf/i) ? (
+                    <iframe src={previewUrl} className="w-full h-[70vh]" />
+                  ) : (
+                    <img src={previewUrl} alt={previewName} className="max-w-full max-h-[70vh] object-contain" />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Messagerie */}
           {order.id && (

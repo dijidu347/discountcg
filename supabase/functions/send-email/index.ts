@@ -141,11 +141,16 @@ const getEmailTemplate = (type: string, data: any) => {
               <p style="margin: 0;"><strong>📎 Votre facture est jointe à cet email</strong></p>
             </div>
 
-            <p>Nous allons maintenant traiter votre dossier. Vous recevrez un email dès qu'il y aura du nouveau.</p>
+            <div style="background-color: #fef3c7; border: 2px solid #f59e0b; padding: 20px; margin: 20px 0; border-radius: 8px; text-align: center;">
+              <p style="margin: 0; font-size: 16px; font-weight: bold; color: #92400e;">⚠️ N'oubliez pas d'ajouter vos documents !</p>
+              <p style="margin: 8px 0 0 0; color: #78350f;">Rendez-vous sur votre page de suivi pour déposer vos pièces justificatives afin que notre équipe commence à traiter votre dossier.</p>
+            </div>
 
-            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Suivre ma commande
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #f59e0b; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold; font-size: 16px;">
+              📄 Ajouter mes documents maintenant
             </a>
+
+            <p style="margin-top: 16px;">Vous recevrez un email dès qu'il y aura du nouveau.</p>
 
             ${guestReplyBlock}
             ${guestFooter}
