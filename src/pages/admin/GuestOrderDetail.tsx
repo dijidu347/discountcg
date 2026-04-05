@@ -581,8 +581,14 @@ export default function GuestOrderDetail() {
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5 text-primary" /> Paiement</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                <div className="flex justify-between"><span className="text-muted-foreground">Carte grise</span><span className="font-medium">{order.montant_ht.toFixed(2)} €</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{order.frais_dossier.toFixed(2)} €</span></div>
+                {order.demarche_type === 'CG' ? (
+                  <>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{order.montant_ht.toFixed(2)} €</span></div>
+                    <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{order.frais_dossier.toFixed(2)} €</span></div>
+                  </>
+                ) : (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier ({order.demarche_type || 'Démarche'})</span><span className="font-medium">{((order.montant_ht || 0) + (order.frais_dossier || 0)).toFixed(2)} €</span></div>
+                )}
                 {order.sms_notifications && <div className="flex justify-between"><span className="text-muted-foreground">SMS</span><span className="font-medium">5.00 €</span></div>}
                 <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{((order.montant_ht || 0) + (order.frais_dossier || 30) + (order.sms_notifications ? 5 : 0)).toFixed(2)} €</span></div>
                 <div className="pt-2 flex gap-2 flex-wrap">
