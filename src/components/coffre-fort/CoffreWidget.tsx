@@ -70,28 +70,23 @@ export function CoffreWidget() {
                 </div>
               </div>
 
-              {/* Video thumbnail — click to open */}
-              <div
-                className="relative rounded-xl overflow-hidden bg-gray-900 cursor-pointer group mb-4 border border-gray-200 shadow-md"
-                onClick={() => setShowVideo(true)}
-              >
-                <video
-                  src="/videos/coffre-fort-promo.mp4"
-                  className="w-full opacity-80 group-hover:opacity-100 transition-opacity"
-                  style={{ maxHeight: '180px', objectFit: 'cover' }}
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/40 group-hover:scale-110 transition-transform">
-                    <Play className="w-6 h-6 text-white ml-0.5" />
-                  </div>
-                </div>
-                <div className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                  ▶ Voir la démo — 1 min
-                </div>
-              </div>
+              <p className="text-sm text-gray-500 mb-3 leading-snug">
+                Importez une facture, un scan ou une photo depuis votre téléphone ou votre ordinateur.
+              </p>
+
+              <ul className="space-y-1.5 mb-4">
+                {[
+                  "Ne perdez plus jamais une facture",
+                  "Gagnez du temps sur votre bilan comptable",
+                  "Export ZIP par mois et par année",
+                  "Recherche instantanée par fournisseur",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2 text-xs text-gray-600">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
 
               <div className="flex flex-wrap items-center gap-3">
                 <button
@@ -102,6 +97,13 @@ export function CoffreWidget() {
                     <Sparkles className="h-3.5 w-3.5" />
                     Activer mon coffre-fort
                   </span>
+                </button>
+                <button
+                  onClick={() => setShowVideo(true)}
+                  className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border-2 border-blue-200 text-blue-600 font-bold text-sm hover:bg-blue-50 transition-colors"
+                >
+                  <Play className="h-4 w-4" />
+                  Voir la présentation
                 </button>
                 <div className="text-left">
                   <p className="text-sm font-black text-amber-600">1er mois OFFERT</p>
