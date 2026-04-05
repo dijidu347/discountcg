@@ -29,7 +29,6 @@ import {
   Plus,
   X
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
@@ -1062,7 +1061,6 @@ const SuiviCommande = () => {
                     Ajouter
                   </Button>
                 </div>
-              </div>
               </div>
             </CardContent>
           </Card>
