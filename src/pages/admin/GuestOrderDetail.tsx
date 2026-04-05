@@ -593,7 +593,7 @@ export default function GuestOrderDetail() {
                 </div>
                 <div className="space-y-2">
                   <Label>Fichier *</Label>
-                  <Input type="file" accept=".pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setAdminDocFile(f); if (!adminDocName) setAdminDocName(f.name.replace('.pdf', '')); } }} />
+                  <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setAdminDocFile(f); if (!adminDocName) setAdminDocName(f.name.replace(/\.[^.]+$/, '')); } }} />
                 </div>
                 <Button onClick={async () => {
                   if (!adminDocFile || !adminDocName.trim() || !order) return;
