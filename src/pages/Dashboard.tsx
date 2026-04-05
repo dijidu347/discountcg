@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Play, Sparkles } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Play, Sparkles, Camera, FolderOpen, Download } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -51,18 +51,17 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // Auto-popup video coffre-fort une seule fois par garage
+  // Full-page video coffre-fort — une seule fois par garage
   useEffect(() => {
     if (garage?.id && !coffreActive) {
       const key = `coffre_video_seen_${garage.id}`;
       if (!localStorage.getItem(key)) {
-        const timer = setTimeout(() => setShowVideoAutoPopup(true), 1500);
-        return () => clearTimeout(timer);
+        setShowVideoAutoPopup(true);
       }
     }
   }, [garage?.id, coffreActive]);
 
-  const handleCloseAutoPopup = () => {
+  const handleDismissVideoPage = () => {
     setShowVideoAutoPopup(false);
     if (garage?.id) {
       localStorage.setItem(`coffre_video_seen_${garage.id}`, 'true');
@@ -144,6 +143,105 @@ export default function Dashboard() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
           <p className="mt-4 text-muted-foreground">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Full-page video intro — shown once per garage before dashboard
+  if (showVideoAutoPopup) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900 text-white">
+        <Helmet>
+          <meta name="robots" content="noindex, nofollow" />
+          <title>Découvrez le Coffre-fort | Discount Carte Grise</title>
+        </Helmet>
+
+        {/* Top bar */}
+        <div className="flex justify-between items-center px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Archive className="w-6 h-6 text-blue-400" />
+            <span className="font-bold text-lg">DiscountCarteGrise</span>
+          </div>
+          <Button
+            variant="ghost"
+            onClick={handleDismissVideoPage}
+            className="text-white/50 hover:text-white hover:bg-white/10 text-sm"
+          >
+            Accéder au tableau de bord →
+          </Button>
+        </div>
+
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          {/* Header */}
+          <div className="text-center mb-8 space-y-3">
+            <div className="inline-flex items-center gap-2 bg-blue-500/20 border border-blue-500/30 rounded-full px-4 py-1.5 text-sm text-blue-300">
+              <Sparkles className="w-4 h-4" />
+              Nouveau — Exclusif pour les professionnels
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black leading-tight">
+              Découvrez votre{' '}
+              <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                Coffre-fort Numérique
+              </span>
+            </h1>
+            <p className="text-xl text-white/60 max-w-2xl mx-auto">
+              Stockez, organisez et retrouvez tous vos documents en quelques secondes
+            </p>
+          </div>
+
+          {/* Video */}
+          <div className="w-full max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl shadow-blue-500/20 border border-white/10 mb-10">
+            <video
+              src="/videos/coffre-fort-promo.mp4"
+              controls
+              autoPlay
+              playsInline
+              className="w-full"
+              style={{ maxHeight: '55vh' }}
+            />
+          </div>
+
+          {/* Benefits grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-4xl mx-auto mb-10">
+            {[
+              { icon: Camera, title: "Scan intelligent", desc: "Photographiez, le coffre-fort classe automatiquement" },
+              { icon: FolderOpen, title: "6 catégories", desc: "Factures, entretiens, assurances, cartes grises, contrôles, amendes" },
+              { icon: Download, title: "Export comptable", desc: "Exportez par mois ou par année en 1 clic" },
+            ].map((item, i) => (
+              <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-5 text-center space-y-2">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mx-auto">
+                  <item.icon className="w-5 h-5 text-blue-400" />
+                </div>
+                <h3 className="font-bold">{item.title}</h3>
+                <p className="text-sm text-white/50">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* CTA */}
+          <div className="text-center space-y-4">
+            <Button
+              onClick={() => { handleDismissVideoPage(); navigate("/coffre-fort-sales"); }}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg px-12 py-7 rounded-xl shadow-lg shadow-blue-600/30 hover:shadow-xl hover:scale-105 transition-all"
+            >
+              <Sparkles className="w-5 h-5 mr-2" />
+              J'active mon coffre-fort — 1er mois offert
+            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-white/40">
+              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> 9,99€/mois</span>
+              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> Sans engagement</span>
+              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> Annulable à tout moment</span>
+              <span className="flex items-center gap-1"><CheckCircle className="w-4 h-4 text-green-400" /> +180 garages inscrits</span>
+            </div>
+            <Button
+              variant="ghost"
+              onClick={handleDismissVideoPage}
+              className="text-white/40 hover:text-white hover:bg-white/10 mt-2"
+            >
+              Passer et accéder au tableau de bord
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -431,34 +529,6 @@ export default function Dashboard() {
                 <Sparkles className="w-4 h-4 mr-2" />
                 J'active mon coffre-fort
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Auto-popup Video (first visit only) */}
-        <Dialog open={showVideoAutoPopup} onOpenChange={(open) => { if (!open) handleCloseAutoPopup(); }}>
-          <DialogContent className="max-w-4xl p-0 overflow-hidden bg-black border-0">
-            <div className="relative">
-              <video
-                src="/videos/coffre-fort-promo.mp4"
-                controls
-                autoPlay
-                className="w-full"
-                style={{ maxHeight: '80vh' }}
-              />
-            </div>
-            <div className="p-6 bg-white dark:bg-gray-900 text-center space-y-4">
-              <h3 className="text-xl font-bold">Ne perdez plus jamais une facture</h3>
-              <p className="text-muted-foreground">Stockage illimité, scan automatique, export comptable — 9,99€/mois, 1er mois offert</p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Button onClick={() => { handleCloseAutoPopup(); navigate(coffreLink); }} className="bg-blue-600 hover:bg-blue-700 font-bold px-8">
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  J'active mon coffre-fort
-                </Button>
-                <Button variant="ghost" onClick={handleCloseAutoPopup}>
-                  Plus tard
-                </Button>
-              </div>
             </div>
           </DialogContent>
         </Dialog>
