@@ -117,7 +117,7 @@ export function GuestDocumentUpload({
 
       toast({
         title: "Document téléchargé",
-        description: `Le ${side} a été téléchargé avec succès`
+        description: `${documentType} (${side}) a été téléchargé avec succès`
       });
 
       // Notify admin of document reupload

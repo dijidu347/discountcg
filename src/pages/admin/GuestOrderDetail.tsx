@@ -470,12 +470,18 @@ export default function GuestOrderDetail() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     {documents.map((doc) => (
                       <div key={doc.id} className="p-3 border rounded-xl space-y-2 bg-card">
+                        {/* Mini aperçu */}
+                        {doc.url && (doc.url.match(/\.(jpg|jpeg|png|webp)/i)) && (
+                          <div className="w-full h-24 rounded-lg overflow-hidden bg-muted cursor-pointer" onClick={() => setSelectedDoc(doc)}>
+                            <img src={doc.url} alt={doc.type_document} className="w-full h-full object-cover" />
+                          </div>
+                        )}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <Checkbox checked={selectedDocs.includes(doc.id)} onCheckedChange={() => toggleDocSelection(doc.id)} />
                             <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate">{doc.nom_fichier}</p>
-                              <p className="text-xs text-muted-foreground">{doc.type_document} {doc.side && `(${doc.side})`}</p>
+                              <p className="font-medium text-sm truncate">{doc.type_document} {doc.side && `(${doc.side})`}</p>
+                              <p className="text-xs text-muted-foreground truncate">{doc.nom_fichier}</p>
                             </div>
                           </div>
                           <Badge className={cn(
@@ -508,6 +514,14 @@ export default function GuestOrderDetail() {
                                 toast({ title: "Document validé" });
                                 loadOrderData();
                               }}><CheckCircle2 className="h-4 w-4 text-green-600" /></Button>
+                              <Button variant="ghost" size="sm" onClick={async () => {
+                                const reason = prompt("Motif du refus :");
+                                if (!reason) return;
+                                await supabase.from("guest_order_documents").update({ validation_status: "rejected", validated_at: new Date().toISOString(), validated_by: user?.id, rejection_reason: reason }).eq("id", doc.id);
+                                await supabase.functions.invoke('send-email', { body: { type: 'document_rejected', to: order.email, data: { tracking_number: order.tracking_number, nom: order.nom, prenom: order.prenom, rejectedDocuments: [{ nom: doc.type_document, raison: reason }] } } });
+                                toast({ title: "Document refusé", description: `${doc.type_document} refusé` });
+                                loadOrderData();
+                              }}><XCircle className="h-4 w-4 text-red-600" /></Button>
                             </>
                           )}
                         </div>
@@ -604,7 +618,17 @@ export default function GuestOrderDetail() {
                     if (uploadError) throw uploadError;
                     const { data: { publicUrl } } = supabase.storage.from('guest-order-documents').getPublicUrl(fileName);
                     await supabase.from('guest_order_admin_documents').insert({ order_id: order.id, nom_fichier: adminDocName, url: publicUrl, description: adminDocDescription || null, taille_octets: adminDocFile.size, sent_by: user?.id, email_sent: true, email_sent_at: new Date().toISOString() });
-                    await supabase.functions.invoke('send-email', { body: { type: 'admin_document', to: order.email, data: { tracking_number: order.tracking_number, nom: order.nom, prenom: order.prenom, document_name: adminDocName, description: adminDocDescription } } });
+                    // Convert file to base64 for email attachment
+                    let attachments: any[] = [];
+                    try {
+                      const reader = new FileReader();
+                      const base64 = await new Promise<string>((resolve) => {
+                        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+                        reader.readAsDataURL(adminDocFile);
+                      });
+                      attachments = [{ filename: adminDocFile.name, content: base64 }];
+                    } catch (e) { console.error('Attachment conversion failed:', e); }
+                    await supabase.functions.invoke('send-email', { body: { type: 'admin_document', to: order.email, data: { tracking_number: order.tracking_number, nom: order.nom, prenom: order.prenom, document_name: adminDocName, description: adminDocDescription }, attachments } });
                     toast({ title: "Document envoyé" });
                     setAdminDocFile(null); setAdminDocName(""); setAdminDocDescription("");
                     await loadOrderData();

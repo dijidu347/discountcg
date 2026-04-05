@@ -70,8 +70,8 @@ const RechercheSuivi = () => {
                 </p>
                 <p className="text-sm text-muted-foreground">
                   Pour toute question, contactez-nous à{" "}
-                  <a href="mailto:support@discountcg.fr" className="text-primary hover:underline">
-                    support@discountcg.fr
+                  <a href="mailto:contact@discountcartegrise.fr" className="text-primary hover:underline">
+                    contact@discountcartegrise.fr
                   </a>
                 </p>
               </div>
