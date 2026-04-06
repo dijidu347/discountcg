@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Mail } from "lucide-react";
+import { Mail, UserPlus, LogIn } from "lucide-react";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
@@ -275,9 +275,41 @@ export default function DemarcheSimple() {
                       Pour recevoir votre suivi de commande et votre facture
                     </p>
                   </div>
+
+                  {/* Account creation prompt */}
+                  {email && (
+                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        💡 Créez un compte gratuit pour retrouver vos commandes à tout moment
+                      </p>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                          className="flex-1"
+                        >
+                          <UserPlus className="w-4 h-4 mr-1" />
+                          Créer un compte
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                          className="flex-1"
+                        >
+                          <LogIn className="w-4 h-4 mr-1" />
+                          J'ai déjà un compte
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
                   <Button onClick={handleSaveEmail} disabled={isSavingEmail || !email} size="lg" className="w-full">
                     {isSavingEmail ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    Continuer
+                    Continuer en tant qu'invité
                   </Button>
                 </CardContent>
               </Card>
