@@ -591,8 +591,18 @@ export default function GuestOrderDetail() {
                 ) : (
                   <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier ({order.demarche_type || 'Démarche'})</span><span className="font-medium">{((order.montant_ht || 0) + (order.frais_dossier || 0)).toFixed(2)} €</span></div>
                 )}
+                {order.dossier_prioritaire && <div className="flex justify-between"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
+                {order.certificat_non_gage && <div className="flex justify-between"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
+                {order.email_notifications && <div className="flex justify-between"><span className="text-muted-foreground">Suivi email</span><span className="font-medium">5.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between"><span className="text-muted-foreground">SMS</span><span className="font-medium">5.00 €</span></div>}
-                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{((order.montant_ht || 0) + (order.frais_dossier || 30) + (order.sms_notifications ? 5 : 0)).toFixed(2)} €</span></div>
+                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{(
+                  (order.montant_ht || 0) + 
+                  (order.frais_dossier || 30) + 
+                  (order.dossier_prioritaire ? 5 : 0) + 
+                  (order.certificat_non_gage ? 10 : 0) + 
+                  (order.email_notifications ? 5 : 0) + 
+                  (order.sms_notifications ? 5 : 0)
+                ).toFixed(2)} €</span></div>
                 <div className="pt-2 flex gap-2 flex-wrap">
                   <Badge variant={order.paye ? "default" : "secondary"} className={order.paye ? "bg-green-600" : ""}>{order.paye ? "Payé" : "Non payé"}</Badge>
                 </div>
