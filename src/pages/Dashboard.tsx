@@ -34,8 +34,6 @@ export default function Dashboard() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [missingDocsCount, setMissingDocsCount] = useState(3);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [showVideoAutoPopup, setShowVideoAutoPopup] = useState(false);
   const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
   const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
 
