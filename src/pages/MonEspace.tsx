@@ -193,9 +193,8 @@ export default function MonEspace() {
                               <div key={doc.id} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                                 <span className="text-sm truncate">{doc.nom_fichier}</span>
                                 <SecureDownloadButton
-                                  bucket="guest-order-documents"
-                                  filePath={doc.url}
-                                  fileName={doc.nom_fichier}
+                                  url={doc.url}
+                                  filename={doc.nom_fichier}
                                 />
                               </div>
                             ))}
