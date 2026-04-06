@@ -46,11 +46,40 @@ export default function MonEspace() {
     setLoading(true);
     try {
       // Load profile
-      const { data: profileData } = await supabase
+      let { data: profileData } = await supabase
         .from("particulier_profiles")
         .select("*")
         .eq("user_id", user!.id)
         .single();
+
+      // Auto-create profile for Google OAuth users who don't have one yet
+      if (!profileData && user) {
+        const meta = user.user_metadata || {};
+        const { data: newProfile } = await supabase
+          .from("particulier_profiles")
+          .insert({
+            user_id: user.id,
+            email: user.email || "",
+            nom: meta.full_name?.split(" ").slice(1).join(" ") || meta.name || "",
+            prenom: meta.full_name?.split(" ")[0] || "",
+            telephone: "",
+          })
+          .select()
+          .single();
+        profileData = newProfile;
+
+        // Ensure particulier role exists
+        await supabase
+          .from("user_roles")
+          .upsert({ user_id: user.id, role: "particulier" as any }, { onConflict: "user_id,role" });
+
+        // Auto-link existing guest orders
+        await supabase
+          .from("guest_orders")
+          .update({ user_id: user.id })
+          .eq("email", user.email || "")
+          .is("user_id", null);
+      }
       setProfile(profileData);
 
       // Load orders linked to this user
