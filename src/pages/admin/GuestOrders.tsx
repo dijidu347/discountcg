@@ -86,14 +86,18 @@ export default function GuestOrders() {
     }
   };
 
-  const isToProcess = (o: GuestOrder) => o.paye && o.documents_complets && !['valide', 'en_traitement', 'finalise'].includes(o.status);
+  const isToProcess = (o: GuestOrder) => o.paye && o.documents_complets && !['valide', 'en_traitement', 'finalise', 'refuse'].includes(o.status);
+  const isDraft = (o: GuestOrder) => o.status === 'en_attente' && !o.paye && !o.documents_complets;
+  const isUnpaid = (o: GuestOrder) => !o.paye && !isDraft(o);
   const isPaid = (o: GuestOrder) => o.paye;
-  const isWaiting = (o: GuestOrder) => !o.paye || !o.documents_complets;
+  const isWaiting = (o: GuestOrder) => (o.paye && !o.documents_complets) || (!o.paye && o.documents_complets);
   const isInProgress = (o: GuestOrder) => ['valide', 'en_traitement'].includes(o.status);
   const isDone = (o: GuestOrder) => o.status === 'finalise';
   const isRefused = (o: GuestOrder) => o.status === 'refuse';
 
   const toProcessCount = orders.filter(isToProcess).length;
+  const draftCount = orders.filter(isDraft).length;
+  const unpaidCount = orders.filter(isUnpaid).length;
   const paidCount = orders.filter(isPaid).length;
   const waitingCount = orders.filter(isWaiting).length;
   const inProgressCount = orders.filter(isInProgress).length;
@@ -103,6 +107,8 @@ export default function GuestOrders() {
   const getFilteredOrders = () => {
     let filtered = orders;
     if (activeTab === "to_process") filtered = orders.filter(isToProcess);
+    else if (activeTab === "drafts") filtered = orders.filter(isDraft);
+    else if (activeTab === "unpaid") filtered = orders.filter(isUnpaid);
     else if (activeTab === "paid") filtered = orders.filter(isPaid);
     else if (activeTab === "waiting") filtered = orders.filter(isWaiting);
     else if (activeTab === "in_progress") filtered = orders.filter(isInProgress);
@@ -225,7 +231,8 @@ export default function GuestOrders() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="to_process">À traiter ({toProcessCount})</TabsTrigger>
-              <TabsTrigger value="paid">Payées ({paidCount})</TabsTrigger>
+              <TabsTrigger value="drafts">Brouillons ({draftCount})</TabsTrigger>
+              <TabsTrigger value="unpaid">Non payées ({unpaidCount})</TabsTrigger>
               <TabsTrigger value="waiting">En attente ({waitingCount})</TabsTrigger>
               <TabsTrigger value="in_progress">En cours ({inProgressCount})</TabsTrigger>
               <TabsTrigger value="done">Terminées ({doneCount})</TabsTrigger>
@@ -244,7 +251,7 @@ export default function GuestOrders() {
           </div>
 
           {/* Table content for all tabs */}
-          {["to_process", "paid", "waiting", "in_progress", "done", "refused", "all"].map(tab => (
+          {["to_process", "drafts", "unpaid", "waiting", "in_progress", "done", "refused", "all"].map(tab => (
             <TabsContent key={tab} value={tab}>
               <Card>
                 <CardContent className="p-0">

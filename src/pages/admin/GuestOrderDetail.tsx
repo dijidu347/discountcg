@@ -499,6 +499,7 @@ export default function GuestOrderDetail() {
                         )}
                         <div className="flex gap-1">
                           <Button variant="ghost" size="sm" onClick={() => setSelectedDoc(doc)}><Eye className="h-4 w-4" /></Button>
+                          <SecureDownloadButton url={doc.url} filename={doc.nom_fichier} trackingNumber={order.tracking_number} variant="ghost" size="sm" />
                           {doc.validation_status === 'pending' && (
                             <>
                               <Button variant="ghost" size="sm" onClick={async () => {
