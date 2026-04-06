@@ -1,4 +1,4 @@
-import { Menu, X, LogIn, Star } from "lucide-react";
+import { Menu, X, LogIn, Star, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -47,6 +47,10 @@ const Navbar = () => {
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
             </button>
+            <Button onClick={() => navigate("/login-particulier")} variant="outline" size="default" className="flex items-center gap-2 font-semibold">
+              <User className="h-4 w-4" />
+              Mon espace
+            </Button>
             <Button onClick={() => navigate("/login")} variant="default" size="default" className="flex items-center gap-2 font-semibold shadow-md">
               <LogIn className="h-4 w-4" />
               Espace Pro
@@ -89,6 +93,13 @@ const Navbar = () => {
         }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Suivi
             </button>
+            <Button onClick={() => {
+          setIsOpen(false);
+          navigate("/login-particulier");
+        }} variant="outline" size="lg" className="w-full flex items-center justify-center gap-2">
+              <User className="h-4 w-4" />
+              Mon espace
+            </Button>
             <Button onClick={() => {
           setIsOpen(false);
           navigate("/login");
