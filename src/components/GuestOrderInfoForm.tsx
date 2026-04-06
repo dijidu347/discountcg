@@ -19,9 +19,19 @@ interface GuestOrderInfoFormProps {
 
 export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditionalQuestions = true }: GuestOrderInfoFormProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   
   // Informations personnelles
   const [nom, setNom] = useState("");
