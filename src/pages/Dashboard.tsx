@@ -5,12 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Play, Sparkles, Camera, FolderOpen, Download } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Sparkles, Camera, FolderOpen, Download } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
@@ -34,8 +34,6 @@ export default function Dashboard() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [missingDocsCount, setMissingDocsCount] = useState(3);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
-  const [showVideoAutoPopup, setShowVideoAutoPopup] = useState(false);
   const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
   const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
 
@@ -51,22 +49,7 @@ export default function Dashboard() {
     }
   }, [user]);
 
-  // Full-page video coffre-fort — une seule fois par garage
-  useEffect(() => {
-    if (garage?.id) {
-      const key = `coffre_video_seen_${garage.id}`;
-      if (!localStorage.getItem(key)) {
-        setShowVideoAutoPopup(true);
-      }
-    }
-  }, [garage?.id]);
 
-  const handleDismissVideoPage = () => {
-    setShowVideoAutoPopup(false);
-    if (garage?.id) {
-      localStorage.setItem(`coffre_video_seen_${garage.id}`, 'true');
-    }
-  };
 
   const loadData = async () => {
     if (!user) return;
@@ -148,139 +131,7 @@ export default function Dashboard() {
     );
   }
 
-  // Full-page video intro — shown once per garage before dashboard
-  if (showVideoAutoPopup) {
-    const INTRO_CATEGORIES = [
-      { label: "Achats véhicules", color: "#3b82f6", count: 8, amount: 2400 },
-      { label: "Pièces & accessoires", color: "#f59e0b", count: 5, amount: 860 },
-      { label: "Carburant", color: "#ef4444", count: 4, amount: 320 },
-      { label: "Entretien / garage", color: "#10b981", count: 3, amount: 450 },
-      { label: "Transport", color: "#6366f1", count: 2, amount: 180 },
-      { label: "Frais divers", color: "#8b5cf6", count: 2, amount: 290 },
-    ];
 
-    return (
-      <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col overflow-hidden">
-        <Helmet>
-          <meta name="robots" content="noindex, nofollow" />
-          <title>Coffre-fort Numérique | Discount Carte Grise</title>
-        </Helmet>
-
-        {/* Top bar */}
-        <div className="flex justify-between items-center px-6 py-3 border-b border-gray-100 bg-white/80 backdrop-blur flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <Archive className="w-5 h-5 text-blue-600" />
-            <span className="font-bold text-gray-800">DiscountCarteGrise</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={() => { handleDismissVideoPage(); navigate("/coffre-fort-sales"); }}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 shadow-lg shadow-blue-600/20 hover:scale-105 transition-all"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              J'active mon coffre-fort
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={handleDismissVideoPage}
-              className="text-gray-400 hover:text-gray-700 text-sm"
-            >
-              Passer →
-            </Button>
-          </div>
-        </div>
-
-        {/* Main content — no scroll */}
-        <div className="flex-1 flex flex-col lg:flex-row items-center gap-6 px-6 py-6 min-h-0">
-
-          {/* LEFT — Video */}
-          <div className="flex-1 flex flex-col items-center justify-center min-h-0 w-full">
-            <div className="mb-3 text-center">
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1 rounded-full mb-2">
-                <Sparkles className="h-3.5 w-3.5" />
-                Nouveau — Exclusif professionnels
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black text-gray-900 leading-tight">
-                Ne perdez plus{' '}
-                <span className="bg-gradient-to-r from-blue-600 to-indigo-500 bg-clip-text text-transparent">JAMAIS</span>
-                {' '}une facture
-              </h1>
-            </div>
-            <div className="w-full max-w-2xl rounded-2xl overflow-hidden shadow-2xl shadow-blue-200/50 border border-gray-200 bg-black">
-              <video
-                src="/videos/coffre-fort-promo.mp4"
-                controls
-                autoPlay
-                muted
-                playsInline
-                preload="auto"
-                className="w-full"
-                style={{ maxHeight: '55vh' }}
-              />
-            </div>
-            <p className="text-xs text-gray-400 mt-2 flex items-center gap-3 justify-center">
-              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> 9,99€/mois</span>
-              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> 1er mois offert</span>
-              <span className="flex items-center gap-1"><CheckCircle className="w-3 h-3 text-green-500" /> Sans engagement</span>
-            </p>
-          </div>
-
-          {/* RIGHT — Category cards (same as CoffreFortSales) */}
-          <div className="lg:w-[340px] xl:w-[380px] flex-shrink-0 hidden lg:block">
-            <div className="relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-xl shadow-blue-100/50">
-              {/* Mac-style top bar */}
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100 bg-gray-50">
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Archive className="h-3 w-3 text-blue-600" />
-                  <span className="text-xs font-bold text-gray-700">Mon coffre-fort</span>
-                  <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">24 docs</span>
-                </div>
-                <div className="w-10" />
-              </div>
-
-              {/* Category grid */}
-              <div className="grid grid-cols-2 gap-0 divide-x divide-y divide-gray-100">
-                {INTRO_CATEGORIES.map((cat, i) => (
-                  <div key={cat.label} className="p-3 hover:bg-gray-50/80 transition-colors" style={{ background: i === 0 ? `${cat.color}06` : undefined }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${cat.color}18` }}>
-                        <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                      </div>
-                      <span className="text-[11px] font-bold text-gray-700 leading-tight">{cat.label}</span>
-                    </div>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-[11px] font-black" style={{ color: cat.color }}>{cat.count} docs</span>
-                      <span className="text-[10px] text-gray-400">{cat.amount.toLocaleString("fr-FR")} €</span>
-                    </div>
-                    <div className="h-1 rounded-full w-full bg-gray-100">
-                      <div className="h-1 rounded-full" style={{ backgroundColor: cat.color, width: `${(cat.count / 8) * 100}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Bottom CTA */}
-              <div className="p-4 border-t border-gray-100 text-center">
-                <Button
-                  onClick={() => { handleDismissVideoPage(); navigate("/coffre-fort-sales"); }}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-lg shadow-blue-600/20 hover:scale-[1.02] transition-all"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Activer — 1er mois offert
-                </Button>
-                <p className="text-[10px] text-gray-400 mt-2">+ de 180 garages utilisent le coffre-fort</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
