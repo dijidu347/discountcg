@@ -28,7 +28,19 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      // Check if user is a particulier
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .then(({ data }) => {
+          const roles = (data || []).map((r) => r.role);
+          if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
+            navigate("/mon-espace");
+          } else {
+            navigate("/dashboard");
+          }
+        });
     }
   }, [user, navigate]);
 
