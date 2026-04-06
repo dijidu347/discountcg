@@ -526,6 +526,45 @@ const CommanderSansCompte = () => {
                     <Input id="telephone" type="tel" value={formData.telephone} onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} />
                   </div>
                 </div>
+
+                {/* Account creation prompt - only show if not logged in */}
+                {!user && (
+                  <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      💡 Créez un compte gratuit pour retrouver vos commandes à tout moment
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(formData.email)}&redirect=${encodeURIComponent(`/commander/${orderId}`)}`)}
+                        className="flex-1"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Créer un compte
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(formData.email)}&redirect=${encodeURIComponent(`/commander/${orderId}`)}`)}
+                        className="flex-1"
+                      >
+                        <LogIn className="w-4 h-4 mr-1" />
+                        J'ai déjà un compte
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {user && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700 flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Connecté — cette commande sera liée à votre compte
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
