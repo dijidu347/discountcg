@@ -989,6 +989,35 @@ export default function CoffreFort() {
       {/* Manage subscription dialog */}
       <CoffreManageSubscription open={manageSubOpen} onClose={() => setManageSubOpen(false)} />
 
+      {/* Video dialog */}
+      <AlertDialog open={videoOpen} onOpenChange={setVideoOpen}>
+        <AlertDialogContent className="max-w-3xl p-0 overflow-hidden">
+          <AlertDialogHeader className="p-4 pb-0">
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Play className="h-5 w-5 text-primary" />
+              Comment ça marche
+            </AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="px-4 pb-4">
+            <div className="relative rounded-xl overflow-hidden bg-black">
+              {videoOpen && (
+                <video
+                  src="/videos/coffre-fort-promo.mp4"
+                  className="w-full"
+                  style={{ maxHeight: '450px' }}
+                  controls
+                  autoPlay
+                  playsInline
+                />
+              )}
+            </div>
+          </div>
+          <AlertDialogFooter className="px-4 pb-4">
+            <AlertDialogCancel>Fermer</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Delete confirmation */}
       <AlertDialog open={!!deleteConfirmDoc} onOpenChange={(open) => !open && setDeleteConfirmDoc(null)}>
         <AlertDialogContent>
