@@ -286,6 +286,12 @@ export default function Login() {
         <p className="text-center text-sm text-muted-foreground mt-6">
           Plateforme réservée aux professionnels de l'automobile
         </p>
+        <p className="text-center text-sm text-muted-foreground mt-2">
+          Vous êtes un particulier ?{" "}
+          <Button variant="link" className="p-0 h-auto text-primary" onClick={() => navigate("/login-particulier")}>
+            Accédez à votre espace ici
+          </Button>
+        </p>
       </div>
     </div>
   );
