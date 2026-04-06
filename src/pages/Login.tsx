@@ -81,7 +81,7 @@ export default function Login() {
         title: "Connexion réussie",
         description: "Redirection vers votre espace..."
       });
-      navigate("/dashboard");
+      // Role-based redirect will be handled by the useEffect above
     }
 
     setLoading(false);
