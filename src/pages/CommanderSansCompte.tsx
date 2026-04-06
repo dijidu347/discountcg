@@ -235,6 +235,28 @@ const CommanderSansCompte = () => {
     initializeStripe();
   }, []);
 
+  // Pre-fill form from logged-in user's profile
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("particulier_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setFormData((prev) => ({
+              ...prev,
+              nom: data.nom || prev.nom,
+              prenom: data.prenom || prev.prenom,
+              email: data.email || user.email || prev.email,
+              telephone: data.telephone || prev.telephone,
+            }));
+          }
+        });
+    }
+  }, [user]);
+
   const initializeStripe = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('get-stripe-key');
