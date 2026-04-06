@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { User, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { User, Check, Loader2, ChevronDown, ChevronUp, UserPlus, LogIn, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -18,9 +19,19 @@ interface GuestOrderInfoFormProps {
 
 export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditionalQuestions = true }: GuestOrderInfoFormProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
   const [isOpen, setIsOpen] = useState(true);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
   
   // Informations personnelles
   const [nom, setNom] = useState("");
@@ -100,9 +111,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('guest_orders')
-        .update({
+      const updateData: any = {
           nom,
           prenom,
           email,
@@ -117,7 +126,13 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
           vehicule_leasing: vehiculeLeasing === "oui",
           is_mineur: isMineur === "oui",
           is_heberge: isHeberge === "oui",
-        })
+        };
+      if (user?.id) {
+        updateData.user_id = user.id;
+      }
+      const { error } = await supabase
+        .from('guest_orders')
+        .update(updateData)
         .eq('id', orderId);
 
       if (error) throw error;
@@ -212,6 +227,45 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
                   />
                 </div>
               </div>
+
+              {/* Account creation prompt */}
+              {!user && email && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    💡 Créez un compte gratuit pour retrouver vos commandes à tout moment
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                      className="flex-1"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Créer un compte
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                      className="flex-1"
+                    >
+                      <LogIn className="w-4 h-4 mr-1" />
+                      J'ai déjà un compte
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {user && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950 dark:border-green-800">
+                  <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Connecté — cette commande sera liée à votre compte
+                  </p>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="adresse">Adresse *</Label>
