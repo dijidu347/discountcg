@@ -263,7 +263,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
                 </div>
               )}
 
-
+              <div className="space-y-2">
                 <Label htmlFor="adresse">Adresse *</Label>
                 <Input
                   id="adresse"
