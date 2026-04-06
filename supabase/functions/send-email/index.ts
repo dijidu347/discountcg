@@ -945,7 +945,14 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
-    case "admin_new_guest_order":
+    case "admin_new_guest_order": {
+      const optionsHtml = data.options ? `
+        ${data.options.dossier_prioritaire ? '<p style="margin: 4px 0;">🔶 <strong>Dossier Prioritaire</strong> (+5€)</p>' : ''}
+        ${data.options.certificat_non_gage ? '<p style="margin: 4px 0;">🔵 <strong>Certificat de non-gage</strong> (+10€)</p>' : ''}
+        ${data.options.email_notifications ? '<p style="margin: 4px 0;">📧 <strong>Suivi par email</strong> (+5€)</p>' : ''}
+        ${data.options.sms_notifications ? '<p style="margin: 4px 0;">💬 <strong>Suivi par SMS</strong> (+5€)</p>' : ''}
+      ` : '';
+      const montantDisplay = data.montant_ttc ? `${Number(data.montant_ttc).toFixed(2)} €` : '0.00 €';
       return {
         subject: `🆕 Nouvelle commande particulier - ${data.tracking_number}`,
         html: `
@@ -959,9 +966,17 @@ const getEmailTemplate = (type: string, data: any) => {
               <p style="margin: 8px 0;"><strong>📞 Téléphone :</strong> ${data.client_phone}</p>
               <p style="margin: 8px 0;"><strong>🚗 Immatriculation :</strong> ${data.immatriculation}</p>
               <p style="margin: 8px 0;"><strong>📋 Type :</strong> ${data.demarche_type || 'CG'}</p>
+              <p style="margin: 8px 0;"><strong>💰 Montant TTC :</strong> <span style="color: #16a34a; font-weight: bold;">${montantDisplay}</span></p>
               <p style="margin: 8px 0;"><strong>📄 Documents :</strong> ${data.documents_count} fichier(s)</p>
               <p style="margin: 8px 0;"><strong>🔢 Suivi :</strong> ${data.tracking_number}</p>
             </div>
+
+            ${optionsHtml ? `
+              <div style="background-color: #fff7ed; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0;">
+                <h3 style="margin-top: 0; color: #b45309;">Options sélectionnées</h3>
+                ${optionsHtml}
+              </div>
+            ` : ''}
 
             <a href="https://discountcartegrise.fr/admin/guest-order/${data.order_id}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Voir la commande
@@ -972,6 +987,7 @@ const getEmailTemplate = (type: string, data: any) => {
           </div>
         `,
       };
+    }
 
     case "admin_guest_document_reupload":
       return {
