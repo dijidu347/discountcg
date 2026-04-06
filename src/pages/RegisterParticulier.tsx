@@ -212,7 +212,6 @@ export default function RegisterParticulier() {
                 Se connecter
               </Button>
             </p>
-            </form>
           </CardContent>
         </Card>
       </div>
