@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
   Archive, Camera, Search, Download, Trash2, FileText,
-  ArrowLeft, Plus, Eye, LayoutDashboard, Receipt, HelpCircle, Menu, LogOut, ChevronLeft, Loader2, Edit2, MoreVertical, ChevronDown, Shield, CalendarIcon, X
+  ArrowLeft, Plus, Eye, LayoutDashboard, Receipt, HelpCircle, Menu, LogOut, ChevronLeft, Loader2, Edit2, MoreVertical, ChevronDown, Shield, CalendarIcon, X, Play
 } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -85,6 +85,7 @@ export default function CoffreFort() {
   const [editingNote, setEditingNote] = useState(false);
   const [editNote, setEditNote] = useState("");
   const [manageSubOpen, setManageSubOpen] = useState(false);
+  const [videoOpen, setVideoOpen] = useState(false);
 
   const filters = homeView ? {} : {
     category: selectedCategory || undefined,
@@ -541,12 +542,21 @@ export default function CoffreFort() {
                     <Shield className="h-3.5 w-3.5 text-primary/50 flex-shrink-0" />
                     Bienvenue dans votre espace coffre-fort — sauvegardez vos factures en toute sécurité.
                   </p>
-                  <button
-                    onClick={() => setManageSubOpen(true)}
-                    className="text-xs text-muted-foreground/60 hover:text-primary underline underline-offset-2 mt-1 transition-colors w-fit"
-                  >
-                    Gérer mon abonnement
-                  </button>
+                  <div className="flex items-center gap-3 mt-1">
+                    <button
+                      onClick={() => setManageSubOpen(true)}
+                      className="text-xs text-muted-foreground/60 hover:text-primary underline underline-offset-2 transition-colors w-fit"
+                    >
+                      Gérer mon abonnement
+                    </button>
+                    <button
+                      onClick={() => setVideoOpen(true)}
+                      className="inline-flex items-center gap-1.5 text-xs text-primary/70 hover:text-primary font-medium transition-colors w-fit"
+                    >
+                      <Play className="h-3 w-3" />
+                      Voir comment ça marche
+                    </button>
+                  </div>
                 </div>
 
                 {/* Boutons export */}
