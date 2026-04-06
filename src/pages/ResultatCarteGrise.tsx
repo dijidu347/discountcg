@@ -80,6 +80,16 @@ export default function ResultatCarteGrise() {
         setOrderId(orderIdParam);
         setDepartement(departementParam);
 
+        // Load demarche type from order
+        const { data: orderData } = await supabase
+          .from("guest_orders")
+          .select("demarche_type")
+          .eq("id", orderIdParam)
+          .single();
+        if (orderData?.demarche_type) {
+          setDemarcheType(orderData.demarche_type);
+        }
+
         // Récupérer le tarif du département
         const { data: tarifData } = await supabase
           .from("department_tariffs")
