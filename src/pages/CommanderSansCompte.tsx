@@ -413,6 +413,11 @@ const CommanderSansCompte = () => {
 
       // Notify admin of new guest order
       try {
+        const totalPaid = calculateGuestOrderTTC(
+          order.montant_ht || 0,
+          order.frais_dossier || 30,
+          formData.sms_notifications
+        );
         await supabase.functions.invoke('send-email', {
           body: {
             type: 'admin_new_guest_order',
@@ -426,6 +431,11 @@ const CommanderSansCompte = () => {
               demarche_type: order.demarche_type,
               order_id: order.id,
               documents_count: Object.keys(uploadedDocs).length,
+              montant_ttc: totalPaid,
+              options: {
+                sms_notifications: formData.sms_notifications,
+                email_notifications: formData.email_notifications,
+              }
             }
           }
         });

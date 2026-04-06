@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 interface UploadListProps {
   orderId: string;
   isPaid: boolean;
+  demarcheType?: string;
 }
 
 interface RequiredDocument {
@@ -45,7 +46,7 @@ interface OrderInfo {
   modele: string | null;
 }
 
-export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
+export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
@@ -64,12 +65,17 @@ export const UploadList = ({ orderId, isPaid }: UploadListProps) => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load required documents
-      const { data: reqDocs } = await supabase
+      // Load required documents - filter by demarche type
+      let query = supabase
         .from('guest_order_required_documents')
         .select('*')
-        .eq('actif', true)
-        .order('ordre');
+        .eq('actif', true);
+      
+      if (demarcheType) {
+        query = query.eq('demarche_type_code', demarcheType);
+      }
+      
+      const { data: reqDocs } = await query.order('ordre');
 
       if (reqDocs) {
         setRequiredDocuments(reqDocs);

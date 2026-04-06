@@ -567,12 +567,13 @@ export default function GuestOrderDetail() {
             </Card>
 
             {/* Options & payment details */}
-            {(order.dossier_prioritaire || order.certificat_non_gage || order.sms_notifications) && (
+            {(order.dossier_prioritaire || order.certificat_non_gage || order.sms_notifications || order.email_notifications) && (
               <Card className="border-orange-300">
                 <CardHeader><CardTitle className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-orange-500" /> Options client</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   {order.dossier_prioritaire && <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-300"><Badge className="bg-orange-500 text-white">PRIORITAIRE</Badge><span className="text-sm font-bold text-orange-600">+5 €</span></div>}
                   {order.certificat_non_gage && <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-300"><Badge className="bg-blue-500 text-white">NON-GAGE</Badge><span className="text-sm font-bold text-blue-600">+10 €</span></div>}
+                  {order.email_notifications && <div className="flex items-center justify-between p-2 rounded-lg bg-green-50 dark:bg-green-950 border border-green-300"><Badge className="bg-green-500 text-white">EMAIL</Badge><span className="text-sm font-bold text-green-600">+5 €</span></div>}
                   {order.sms_notifications && <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50 dark:bg-purple-950 border border-purple-300"><Badge className="bg-purple-500 text-white">SMS</Badge><span className="text-sm font-bold text-purple-600">+5 €</span></div>}
                 </CardContent>
               </Card>
@@ -590,8 +591,18 @@ export default function GuestOrderDetail() {
                 ) : (
                   <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier ({order.demarche_type || 'Démarche'})</span><span className="font-medium">{((order.montant_ht || 0) + (order.frais_dossier || 0)).toFixed(2)} €</span></div>
                 )}
+                {order.dossier_prioritaire && <div className="flex justify-between"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
+                {order.certificat_non_gage && <div className="flex justify-between"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
+                {order.email_notifications && <div className="flex justify-between"><span className="text-muted-foreground">Suivi email</span><span className="font-medium">5.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between"><span className="text-muted-foreground">SMS</span><span className="font-medium">5.00 €</span></div>}
-                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{((order.montant_ht || 0) + (order.frais_dossier || 30) + (order.sms_notifications ? 5 : 0)).toFixed(2)} €</span></div>
+                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{(
+                  (order.montant_ht || 0) + 
+                  (order.frais_dossier || 30) + 
+                  (order.dossier_prioritaire ? 5 : 0) + 
+                  (order.certificat_non_gage ? 10 : 0) + 
+                  (order.email_notifications ? 5 : 0) + 
+                  (order.sms_notifications ? 5 : 0)
+                ).toFixed(2)} €</span></div>
                 <div className="pt-2 flex gap-2 flex-wrap">
                   <Badge variant={order.paye ? "default" : "secondary"} className={order.paye ? "bg-green-600" : ""}>{order.paye ? "Payé" : "Non payé"}</Badge>
                 </div>

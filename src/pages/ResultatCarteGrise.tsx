@@ -31,6 +31,7 @@ export default function ResultatCarteGrise() {
   const [isLoading, setIsLoading] = useState(true);
   const [isPaid, setIsPaid] = useState(false);
   const [isInfoCompleted, setIsInfoCompleted] = useState(false);
+  const [demarcheType, setDemarcheType] = useState<string>("CG");
   
   // Options de suivi
   const [emailNotifications, setEmailNotifications] = useState(false);
@@ -78,6 +79,16 @@ export default function ResultatCarteGrise() {
 
         setOrderId(orderIdParam);
         setDepartement(departementParam);
+
+        // Load demarche type from order
+        const { data: orderData } = await supabase
+          .from("guest_orders")
+          .select("demarche_type")
+          .eq("id", orderIdParam)
+          .single();
+        if (orderData?.demarche_type) {
+          setDemarcheType(orderData.demarche_type);
+        }
 
         // Récupérer le tarif du département
         const { data: tarifData } = await supabase
@@ -332,7 +343,42 @@ export default function ResultatCarteGrise() {
               <PaymentMethods
                 amount={calculateTotalTTC()}
                 orderId={orderId}
-                onPaymentSuccess={() => setIsPaid(true)}
+                onPaymentSuccess={async () => {
+                  setIsPaid(true);
+                  // Send admin notification with full order data
+                  try {
+                    const { data: orderData } = await supabase
+                      .from("guest_orders")
+                      .select("*")
+                      .eq("id", orderId)
+                      .single();
+                    if (orderData) {
+                      const totalPaid = calculateTotalTTC();
+                      await supabase.functions.invoke('send-email', {
+                        body: {
+                          type: 'admin_new_guest_order',
+                          to: 'contact@discountcartegrise.fr',
+                          data: {
+                            client_name: orderData.nom ? `${orderData.prenom} ${orderData.nom}` : 'Non renseigné',
+                            client_email: orderData.email || 'Non renseigné',
+                            client_phone: orderData.telephone || 'Non renseigné',
+                            tracking_number: orderData.tracking_number,
+                            immatriculation: orderData.immatriculation,
+                            demarche_type: orderData.demarche_type || 'CG',
+                            order_id: orderData.id,
+                            documents_count: 0,
+                            montant_ttc: totalPaid,
+                            options: {
+                              dossier_prioritaire: dossierPrioritaire,
+                              certificat_non_gage: certificatNonGage,
+                              email_notifications: emailNotifications,
+                            }
+                          }
+                        }
+                      });
+                    }
+                  } catch (e) { console.error('Admin notif failed:', e); }
+                }}
               />
             </div>
 
@@ -352,7 +398,31 @@ export default function ResultatCarteGrise() {
               <GuestOrderInfoForm
                 orderId={orderId}
                 isPaid={isPaid}
-                onComplete={() => setIsInfoCompleted(true)}
+                onComplete={async () => {
+                  setIsInfoCompleted(true);
+                  // Send client confirmation email now that we have their info
+                  try {
+                    const { data: orderData } = await supabase
+                      .from("guest_orders")
+                      .select("*")
+                      .eq("id", orderId)
+                      .single();
+                    if (orderData?.email) {
+                      await supabase.functions.invoke('send-email', {
+                        body: {
+                          type: 'guest_order_submitted',
+                          to: orderData.email,
+                          data: {
+                            prenom: orderData.prenom,
+                            nom: orderData.nom,
+                            tracking_number: orderData.tracking_number,
+                            immatriculation: orderData.immatriculation,
+                          }
+                        }
+                      });
+                    }
+                  } catch (e) { console.error('Client email failed:', e); }
+                }}
               />
             </div>
 
@@ -372,6 +442,7 @@ export default function ResultatCarteGrise() {
               <UploadList
                 orderId={orderId}
                 isPaid={isPaid && isInfoCompleted}
+                demarcheType={demarcheType}
               />
             </div>
           </div>
