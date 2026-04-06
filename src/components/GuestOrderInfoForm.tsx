@@ -224,7 +224,46 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
                 </div>
               </div>
 
-              <div className="space-y-2">
+              {/* Account creation prompt */}
+              {!user && email && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-2">
+                    💡 Créez un compte gratuit pour retrouver vos commandes à tout moment
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                      className="flex-1"
+                    >
+                      <UserPlus className="w-4 h-4 mr-1" />
+                      Créer un compte
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
+                      className="flex-1"
+                    >
+                      <LogIn className="w-4 h-4 mr-1" />
+                      J'ai déjà un compte
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {user && (
+                <div className="p-3 bg-green-50 border border-green-200 rounded-lg dark:bg-green-950 dark:border-green-800">
+                  <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4" />
+                    Connecté — cette commande sera liée à votre compte
+                  </p>
+                </div>
+              )}
+
+
                 <Label htmlFor="adresse">Adresse *</Label>
                 <Input
                   id="adresse"
