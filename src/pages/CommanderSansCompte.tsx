@@ -355,14 +355,19 @@ const CommanderSansCompte = () => {
     if (!order) return;
     setIsLoading(true);
     try {
-      // Update order with customer info
+      // Update order with customer info + link to user if logged in
+      const updatePayload: any = {
+        ...formData,
+        documents_complets: true,
+        updated_at: new Date().toISOString(),
+      };
+      if (user) {
+        updatePayload.user_id = user.id;
+      }
+
       const { error: updateError } = await supabase
         .from("guest_orders")
-        .update({
-          ...formData,
-          documents_complets: true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", orderId);
 
       if (updateError) throw updateError;
