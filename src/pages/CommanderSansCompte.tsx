@@ -199,6 +199,7 @@ const CommanderSansCompte = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
