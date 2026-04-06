@@ -111,9 +111,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
-        .from('guest_orders')
-        .update({
+      const updateData: any = {
           nom,
           prenom,
           email,
@@ -128,7 +126,13 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
           vehicule_leasing: vehiculeLeasing === "oui",
           is_mineur: isMineur === "oui",
           is_heberge: isHeberge === "oui",
-        })
+        };
+      if (user?.id) {
+        updateData.user_id = user.id;
+      }
+      const { error } = await supabase
+        .from('guest_orders')
+        .update(updateData)
         .eq('id', orderId);
 
       if (error) throw error;
