@@ -28,7 +28,19 @@ export default function Login() {
 
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      // Check if user is a particulier
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .then(({ data }) => {
+          const roles = (data || []).map((r) => r.role);
+          if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
+            navigate("/mon-espace");
+          } else {
+            navigate("/dashboard");
+          }
+        });
     }
   }, [user, navigate]);
 
@@ -69,7 +81,7 @@ export default function Login() {
         title: "Connexion réussie",
         description: "Redirection vers votre espace..."
       });
-      navigate("/dashboard");
+      // Role-based redirect will be handled by the useEffect above
     }
 
     setLoading(false);
@@ -285,6 +297,12 @@ export default function Login() {
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           Plateforme réservée aux professionnels de l'automobile
+        </p>
+        <p className="text-center text-sm text-muted-foreground mt-2">
+          Vous êtes un particulier ?{" "}
+          <Button variant="link" className="p-0 h-auto text-primary" onClick={() => navigate("/login-particulier")}>
+            Accédez à votre espace ici
+          </Button>
         </p>
       </div>
     </div>

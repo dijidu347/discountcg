@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Upload, FileCheck, CreditCard, Loader2, Shield, Clock, User, Mail, MapPin, ChevronLeft, ChevronRight, CheckCircle, Receipt } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { Upload, FileCheck, CreditCard, Loader2, Shield, Clock, User, Mail, MapPin, ChevronLeft, ChevronRight, CheckCircle, Receipt, UserPlus, LogIn } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
@@ -198,6 +199,7 @@ const CommanderSansCompte = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [order, setOrder] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
@@ -232,6 +234,28 @@ const CommanderSansCompte = () => {
   useEffect(() => {
     initializeStripe();
   }, []);
+
+  // Pre-fill form from logged-in user's profile
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("particulier_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) {
+            setFormData((prev) => ({
+              ...prev,
+              nom: data.nom || prev.nom,
+              prenom: data.prenom || prev.prenom,
+              email: data.email || user.email || prev.email,
+              telephone: data.telephone || prev.telephone,
+            }));
+          }
+        });
+    }
+  }, [user]);
 
   const initializeStripe = async () => {
     try {
@@ -331,14 +355,19 @@ const CommanderSansCompte = () => {
     if (!order) return;
     setIsLoading(true);
     try {
-      // Update order with customer info
+      // Update order with customer info + link to user if logged in
+      const updatePayload: any = {
+        ...formData,
+        documents_complets: true,
+        updated_at: new Date().toISOString(),
+      };
+      if (user) {
+        updatePayload.user_id = user.id;
+      }
+
       const { error: updateError } = await supabase
         .from("guest_orders")
-        .update({
-          ...formData,
-          documents_complets: true,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", orderId);
 
       if (updateError) throw updateError;
@@ -497,6 +526,45 @@ const CommanderSansCompte = () => {
                     <Input id="telephone" type="tel" value={formData.telephone} onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} />
                   </div>
                 </div>
+
+                {/* Account creation prompt - only show if not logged in */}
+                {!user && (
+                  <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-2">
+                      💡 Créez un compte gratuit pour retrouver vos commandes à tout moment
+                    </p>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(formData.email)}&redirect=${encodeURIComponent(`/commander/${orderId}`)}`)}
+                        className="flex-1"
+                      >
+                        <UserPlus className="w-4 h-4 mr-1" />
+                        Créer un compte
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(formData.email)}&redirect=${encodeURIComponent(`/commander/${orderId}`)}`)}
+                        className="flex-1"
+                      >
+                        <LogIn className="w-4 h-4 mr-1" />
+                        J'ai déjà un compte
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                {user && (
+                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-700 flex items-center gap-1">
+                      <CheckCircle className="w-4 h-4" />
+                      Connecté — cette commande sera liée à votre compte
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

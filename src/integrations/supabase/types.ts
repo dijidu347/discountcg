@@ -1122,6 +1122,7 @@ export type Database = {
           telephone: string
           tracking_number: string
           updated_at: string
+          user_id: string | null
           validated_at: string | null
           validated_by: string | null
           vehicule_leasing: boolean | null
@@ -1168,6 +1169,7 @@ export type Database = {
           telephone: string
           tracking_number: string
           updated_at?: string
+          user_id?: string | null
           validated_at?: string | null
           validated_by?: string | null
           vehicule_leasing?: boolean | null
@@ -1214,6 +1216,7 @@ export type Database = {
           telephone?: string
           tracking_number?: string
           updated_at?: string
+          user_id?: string | null
           validated_at?: string | null
           validated_by?: string | null
           vehicule_leasing?: boolean | null
@@ -1368,6 +1371,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      particulier_profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nom: string
+          prenom: string
+          telephone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          id?: string
+          nom?: string
+          prenom?: string
+          telephone?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nom?: string
+          prenom?: string
+          telephone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       payment_reminders: {
         Row: {
@@ -1752,7 +1788,7 @@ export type Database = {
       renew_coffre_token_subscriptions: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "admin" | "staff" | "garage"
+      app_role: "admin" | "staff" | "garage" | "particulier"
       demarche_status:
         | "en_saisie"
         | "en_attente"
@@ -1912,7 +1948,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff", "garage"],
+      app_role: ["admin", "staff", "garage", "particulier"],
       demarche_status: [
         "en_saisie",
         "en_attente",

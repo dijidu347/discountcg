@@ -41,6 +41,19 @@ export default function Dashboard() {
     if (!authLoading && !user) {
       navigate("/login");
     }
+    // Redirect particulier users to their own dashboard
+    if (!authLoading && user) {
+      supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .then(({ data }) => {
+          const roles = (data || []).map((r) => r.role);
+          if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
+            navigate("/mon-espace");
+          }
+        });
+    }
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
