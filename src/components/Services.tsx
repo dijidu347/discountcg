@@ -1,6 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { ShoppingCart, FileText, CreditCard, Loader2, ArrowRight, Search } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
@@ -149,7 +150,10 @@ const Services = ({ embedded = false }: { embedded?: boolean }) => {
                   <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
                     <Icon className="w-6 h-6 text-primary" />
                   </div>
-                  <CardTitle className="text-xl text-foreground">{action.titre}</CardTitle>
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-xl text-foreground">{action.titre}</CardTitle>
+                    {action.code === 'DA' && <Badge className="bg-amber-100 text-amber-800 border border-amber-300 text-[10px]">PRO</Badge>}
+                  </div>
                   <CardDescription className="text-sm">
                     {action.description || "Service professionnel pour vos démarches"}
                   </CardDescription>

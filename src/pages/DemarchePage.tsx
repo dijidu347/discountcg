@@ -42,6 +42,12 @@ const DemarchePage = () => {
   const handleStartDemarche = async () => {
     if (!demarche) return;
 
+    // DA réservé aux pros → rediriger vers inscription
+    if (demarche.code === 'DA') {
+      navigate('/register');
+      return;
+    }
+
     if (isCG) {
       navigate(`/simulateur?type=${demarche.code}`);
       return;
@@ -174,9 +180,12 @@ const DemarchePage = () => {
             {demarche.h1}
           </h1>
           <p className="text-lg text-muted-foreground mb-8">{demarche.description}</p>
+          {demarche.code === 'DA' && (
+            <Badge className="bg-amber-100 text-amber-800 border border-amber-300 mb-4">Réservé aux professionnels</Badge>
+          )}
           <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
             {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            {isCG ? "Simuler mon tarif" : "Commander maintenant"}
+            {demarche.code === 'DA' ? "Créer mon compte pro" : isCG ? "Simuler mon tarif" : "Commander maintenant"}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
