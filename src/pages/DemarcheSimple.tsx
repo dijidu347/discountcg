@@ -153,7 +153,7 @@ export default function DemarcheSimple() {
       setIsEmailSaved(true);
       toast({ title: "Email enregistré", description: "Vous pouvez maintenant procéder au paiement" });
 
-      // Notify admin
+      // Notify admin with montant
       try {
         await supabase.functions.invoke('send-email', {
           body: {
@@ -168,6 +168,7 @@ export default function DemarcheSimple() {
               demarche_type: demarcheType,
               order_id: orderId,
               documents_count: 0,
+              montant_ttc: totalTTC,
             }
           }
         });
@@ -179,12 +180,35 @@ export default function DemarcheSimple() {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
     setIsPaid(true);
     toast({
       title: "Paiement réussi",
       description: "Vous pouvez maintenant remplir vos informations et déposer vos documents.",
     });
+
+    // Send client confirmation email
+    try {
+      const { data: orderData } = await supabase
+        .from('guest_orders')
+        .select('tracking_number, email, nom, prenom, immatriculation')
+        .eq('id', orderId)
+        .single();
+      if (orderData?.email) {
+        await supabase.functions.invoke('send-email', {
+          body: {
+            type: 'guest_order_submitted',
+            to: orderData.email,
+            data: {
+              prenom: orderData.prenom || 'Client',
+              nom: orderData.nom || '',
+              tracking_number: orderData.tracking_number,
+              immatriculation: orderData.immatriculation || plaque,
+            }
+          }
+        });
+      }
+    } catch (e) { console.error('Client email failed:', e); }
   };
 
   const handleInfoComplete = () => {
