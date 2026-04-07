@@ -544,10 +544,10 @@ export default function GuestOrderDetail() {
                 <CardTitle className="flex items-center gap-2"><User className="h-5 w-5 text-primary" /> Informations Client</CardTitle>
               </CardHeader>
               <CardContent className="grid md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Nom</p><p className="font-medium">{order.prenom} {order.nom}</p></div></div>
-                <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{order.email}</p></div></div>
-                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Téléphone</p><p className="font-medium">{order.telephone}</p></div></div>
-                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Adresse</p><p className="font-medium">{order.adresse}, {order.code_postal} {order.ville}</p></div></div>
+                <div className="flex items-center gap-2"><User className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Nom</p><p className="font-medium">{order.prenom || order.nom ? `${order.prenom || ''} ${order.nom || ''}`.trim() : <span className="text-orange-500 italic">Non renseigné</span>}</p></div></div>
+                <div className="flex items-center gap-2"><Mail className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Email</p><p className="font-medium">{order.email || <span className="text-orange-500 italic">Non renseigné</span>}</p></div></div>
+                <div className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Téléphone</p><p className="font-medium">{order.telephone || <span className="text-orange-500 italic">Non renseigné</span>}</p></div></div>
+                <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><div><p className="text-xs text-muted-foreground">Adresse</p><p className="font-medium">{order.adresse ? `${order.adresse}, ${order.code_postal} ${order.ville}` : <span className="text-orange-500 italic">Non renseigné</span>}</p></div></div>
               </CardContent>
             </Card>
 
@@ -583,14 +583,10 @@ export default function GuestOrderDetail() {
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5 text-primary" /> Paiement</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                {order.demarche_type === 'CG' ? (
-                  <>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{order.montant_ht.toFixed(2)} €</span></div>
-                    <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{order.frais_dossier.toFixed(2)} €</span></div>
-                  </>
-                ) : (
-                  <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier ({order.demarche_type || 'Démarche'})</span><span className="font-medium">{((order.montant_ht || 0) + (order.frais_dossier || 0)).toFixed(2)} €</span></div>
+                {order.demarche_type === 'CG' && (order.montant_ht || 0) > 0 && (
+                  <div className="flex justify-between"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
                 )}
+                <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
                 {order.dossier_prioritaire && <div className="flex justify-between"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
                 {order.certificat_non_gage && <div className="flex justify-between"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
                 {order.email_notifications && <div className="flex justify-between"><span className="text-muted-foreground">Suivi email</span><span className="font-medium">5.00 €</span></div>}
