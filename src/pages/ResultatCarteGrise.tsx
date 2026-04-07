@@ -13,7 +13,8 @@ import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
 import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch } from "lucide-react";
+import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, CheckCircle, UserPlus, LogIn } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -36,6 +37,11 @@ export default function ResultatCarteGrise() {
   // Options de suivi
   const [emailNotifications, setEmailNotifications] = useState(false);
   
+  // Email obligatoire avant paiement
+  const [email, setEmail] = useState("");
+  const [isEmailSaved, setIsEmailSaved] = useState(false);
+  const [isSavingEmail, setIsSavingEmail] = useState(false);
+
   // Nouvelles options
   const [dossierPrioritaire, setDossierPrioritaire] = useState(false);
   const [certificatNonGage, setCertificatNonGage] = useState(false);
@@ -59,6 +65,24 @@ export default function ResultatCarteGrise() {
     return prixCarteGrise + totalServicesHT;
   };
 
+  const handleSaveEmail = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      toast({ title: "Email invalide", description: "Veuillez saisir une adresse email valide", variant: "destructive" });
+      return;
+    }
+    setIsSavingEmail(true);
+    try {
+      await supabase.from('guest_orders').update({ email, email_notifications: true, updated_at: new Date().toISOString() }).eq('id', orderId);
+      setIsEmailSaved(true);
+      toast({ title: "Email enregistré" });
+    } catch (error) {
+      toast({ title: "Erreur", variant: "destructive" });
+    } finally {
+      setIsSavingEmail(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -80,14 +104,18 @@ export default function ResultatCarteGrise() {
         setOrderId(orderIdParam);
         setDepartement(departementParam);
 
-        // Load demarche type from order
+        // Load demarche type + email from order
         const { data: orderData } = await supabase
           .from("guest_orders")
-          .select("demarche_type")
+          .select("demarche_type, email")
           .eq("id", orderIdParam)
           .single();
         if (orderData?.demarche_type) {
           setDemarcheType(orderData.demarche_type);
+        }
+        if (orderData?.email) {
+          setEmail(orderData.email);
+          setIsEmailSaved(true);
         }
 
         // Récupérer le tarif du département
@@ -331,16 +359,85 @@ export default function ResultatCarteGrise() {
             </div>
             )}
 
-            {/* Step 2: Payment */}
+            {/* Step 2: Email */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
-                  2
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${isEmailSaved ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'}`}>
+                  {isEmailSaved ? <CheckCircle className="w-5 h-5" /> : '2'}
                 </div>
-                <h2 className="text-2xl font-bold">Payer votre commande</h2>
+                <h2 className="text-2xl font-bold">Votre email</h2>
               </div>
-              
-              <PaymentMethods
+
+              {!isEmailSaved ? (
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email" className="flex items-center gap-2">
+                        <Mail className="w-4 h-4" />
+                        Adresse email *
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="votre@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSaveEmail()}
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        Pour recevoir votre suivi de commande et votre facture
+                      </p>
+                    </div>
+
+                    {email && (
+                      <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                        <p className="text-sm text-muted-foreground mb-2">
+                          Créez un compte gratuit pour retrouver vos commandes à tout moment
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <Button type="button" variant="outline" size="sm" onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)} className="flex-1">
+                            <UserPlus className="w-4 h-4 mr-1" />
+                            Créer un compte
+                          </Button>
+                          <Button type="button" variant="ghost" size="sm" onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)} className="flex-1">
+                            <LogIn className="w-4 h-4 mr-1" />
+                            J'ai déjà un compte
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button onClick={handleSaveEmail} disabled={isSavingEmail || !email} size="lg" className="w-full">
+                      {isSavingEmail ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                      Continuer
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card className="border-green-500/50 bg-green-500/10">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 text-green-600">
+                        <CheckCircle className="w-6 h-6" />
+                        <span className="font-medium">{email}</span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => setIsEmailSaved(false)}>Modifier</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Step 3: Payment */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${!isEmailSaved ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'}`}>
+                  3
+                </div>
+                <h2 className={`text-2xl font-bold ${!isEmailSaved ? 'text-muted-foreground' : ''}`}>Payer votre commande</h2>
+              </div>
+
+              {isEmailSaved ? <PaymentMethods
                 amount={calculateTotalTTC()}
                 orderId={orderId}
                 onPaymentSuccess={async () => {
@@ -379,20 +476,26 @@ export default function ResultatCarteGrise() {
                     }
                   } catch (e) { console.error('Admin notif failed:', e); }
                 }}
-              />
+              /> : (
+                <Card className="opacity-50">
+                  <CardContent className="pt-6">
+                    <p className="text-muted-foreground text-center py-4">Veuillez d'abord renseigner votre email</p>
+                  </CardContent>
+                </Card>
+              )}
             </div>
 
-            {/* Step 3: Vos informations */}
+            {/* Step 4: Vos informations */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                  isPaid 
-                    ? 'bg-primary text-primary-foreground' 
+                  isPaid
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
                 }`}>
-                  3
+                  4
                 </div>
-                <h2 className="text-2xl font-bold">Vos informations</h2>
+                <h2 className={`text-2xl font-bold ${!isPaid ? 'text-muted-foreground' : ''}`}>Vos informations</h2>
               </div>
               
               <GuestOrderInfoForm
@@ -434,9 +537,9 @@ export default function ResultatCarteGrise() {
                     ? 'bg-primary text-primary-foreground' 
                     : 'bg-muted text-muted-foreground'
                 }`}>
-                  4
+                  5
                 </div>
-                <h2 className="text-2xl font-bold">Envoyer vos documents</h2>
+                <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>Envoyer vos documents</h2>
               </div>
               
               <UploadList
