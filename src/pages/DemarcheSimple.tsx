@@ -383,6 +383,7 @@ export default function DemarcheSimple() {
                 orderId={orderId}
                 onComplete={handleInfoComplete}
                 isPaid={isPaid}
+                showConditionalQuestions={demarcheType === 'CG'}
               />
             )}
 

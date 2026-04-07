@@ -330,7 +330,8 @@ const CommanderSansCompte = () => {
   };
 
   const isStep1Valid = () => {
-    return !!(formData.nom && formData.prenom && formData.email && formData.telephone && formData.adresse && formData.code_postal && formData.ville);
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return !!(formData.nom && formData.prenom && formData.email && emailRegex.test(formData.email) && formData.telephone && formData.adresse && formData.code_postal && formData.ville);
   };
 
   const isStep2Valid = () => {
