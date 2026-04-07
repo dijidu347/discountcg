@@ -619,14 +619,24 @@ async function handleGuestOrderPayment(
     return;
   }
 
-  // Update order as paid
+  // Use Stripe's actual payment amount (authoritative, not stale DB)
+  const stripeAmountPaid = paymentIntent.amount / 100; // cents → euros
+  console.log(`💰 Stripe amount: ${stripeAmountPaid}€, DB montant_ttc: ${order.montant_ttc}€`);
+
+  // If DB has stale 0€ values, update with Stripe's actual amount
+  const actualTTC = (order.montant_ttc && order.montant_ttc > 0) ? order.montant_ttc : stripeAmountPaid;
+  const actualHT = (order.montant_ht && order.montant_ht > 0) ? order.montant_ht : Math.max(0, stripeAmountPaid - (order.frais_dossier || 30));
+
+  // Update order as paid + fix amounts if stale
   const { error: updateError } = await supabase
     .from("guest_orders")
-    .update({ 
-      paye: true, 
+    .update({
+      paye: true,
       status: "paye",
       paid_at: new Date().toISOString(),
       payment_intent_id: paymentIntent.id,
+      montant_ht: actualHT,
+      montant_ttc: actualTTC,
       updated_at: new Date().toISOString()
     })
     .eq("id", orderId);
@@ -636,19 +646,22 @@ async function handleGuestOrderPayment(
     return;
   }
 
-  console.log("✅ Guest order marked as paid");
+  console.log("✅ Guest order marked as paid, montant_ttc:", actualTTC);
 
   // Generate facture number
-  const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+  const { data: factureNumero, error: rpcError } = await supabase.rpc("generate_facture_numero");
+  if (rpcError) {
+    console.error("❌ Failed to generate facture numero:", rpcError);
+  }
 
-  // Create facture (sans TVA)
+  // Create facture using ACTUAL amounts (not stale DB values)
   const { data: facture, error: factureError } = await supabase
     .from("factures")
     .insert({
       numero: factureNumero,
       guest_order_id: orderId,
-      montant_ht: order.montant_ht || 0,
-      montant_ttc: order.montant_ttc || 0,
+      montant_ht: actualHT,
+      montant_ttc: actualTTC,
       tva: 0,
     })
     .select()

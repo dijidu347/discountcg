@@ -592,6 +592,32 @@ const SuiviCommande = () => {
             </Card>
           )}
 
+          {/* Récapitulatif prix */}
+          {order.paye && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  Récapitulatif
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {order.demarche_type === 'CG' && (order.montant_ht || 0) > 0 && (
+                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
+                )}
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
+                {order.dossier_prioritaire && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
+                {order.certificat_non_gage && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
+                {order.email_notifications && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Suivi email</span><span className="font-medium">5.00 €</span></div>}
+                <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                  <span>Total payé</span>
+                  <span className="text-primary">{(order.montant_ttc || 0).toFixed(2)} €</span>
+                </div>
+                <Badge className="bg-green-600">Payé</Badge>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Facture */}
           {factureUrl && (
             <Card>

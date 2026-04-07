@@ -41,6 +41,7 @@ export default function ResultatCarteGrise() {
   const [email, setEmail] = useState("");
   const [isEmailSaved, setIsEmailSaved] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [isPriceSaved, setIsPriceSaved] = useState(false);
 
   // Nouvelles options
   const [dossierPrioritaire, setDossierPrioritaire] = useState(false);
@@ -168,27 +169,28 @@ export default function ResultatCarteGrise() {
     loadData();
   }, [searchParams, location.state, navigate, toast]);
 
-  // Mettre à jour la commande quand les options changent
+  // Mettre à jour la commande quand les options changent — BLOQUANT
   useEffect(() => {
     const updateOrder = async () => {
       if (!orderId || !calculation) return;
 
+      setIsPriceSaved(false);
       const prixCarteGrise = calculation.prixTotal;
       let optionsPrix = 0;
       if (emailNotifications) optionsPrix += emailPrix;
       if (dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
       if (certificatNonGage) optionsPrix += certificatNonGagePrix;
-      
+
       const totalServicesHT = fraisDossier + optionsPrix;
       const montantTTC = prixCarteGrise + totalServicesHT;
 
-      await supabase
+      const { error } = await supabase
         .from('guest_orders')
         .update({
           montant_ht: prixCarteGrise,
           montant_ttc: montantTTC,
           frais_dossier: fraisDossier,
-          sms_notifications: false, // SMS désactivé pour l'instant
+          sms_notifications: false,
           email_notifications: emailNotifications,
           dossier_prioritaire: dossierPrioritaire,
           certificat_non_gage: certificatNonGage,
@@ -199,10 +201,29 @@ export default function ResultatCarteGrise() {
           puiss_fisc: calculation.chevauxFiscaux,
         })
         .eq('id', orderId);
+
+      if (!error) {
+        setIsPriceSaved(true);
+        console.log("✅ Prix sauvegardé en DB:", { montant_ht: prixCarteGrise, montant_ttc: montantTTC });
+      } else {
+        console.error("❌ Erreur sauvegarde prix:", error);
+      }
     };
 
     updateOrder();
   }, [orderId, calculation, emailNotifications, dossierPrioritaire, certificatNonGage, vehicleInfo, fraisDossier]);
+
+  // Bloquer le refresh/fermeture pendant la commande
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isPaid && orderId) {
+        e.preventDefault();
+        e.returnValue = "Votre commande est en cours. Êtes-vous sûr de vouloir quitter ?";
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isPaid, orderId]);
 
   if (isLoading) {
     return (
@@ -437,7 +458,7 @@ export default function ResultatCarteGrise() {
                 <h2 className={`text-2xl font-bold ${!isEmailSaved ? 'text-muted-foreground' : ''}`}>Payer votre commande</h2>
               </div>
 
-              {isEmailSaved ? <PaymentMethods
+              {isEmailSaved && isPriceSaved ? <PaymentMethods
                 amount={calculateTotalTTC()}
                 orderId={orderId}
                 onPaymentSuccess={async () => {
@@ -479,7 +500,7 @@ export default function ResultatCarteGrise() {
               /> : (
                 <Card className="opacity-50">
                   <CardContent className="pt-6">
-                    <p className="text-muted-foreground text-center py-4">Veuillez d'abord renseigner votre email</p>
+                    <p className="text-muted-foreground text-center py-4">{!isEmailSaved ? "Veuillez d'abord renseigner votre email" : "Calcul du prix en cours..."}</p>
                   </CardContent>
                 </Card>
               )}
