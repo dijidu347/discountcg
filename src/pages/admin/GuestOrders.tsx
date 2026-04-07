@@ -234,6 +234,7 @@ export default function GuestOrders() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="to_process">À traiter ({toProcessCount})</TabsTrigger>
+              <TabsTrigger value="paid">Payées ({paidCount})</TabsTrigger>
               <TabsTrigger value="drafts">Brouillons ({draftCount})</TabsTrigger>
               <TabsTrigger value="unpaid">Non payées ({unpaidCount})</TabsTrigger>
               <TabsTrigger value="waiting">En attente ({waitingCount})</TabsTrigger>
@@ -254,7 +255,7 @@ export default function GuestOrders() {
           </div>
 
           {/* Table content for all tabs */}
-          {["to_process", "drafts", "unpaid", "waiting", "in_progress", "done", "refused", "all"].map(tab => (
+          {["to_process", "paid", "drafts", "unpaid", "waiting", "in_progress", "done", "refused", "all"].map(tab => (
             <TabsContent key={tab} value={tab}>
               <Card>
                 <CardContent className="p-0">

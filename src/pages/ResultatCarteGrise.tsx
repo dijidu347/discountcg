@@ -73,7 +73,7 @@ export default function ResultatCarteGrise() {
     }
     setIsSavingEmail(true);
     try {
-      await supabase.from('guest_orders').update({ email, email_notifications: true, updated_at: new Date().toISOString() }).eq('id', orderId);
+      await supabase.from('guest_orders').update({ email, email_notifications: emailNotifications, updated_at: new Date().toISOString() }).eq('id', orderId);
       setIsEmailSaved(true);
       toast({ title: "Email enregistré" });
     } catch (error) {

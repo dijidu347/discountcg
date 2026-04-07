@@ -684,29 +684,39 @@ async function handleGuestOrderPayment(
 
   // Send client confirmation email WITH invoice attached
   if (order.email) {
-    await sendEmail("payment_confirmed", order.email, {
-      tracking_number: order.tracking_number,
-      prenom: order.prenom || "Client",
-      nom: order.nom || "",
-      immatriculation: order.immatriculation,
-      montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
-    }, guestPdfAttachment);
-    console.log("✅ Client confirmation email with invoice sent");
+    try {
+      await sendEmail("payment_confirmed", order.email, {
+        tracking_number: order.tracking_number,
+        prenom: order.prenom || "Client",
+        nom: order.nom || "",
+        immatriculation: order.immatriculation,
+        montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
+      }, guestPdfAttachment);
+      console.log("✅ Client confirmation email with invoice sent");
+    } catch (emailError) {
+      console.error("❌ Failed to send client confirmation email:", emailError);
+    }
   }
 
   // Send admin notification emails with delays to avoid rate limiting
+  const clientName = `${order.prenom || ""} ${order.nom || ""}`.trim() || order.email || "Client";
   for (let i = 0; i < ADMIN_EMAILS.length; i++) {
-    // Wait 600ms between each email to stay under 2 req/sec limit
     await delay(600);
-
-    await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
-      type: order.demarche_type || "CG",
-      reference: order.tracking_number,
-      immatriculation: order.immatriculation,
-      client_name: `${order.prenom || ""} ${order.nom || ""}`.trim() || order.email || "Client",
-      montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
-      is_free_token: false,
-    });
+    try {
+      await sendEmail("admin_new_guest_order", ADMIN_EMAILS[i], {
+        client_name: clientName,
+        client_email: order.email || "Non renseigné",
+        client_phone: order.telephone || "Non renseigné",
+        tracking_number: order.tracking_number,
+        immatriculation: order.immatriculation,
+        demarche_type: order.demarche_type || "CG",
+        order_id: order.id,
+        documents_count: 0,
+        montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
+      });
+    } catch (emailError) {
+      console.error("❌ Failed to send admin notification:", emailError);
+    }
   }
 
   console.log("✅ Admin notification emails sent");
