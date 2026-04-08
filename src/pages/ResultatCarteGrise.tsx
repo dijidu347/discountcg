@@ -1,5 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 export default function ResultatCarteGrise() {
+  const { user } = useAuth();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -116,6 +118,12 @@ export default function ResultatCarteGrise() {
         }
         if (orderData?.email) {
           setEmail(orderData.email);
+          setIsEmailSaved(true);
+        }
+
+        // Auto-fill email from connected user
+        if (user?.email) {
+          setEmail(user.email);
           setIsEmailSaved(true);
         }
 
