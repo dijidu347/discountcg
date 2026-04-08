@@ -121,6 +121,12 @@ export default function ResultatCarteGrise() {
           setIsEmailSaved(true);
         }
 
+        // Auto-fill email from connected user
+        if (user?.email) {
+          setEmail(user.email);
+          setIsEmailSaved(true);
+        }
+
         // Récupérer le tarif du département
         const { data: tarifData } = await supabase
           .from("department_tariffs")
