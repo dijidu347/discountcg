@@ -17,7 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, CheckCircle, UserPlus, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -27,7 +26,6 @@ export default function ResultatCarteGrise() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user } = useAuth();
   
   const [calculation, setCalculation] = useState<PriceCalculation | null>(null);
   const [orderId, setOrderId] = useState<string>("");
