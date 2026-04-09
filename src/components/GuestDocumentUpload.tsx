@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,12 +45,27 @@ export function GuestDocumentUpload({
   orderIdForNotif
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [optimisticFiles, setOptimisticFiles] = useState<{ [key: string]: UploadedFile }>({});
   const rectoInputRef = useRef<HTMLInputElement>(null);
   const versoInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  const rectoFile = existingFiles.find(f => f.side === 'recto');
-  const versoFile = existingFiles.find(f => f.side === 'verso');
+  // Clear optimistic files once parent has confirmed them from DB
+  useEffect(() => {
+    const confirmedSides = existingFiles.map(f => f.side);
+    setOptimisticFiles(prev => {
+      const updated = { ...prev };
+      confirmedSides.forEach(side => {
+        delete updated[side];
+      });
+      return updated;
+    });
+  }, [existingFiles]);
+
+  // Combine existing files with optimistic files
+  const allFiles = [...existingFiles, ...Object.values(optimisticFiles)];
+  const rectoFile = allFiles.find(f => f.side === 'recto');
+  const versoFile = allFiles.find(f => f.side === 'verso');
 
   // If blocked, show message and disable uploads
   if (isBlocked) {
@@ -105,7 +120,7 @@ export function GuestDocumentUpload({
         .from('guest-order-documents')
         .getPublicUrl(fileName);
 
-      await supabase.from('guest_order_documents').insert({
+      const { data, error: insertError } = await supabase.from('guest_order_documents').insert({
         order_id: orderId,
         type_document: documentType,
         nom_fichier: file.name,
@@ -113,7 +128,23 @@ export function GuestDocumentUpload({
         taille_octets: file.size,
         side: side,
         validation_status: 'pending',
-      });
+      }).select().single();
+
+      if (insertError) throw insertError;
+
+      // Show file optimistically immediately
+      if (data) {
+        const newFile: UploadedFile = {
+          id: data.id,
+          fileName: data.nom_fichier,
+          side: data.side || side,
+          validation_status: data.validation_status || 'pending'
+        };
+        setOptimisticFiles(prev => ({
+          ...prev,
+          [side]: newFile
+        }));
+      }
 
       toast({
         title: "Document téléchargé",
@@ -139,7 +170,11 @@ export function GuestDocumentUpload({
         } catch (e) { console.error('Admin reupload notif failed:', e); }
       }
 
-      if (onUploadComplete) onUploadComplete();
+      // Refetch from parent in background - no need to wait
+      if (onUploadComplete) {
+        // Call it but don't await - file is already shown optimistically
+        Promise.resolve(onUploadComplete());
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",
@@ -167,7 +202,14 @@ export function GuestDocumentUpload({
   const handleRemove = async (fileToRemove: UploadedFile) => {
     try {
       const storagePath = fileToRemove.fileName;
-      
+
+      // Remove from optimistic files first
+      setOptimisticFiles(prev => {
+        const updated = { ...prev };
+        delete updated[fileToRemove.side];
+        return updated;
+      });
+
       await supabase.storage
         .from('guest-order-documents')
         .remove([storagePath]);
@@ -182,7 +224,9 @@ export function GuestDocumentUpload({
         description: "Le document a été supprimé avec succès"
       });
 
-      if (onUploadComplete) onUploadComplete();
+      if (onUploadComplete) {
+        Promise.resolve(onUploadComplete());
+      }
     } catch (error: any) {
       toast({
         title: "Erreur",

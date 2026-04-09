@@ -55,12 +55,43 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
     loadExistingData();
   }, [orderId]);
 
+  // Auto-fill from user profile if connected
+  useEffect(() => {
+    if (user) {
+      const loadUserProfile = async () => {
+        // Load profile from particulier_profiles
+        const { data: profile } = await supabase
+          .from("particulier_profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .single();
+
+        if (profile) {
+          // Only fill empty fields to avoid overwriting existing data
+          if (!email) setEmail(profile.email || "");
+          if (!prenom) setPrenom(profile.prenom || "");
+          if (!nom) setNom(profile.nom || "");
+          if (!telephone) setTelephone(profile.telephone || "");
+        } else {
+          // Fallback: use user.email if no profile yet
+          if (!email && user.email) setEmail(user.email);
+        }
+      };
+      loadUserProfile();
+    }
+  }, [user]);
+
   const loadExistingData = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('guest_orders')
       .select('*')
       .eq('id', orderId)
       .single();
+
+    if (error) {
+      console.error('Error loading order data:', error);
+      return;
+    }
 
     if (data) {
       setNom(data.nom || "");
@@ -77,7 +108,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
       setVehiculeLeasing(data.vehicule_leasing ? "oui" : "non");
       setIsMineur(data.is_mineur ? "oui" : "non");
       setIsHeberge(data.is_heberge ? "oui" : "non");
-      
+
       // Check if info is already complete - hide form if so
       if (data.nom && data.prenom && data.email && data.telephone && data.adresse) {
         setIsCompleted(true);
@@ -88,9 +119,17 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validation
-    if (!nom || !prenom || !email || !telephone || !adresse || !codePostal || !ville) {
+
+    // Validation - trim whitespace before checking
+    const trimmedNom = nom.trim();
+    const trimmedPrenom = prenom.trim();
+    const trimmedEmail = email.trim();
+    const trimmedTelephone = telephone.trim();
+    const trimmedAdresse = adresse.trim();
+    const trimmedCodePostal = codePostal.trim();
+    const trimmedVille = ville.trim();
+
+    if (!trimmedNom || !trimmedPrenom || !trimmedEmail || !trimmedTelephone || !trimmedAdresse || !trimmedCodePostal || !trimmedVille) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs obligatoires",
@@ -99,7 +138,10 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
       return;
     }
 
-    if (hasCotitulaire === "oui" && (!cotitulaireNom || !cotitulairePrenom)) {
+    const trimmedCotitulaireNom = cotitulaireNom.trim();
+    const trimmedCotitulairePrenom = cotitulairePrenom.trim();
+
+    if (hasCotitulaire === "oui" && (!trimmedCotitulaireNom || !trimmedCotitulairePrenom)) {
       toast({
         title: "Erreur",
         description: "Veuillez renseigner les informations du co-titulaire",
@@ -112,16 +154,16 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
 
     try {
       const updateData: any = {
-          nom,
-          prenom,
-          email,
-          telephone,
-          adresse,
-          code_postal: codePostal,
-          ville,
+          nom: trimmedNom,
+          prenom: trimmedPrenom,
+          email: trimmedEmail,
+          telephone: trimmedTelephone,
+          adresse: trimmedAdresse,
+          code_postal: trimmedCodePostal,
+          ville: trimmedVille,
           has_cotitulaire: hasCotitulaire === "oui",
-          cotitulaire_nom: hasCotitulaire === "oui" ? cotitulaireNom : null,
-          cotitulaire_prenom: hasCotitulaire === "oui" ? cotitulairePrenom : null,
+          cotitulaire_nom: hasCotitulaire === "oui" ? trimmedCotitulaireNom : null,
+          cotitulaire_prenom: hasCotitulaire === "oui" ? trimmedCotitulairePrenom : null,
           vehicule_pro: vehiculePro === "oui",
           vehicule_leasing: vehiculeLeasing === "oui",
           is_mineur: isMineur === "oui",

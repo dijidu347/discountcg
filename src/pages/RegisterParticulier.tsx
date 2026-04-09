@@ -42,6 +42,27 @@ export default function RegisterParticulier() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validation client
+    if (!formData.nom.trim()) {
+      toast({ title: "Erreur", description: "Le nom est obligatoire", variant: "destructive" });
+      return;
+    }
+
+    if (!formData.prenom.trim()) {
+      toast({ title: "Erreur", description: "Le prénom est obligatoire", variant: "destructive" });
+      return;
+    }
+
+    if (!formData.telephone.trim()) {
+      toast({ title: "Erreur", description: "Le téléphone est obligatoire", variant: "destructive" });
+      return;
+    }
+
+    if (!formData.email.trim()) {
+      toast({ title: "Erreur", description: "L'email est obligatoire", variant: "destructive" });
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast({ title: "Erreur", description: "Les mots de passe ne correspondent pas", variant: "destructive" });
       return;
@@ -56,9 +77,9 @@ export default function RegisterParticulier() {
 
     const { error } = await signUp(formData.email, formData.password, {
       account_type: "particulier",
-      nom: formData.nom,
-      prenom: formData.prenom,
-      telephone: formData.telephone,
+      nom: formData.nom.trim(),
+      prenom: formData.prenom.trim(),
+      telephone: formData.telephone.trim(),
     });
 
     if (error) {

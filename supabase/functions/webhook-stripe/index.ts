@@ -648,6 +648,67 @@ async function handleGuestOrderPayment(
 
   console.log("✅ Guest order marked as paid, montant_ttc:", actualTTC);
 
+  // Create/link auth account for guest order user
+  try {
+    // Try to find existing user by email (efficient direct lookup)
+    const { data: { user: existingUser }, error: lookupError } = await supabase.auth.admin.getUserByEmail(order.email);
+    let userId: string | null = null;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      console.log("✅ Found existing user:", userId);
+    }
+
+    // If no user found, create one with auto-generated password
+    if (!userId) {
+      const tempPassword = Math.random().toString(36).slice(-12) + "Aa1!";
+      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
+        email: order.email,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          account_type: "particulier",
+          full_name: `${order.prenom} ${order.nom}`,
+        },
+      });
+
+      if (!createUserError && newUser) {
+        userId = newUser.user!.id;
+        console.log("✅ Created new user:", userId);
+      } else {
+        console.error("⚠️ Failed to create user:", createUserError?.message);
+      }
+    }
+
+    // Link guest order to user
+    if (userId) {
+      await supabase
+        .from("guest_orders")
+        .update({ user_id: userId })
+        .eq("id", orderId);
+
+      // Create/update particulier_profiles
+      await supabase
+        .from("particulier_profiles")
+        .upsert({
+          user_id: userId,
+          email: order.email,
+          nom: order.nom,
+          prenom: order.prenom,
+          telephone: order.telephone || "",
+        }, { onConflict: "user_id" });
+
+      // Ensure particulier role exists
+      await supabase
+        .from("user_roles")
+        .upsert({ user_id: userId, role: "particulier" as any }, { onConflict: "user_id,role" });
+
+      console.log("✅ User linked to guest order");
+    }
+  } catch (authError) {
+    console.error("⚠️ Failed to create/link user account:", authError);
+  }
+
   // Generate facture number
   const { data: factureNumero, error: rpcError } = await supabase.rpc("generate_facture_numero");
   if (rpcError) {
@@ -703,7 +764,7 @@ async function handleGuestOrderPayment(
         prenom: order.prenom || "Client",
         nom: order.nom || "",
         immatriculation: order.immatriculation,
-        montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
+        montant_ttc: actualTTC.toFixed(2),  // ✅ Use corrected amount, not stale DB value
       }, guestPdfAttachment);
       console.log("✅ Client confirmation email with invoice sent");
     } catch (emailError) {

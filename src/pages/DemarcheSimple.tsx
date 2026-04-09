@@ -66,6 +66,18 @@ export default function DemarcheSimple() {
   const [email, setEmail] = useState<string>("");
   const [isEmailSaved, setIsEmailSaved] = useState(false);
   const [isSavingEmail, setIsSavingEmail] = useState(false);
+  const [authUser, setAuthUser] = useState<any>(null);
+
+  // Auto-fill email from authenticated user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      const user = data.user;
+      setAuthUser(user);
+      if (user?.email && !email) {
+        setEmail(user.email);
+      }
+    });
+  }, []);
 
   const fraisHT = demarcheTypeInfo?.prix_base || 0;
   const totalTTC = fraisHT; // Pas de TVA pour DA/DC
@@ -120,6 +132,20 @@ export default function DemarcheSimple() {
         if (order?.email) {
           setEmail(order.email);
           setIsEmailSaved(true);
+        }
+
+        // Auto-save email if user is authenticated and email not yet saved
+        if (!order?.email) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.email) {
+            setEmail(user.email);
+            // Auto-save to DB so user doesn't need to click "Continuer en tant qu'invité"
+            await supabase
+              .from('guest_orders')
+              .update({ email: user.email, email_notifications: true, updated_at: new Date().toISOString() })
+              .eq('id', orderIdParam);
+            setIsEmailSaved(true);
+          }
         }
 
       } catch (error) {

@@ -51,15 +51,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string, userData: any) => {
     const redirectUrl = `${window.location.origin}/dashboard`;
-    
+
+    // Validate required fields for particulier
+    if (userData.account_type === 'particulier') {
+      if (!userData.nom || !userData.prenom || !userData.telephone) {
+        return { error: { message: 'Les champs Prénom, Nom et Téléphone sont obligatoires' } };
+      }
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          ...userData,
-          reseau: userData.reseau || null
+          account_type: userData.account_type || 'particulier',
+          nom: userData.nom || '',
+          prenom: userData.prenom || '',
+          telephone: userData.telephone || '',
+          reseau: userData.reseau || ''
         }
       }
     });

@@ -17,6 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, CheckCircle, UserPlus, LogIn } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -26,6 +27,7 @@ export default function ResultatCarteGrise() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [calculation, setCalculation] = useState<PriceCalculation | null>(null);
   const [orderId, setOrderId] = useState<string>("");
@@ -92,7 +94,24 @@ export default function ResultatCarteGrise() {
         const orderIdParam = searchParams.get('orderId');
         const departementParam = searchParams.get('departement');
         const plaqueParam = searchParams.get('plaque');
-        const vehicleData = location.state?.vehicleData;
+
+        // vehicleData peut venir du state (1ère visite) ou du sessionStorage (retour depuis register/login)
+        let vehicleData = location.state?.vehicleData;
+        if (!vehicleData && orderIdParam) {
+          const cached = sessionStorage.getItem(`vehicleData_${orderIdParam}`);
+          if (cached) {
+            try {
+              vehicleData = JSON.parse(cached);
+            } catch (e) {
+              console.error('Failed to parse cached vehicleData:', e);
+              sessionStorage.removeItem(`vehicleData_${orderIdParam}`);
+            }
+          }
+        }
+        // Sauvegarder dans sessionStorage pour survivre aux navigations
+        if (vehicleData && orderIdParam) {
+          sessionStorage.setItem(`vehicleData_${orderIdParam}`, JSON.stringify(vehicleData));
+        }
 
         if (!orderIdParam || !departementParam || !vehicleData) {
           toast({
@@ -176,6 +195,14 @@ export default function ResultatCarteGrise() {
 
     loadData();
   }, [searchParams, location.state, navigate, toast]);
+
+  // Auto-populate email for logged-in users
+  useEffect(() => {
+    if (user?.email && !isEmailSaved) {
+      setEmail(user.email);
+      setIsEmailSaved(true);
+    }
+  }, [user, isEmailSaved]);
 
   // Mettre à jour la commande quand les options changent — BLOQUANT
   useEffect(() => {

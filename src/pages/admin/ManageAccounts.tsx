@@ -29,11 +29,12 @@ export default function ManageAccounts() {
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', user?.id)
-      .single();
+      .eq('user_id', user?.id);
 
-    if (!roles || roles.role !== 'admin') {
-      navigate('/dashboard');
+    const hasAdminRole = roles?.some(r => r.role === 'admin');
+
+    if (!hasAdminRole) {
+      navigate('/');
       return;
     }
 
