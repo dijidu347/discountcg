@@ -1,0 +1,3 @@
+ALTER TABLE public.guest_order_required_documents
+ADD CONSTRAINT unique_document_per_demarche_type
+UNIQUE (nom_document, demarche_type_code);
