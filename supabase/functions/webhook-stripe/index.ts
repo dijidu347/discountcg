@@ -648,29 +648,55 @@ async function handleGuestOrderPayment(
 
   console.log("✅ Guest order marked as paid, montant_ttc:", actualTTC);
 
+  // Re-fetch order to get the LATEST data (info may have been saved before payment)
+  const { data: freshOrder } = await supabase
+    .from("guest_orders")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+
+  // Use freshOrder if available, otherwise fallback to original
+  const orderData = freshOrder || order;
+
+  // Fallback: get email from Stripe if not in DB
+  const stripeEmail = paymentIntent.receipt_email
+    || paymentIntent.charges?.data?.[0]?.billing_details?.email
+    || null;
+
+  // Use the best available email: DB first, then Stripe fallback
+  const clientEmail = orderData.email || stripeEmail || "";
+
+  // If we got email from Stripe but not in DB, save it
+  if (!orderData.email && clientEmail) {
+    console.log("📧 Email missing in DB, using Stripe email:", clientEmail);
+    await supabase.from("guest_orders")
+      .update({ email: clientEmail, updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+  }
+
   // Create/link auth account for guest order user
   try {
-    // Try to find existing user by email
+    // Try to find existing user by email (efficient direct lookup)
+    const { data: { user: existingUser }, error: lookupError } = clientEmail
+      ? await supabase.auth.admin.getUserByEmail(clientEmail)
+      : { data: { user: null }, error: null };
     let userId: string | null = null;
-    if (order.email) {
-      const { data: listData, error: lookupError } = await supabase.auth.admin.listUsers({ filter: `email.eq.${order.email}` });
-      const existingUser = listData?.users?.[0];
-      if (existingUser) {
-        userId = existingUser.id;
-        console.log("✅ Found existing user:", userId);
-      }
+
+    if (existingUser) {
+      userId = existingUser.id;
+      console.log("✅ Found existing user:", userId);
     }
 
     // If no user found, create one with auto-generated password
     if (!userId) {
       const tempPassword = Math.random().toString(36).slice(-12) + "Aa1!";
       const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
-        email: order.email,
+        email: clientEmail,
         password: tempPassword,
         email_confirm: true,
         user_metadata: {
           account_type: "particulier",
-          full_name: `${order.prenom} ${order.nom}`,
+          full_name: `${orderData.prenom || ""} ${orderData.nom || ""}`.trim() || "Client",
         },
       });
 
@@ -689,15 +715,15 @@ async function handleGuestOrderPayment(
         .update({ user_id: userId })
         .eq("id", orderId);
 
-      // Create/update particulier_profiles
+      // Create/update particulier_profiles with fresh data
       await supabase
         .from("particulier_profiles")
         .upsert({
           user_id: userId,
-          email: order.email,
-          nom: order.nom,
-          prenom: order.prenom,
-          telephone: order.telephone || "",
+          email: clientEmail,
+          nom: orderData.nom || "",
+          prenom: orderData.prenom || "",
+          telephone: orderData.telephone || "",
         }, { onConflict: "user_id" });
 
       // Ensure particulier role exists
@@ -739,7 +765,7 @@ async function handleGuestOrderPayment(
 
     // Generate and upload guest order PDF
     try {
-      const pdfBytes = await generateGuestFacturePDF(facture, order);
+      const pdfBytes = await generateGuestFacturePDF(facture, { ...orderData, email: clientEmail });
       const pdfFileName = `facture_${facture.numero}.pdf`;
 
       guestPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
@@ -759,36 +785,40 @@ async function handleGuestOrderPayment(
   }
 
   // Send client confirmation email WITH invoice attached
-  if (order.email) {
+  if (clientEmail) {
     try {
-      await sendEmail("payment_confirmed", order.email, {
-        tracking_number: order.tracking_number,
-        prenom: order.prenom || "Client",
-        nom: order.nom || "",
-        immatriculation: order.immatriculation,
-        montant_ttc: actualTTC.toFixed(2),  // ✅ Use corrected amount, not stale DB value
+      const trackingUrl = `https://discountcartegrise.fr/suivi/${orderData.tracking_number}`;
+      await sendEmail("payment_confirmed", clientEmail, {
+        tracking_number: orderData.tracking_number,
+        prenom: orderData.prenom || "Client",
+        nom: orderData.nom || "",
+        immatriculation: orderData.immatriculation,
+        montant_ttc: actualTTC.toFixed(2),
+        tracking_url: trackingUrl,
       }, guestPdfAttachment);
-      console.log("✅ Client confirmation email with invoice sent");
+      console.log("✅ Client confirmation email with invoice sent to:", clientEmail);
     } catch (emailError) {
       console.error("❌ Failed to send client confirmation email:", emailError);
     }
+  } else {
+    console.error("❌ CRITICAL: No email available for client! Order:", orderId, "Tracking:", orderData.tracking_number);
   }
 
-  // Send admin notification emails with delays to avoid rate limiting
-  const clientName = `${order.prenom || ""} ${order.nom || ""}`.trim() || order.email || "Client";
+  // Send admin notification emails with FRESH data
+  const clientName = `${orderData.prenom || ""} ${orderData.nom || ""}`.trim() || clientEmail || "Client";
   for (let i = 0; i < ADMIN_EMAILS.length; i++) {
     await delay(600);
     try {
       await sendEmail("admin_new_guest_order", ADMIN_EMAILS[i], {
         client_name: clientName,
-        client_email: order.email || "Non renseigné",
-        client_phone: order.telephone || "Non renseigné",
-        tracking_number: order.tracking_number,
-        immatriculation: order.immatriculation,
-        demarche_type: order.demarche_type || "CG",
-        order_id: order.id,
+        client_email: clientEmail || "Non renseigné",
+        client_phone: orderData.telephone || "Non renseigné",
+        tracking_number: orderData.tracking_number,
+        immatriculation: orderData.immatriculation,
+        demarche_type: orderData.demarche_type || "CG",
+        order_id: orderData.id,
         documents_count: 0,
-        montant_ttc: order.montant_ttc?.toFixed(2) || "0.00",
+        montant_ttc: actualTTC.toFixed(2),
       });
     } catch (emailError) {
       console.error("❌ Failed to send admin notification:", emailError);
