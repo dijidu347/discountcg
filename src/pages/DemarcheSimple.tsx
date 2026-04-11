@@ -2,9 +2,6 @@ import { useEffect, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Mail, UserPlus, LogIn } from "lucide-react";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
@@ -65,7 +62,6 @@ export default function DemarcheSimple() {
   const [isInfoCompleted, setIsInfoCompleted] = useState(false);
   const [email, setEmail] = useState<string>("");
   const [isEmailSaved, setIsEmailSaved] = useState(false);
-  const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [authUser, setAuthUser] = useState<any>(null);
 
   // Auto-fill email from authenticated user
@@ -163,49 +159,6 @@ export default function DemarcheSimple() {
     loadData();
   }, [searchParams, navigate, toast]);
 
-  const handleSaveEmail = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      toast({ title: "Email invalide", description: "Veuillez saisir une adresse email valide", variant: "destructive" });
-      return;
-    }
-    setIsSavingEmail(true);
-    try {
-      const { error } = await supabase
-        .from('guest_orders')
-        .update({ email, email_notifications: true, updated_at: new Date().toISOString() })
-        .eq('id', orderId);
-      if (error) throw error;
-      setIsEmailSaved(true);
-      toast({ title: "Email enregistré", description: "Vous pouvez maintenant procéder au paiement" });
-
-      // Notify admin with montant
-      try {
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'admin_new_guest_order',
-            to: 'contact@discountcartegrise.fr',
-            data: {
-              client_name: email,
-              client_email: email,
-              client_phone: '',
-              tracking_number: '',
-              immatriculation: plaque,
-              demarche_type: demarcheType,
-              order_id: orderId,
-              documents_count: 0,
-              montant_ttc: totalTTC,
-            }
-          }
-        });
-      } catch (e) { console.error('Admin notif failed:', e); }
-    } catch (error) {
-      toast({ title: "Erreur", description: "Impossible de sauvegarder l'email", variant: "destructive" });
-    } finally {
-      setIsSavingEmail(false);
-    }
-  };
-
   const handlePaymentSuccess = async () => {
     setIsPaid(true);
     toast({
@@ -296,110 +249,60 @@ export default function DemarcheSimple() {
         </Card>
 
         <div className="space-y-8">
-          {/* Step 1: Email */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${isEmailSaved ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'}`}>
-                {isEmailSaved ? <CheckCircle className="w-5 h-5" /> : '1'}
-              </div>
-              <h2 className="text-2xl font-bold">Votre email</h2>
-            </div>
-
-            {!isEmailSaved ? (
-              <Card>
-                <CardContent className="pt-6 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      Adresse email *
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="votre@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSaveEmail()}
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Pour recevoir votre suivi de commande et votre facture
-                    </p>
-                  </div>
-
-                  {/* Account creation prompt */}
-                  {email && (
-                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                      <p className="text-sm text-muted-foreground mb-2">
-                        💡 Créez un compte gratuit pour retrouver vos commandes à tout moment
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate(`/register-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-                          className="flex-1"
-                        >
-                          <UserPlus className="w-4 h-4 mr-1" />
-                          Créer un compte
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => navigate(`/login-particulier?email=${encodeURIComponent(email)}&redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`)}
-                          className="flex-1"
-                        >
-                          <LogIn className="w-4 h-4 mr-1" />
-                          J'ai déjà un compte
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button onClick={handleSaveEmail} disabled={isSavingEmail || !email} size="lg" className="w-full">
-                    {isSavingEmail ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    Continuer en tant qu'invité
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-green-500/50 bg-green-500/10">
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3 text-green-600">
-                      <CheckCircle className="w-6 h-6" />
-                      <span className="font-medium">{email}</span>
-                    </div>
-                    <Button variant="ghost" size="sm" onClick={() => setIsEmailSaved(false)}>
-                      Modifier
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Step 2: Paiement */}
+          {/* Step 1: Informations personnelles (AVANT paiement) */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                !isEmailSaved ? 'bg-muted text-muted-foreground' :
+                isInfoCompleted ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+              }`}>
+                {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '1'}
+              </div>
+              <h2 className="text-2xl font-bold">Vos informations</h2>
+            </div>
+
+            <GuestOrderInfoForm
+              orderId={orderId}
+              isEnabled={true}
+              onEmailSaved={(savedEmail) => {
+                setEmail(savedEmail);
+                setIsEmailSaved(true);
+              }}
+              onComplete={() => {
+                setIsInfoCompleted(true);
+                setIsEmailSaved(true);
+              }}
+              showConditionalQuestions={demarcheType === 'CG'}
+            />
+          </div>
+
+          {/* Step 2: Paiement (seulement après infos) */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
+                !isInfoCompleted ? 'bg-muted text-muted-foreground' :
                 isPaid ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
               }`}>
                 {isPaid ? <CheckCircle className="w-5 h-5" /> : '2'}
               </div>
-              <h2 className={`text-2xl font-bold ${!isEmailSaved ? 'text-muted-foreground' : ''}`}>
+              <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>
                 Paiement
               </h2>
             </div>
 
-            {isEmailSaved && !isPaid && (
+            {isInfoCompleted && !isPaid && (
               <PaymentMethods
                 orderId={orderId}
                 amount={totalTTC}
                 onPaymentSuccess={handlePaymentSuccess}
               />
+            )}
+
+            {!isInfoCompleted && (
+              <Card className="opacity-50">
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground text-center py-4">Veuillez d'abord renseigner vos informations</p>
+                </CardContent>
+              </Card>
             )}
 
             {isPaid && (
@@ -414,60 +317,31 @@ export default function DemarcheSimple() {
             )}
           </div>
 
-          {/* Step 3: Informations personnelles */}
+          {/* Step 3: Documents (seulement après paiement) */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                !isPaid ? 'bg-muted text-muted-foreground' :
-                isInfoCompleted ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
+                !isPaid ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'
               }`}>
-                {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '3'}
+                3
               </div>
               <h2 className={`text-2xl font-bold ${!isPaid ? 'text-muted-foreground' : ''}`}>
-                Informations personnelles
-              </h2>
-            </div>
-
-            {isPaid && !isInfoCompleted && (
-              <GuestOrderInfoForm
-                orderId={orderId}
-                onComplete={handleInfoComplete}
-                isPaid={isPaid}
-                showConditionalQuestions={demarcheType === 'CG'}
-              />
-            )}
-
-            {isInfoCompleted && (
-              <Card className="border-green-500/50 bg-green-500/10">
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3 text-green-600">
-                    <CheckCircle className="w-6 h-6" />
-                    <span className="font-medium">Informations enregistrées !</span>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Step 4: Documents */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                !isInfoCompleted ? 'bg-muted text-muted-foreground' : 'bg-primary text-primary-foreground'
-              }`}>
-                4
-              </div>
-              <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>
                 Documents
               </h2>
             </div>
 
-            {isInfoCompleted && (
+            {isPaid ? (
               <UploadListSimple
                 orderId={orderId}
                 isPaid={isPaid}
                 demarcheType={demarcheType}
               />
+            ) : (
+              <Card className="opacity-50">
+                <CardContent className="pt-6">
+                  <p className="text-muted-foreground text-center py-4">Veuillez d'abord effectuer le paiement</p>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>

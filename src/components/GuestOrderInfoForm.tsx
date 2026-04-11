@@ -13,11 +13,15 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 interface GuestOrderInfoFormProps {
   orderId: string;
   onComplete: () => void;
-  isPaid: boolean;
+  isPaid?: boolean;
+  isEnabled?: boolean;
   showConditionalQuestions?: boolean;
+  onEmailSaved?: (email: string) => void;
 }
 
-export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditionalQuestions = true }: GuestOrderInfoFormProps) {
+export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, showConditionalQuestions = true, onEmailSaved }: GuestOrderInfoFormProps) {
+  // isEnabled takes precedence; fallback to isPaid for backward compatibility
+  const formEnabled = isEnabled !== undefined ? isEnabled : (isPaid ?? false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -185,6 +189,10 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
         title: "Informations enregistrées",
         description: "Vos informations ont été sauvegardées",
       });
+      // Notify parent of the saved email for payment integration
+      if (onEmailSaved && trimmedEmail) {
+        onEmailSaved(trimmedEmail);
+      }
       onComplete();
     } catch (error) {
       console.error('Error:', error);
@@ -198,12 +206,12 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, showConditiona
     }
   };
 
-  if (!isPaid) {
+  if (!formEnabled) {
     return (
       <Card className="border-muted bg-muted/30">
         <CardContent className="pt-6">
           <p className="text-muted-foreground text-center py-8">
-            Veuillez d'abord effectuer le paiement pour accéder à cette étape.
+            Veuillez d'abord compléter les étapes précédentes.
           </p>
         </CardContent>
       </Card>
