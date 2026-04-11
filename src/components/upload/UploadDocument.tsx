@@ -54,6 +54,14 @@ export const UploadDocument = ({ orderId, documentType, onUploadSuccess }: Uploa
         .from('guest-order-documents')
         .getPublicUrl(filePath);
 
+      // Delete any existing document of the same type to prevent duplicates
+      // (re-upload replaces the old document instead of creating a new row)
+      await supabase
+        .from('guest_order_documents')
+        .delete()
+        .eq('order_id', orderId)
+        .eq('type_document', documentType);
+
       const { error: dbError } = await supabase
         .from('guest_order_documents')
         .insert({

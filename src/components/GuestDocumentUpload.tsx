@@ -120,6 +120,13 @@ export function GuestDocumentUpload({
         .from('guest-order-documents')
         .getPublicUrl(fileName);
 
+      // Delete existing doc of same type+side to prevent duplicates on re-upload
+      await supabase.from('guest_order_documents')
+        .delete()
+        .eq('order_id', orderId)
+        .eq('type_document', documentType)
+        .eq('side', side);
+
       const { data, error: insertError } = await supabase.from('guest_order_documents').insert({
         order_id: orderId,
         type_document: documentType,

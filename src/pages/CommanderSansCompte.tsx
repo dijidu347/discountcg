@@ -410,6 +410,12 @@ const CommanderSansCompte = () => {
           .from("guest-order-documents")
           .getPublicUrl(fileName);
 
+        // Delete existing doc of same type to prevent duplicates
+        await supabase.from("guest_order_documents")
+          .delete()
+          .eq("order_id", orderId)
+          .eq("type_document", key);
+
         await supabase.from("guest_order_documents").insert({
           order_id: orderId,
           type_document: key,
