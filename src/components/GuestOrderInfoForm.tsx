@@ -96,33 +96,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
   useEffect(() => {
     loadExistingData();
-  }, [orderId]);
-
-  // Auto-fill from user profile if connected
-  useEffect(() => {
-    if (user) {
-      const loadUserProfile = async () => {
-        // Load profile from particulier_profiles
-        const { data: profile } = await supabase
-          .from("particulier_profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .single();
-
-        if (profile) {
-          // Only fill empty fields to avoid overwriting existing data
-          if (!email) setEmail(profile.email || "");
-          if (!prenom) setPrenom(profile.prenom || "");
-          if (!nom) setNom(profile.nom || "");
-          if (!telephone) setTelephone(profile.telephone || "");
-        } else {
-          // Fallback: use user.email if no profile yet
-          if (!email && user.email) setEmail(user.email);
-        }
-      };
-      loadUserProfile();
-    }
-  }, [user]);
+  }, [orderId, user]);
 
   const loadExistingData = async () => {
     const { data, error } = await supabase
@@ -136,14 +110,43 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       return;
     }
 
+    // Start with DB values
+    let finalNom = data?.nom || "";
+    let finalPrenom = data?.prenom || "";
+    let finalEmail = data?.email || "";
+    let finalTelephone = data?.telephone || "";
+    let finalAdresse = data?.adresse || "";
+    let finalCodePostal = data?.code_postal || "";
+    let finalVille = data?.ville || "";
+
+    // If user is connected, fill empty fields from profile
+    if (user) {
+      const { data: profile } = await supabase
+        .from("particulier_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (profile) {
+        if (!finalEmail) finalEmail = profile.email || "";
+        if (!finalPrenom) finalPrenom = profile.prenom || "";
+        if (!finalNom) finalNom = profile.nom || "";
+        if (!finalTelephone) finalTelephone = profile.telephone || "";
+      }
+      // Fallback: use auth email if still empty
+      if (!finalEmail && user.email) finalEmail = user.email;
+    }
+
+    // Apply all values at once (no race condition)
+    setNom(finalNom);
+    setPrenom(finalPrenom);
+    setEmail(finalEmail);
+    setTelephone(finalTelephone);
+    setAdresse(finalAdresse);
+    setCodePostal(finalCodePostal);
+    setVille(finalVille);
+
     if (data) {
-      setNom(data.nom || "");
-      setPrenom(data.prenom || "");
-      setEmail(data.email || "");
-      setTelephone(data.telephone || "");
-      setAdresse(data.adresse || "");
-      setCodePostal(data.code_postal || "");
-      setVille(data.ville || "");
       setHasCotitulaire(data.has_cotitulaire ? "oui" : "non");
       setCotitulaireNom(data.cotitulaire_nom || "");
       setCotitulairePrenom(data.cotitulaire_prenom || "");
@@ -153,7 +156,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       setIsHeberge(data.is_heberge ? "oui" : "non");
 
       // Check if info is already complete - hide form if so
-      if (data.nom && data.prenom && data.email && data.telephone && data.adresse) {
+      if (finalNom && finalPrenom && finalEmail && finalTelephone && finalAdresse) {
         setIsCompleted(true);
         setIsOpen(false);
       }
