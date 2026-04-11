@@ -650,13 +650,15 @@ async function handleGuestOrderPayment(
 
   // Create/link auth account for guest order user
   try {
-    // Try to find existing user by email (efficient direct lookup)
-    const { data: { user: existingUser }, error: lookupError } = await supabase.auth.admin.getUserByEmail(order.email);
+    // Try to find existing user by email
     let userId: string | null = null;
-
-    if (existingUser) {
-      userId = existingUser.id;
-      console.log("✅ Found existing user:", userId);
+    if (order.email) {
+      const { data: listData, error: lookupError } = await supabase.auth.admin.listUsers({ filter: `email.eq.${order.email}` });
+      const existingUser = listData?.users?.[0];
+      if (existingUser) {
+        userId = existingUser.id;
+        console.log("✅ Found existing user:", userId);
+      }
     }
 
     // If no user found, create one with auto-generated password
