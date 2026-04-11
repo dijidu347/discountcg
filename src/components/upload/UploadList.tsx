@@ -78,7 +78,15 @@ export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) =
       const { data: reqDocs } = await query.order('ordre');
 
       if (reqDocs) {
-        setRequiredDocuments(reqDocs);
+        // Deduplicate by nom_document to prevent showing same document type multiple times
+        const seen = new Set<string>();
+        const uniqueDocs = reqDocs.filter(doc => {
+          const key = doc.nom_document;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setRequiredDocuments(uniqueDocs);
       }
 
       // Load existing uploaded documents

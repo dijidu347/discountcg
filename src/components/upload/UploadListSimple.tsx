@@ -77,7 +77,15 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         .order('ordre');
 
       if (docsConfig) {
-        setRequiredDocuments(docsConfig);
+        // Deduplicate by nom_document to prevent showing same document type multiple times
+        const seen = new Set<string>();
+        const uniqueDocs = docsConfig.filter(doc => {
+          const key = doc.nom_document;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setRequiredDocuments(uniqueDocs);
       }
 
       // Load existing uploaded documents

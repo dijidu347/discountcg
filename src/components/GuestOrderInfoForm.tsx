@@ -45,7 +45,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
   const [adresse, setAdresse] = useState("");
   const [codePostal, setCodePostal] = useState("");
   const [ville, setVille] = useState("");
-  
+
   // Questions conditionnelles
   const [hasCotitulaire, setHasCotitulaire] = useState<string>("non");
   const [cotitulaireNom, setCotitulaireNom] = useState("");
@@ -54,6 +54,45 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
   const [vehiculeLeasing, setVehiculeLeasing] = useState<string>("non");
   const [isMineur, setIsMineur] = useState<string>("non");
   const [isHeberge, setIsHeberge] = useState<string>("non");
+
+  // === BACKUP: sessionStorage key for this order ===
+  const backupKey = `guest_order_backup_${orderId}`;
+
+  // Restore from sessionStorage backup on mount
+  useEffect(() => {
+    if (!orderId) return;
+    try {
+      const backup = sessionStorage.getItem(backupKey);
+      if (backup) {
+        const data = JSON.parse(backup);
+        if (!nom && data.nom) setNom(data.nom);
+        if (!prenom && data.prenom) setPrenom(data.prenom);
+        if (!email && data.email) setEmail(data.email);
+        if (!telephone && data.telephone) setTelephone(data.telephone);
+        if (!adresse && data.adresse) setAdresse(data.adresse);
+        if (!codePostal && data.codePostal) setCodePostal(data.codePostal);
+        if (!ville && data.ville) setVille(data.ville);
+        console.log("✅ Restored client info from sessionStorage backup");
+      }
+    } catch (e) { /* ignore corrupt backup */ }
+  }, [orderId]);
+
+  // Auto-save to sessionStorage whenever fields change (debounced backup)
+  useEffect(() => {
+    if (!orderId) return;
+    const hasAnyData = nom || prenom || email || telephone || adresse;
+    if (!hasAnyData) return;
+
+    const timer = setTimeout(() => {
+      try {
+        sessionStorage.setItem(backupKey, JSON.stringify({
+          nom, prenom, email, telephone, adresse, codePostal, ville,
+          savedAt: new Date().toISOString(),
+        }));
+      } catch (e) { /* sessionStorage full, ignore */ }
+    }, 500); // debounce 500ms
+    return () => clearTimeout(timer);
+  }, [nom, prenom, email, telephone, adresse, codePostal, ville, orderId]);
 
   useEffect(() => {
     loadExistingData();
@@ -172,16 +211,50 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
           vehicule_leasing: vehiculeLeasing === "oui",
           is_mineur: isMineur === "oui",
           is_heberge: isHeberge === "oui",
+          updated_at: new Date().toISOString(),
         };
       if (user?.id) {
         updateData.user_id = user.id;
       }
-      const { error } = await supabase
-        .from('guest_orders')
-        .update(updateData)
-        .eq('id', orderId);
 
-      if (error) throw error;
+      // Attempt DB save with 1 retry
+      let saveError = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { error } = await supabase
+          .from('guest_orders')
+          .update(updateData)
+          .eq('id', orderId);
+
+        if (!error) {
+          saveError = null;
+          break;
+        }
+        saveError = error;
+        console.warn(`⚠️ DB save attempt ${attempt + 1} failed:`, error);
+        if (attempt === 0) {
+          // Wait 1s before retry
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+
+      if (saveError) throw saveError;
+
+      // Verify data was actually saved (read back)
+      const { data: verifyData } = await supabase
+        .from('guest_orders')
+        .select('email, nom, prenom, telephone')
+        .eq('id', orderId)
+        .single();
+
+      if (!verifyData?.email || !verifyData?.nom) {
+        console.error('❌ Data verification failed after save!', verifyData);
+        throw new Error('Vérification échouée: données non sauvegardées');
+      }
+
+      console.log('✅ Client info saved and verified:', { email: verifyData.email, nom: verifyData.nom });
+
+      // Clear sessionStorage backup after successful DB save
+      try { sessionStorage.removeItem(backupKey); } catch (e) {}
 
       setIsCompleted(true);
       setIsOpen(false);
@@ -195,12 +268,21 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       }
       onComplete();
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error saving client info:', error);
       toast({
-        title: "Erreur",
-        description: "Impossible de sauvegarder les informations",
+        title: "Erreur de sauvegarde",
+        description: "Impossible de sauvegarder vos informations. Vos données sont conservées localement. Veuillez réessayer.",
         variant: "destructive",
       });
+      // Ensure sessionStorage backup exists even on failure
+      try {
+        sessionStorage.setItem(backupKey, JSON.stringify({
+          nom: trimmedNom, prenom: trimmedPrenom, email: trimmedEmail,
+          telephone: trimmedTelephone, adresse: trimmedAdresse,
+          codePostal: trimmedCodePostal, ville: trimmedVille,
+          savedAt: new Date().toISOString(), failedSave: true,
+        }));
+      } catch (e) {}
     } finally {
       setIsSubmitting(false);
     }

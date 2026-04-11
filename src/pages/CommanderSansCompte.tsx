@@ -305,7 +305,15 @@ const CommanderSansCompte = () => {
       .eq("actif", true)
       .eq("demarche_type_code", demarcheType)
       .order("ordre");
-    setDocuments(docsData || []);
+    // Deduplicate by nom_document to prevent showing same document type multiple times
+    const seen = new Set<string>();
+    const uniqueDocs = (docsData || []).filter(doc => {
+      const key = doc.nom_document;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    setDocuments(uniqueDocs);
   };
 
   const handleFileChange = (documentName: string, file: File | null) => {
