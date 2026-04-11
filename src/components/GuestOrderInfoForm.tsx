@@ -77,21 +77,44 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
     } catch (e) { /* ignore corrupt backup */ }
   }, [orderId]);
 
-  // Auto-save to sessionStorage whenever fields change (debounced backup)
+  // Auto-save to sessionStorage (instant) + DB (debounced 2s) whenever fields change
   useEffect(() => {
     if (!orderId) return;
     const hasAnyData = nom || prenom || email || telephone || adresse;
     if (!hasAnyData) return;
 
-    const timer = setTimeout(() => {
+    // Instant sessionStorage backup
+    try {
+      sessionStorage.setItem(backupKey, JSON.stringify({
+        nom, prenom, email, telephone, adresse, codePostal, ville,
+        savedAt: new Date().toISOString(),
+      }));
+    } catch (e) { /* sessionStorage full, ignore */ }
+
+    // Debounced DB auto-save (2s after last keystroke)
+    const dbTimer = setTimeout(async () => {
+      const partialData: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (nom.trim()) partialData.nom = nom.trim();
+      if (prenom.trim()) partialData.prenom = prenom.trim();
+      if (email.trim()) partialData.email = email.trim();
+      if (telephone.trim()) partialData.telephone = telephone.trim();
+      if (adresse.trim()) partialData.adresse = adresse.trim();
+      if (codePostal.trim()) partialData.code_postal = codePostal.trim();
+      if (ville.trim()) partialData.ville = ville.trim();
+
+      // Only save if we have at least one real field
+      if (Object.keys(partialData).length <= 1) return;
+
       try {
-        sessionStorage.setItem(backupKey, JSON.stringify({
-          nom, prenom, email, telephone, adresse, codePostal, ville,
-          savedAt: new Date().toISOString(),
-        }));
-      } catch (e) { /* sessionStorage full, ignore */ }
-    }, 500); // debounce 500ms
-    return () => clearTimeout(timer);
+        await supabase
+          .from('guest_orders')
+          .update(partialData)
+          .eq('id', orderId);
+      } catch (e) {
+        // Silent fail for auto-save - the manual submit will retry
+      }
+    }, 2000);
+    return () => clearTimeout(dbTimer);
   }, [nom, prenom, email, telephone, adresse, codePostal, ville, orderId]);
 
   useEffect(() => {
