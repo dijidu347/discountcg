@@ -49,7 +49,7 @@ const Navbar = () => {
             </button>
             <Button onClick={() => navigate("/login-particulier")} variant="outline" size="default" className="flex items-center gap-2 font-semibold">
               <User className="h-4 w-4" />
-              Mon espace
+              Espace Particulier
             </Button>
             <Button onClick={() => navigate("/login")} variant="default" size="default" className="flex items-center gap-2 font-semibold shadow-md">
               <LogIn className="h-4 w-4" />
@@ -98,14 +98,14 @@ const Navbar = () => {
           navigate("/login-particulier");
         }} variant="outline" size="lg" className="w-full flex items-center justify-center gap-2">
               <User className="h-4 w-4" />
-              Mon espace
+              Espace Particulier
             </Button>
             <Button onClick={() => {
           setIsOpen(false);
           navigate("/login");
         }} variant="default" size="lg" className="w-full flex items-center justify-center gap-2">
               <LogIn className="h-4 w-4" />
-              Espace Professionnel
+              Espace Pro
             </Button>
           </div>}
       </div>
