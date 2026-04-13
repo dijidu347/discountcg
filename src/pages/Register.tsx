@@ -58,6 +58,7 @@ export default function Register() {
       : formData.referralSource || null;
 
     const { error } = await signUp(formData.email, formData.password, {
+      account_type: 'garage',
       raison_sociale: formData.raisonSociale,
       reseau: formData.reseau || null,
       siret: formData.siret,

@@ -42,17 +42,20 @@ export default function Dashboard() {
       navigate("/login");
     }
     // Redirect particulier users to their own dashboard
+    // But DON'T redirect if user has a garage profile (even without 'garage' role yet)
     if (!authLoading && user) {
-      supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", user.id)
-        .then(({ data }) => {
-          const roles = (data || []).map((r) => r.role);
-          if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
-            navigate("/mon-espace");
-          }
-        });
+      Promise.all([
+        supabase.from("user_roles").select("role").eq("user_id", user.id),
+        supabase.from("garages").select("id").eq("user_id", user.id).maybeSingle(),
+      ]).then(([rolesResult, garageResult]) => {
+        const roles = (rolesResult.data || []).map((r) => r.role);
+        const hasGarage = !!garageResult.data;
+
+        // Only redirect to /mon-espace if truly a particulier (no garage profile, no admin/garage role)
+        if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage") && !hasGarage) {
+          navigate("/mon-espace");
+        }
+      });
     }
   }, [user, authLoading, navigate]);
 

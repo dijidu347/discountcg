@@ -69,7 +69,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           nom: userData.nom || '',
           prenom: userData.prenom || '',
           telephone: userData.telephone || '',
-          reseau: userData.reseau || ''
+          reseau: userData.reseau || '',
+          // Garage-specific fields (for trigger + CompleteProfile fallback)
+          raison_sociale: userData.raison_sociale || '',
+          siret: userData.siret || '',
+          adresse: userData.adresse || '',
+          code_postal: userData.code_postal || userData.codePostal || '',
+          ville: userData.ville || '',
+          referral_source: userData.referral_source || '',
         }
       }
     });
