@@ -38,6 +38,21 @@ export default function CompleteProfile() {
         return;
       }
 
+      // Pre-fill form from auth user metadata (from Register.tsx signup)
+      const meta = user.user_metadata || {};
+      if (meta.raison_sociale || meta.siret) {
+        setFormData(prev => ({
+          ...prev,
+          raison_sociale: meta.raison_sociale || prev.raison_sociale,
+          reseau: meta.reseau || prev.reseau,
+          siret: meta.siret || prev.siret,
+          adresse: meta.adresse || prev.adresse,
+          code_postal: meta.code_postal || prev.code_postal,
+          ville: meta.ville || prev.ville,
+          telephone: meta.telephone || prev.telephone,
+        }));
+      }
+
       setChecking(false);
     };
 

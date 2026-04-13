@@ -96,6 +96,31 @@ export default function Register() {
         console.error("Failed to send admin notification:", e);
       }
 
+      // Wait for auth session to be established, then create garage profile
+      // This prevents the double-form issue (Dashboard → CompleteProfile)
+      const { data: { user: newUser } } = await supabase.auth.getUser();
+      if (newUser) {
+        // Create garage profile directly (trigger auto-assigns 'garage' role)
+        const { error: garageError } = await supabase
+          .from("garages")
+          .insert({
+            user_id: newUser.id,
+            raison_sociale: formData.raisonSociale,
+            reseau: formData.reseau || null,
+            siret: formData.siret.replace(/\s/g, ''),
+            adresse: formData.adresse,
+            code_postal: formData.codePostal,
+            ville: formData.ville,
+            email: formData.email,
+            telephone: formData.telephone,
+          });
+
+        if (garageError) {
+          console.error("Garage profile creation failed:", garageError);
+          // Not fatal - CompleteProfile will catch this as fallback
+        }
+      }
+
       toast({
         title: "Compte créé avec succès",
         description: "Redirection vers votre espace..."
