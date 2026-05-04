@@ -123,19 +123,37 @@ export default function AdminRevenus() {
     await loadData();
   };
 
+  // Helper to fetch all rows past the 1000-row Supabase default limit
+  const fetchAll = async <T,>(builder: () => any): Promise<T[]> => {
+    const PAGE = 1000;
+    let from = 0;
+    const all: T[] = [];
+    while (true) {
+      const { data, error } = await builder().range(from, from + PAGE - 1);
+      if (error || !data || data.length === 0) break;
+      all.push(...(data as T[]));
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    return all;
+  };
+
   const loadData = async () => {
-    const [pRes, tRes, dRes, gRes, cRes] = await Promise.all([
-      supabase
+    const [pData, tData, dData, gRes, cRes] = await Promise.all([
+      fetchAll<RawPaiement>(() => supabase
         .from("paiements")
         .select("montant, status, created_at, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
-        .eq("status", "valide"),
-      supabase
+        .eq("status", "valide")
+        .order("created_at", { ascending: false })),
+      fetchAll<RawTokenPurchase>(() => supabase
         .from("token_purchases")
-        .select("amount, created_at, garage_id, quantity"),
-      supabase
+        .select("amount, created_at, garage_id, quantity")
+        .order("created_at", { ascending: false })),
+      fetchAll<RawDemarche>(() => supabase
         .from("demarches")
         .select("type, created_at, paye, is_free_token, paid_with_tokens, frais_dossier, montant_ttc, garage_id, immatriculation")
-        .eq("is_draft", false),
+        .eq("is_draft", false)
+        .order("created_at", { ascending: false })),
       supabase
         .from("garages")
         .select("id, raison_sociale, ville"),
