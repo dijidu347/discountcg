@@ -19,7 +19,11 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo officiel */}
           <div className="flex items-center gap-3">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Flag_of_France.svg/1200px-Flag_of_France.svg.png" alt="Drapeau français" className="w-10 h-6 rounded-sm border border-border object-cover" />
+            <div className="w-10 h-6 rounded-sm border border-border overflow-hidden flex" aria-label="Drapeau français" role="img">
+              <div className="flex-1 bg-[#0055A4]" />
+              <div className="flex-1 bg-white" />
+              <div className="flex-1 bg-[#EF4135]" />
+            </div>
             <div className="text-sm leading-tight hidden sm:block">
               <div className="font-semibold text-foreground">Discount Carte Grise </div>
               <div className="text-xs text-muted-foreground">Service Carte Grise habilité</div>
