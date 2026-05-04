@@ -162,9 +162,9 @@ export default function AdminRevenus() {
         .select("id, status, payment_mode, cancel_at_period_end, retention_discount_applied, current_period_start, current_period_end, trial_start, trial_end, garage_id, created_at"),
     ]);
 
-    setPaiements((pRes.data as any) || []);
-    setTokenPurchases((tRes.data as any) || []);
-    setDemarches((dRes.data as any) || []);
+    setPaiements(pData);
+    setTokenPurchases(tData);
+    setDemarches(dData);
     
     const names: Record<string, string> = {};
     (gRes.data || []).forEach((g: any) => {
