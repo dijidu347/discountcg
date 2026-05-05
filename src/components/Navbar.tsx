@@ -18,17 +18,12 @@ const Navbar = () => {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo officiel */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-6 rounded-sm border border-border overflow-hidden flex" aria-label="Drapeau français" role="img">
-              <div className="flex-1 bg-[#0055A4]" />
-              <div className="flex-1 bg-white" />
-              <div className="flex-1 bg-[#EF4135]" />
-            </div>
-            <div className="text-sm leading-tight hidden sm:block">
-              <div className="font-semibold text-foreground">Discount Carte Grise </div>
-              <div className="text-xs text-muted-foreground">Service Carte Grise habilité</div>
-            </div>
-          </div>
+          <button onClick={() => navigate("/")} className="flex items-center" aria-label="DiscountCarteGrise - Accueil">
+            <span className="text-xl sm:text-2xl font-bold">
+              <span className="text-primary">Discount</span>
+              <span className="text-foreground">CarteGrise</span>
+            </span>
+          </button>
 
           {/* Stats centrées - Desktop */}
           <div className="hidden lg:flex items-center gap-8">
