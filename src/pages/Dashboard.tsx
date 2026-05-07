@@ -14,6 +14,9 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
+// SniperAuto : promo partenaire (popup au 1er chargement + widget hero)
+import { SniperAutoPopup } from "@/components/sniperauto/SniperAutoPopup";
+import { SniperAutoWidget } from "@/components/sniperauto/SniperAutoWidget";
 
 export default function Dashboard() {
   const {
@@ -151,6 +154,8 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      {/* Popup de bienvenue SniperAuto — affichée 1x par garage */}
+      <SniperAutoPopup />
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Tableau de bord | Discount Carte Grise</title>
@@ -378,8 +383,13 @@ export default function Dashboard() {
           </Card>
         )}
 
-        {/* Coffre-fort Widget — beta only */}
-        {coffreBeta && (
+        {/* SniperAuto — Hero promo (remplace le bloc coffre-fort en mise en avant) */}
+        <div className="mb-8">
+          <SniperAutoWidget />
+        </div>
+
+        {/* Coffre-fort Widget — visible uniquement pour abonnés actifs */}
+        {coffreBeta && coffreActive && (
           <div className="mb-8">
             <CoffreWidget />
           </div>
