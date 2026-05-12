@@ -65,61 +65,7 @@ export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) =
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Load required documents - filter by demarche type
-      let query = supabase
-        .from('guest_order_required_documents')
-        .select('*')
-        .eq('actif', true);
-      
-      if (demarcheType) {
-        query = query.eq('demarche_type_code', demarcheType);
-      }
-      
-      const { data: reqDocs } = await query.order('ordre');
-
-      if (reqDocs) {
-        // Deduplicate by nom_document to prevent showing same document type multiple times
-        const seen = new Set<string>();
-        const uniqueDocs = reqDocs.filter(doc => {
-          const key = doc.nom_document;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
-        });
-        setRequiredDocuments(uniqueDocs);
-      }
-
-      // Load existing uploaded documents
-      const { data: existingDocs } = await supabase
-        .from('guest_order_documents')
-        .select('*')
-        .eq('order_id', orderId);
-
-      if (existingDocs) {
-        setUploadedFiles(existingDocs.map(doc => ({
-          id: doc.id,
-          fileName: doc.nom_fichier,
-          side: doc.side || '',
-          validation_status: doc.validation_status || 'pending',
-          rejection_reason: doc.rejection_reason || undefined,
-          type_document: doc.type_document
-        })));
-        
-        // Extract additional document types
-        const standardTypes = reqDocs?.map(d => d.nom_document) || [];
-        const additionalTypes = [...new Set(
-          existingDocs
-            .filter(d => !standardTypes.includes(d.type_document) && 
-                        d.type_document !== 'Attestation de domicile (hébergement)' &&
-                        d.type_document !== "Pièce d'identité du co-titulaire" &&
-                        d.type_document !== 'carte_grise_finale' &&
-                        !d.type_document.startsWith('admin_'))
-            .map(d => d.type_document)
-        )];
-        setAdditionalDocs(additionalTypes);
-      }
-
-      // Check order info for conditional documents and blocking
+      // Get order info first (need tracking_number for scoped document query)
       const { data: order } = await supabase
         .from('guest_orders')
         .select('requires_resubmission_payment, resubmission_paid, tracking_number, is_heberge, has_cotitulaire, email, nom, prenom, immatriculation, montant_ttc, marque, modele')
@@ -135,6 +81,61 @@ export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) =
           setIsBlocked(false);
           setBlockedMessage("");
         }
+      }
+
+      // Load required documents - filter by demarche type
+      let query = supabase
+        .from('guest_order_required_documents')
+        .select('*')
+        .eq('actif', true);
+
+      if (demarcheType) {
+        query = query.eq('demarche_type_code', demarcheType);
+      }
+
+      const { data: reqDocs } = await query.order('ordre');
+
+      if (reqDocs) {
+        const seen = new Set<string>();
+        const uniqueDocs = reqDocs.filter(doc => {
+          const key = doc.nom_document;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setRequiredDocuments(uniqueDocs);
+      }
+
+      // Load existing uploaded documents via RPC (validates tracking_number)
+      const trackingNum = order?.tracking_number;
+      const { data: existingDocs } = trackingNum
+        ? await supabase.rpc('get_guest_documents_by_tracking', {
+            p_tracking_number: trackingNum,
+            p_order_id: orderId,
+          })
+        : { data: null };
+
+      if (existingDocs) {
+        setUploadedFiles(existingDocs.map((doc: any) => ({
+          id: doc.id,
+          fileName: doc.nom_fichier,
+          side: doc.side || '',
+          validation_status: doc.validation_status || 'pending',
+          rejection_reason: doc.rejection_reason || undefined,
+          type_document: doc.type_document
+        })));
+
+        const standardTypes = reqDocs?.map(d => d.nom_document) || [];
+        const additionalTypes = [...new Set(
+          existingDocs
+            .filter((d: any) => !standardTypes.includes(d.type_document) &&
+                        d.type_document !== 'Attestation de domicile (hébergement)' &&
+                        d.type_document !== "Pièce d'identité du co-titulaire" &&
+                        d.type_document !== 'carte_grise_finale' &&
+                        !d.type_document.startsWith('admin_'))
+            .map((d: any) => d.type_document)
+        )];
+        setAdditionalDocs(additionalTypes);
       }
     } catch (error) {
       console.error('Error loading documents:', error);

@@ -68,6 +68,17 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   const loadData = async () => {
     setIsLoading(true);
     try {
+      // Get order info first (need tracking_number for scoped document query)
+      const { data: order } = await supabase
+        .from('guest_orders')
+        .select('tracking_number, email, nom, prenom, immatriculation, montant_ttc')
+        .eq('id', orderId)
+        .single();
+
+      if (order) {
+        setOrderInfo(order as OrderInfo);
+      }
+
       // Load required documents from DB
       const { data: docsConfig } = await supabase
         .from('guest_order_required_documents')
@@ -88,14 +99,17 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         setRequiredDocuments(uniqueDocs);
       }
 
-      // Load existing uploaded documents
-      const { data: existingDocs } = await supabase
-        .from('guest_order_documents')
-        .select('*')
-        .eq('order_id', orderId);
+      // Load existing uploaded documents via RPC (validates tracking_number)
+      const trackingNum = order?.tracking_number;
+      const { data: existingDocs } = trackingNum
+        ? await supabase.rpc('get_guest_documents_by_tracking', {
+            p_tracking_number: trackingNum,
+            p_order_id: orderId,
+          })
+        : { data: null };
 
       if (existingDocs) {
-        setUploadedFiles(existingDocs.map(doc => ({
+        setUploadedFiles(existingDocs.map((doc: any) => ({
           id: doc.id,
           fileName: doc.nom_fichier,
           side: doc.side || '',
@@ -109,8 +123,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
           const requiredNames = new Set(docsConfig.map((d: any) => d.nom_document));
           const extraTypes = [...new Set(
             existingDocs
-              .filter(d => !requiredNames.has(d.type_document))
-              .map(d => d.type_document)
+              .filter((d: any) => !requiredNames.has(d.type_document))
+              .map((d: any) => d.type_document)
           )];
           if (extraTypes.length > 0) {
             setAdditionalDocs(prev => {
@@ -120,17 +134,6 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
             });
           }
         }
-      }
-
-      // Get order info
-      const { data: order } = await supabase
-        .from('guest_orders')
-        .select('tracking_number, email, nom, prenom, immatriculation, montant_ttc')
-        .eq('id', orderId)
-        .single();
-
-      if (order) {
-        setOrderInfo(order as OrderInfo);
       }
     } catch (error) {
       console.error('Error loading documents:', error);

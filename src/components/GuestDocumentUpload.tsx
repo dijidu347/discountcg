@@ -127,7 +127,7 @@ export function GuestDocumentUpload({
         .eq('type_document', documentType)
         .eq('side', side);
 
-      const { data, error: insertError } = await supabase.from('guest_order_documents').insert({
+      const { error: insertError } = await supabase.from('guest_order_documents').insert({
         order_id: orderId,
         type_document: documentType,
         nom_fichier: file.name,
@@ -135,23 +135,21 @@ export function GuestDocumentUpload({
         taille_octets: file.size,
         side: side,
         validation_status: 'pending',
-      }).select().single();
+      });
 
       if (insertError) throw insertError;
 
-      // Show file optimistically immediately
-      if (data) {
-        const newFile: UploadedFile = {
-          id: data.id,
-          fileName: data.nom_fichier,
-          side: data.side || side,
-          validation_status: data.validation_status || 'pending'
-        };
-        setOptimisticFiles(prev => ({
-          ...prev,
-          [side]: newFile
-        }));
-      }
+      // Show file optimistically from known values
+      const newFile: UploadedFile = {
+        id: crypto.randomUUID(),
+        fileName: file.name,
+        side: side,
+        validation_status: 'pending'
+      };
+      setOptimisticFiles(prev => ({
+        ...prev,
+        [side]: newFile
+      }));
 
       toast({
         title: "Document téléchargé",

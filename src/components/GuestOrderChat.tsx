@@ -41,7 +41,9 @@ export function GuestOrderChat({
   useEffect(() => {
     loadMessages();
 
-    // Realtime subscription
+    // Realtime subscription (admin only - anon has no SELECT policy for postgres_changes)
+    if (!isAdmin) return;
+
     const channel = supabase
       .channel(`guest-chat-${orderId}`)
       .on(
@@ -54,23 +56,16 @@ export function GuestOrderChat({
         },
         (payload) => {
           setMessages((prev) => {
-            // Avoid duplicates
             if (prev.some((m) => m.id === (payload.new as Message).id)) return prev;
             return [...prev, payload.new as Message];
           });
-          // Mark as read if we're the recipient
           const msg = payload.new as Message;
-          if (
-            (isAdmin && msg.sender_type === "client") ||
-            (!isAdmin && msg.sender_type === "admin")
-          ) {
-            if (isAdmin) {
-              supabase
-                .from("guest_order_messages")
-                .update({ is_read: true })
-                .eq("id", msg.id)
-                .then();
-            }
+          if (msg.sender_type === "client") {
+            supabase
+              .from("guest_order_messages")
+              .update({ is_read: true })
+              .eq("id", msg.id)
+              .then();
           }
         }
       )
@@ -79,7 +74,7 @@ export function GuestOrderChat({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [orderId]);
+  }, [orderId, isAdmin]);
 
   useEffect(() => {
     if (scrollRef.current) {

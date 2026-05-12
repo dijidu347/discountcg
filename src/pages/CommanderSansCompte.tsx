@@ -381,11 +381,11 @@ const CommanderSansCompte = () => {
 
       if (updateError) throw updateError;
 
-      // Delete old docs
-      const { data: existingDocs } = await supabase
-        .from("guest_order_documents")
-        .select("id, url")
-        .eq("order_id", orderId);
+      // Delete old docs (use RPC to scope read by tracking_number)
+      const { data: existingDocs } = await supabase.rpc('get_guest_documents_by_tracking', {
+        p_tracking_number: order.tracking_number,
+        p_order_id: orderId,
+      });
 
       if (existingDocs && existingDocs.length > 0) {
         for (const doc of existingDocs) {
