@@ -65,7 +65,12 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
   const totalAmount = calculateGuestOrderTTC(
     order.montant_ht || 0,
     order.frais_dossier || 30,
-    formData.sms_notifications
+    {
+      smsNotifications: formData.sms_notifications,
+      emailNotifications: formData.email_notifications,
+      dossierPrioritaire: order.dossier_prioritaire,
+      certificatNonGage: order.certificat_non_gage,
+    }
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -113,7 +118,12 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
         const finalTTC = calculateGuestOrderTTC(
           order.montant_ht || 0,
           order.frais_dossier || 30,
-          formData.sms_notifications
+          {
+            smsNotifications: formData.sms_notifications,
+            emailNotifications: formData.email_notifications,
+            dossierPrioritaire: order.dossier_prioritaire,
+            certificatNonGage: order.certificat_non_gage,
+          }
         );
 
         await supabase
@@ -216,7 +226,7 @@ const CommanderSansCompte = () => {
     code_postal: "",
     ville: "",
     sms_notifications: false,
-    email_notifications: true,
+    email_notifications: false,
   });
 
   const stepLabels = ["Informations", "Documents", "Récapitulatif", "Paiement"];
@@ -293,7 +303,7 @@ const CommanderSansCompte = () => {
         code_postal: data.code_postal || "",
         ville: data.ville || "",
         sms_notifications: data.sms_notifications || false,
-        email_notifications: data.email_notifications ?? true,
+        email_notifications: data.email_notifications ?? false,
       });
     }
   };
@@ -431,7 +441,12 @@ const CommanderSansCompte = () => {
         const totalPaid = calculateGuestOrderTTC(
           order.montant_ht || 0,
           order.frais_dossier || 30,
-          formData.sms_notifications
+          {
+            smsNotifications: formData.sms_notifications,
+            emailNotifications: formData.email_notifications,
+            dossierPrioritaire: order.dossier_prioritaire,
+            certificatNonGage: order.certificat_non_gage,
+          }
         );
         await supabase.functions.invoke('send-email', {
           body: {
@@ -627,7 +642,7 @@ const CommanderSansCompte = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <Checkbox id="email_notif" checked={formData.email_notifications} onCheckedChange={(checked) => setFormData({ ...formData, email_notifications: checked as boolean })} />
-                  <Label htmlFor="email_notif" className="cursor-pointer">Notifications par email (Gratuit)</Label>
+                  <Label htmlFor="email_notif" className="cursor-pointer">Notifications par email (+5€)</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Checkbox id="sms_notif" checked={formData.sms_notifications} onCheckedChange={(checked) => setFormData({ ...formData, sms_notifications: checked as boolean })} />
@@ -767,6 +782,8 @@ const CommanderSansCompte = () => {
               fraisDossier={order.frais_dossier || 30}
               smsNotifications={formData.sms_notifications}
               emailNotifications={formData.email_notifications}
+              dossierPrioritaire={order.dossier_prioritaire}
+              certificatNonGage={order.certificat_non_gage}
             />
 
             <div className="flex gap-4">
@@ -802,6 +819,8 @@ const CommanderSansCompte = () => {
               fraisDossier={order.frais_dossier || 30}
               smsNotifications={formData.sms_notifications}
               emailNotifications={formData.email_notifications}
+              dossierPrioritaire={order.dossier_prioritaire}
+              certificatNonGage={order.certificat_non_gage}
             />
 
             {/* Stripe payment */}

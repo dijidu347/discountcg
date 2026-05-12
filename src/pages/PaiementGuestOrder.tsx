@@ -29,11 +29,16 @@ const CheckoutForm = ({ order }: { order: any }) => {
     setIsProcessing(true);
 
     try {
-      // Calculate total amount with correct TVA
+      // Calculate total amount with all options
       const totalAmount = calculateGuestOrderTTC(
         order.montant_ht || 0,
         order.frais_dossier || 30,
-        order.sms_notifications
+        {
+          smsNotifications: order.sms_notifications,
+          emailNotifications: order.email_notifications,
+          dossierPrioritaire: order.dossier_prioritaire,
+          certificatNonGage: order.certificat_non_gage,
+        }
       );
 
       // Create payment intent
@@ -80,7 +85,12 @@ const CheckoutForm = ({ order }: { order: any }) => {
         const finalTTC = calculateGuestOrderTTC(
           order.montant_ht || 0,
           order.frais_dossier || 30,
-          order.sms_notifications
+          {
+            smsNotifications: order.sms_notifications,
+            emailNotifications: order.email_notifications,
+            dossierPrioritaire: order.dossier_prioritaire,
+            certificatNonGage: order.certificat_non_gage,
+          }
         );
         
         // Update order
@@ -148,6 +158,8 @@ const CheckoutForm = ({ order }: { order: any }) => {
         fraisDossier={order.frais_dossier || 30}
         smsNotifications={order.sms_notifications}
         emailNotifications={order.email_notifications}
+        dossierPrioritaire={order.dossier_prioritaire}
+        certificatNonGage={order.certificat_non_gage}
       />
 
       <Button

@@ -41,7 +41,7 @@ export const PriceSummary = ({
 
   // Prix des options
   const emailPrix = 5;
-  const smsPrix = 8;
+  const smsPrix = 5;
   const packPrix = 10;
   const dossierPrioritairePrix = 5;
   const certificatNonGagePrix = 10;

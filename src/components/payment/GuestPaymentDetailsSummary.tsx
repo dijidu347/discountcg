@@ -8,6 +8,8 @@ interface GuestPaymentDetailsSummaryProps {
   fraisDossier: number;
   smsNotifications?: boolean;
   emailNotifications?: boolean;
+  dossierPrioritaire?: boolean;
+  certificatNonGage?: boolean;
 }
 
 export const GuestPaymentDetailsSummary = ({
@@ -15,13 +17,18 @@ export const GuestPaymentDetailsSummary = ({
   fraisDossier,
   smsNotifications = false,
   emailNotifications = false,
+  dossierPrioritaire = false,
+  certificatNonGage = false,
 }: GuestPaymentDetailsSummaryProps) => {
   // Options pricing
   const smsPrix = smsNotifications ? 5 : 0;
-  
-  // Total services HT (frais dossier + options)
-  const totalServicesHT = fraisDossier + smsPrix;
-  
+  const emailPrix = emailNotifications ? 5 : 0;
+  const prioritairePrix = dossierPrioritaire ? 5 : 0;
+  const nonGagePrix = certificatNonGage ? 10 : 0;
+
+  // Total services HT (frais dossier + toutes les options)
+  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix;
+
   // Total = carte grise + services HT (pas de TVA)
   const total = prixCarteGrise + totalServicesHT;
 
@@ -60,17 +67,28 @@ export const GuestPaymentDetailsSummary = ({
           </div>
 
           {/* Options */}
+          {dossierPrioritaire && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Dossier prioritaire</span>
+              <span className="font-medium">5.00 €</span>
+            </div>
+          )}
+          {certificatNonGage && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Certificat de non-gage</span>
+              <span className="font-medium">10.00 €</span>
+            </div>
+          )}
+          {emailNotifications && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm">Suivi par email</span>
+              <span className="font-medium">5.00 €</span>
+            </div>
+          )}
           {smsNotifications && (
             <div className="flex justify-between items-center">
               <span className="text-sm">Suivi par SMS</span>
               <span className="font-medium">5.00 €</span>
-            </div>
-          )}
-          
-          {emailNotifications && (
-            <div className="flex justify-between items-center text-muted-foreground">
-              <span className="text-sm">Suivi par email</span>
-              <span className="text-sm">Gratuit</span>
             </div>
           )}
         </div>
@@ -107,10 +125,18 @@ export const GuestPaymentDetailsSummary = ({
 export const calculateGuestOrderTTC = (
   prixCarteGrise: number,
   fraisDossier: number,
-  smsNotifications: boolean = false
+  options: {
+    smsNotifications?: boolean;
+    emailNotifications?: boolean;
+    dossierPrioritaire?: boolean;
+    certificatNonGage?: boolean;
+  } = {}
 ): number => {
-  const smsPrix = smsNotifications ? 5 : 0;
-  const totalServicesHT = fraisDossier + smsPrix;
+  const smsPrix = options.smsNotifications ? 5 : 0;
+  const emailPrix = options.emailNotifications ? 5 : 0;
+  const prioritairePrix = options.dossierPrioritaire ? 5 : 0;
+  const nonGagePrix = options.certificatNonGage ? 10 : 0;
+  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix;
   // Pas de TVA - total = carte grise + services
   return prixCarteGrise + totalServicesHT;
 };

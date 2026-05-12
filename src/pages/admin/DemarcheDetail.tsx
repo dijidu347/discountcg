@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff } from "lucide-react";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, StorageBucket } from "@/lib/storage-utils";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
@@ -780,6 +780,31 @@ export default function DemarcheDetail() {
     }
   };
 
+  const toggleAdminViewed = async () => {
+    if (!id || !demarche) return;
+    const newValue = !demarche.admin_viewed;
+    const { error } = await supabase
+      .from('demarches')
+      .update({ admin_viewed: newValue })
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible de modifier le statut de lecture",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: newValue ? "Marquée comme traitée" : "Marquée comme non traitée",
+        description: newValue
+          ? "La démarche ne clignotera plus dans la liste"
+          : "La démarche va de nouveau clignoter en rouge dans la liste"
+      });
+      loadDemarcheData();
+    }
+  };
+
   const getValidationBadge = (status: string) => {
     switch (status) {
       case 'valid':
@@ -815,14 +840,38 @@ export default function DemarcheDetail() {
         <title>Admin - Détail démarche | Discount Carte Grise</title>
       </Helmet>
       <div className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/admin/demarches")}
-          className="mb-6"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Retour
-        </Button>
+        <div className="flex items-center gap-3 mb-6">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/admin/demarches")}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+
+          {demarche && (
+            <Button
+              variant={demarche.admin_viewed ? "outline" : "destructive"}
+              size="sm"
+              onClick={toggleAdminViewed}
+              className={demarche.admin_viewed
+                ? "border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                : ""}
+            >
+              {demarche.admin_viewed ? (
+                <>
+                  <BellRing className="mr-2 h-4 w-4" />
+                  Marquer comme non traitée
+                </>
+              ) : (
+                <>
+                  <BellOff className="mr-2 h-4 w-4" />
+                  Marquer comme traitée
+                </>
+              )}
+            </Button>
+          )}
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Column */}
