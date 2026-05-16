@@ -186,12 +186,37 @@ export const downloadPrivateFile = async (
 ): Promise<void> => {
   const signedUrl = await getSignedUrl(bucket, path, trackingNumber);
 
-  if (signedUrl) {
-    // Use window.location.href for native browser download
-    window.location.href = signedUrl;
-  } else {
+  if (!signedUrl) {
     console.error("Failed to get signed URL for download");
     throw new Error("Impossible de télécharger le fichier");
+  }
+
+  // Fetch as blob to force download instead of opening in a new tab
+  try {
+    const response = await fetch(signedUrl);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename || path.split("/").pop() || "document";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Revoke after a short delay to ensure download starts
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (err) {
+    console.error("Blob download failed, falling back to direct URL:", err);
+    // Fallback: anchor with download attribute
+    const link = document.createElement("a");
+    link.href = signedUrl;
+    link.download = filename || path.split("/").pop() || "document";
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 };
 
