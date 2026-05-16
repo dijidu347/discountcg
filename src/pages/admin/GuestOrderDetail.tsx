@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban, Loader2, Package, CreditCard, Truck, Clock } from "lucide-react";
 import { SecureDownloadButton } from "@/components/SecureDownloadButton";
+import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -196,6 +197,7 @@ export default function GuestOrderDetail() {
   const { toast } = useToast();
   const [order, setOrder] = useState<GuestOrder | null>(null);
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [docPreviews, setDocPreviews] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [commentaire, setCommentaire] = useState("");
   const [isValidating, setIsValidating] = useState(false);
@@ -231,6 +233,26 @@ export default function GuestOrderDetail() {
 
       const { data: docsData } = await supabase.from("guest_order_documents").select("*").eq("order_id", id).neq("type_document", "carte_grise_finale").order("created_at", { ascending: false });
       setDocuments(docsData || []);
+
+      // Bucket privé : générer des URLs signées pour les aperçus image
+      if (docsData && docsData.length > 0) {
+        const previews: Record<string, string> = {};
+        await Promise.all(
+          docsData
+            .filter((d: Document) => d.url && /\.(jpg|jpeg|png|webp|gif)/i.test(d.url))
+            .map(async (d: Document) => {
+              const bucket = extractBucketFromUrl(d.url);
+              const path = extractPathFromUrl(d.url);
+              if (bucket && path) {
+                const signed = await getSignedUrl(bucket, path, orderData?.tracking_number);
+                if (signed) previews[d.id] = signed;
+              }
+            })
+        );
+        setDocPreviews(previews);
+      } else {
+        setDocPreviews({});
+      }
 
       const { data: adminDocs } = await supabase.from("guest_order_admin_documents").select("*").eq("order_id", id).order("created_at", { ascending: false });
       setSentAdminDocs(adminDocs || []);
@@ -470,12 +492,21 @@ export default function GuestOrderDetail() {
                   <div className="grid gap-3 sm:grid-cols-2">
                     {documents.map((doc) => (
                       <div key={doc.id} className="p-3 border rounded-xl space-y-2 bg-card">
-                        {/* Mini aperçu */}
-                        {doc.url && (doc.url.match(/\.(jpg|jpeg|png|webp)/i)) && (
-                          <div className="w-full h-24 rounded-lg overflow-hidden bg-muted cursor-pointer" onClick={() => setSelectedDoc(doc)}>
-                            <img src={doc.url} alt={doc.type_document} className="w-full h-full object-cover" />
+                        {/* Mini aperçu (URL signée car bucket privé) */}
+                        {doc.url && /\.(jpg|jpeg|png|webp|gif)/i.test(doc.url) ? (
+                          <div className="w-full h-24 rounded-lg overflow-hidden bg-muted cursor-pointer flex items-center justify-center" onClick={() => setSelectedDoc(doc)}>
+                            {docPreviews[doc.id] ? (
+                              <img src={docPreviews[doc.id]} alt={doc.type_document} className="w-full h-full object-cover" />
+                            ) : (
+                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                            )}
                           </div>
-                        )}
+                        ) : doc.url && /\.pdf/i.test(doc.url) ? (
+                          <div className="w-full h-24 rounded-lg overflow-hidden bg-muted cursor-pointer flex flex-col items-center justify-center gap-1 text-muted-foreground" onClick={() => setSelectedDoc(doc)}>
+                            <FileText className="h-7 w-7" />
+                            <span className="text-[10px]">Voir le PDF</span>
+                          </div>
+                        ) : null}
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-start gap-2 flex-1 min-w-0">
                             <Checkbox checked={selectedDocs.includes(doc.id)} onCheckedChange={() => toggleDocSelection(doc.id)} />

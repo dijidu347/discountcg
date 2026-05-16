@@ -75,12 +75,27 @@ export default function GuestOrders() {
 
   const loadOrders = async () => {
     try {
-      const { data, error } = await supabase
-        .from("guest_orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      setOrders(data || []);
+      // Récupération par lots de 1000 pour contourner la limite Supabase par défaut
+      const PAGE_SIZE = 1000;
+      const all: GuestOrder[] = [];
+      let from = 0;
+      let keepGoing = true;
+      while (keepGoing) {
+        const { data, error } = await supabase
+          .from("guest_orders")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          keepGoing = false;
+        } else {
+          all.push(...(data as GuestOrder[]));
+          keepGoing = data.length === PAGE_SIZE;
+          from += PAGE_SIZE;
+        }
+      }
+      setOrders(all);
     } catch (error) {
       console.error("Erreur:", error);
       toast({ title: "Erreur", description: "Impossible de charger les commandes", variant: "destructive" });
@@ -89,34 +104,49 @@ export default function GuestOrders() {
     }
   };
 
-  const isToProcess = (o: GuestOrder) => o.paye && o.documents_complets && !['valide', 'en_traitement', 'finalise', 'refuse'].includes(o.status);
-  const isDraft = (o: GuestOrder) => o.status === 'en_attente' && !o.paye && !o.documents_complets;
-  const isUnpaid = (o: GuestOrder) => !o.paye && !isDraft(o);
-  const isPaid = (o: GuestOrder) => o.paye;
-  const isWaiting = (o: GuestOrder) => (o.paye && !o.documents_complets) || (!o.paye && o.documents_complets);
-  const isInProgress = (o: GuestOrder) => ['valide', 'en_traitement'].includes(o.status);
-  const isDone = (o: GuestOrder) => o.status === 'finalise';
-  const isRefused = (o: GuestOrder) => o.status === 'refuse';
+  // Catégorie UNIQUE par commande (mutuellement exclusives) — priorité descendante
+  const getCategory = (o: GuestOrder): string => {
+    if (o.status === 'finalise') return 'done';
+    if (o.status === 'refuse') return 'refused';
+    if (!o.paye) return 'abandoned';                                  // jamais payé (paniers abandonnés / brouillons)
+    if (['valide', 'en_traitement'].includes(o.status)) return 'in_progress'; // admin en train de traiter
+    if (o.documents_complets) return 'to_process';                    // payé + docs OK → l'admin doit agir
+    return 'awaiting_docs';                                           // payé mais docs manquants → on attend le client
+  };
 
-  const toProcessCount = orders.filter(isToProcess).length;
-  const draftCount = orders.filter(isDraft).length;
-  const unpaidCount = orders.filter(isUnpaid).length;
-  const paidCount = orders.filter(isPaid).length;
-  const waitingCount = orders.filter(isWaiting).length;
-  const inProgressCount = orders.filter(isInProgress).length;
-  const doneCount = orders.filter(isDone).length;
-  const refusedCount = orders.filter(isRefused).length;
+  const categoryByOrderId: Record<string, string> = {};
+  const counts: Record<string, number> = {
+    to_process: 0, awaiting_docs: 0, in_progress: 0, done: 0, refused: 0, abandoned: 0,
+  };
+  orders.forEach((o) => {
+    const cat = getCategory(o);
+    categoryByOrderId[o.id] = cat;
+    counts[cat] = (counts[cat] || 0) + 1;
+  });
+
+  const toProcessCount = counts.to_process;
+  const awaitingDocsCount = counts.awaiting_docs;
+  const inProgressCount = counts.in_progress;
+  const doneCount = counts.done;
+  const refusedCount = counts.refused;
+  const abandonedCount = counts.abandoned;
+
+  // Montant à afficher : montant réellement payé (source de vérité) sinon estimation
+  const getDisplayAmount = (o: GuestOrder): number => {
+    if (o.paye && o.montant_ttc && o.montant_ttc > 0) return o.montant_ttc;
+    return (o.montant_ht || 0)
+      + (o.frais_dossier || 0)
+      + (o.dossier_prioritaire ? 5 : 0)
+      + (o.certificat_non_gage ? 10 : 0)
+      + (o.email_notifications ? 5 : 0)
+      + (o.sms_notifications ? 5 : 0);
+  };
 
   const getFilteredOrders = () => {
     let filtered = orders;
-    if (activeTab === "to_process") filtered = orders.filter(isToProcess);
-    else if (activeTab === "drafts") filtered = orders.filter(isDraft);
-    else if (activeTab === "unpaid") filtered = orders.filter(isUnpaid);
-    else if (activeTab === "paid") filtered = orders.filter(isPaid);
-    else if (activeTab === "waiting") filtered = orders.filter(isWaiting);
-    else if (activeTab === "in_progress") filtered = orders.filter(isInProgress);
-    else if (activeTab === "done") filtered = orders.filter(isDone);
-    else if (activeTab === "refused") filtered = orders.filter(isRefused);
+    if (activeTab !== "all") {
+      filtered = orders.filter((o) => categoryByOrderId[o.id] === activeTab);
+    }
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -176,9 +206,9 @@ export default function GuestOrders() {
           </div>
         </div>
 
-        {/* Stats cards */}
+        {/* Stats cards — 4 catégories principales */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="border-red-200 bg-red-50/50 dark:bg-red-950/20 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("to_process")}>
+          <Card className={`border-red-200 bg-red-50/50 dark:bg-red-950/20 cursor-pointer hover:shadow-md transition-shadow ${activeTab === "to_process" ? "ring-2 ring-red-400" : ""}`} onClick={() => setActiveTab("to_process")}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -194,34 +224,34 @@ export default function GuestOrders() {
               </div>
             </CardContent>
           </Card>
-          <Card className="border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("waiting")}>
+          <Card className={`border-orange-200 bg-orange-50/50 dark:bg-orange-950/20 cursor-pointer hover:shadow-md transition-shadow ${activeTab === "awaiting_docs" ? "ring-2 ring-orange-400" : ""}`} onClick={() => setActiveTab("awaiting_docs")}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-orange-600">{waitingCount}</p>
-                  <p className="text-xs font-medium text-orange-600">En attente</p>
+                  <p className="text-2xl font-bold text-orange-600">{awaitingDocsCount}</p>
+                  <p className="text-xs font-medium text-orange-600">En attente de documents</p>
                 </div>
                 <Clock className="h-8 w-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
-          <Card className="border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("in_progress")}>
+          <Card className={`border-blue-200 bg-blue-50/50 dark:bg-blue-950/20 cursor-pointer hover:shadow-md transition-shadow ${activeTab === "in_progress" ? "ring-2 ring-blue-400" : ""}`} onClick={() => setActiveTab("in_progress")}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-blue-600">{inProgressCount}</p>
-                  <p className="text-xs font-medium text-blue-600">En cours</p>
+                  <p className="text-xs font-medium text-blue-600">En traitement</p>
                 </div>
                 <Package className="h-8 w-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
-          <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab("done")}>
+          <Card className={`border-green-200 bg-green-50/50 dark:bg-green-950/20 cursor-pointer hover:shadow-md transition-shadow ${activeTab === "done" ? "ring-2 ring-green-400" : ""}`} onClick={() => setActiveTab("done")}>
             <CardContent className="pt-4 pb-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-green-600">{doneCount}</p>
-                  <p className="text-xs font-medium text-green-600">Finalisées</p>
+                  <p className="text-xs font-medium text-green-600">Finalisé</p>
                 </div>
                 <CheckCircle className="h-8 w-8 text-green-500" />
               </div>
@@ -234,13 +264,11 @@ export default function GuestOrders() {
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <TabsList className="flex-wrap h-auto">
               <TabsTrigger value="to_process">À traiter ({toProcessCount})</TabsTrigger>
-              <TabsTrigger value="paid">Payées ({paidCount})</TabsTrigger>
-              <TabsTrigger value="drafts">Brouillons ({draftCount})</TabsTrigger>
-              <TabsTrigger value="unpaid">Non payées ({unpaidCount})</TabsTrigger>
-              <TabsTrigger value="waiting">En attente ({waitingCount})</TabsTrigger>
-              <TabsTrigger value="in_progress">En cours ({inProgressCount})</TabsTrigger>
-              <TabsTrigger value="done">Terminées ({doneCount})</TabsTrigger>
+              <TabsTrigger value="awaiting_docs">En attente de documents ({awaitingDocsCount})</TabsTrigger>
+              <TabsTrigger value="in_progress">En traitement ({inProgressCount})</TabsTrigger>
+              <TabsTrigger value="done">Finalisé ({doneCount})</TabsTrigger>
               <TabsTrigger value="refused">Refusées ({refusedCount})</TabsTrigger>
+              <TabsTrigger value="abandoned">Abandonnées ({abandonedCount})</TabsTrigger>
               <TabsTrigger value="all">Toutes ({orders.length})</TabsTrigger>
             </TabsList>
             <div className="relative w-full md:w-80">
@@ -255,7 +283,7 @@ export default function GuestOrders() {
           </div>
 
           {/* Table content for all tabs */}
-          {["to_process", "paid", "drafts", "unpaid", "waiting", "in_progress", "done", "refused", "all"].map(tab => (
+          {["to_process", "awaiting_docs", "in_progress", "done", "refused", "abandoned", "all"].map(tab => (
             <TabsContent key={tab} value={tab}>
               <Card>
                 <CardContent className="p-0">
@@ -299,7 +327,8 @@ export default function GuestOrders() {
                               </TableCell>
                               <TableCell className="font-mono text-sm">{order.immatriculation}</TableCell>
                               <TableCell className="font-medium text-sm">
-                                {((order.montant_ht || 0) + (order.frais_dossier || 30) + (order.dossier_prioritaire ? 5 : 0) + (order.certificat_non_gage ? 10 : 0) + (order.email_notifications ? 5 : 0) + (order.sms_notifications ? 5 : 0)).toFixed(2)} €
+                                {getDisplayAmount(order).toFixed(2)} €
+                                {!order.paye && <span className="block text-[10px] text-muted-foreground font-normal">estimation</span>}
                               </TableCell>
                               <TableCell>{getStatusBadge(order.status)}</TableCell>
                               <TableCell>
