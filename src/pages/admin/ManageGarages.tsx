@@ -96,13 +96,15 @@ export default function ManageGarages() {
   }, [user, authLoading]);
 
   const checkAdminAccess = async () => {
+    // Filtre sur le rôle admin (sinon .single() casse pour les users ayant plusieurs rôles)
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user?.id)
-      .single();
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    if (!roles || roles.role !== 'admin') {
+    if (!roles) {
       navigate('/dashboard');
       return;
     }
