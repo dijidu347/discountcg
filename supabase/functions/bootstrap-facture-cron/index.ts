@@ -1,5 +1,5 @@
-// One-shot bootstrap: stores the service role key in Vault and schedules
-// the hourly cron job that calls regenerate-all-factures in 'missing' mode.
+// One-shot bootstrap: passes the in-env service role key to a SECURITY DEFINER
+// SQL helper that stores it in Vault and (re)schedules the hourly cron job.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
@@ -15,30 +15,12 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // 1) Ensure vault secret exists
-    const { data: existing } = await supabase
-      .schema('vault' as any)
-      .from('secrets' as any)
-      .select('id, name')
-      .eq('name', 'service_role_key')
-      .maybeSingle();
+    const { data, error } = await supabase.rpc('setup_facture_cron', {
+      p_service_role_key: serviceKey,
+    });
+    if (error) throw new Error(error.message);
 
-    if (!existing) {
-      const { error: vErr } = await supabase.rpc('create_vault_secret', {
-        secret: serviceKey,
-        name: 'service_role_key',
-      } as any);
-      if (vErr) {
-        // Fallback: use vault.create_secret via raw SQL through an RPC we create below
-        console.log('create_vault_secret RPC failed, will try SQL path:', vErr.message);
-      }
-    }
-
-    // 2) Schedule cron via an SQL helper RPC
-    const { data: result, error: schedErr } = await supabase.rpc('schedule_regenerate_factures_cron');
-    if (schedErr) throw new Error('schedule cron failed: ' + schedErr.message);
-
-    return new Response(JSON.stringify({ success: true, cron: result }), {
+    return new Response(JSON.stringify({ success: true, result: data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (e: any) {
