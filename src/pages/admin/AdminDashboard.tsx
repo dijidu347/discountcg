@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, RefreshCw, Loader2, Euro, ClipboardList, Clock, Archive, CreditCard, Coins } from "lucide-react";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, Euro, ClipboardList, Clock, Archive, CreditCard, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
@@ -16,7 +16,6 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
-  const [regeneratingFactures, setRegeneratingFactures] = useState(false);
   const [stats, setStats] = useState({
     totalGarages: 0,
     totalDemarches: 0,
@@ -170,53 +169,6 @@ export default function AdminDashboard() {
     });
 
     setLoading(false);
-  };
-
-  const handleRegenerateAllFactures = async () => {
-    setRegeneratingFactures(true);
-    let cursor: string | null = null;
-    let totalProcessed = 0;
-    let totalRegenerated = 0;
-    let totalFailed = 0;
-    let iteration = 0;
-    const maxIterations = 200;
-
-    try {
-      while (iteration < maxIterations) {
-        iteration++;
-        const { data, error } = await supabase.functions.invoke('regenerate-all-factures', {
-          body: { mode: 'all', limit: 40, beforeCreatedAt: cursor },
-        });
-        if (error) throw error;
-        if (!data?.success) throw new Error(data?.error || 'Erreur inconnue');
-
-        totalProcessed += data.processed || 0;
-        totalRegenerated += data.regenerated || 0;
-        totalFailed += data.failed || 0;
-
-        toast({
-          title: `Régénération en cours (lot ${iteration})`,
-          description: `Traitées: ${totalProcessed} · Régénérées: ${totalRegenerated} · Échouées: ${totalFailed}`,
-        });
-
-        if (!data.hasMore || !data.nextCursor) break;
-        cursor = data.nextCursor;
-      }
-
-      toast({
-        title: "Succès",
-        description: `Régénération terminée. ${totalRegenerated} factures régénérées, ${totalFailed} échouées.`,
-      });
-    } catch (error: any) {
-      console.error('Error regenerating factures:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Impossible de régénérer les factures",
-        variant: "destructive",
-      });
-    } finally {
-      setRegeneratingFactures(false);
-    }
   };
 
 
@@ -570,21 +522,6 @@ export default function AdminDashboard() {
               >
                 <Mail className="h-6 w-6 text-green-600" />
                 <span className="text-sm font-medium">Test Email</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-24 flex flex-col items-center justify-center gap-2 border-orange-200 hover:border-orange-300"
-                onClick={handleRegenerateAllFactures}
-                disabled={regeneratingFactures}
-              >
-                {regeneratingFactures ? (
-                  <Loader2 className="h-6 w-6 text-orange-600 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-6 w-6 text-orange-600" />
-                )}
-                <span className="text-sm font-medium">
-                  {regeneratingFactures ? "Régénération..." : "Régénérer factures"}
-                </span>
               </Button>
             </div>
           </CardContent>

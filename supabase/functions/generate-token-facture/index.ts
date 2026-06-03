@@ -164,30 +164,35 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    // ── Auth double mode : service-role (cron) OU admin (UI) ──────────────
+    // .single() cassait pour les admins multi-rôles → on filtre role='admin'
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
       throw new Error('Missing authorization header');
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    let authorized = false;
+    if (token === supabaseServiceKey) {
+      authorized = true; // appel cron / service-role
+    } else {
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (!userError && user) {
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (adminRole) authorized = true;
+      }
     }
 
-    console.log('User authenticated:', user.id);
-
-    // Check if user is admin
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!roles || roles.role !== 'admin') {
-      throw new Error('Only admins can generate invoices');
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized — admin or service role required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { tokenPurchaseId }: GenerateTokenFactureRequest = await req.json();

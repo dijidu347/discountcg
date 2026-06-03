@@ -877,15 +877,17 @@ async function handleTokenPurchase(
 
   console.log(`✅ Balance updated: ${newBalance}€`);
 
-  // Record purchase
-  const { error: purchaseError } = await supabase
+  // Record purchase (on récupère l'id pour LIER la facture à l'achat)
+  const { data: purchaseRow, error: purchaseError } = await supabase
     .from("token_purchases")
     .insert({
       garage_id: garageId,
       quantity: creditAmount,
       amount: paymentIntent.amount / 100,
       stripe_payment_id: paymentIntent.id,
-    });
+    })
+    .select()
+    .single();
 
   if (purchaseError) {
     console.error("❌ Failed to record purchase:", purchaseError);
@@ -899,13 +901,15 @@ async function handleTokenPurchase(
   // Generate token invoice PDF
   let tokenPdfAttachment: Array<{ filename: string; content: string }> | undefined;
   try {
-    // Create facture record for tokens
+    // Create facture record for tokens — LIÉE au token_purchase pour que la
+    // page admin la voie comme "Générée" (sinon token_purchase_id null → "Non générée")
     const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
     const { data: tokenFacture } = await supabase
       .from("factures")
       .insert({
         numero: factureNumero,
         garage_id: garageId,
+        token_purchase_id: purchaseRow?.id ?? null,
         montant_ht: pricePaid,
         montant_ttc: pricePaid,
         tva: 0,
@@ -1102,14 +1106,14 @@ async function handleClientPayment(
         .eq("id", demarcheId);
     }
 
-    // Send confirmation email to client (no invoice for client in split — it's the garage's facture)
+    // Send confirmation email to client AVEC la facture en PJ (tout payeur reçoit sa facture)
     if (demarche.client_email) {
       await sendEmail("client_payment_confirmed", demarche.client_email, {
         immatriculation: realImmat,
         montant_ttc: clientActualAmount.toFixed(2),
         reference: demarche.numero_demarche,
-      });
-      console.log("✅ Client payment confirmation email sent to", demarche.client_email);
+      }, clientPdfAttachment);
+      console.log("✅ Client payment confirmation email with invoice sent to", demarche.client_email);
     }
 
     // Send notification to garage WITH invoice attached

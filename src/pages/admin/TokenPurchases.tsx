@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Download, FileText, Loader2, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 
@@ -35,8 +35,6 @@ export default function TokenPurchases() {
   const { toast } = useToast();
   const [purchases, setPurchases] = useState<TokenPurchase[]>([]);
   const [loading, setLoading] = useState(true);
-  const [generatingAll, setGeneratingAll] = useState(false);
-  const [generatingId, setGeneratingId] = useState<string | null>(null);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -98,59 +96,6 @@ export default function TokenPurchases() {
     setLoading(false);
   };
 
-  const generateFacture = async (purchaseId: string) => {
-    setGeneratingId(purchaseId);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-token-facture', {
-        body: { tokenPurchaseId: purchaseId }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Facture générée",
-        description: `Facture ${data.facture.numero} créée avec succès`
-      });
-
-      loadPurchases();
-    } catch (error: any) {
-      console.error('Error generating facture:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors de la génération",
-        variant: "destructive"
-      });
-    } finally {
-      setGeneratingId(null);
-    }
-  };
-
-  const generateAllFactures = async () => {
-    setGeneratingAll(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('regenerate-all-token-factures', {
-        body: {}
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Génération terminée",
-        description: `${data.successCount} factures générées, ${data.errorCount} erreurs`
-      });
-
-      loadPurchases();
-    } catch (error: any) {
-      console.error('Error generating all factures:', error);
-      toast({
-        title: "Erreur",
-        description: error.message || "Erreur lors de la génération",
-        variant: "destructive"
-      });
-    } finally {
-      setGeneratingAll(false);
-    }
-  };
 
   const handleDownloadFacture = async (purchase: TokenPurchase) => {
     if (!purchase.facture?.pdf_url) return;
@@ -211,27 +156,12 @@ export default function TokenPurchases() {
             <div>
               <h1 className="text-2xl font-bold">Achats de jetons</h1>
               <p className="text-muted-foreground">
-                {purchases.length} achats • {purchasesWithoutFacture.length} sans facture
+                {purchases.length} achats
+                {purchasesWithoutFacture.length > 0 && (
+                  <span className="text-amber-600"> • {purchasesWithoutFacture.length} en attente de génération auto</span>
+                )}
               </p>
             </div>
-            {purchasesWithoutFacture.length > 0 && (
-              <Button
-                onClick={generateAllFactures}
-                disabled={generatingAll}
-              >
-                {generatingAll ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Génération en cours...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Générer {purchasesWithoutFacture.length} factures
-                  </>
-                )}
-              </Button>
-            )}
           </div>
 
           {purchases.length === 0 ? (
@@ -277,8 +207,8 @@ export default function TokenPurchases() {
                               {purchase.facture.numero}
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-orange-600 border-orange-300">
-                              Non générée
+                            <Badge variant="outline" className="text-amber-600 border-amber-300">
+                              Génération auto…
                             </Badge>
                           )}
                         </TableCell>
@@ -304,18 +234,7 @@ export default function TokenPurchases() {
                               )}
                             </Button>
                           ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => generateFacture(purchase.id)}
-                              disabled={generatingId === purchase.id}
-                            >
-                              {generatingId === purchase.id ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                              ) : (
-                                <FileText className="h-4 w-4" />
-                              )}
-                            </Button>
+                            <span className="text-xs text-muted-foreground">—</span>
                           )}
                         </TableCell>
                       </TableRow>

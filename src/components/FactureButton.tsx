@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileText, Download, Loader2 } from "lucide-react";
+import { Clock, Download, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { downloadFacture, extractPathFromUrl } from "@/lib/storage-utils";
@@ -11,41 +11,11 @@ interface FactureButtonProps {
   onFactureGenerated?: () => void;
 }
 
-export const FactureButton = ({ 
-  demarcheId, 
+export const FactureButton = ({
   existingFactureId,
-  onFactureGenerated 
 }: FactureButtonProps) => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-
-  const generateFacture = async () => {
-    try {
-      setLoading(true);
-
-      const { data, error } = await supabase.functions.invoke('generate-facture', {
-        body: { demarcheId }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Facture générée",
-        description: `Facture ${data.facture.numero} créée avec succès`,
-      });
-
-      onFactureGenerated?.();
-    } catch (error: any) {
-      console.error('Error generating facture:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de générer la facture",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleDownload = async () => {
     try {
@@ -104,18 +74,12 @@ export const FactureButton = ({
     );
   }
 
+  // Pas de facture encore : génération automatique (webhook à l'achat + cron horaire).
+  // Plus de bouton manuel — on affiche juste un état passif.
   return (
-    <Button
-      onClick={generateFacture}
-      disabled={loading}
-      size="sm"
-    >
-      {loading ? (
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-      ) : (
-        <FileText className="h-4 w-4 mr-2" />
-      )}
-      Générer facture
-    </Button>
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Clock className="h-3.5 w-3.5" />
+      Facture en génération auto…
+    </span>
   );
 };

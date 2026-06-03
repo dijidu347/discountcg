@@ -145,31 +145,42 @@ serve(async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    // ── Auth double mode : service-role (cron) OU admin (UI) ──────────────
+    // .single() cassait pour les admins multi-rôles → on filtre role='admin'
+    const authHeader = req.headers.get('Authorization') ?? '';
+    const token = authHeader.replace('Bearer ', '').trim();
+    if (!token) {
       throw new Error('Missing authorization header');
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    let authorized = false;
+    if (token === supabaseServiceKey) {
+      authorized = true; // appel cron / service-role
+    } else {
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (!userError && user) {
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (adminRole) authorized = true;
+      }
     }
 
-    // Check if user is admin
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
-
-    if (!roles || roles.role !== 'admin') {
-      throw new Error('Only admins can regenerate invoices');
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized — admin or service role required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Starting retroactive token facture generation...');
+    // Limite bornée pour éviter le timeout edge function (cron en repasse au tour suivant)
+    const body = await req.json().catch(() => ({}));
+    const limit = Math.min(Math.max(Number(body?.limit) || 50, 1), 200);
+
+    console.log('Starting retroactive token facture generation, limit=' + limit);
 
     // Get all token purchases that don't have a facture
     const { data: purchases, error: purchasesError } = await supabase
@@ -191,11 +202,14 @@ serve(async (req: Request): Promise<Response> => {
       (existingFactures || []).map((f: any) => f.token_purchase_id)
     );
 
-    const purchasesWithoutFacture = (purchases || []).filter(
+    const allWithoutFacture = (purchases || []).filter(
       (p: any) => !existingPurchaseIds.has(p.id)
     );
+    // On borne le lot traité ; le reste sera repris au prochain passage (cron)
+    const purchasesWithoutFacture = allWithoutFacture.slice(0, limit);
+    const remaining = Math.max(0, allWithoutFacture.length - purchasesWithoutFacture.length);
 
-    console.log(`Found ${purchasesWithoutFacture.length} purchases without facture`);
+    console.log(`Found ${allWithoutFacture.length} purchases without facture, processing ${purchasesWithoutFacture.length}, remaining ${remaining}`);
 
     const results = [];
     let successCount = 0;
@@ -282,6 +296,8 @@ serve(async (req: Request): Promise<Response> => {
         total: purchasesWithoutFacture.length,
         successCount,
         errorCount,
+        remaining,
+        hasMore: remaining > 0,
         results
       }),
       {
