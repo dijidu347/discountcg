@@ -65,3 +65,8 @@ verify_jwt = false
 
 [functions.regenerate-all-token-factures]
 verify_jwt = false
+
+[functions.bootstrap-facture-cron]
+verify_jwt = false
+
+
