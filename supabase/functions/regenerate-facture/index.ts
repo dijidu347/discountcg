@@ -210,15 +210,17 @@ serve(async (req: Request): Promise<Response> => {
       throw new Error('Unauthorized');
     }
 
-    const { data: roles } = await supabase
+    const { data: adminRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    if (!roles || roles.role !== 'admin') {
+    if (!adminRole) {
       throw new Error('Only admins can regenerate invoices');
     }
+
 
     const { factureId } = await req.json();
 

@@ -1786,6 +1786,10 @@ export type Database = {
         Returns: boolean
       }
       renew_coffre_token_subscriptions: { Args: never; Returns: undefined }
+      setup_facture_cron: {
+        Args: { p_service_role_key: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "staff" | "garage" | "particulier"

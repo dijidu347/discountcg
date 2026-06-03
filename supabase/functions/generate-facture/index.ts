@@ -241,16 +241,18 @@ serve(async (req: Request): Promise<Response> => {
     console.log('User authenticated:', user.id);
 
     // Check if user is admin
-    const { data: roles } = await supabase
+    const { data: adminRole } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
-      .single();
+      .eq('role', 'admin')
+      .maybeSingle();
 
-    if (!roles || roles.role !== 'admin') {
+    if (!adminRole) {
       console.log('User is not admin');
       throw new Error('Only admins can generate invoices');
     }
+
 
     console.log('Admin access confirmed');
 

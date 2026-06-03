@@ -198,51 +198,81 @@ serve(async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const token = authHeader.replace('Bearer ', '').trim();
+
+    // Dual auth: service role key (cron) OR user JWT with admin role
+    let authorized = false;
+    if (token === supabaseServiceKey) {
+      authorized = true;
+      console.log('Authorized via service role key (cron)');
+    } else {
+      const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+      if (!userError && user) {
+        const { data: adminRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+        if (adminRole) {
+          authorized = true;
+          console.log('Authorized as admin user:', user.id);
+        }
+      }
     }
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
-
-    if (userError || !user) {
-      throw new Error('Unauthorized');
+    if (!authorized) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    const { data: roles } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', user.id)
-      .single();
+    // Parse body params
+    let body: any = {};
+    try { body = await req.json(); } catch { body = {}; }
+    const mode: 'missing' | 'all' = body.mode === 'all' ? 'all' : 'missing';
+    const rawLimit = Number(body.limit);
+    const limit = Number.isFinite(rawLimit) ? Math.max(1, Math.min(200, Math.floor(rawLimit))) : 50;
+    const beforeCreatedAt: string | null = typeof body.beforeCreatedAt === 'string' ? body.beforeCreatedAt : null;
 
-    if (!roles || roles.role !== 'admin') {
-      throw new Error('Only admins can regenerate all invoices');
-    }
+    console.log(`Mode=${mode}, limit=${limit}, beforeCreatedAt=${beforeCreatedAt}`);
 
-    console.log('Admin access confirmed, starting regeneration of all factures...');
-
-    // Get all factures with demarche_id (not guest orders for now)
-    const { data: factures, error: facturesError } = await supabase
+    let query = supabase
       .from('factures')
       .select('*')
-      .not('demarche_id', 'is', null);
+      .not('demarche_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (mode === 'missing') {
+      query = query.is('pdf_url', null);
+    } else if (beforeCreatedAt) {
+      query = query.lt('created_at', beforeCreatedAt);
+    }
+
+    const { data: factures, error: facturesError } = await query;
 
     if (facturesError) {
       throw new Error('Failed to fetch factures: ' + facturesError.message);
     }
 
-    console.log(`Found ${factures?.length || 0} factures to regenerate`);
+    console.log(`Found ${factures?.length || 0} factures to process`);
 
-    const results = {
-      success: 0,
-      failed: 0,
-      errors: [] as string[]
-    };
+    let regenerated = 0;
+    let failed = 0;
+    const errors: string[] = [];
+    let lastCreatedAt: string | null = null;
 
     for (const facture of factures || []) {
+      lastCreatedAt = facture.created_at;
       try {
-        // Get demarche
         const { data: demarche, error: demarcheError } = await supabase
           .from('demarches')
           .select('*')
@@ -250,25 +280,22 @@ serve(async (req: Request): Promise<Response> => {
           .single();
 
         if (demarcheError || !demarche) {
-          results.failed++;
-          results.errors.push(`Facture ${facture.numero}: Demarche not found`);
+          failed++;
+          if (errors.length < 20) errors.push(`Facture ${facture.numero}: Demarche not found`);
           continue;
         }
 
-        // Get garage
         const { data: garage } = await supabase
           .from('garages')
           .select('*')
           .eq('id', demarche.garage_id)
           .single();
 
-        // Get tracking services
         const { data: trackingServices } = await supabase
           .from('tracking_services')
           .select('*')
           .eq('demarche_id', demarche.id);
 
-        // Get action
         const { data: actionRapide } = await supabase
           .from('actions_rapides')
           .select('prix, titre')
@@ -280,18 +307,16 @@ serve(async (req: Request): Promise<Response> => {
         const prixCarteGrise = isCG ? (Number(demarche.prix_carte_grise) || 0) : 0;
         const fraisDossierHT = Number(demarche.frais_dossier) || Number(actionRapide?.prix) || 0;
 
-        // Generate PDF
         const pdfBytes = await generateFacturePDF(
-          facture, 
-          demarche, 
-          garage, 
+          facture,
+          demarche,
+          garage,
           trackingServices || [],
           prixCarteGrise,
           fraisDossierHT,
           actionTitre
         );
 
-        // Upload PDF
         const fileName = `${demarche.garage_id}/${facture.numero}.pdf`;
         const { error: uploadError } = await supabase.storage
           .from('factures')
@@ -301,33 +326,39 @@ serve(async (req: Request): Promise<Response> => {
           });
 
         if (uploadError) {
-          results.failed++;
-          results.errors.push(`Facture ${facture.numero}: Upload failed - ${uploadError.message}`);
+          failed++;
+          if (errors.length < 20) errors.push(`Facture ${facture.numero}: Upload failed - ${uploadError.message}`);
           continue;
         }
 
-        // Update facture with path
         await supabase
           .from('factures')
           .update({ pdf_url: fileName })
           .eq('id', facture.id);
 
-        results.success++;
-        console.log(`Regenerated facture ${facture.numero}`);
-
+        regenerated++;
       } catch (err: any) {
-        results.failed++;
-        results.errors.push(`Facture ${facture.numero}: ${err.message}`);
+        failed++;
+        if (errors.length < 20) errors.push(`Facture ${facture.numero}: ${err.message}`);
       }
     }
 
-    console.log(`Regeneration complete: ${results.success} success, ${results.failed} failed`);
+    const processed = factures?.length || 0;
+    const hasMore = processed === limit;
+    const nextCursor = hasMore ? lastCreatedAt : null;
+
+    console.log(`Done: processed=${processed}, regenerated=${regenerated}, failed=${failed}, hasMore=${hasMore}`);
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: `Regenerated ${results.success} factures, ${results.failed} failed`,
-        details: results
+      JSON.stringify({
+        success: true,
+        mode,
+        processed,
+        regenerated,
+        failed,
+        hasMore,
+        nextCursor,
+        errors,
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
@@ -338,5 +369,6 @@ serve(async (req: Request): Promise<Response> => {
       JSON.stringify({ error: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
+
   }
 });

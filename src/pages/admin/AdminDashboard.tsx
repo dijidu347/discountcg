@@ -174,26 +174,51 @@ export default function AdminDashboard() {
 
   const handleRegenerateAllFactures = async () => {
     setRegeneratingFactures(true);
+    let cursor: string | null = null;
+    let totalProcessed = 0;
+    let totalRegenerated = 0;
+    let totalFailed = 0;
+    let iteration = 0;
+    const maxIterations = 200;
+
     try {
-      const { data, error } = await supabase.functions.invoke('regenerate-all-factures', {});
-      
-      if (error) throw error;
+      while (iteration < maxIterations) {
+        iteration++;
+        const { data, error } = await supabase.functions.invoke('regenerate-all-factures', {
+          body: { mode: 'all', limit: 40, beforeCreatedAt: cursor },
+        });
+        if (error) throw error;
+        if (!data?.success) throw new Error(data?.error || 'Erreur inconnue');
+
+        totalProcessed += data.processed || 0;
+        totalRegenerated += data.regenerated || 0;
+        totalFailed += data.failed || 0;
+
+        toast({
+          title: `Régénération en cours (lot ${iteration})`,
+          description: `Traitées: ${totalProcessed} · Régénérées: ${totalRegenerated} · Échouées: ${totalFailed}`,
+        });
+
+        if (!data.hasMore || !data.nextCursor) break;
+        cursor = data.nextCursor;
+      }
 
       toast({
         title: "Succès",
-        description: data?.message || "Toutes les factures ont été régénérées",
+        description: `Régénération terminée. ${totalRegenerated} factures régénérées, ${totalFailed} échouées.`,
       });
     } catch (error: any) {
       console.error('Error regenerating factures:', error);
       toast({
         title: "Erreur",
         description: error.message || "Impossible de régénérer les factures",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setRegeneratingFactures(false);
     }
   };
+
 
   if (authLoading || loading) {
     return (
