@@ -848,6 +848,208 @@ async function handleGuestOrderPayment(
 }
 
 // ---------------------------------------------------------------------------
+// Traitement métier d'un PAIEMENT CLIENT-VIA-LIEN (part client d'une démarche).
+// Recopié de handleClientPayment (webhook-stripe), adapté aux champs
+// Sogecommerce : montant = vads_amount, identifiant = vads_trans_uuid.
+// ---------------------------------------------------------------------------
+async function handleClientPayment(
+  supabase: SupabaseClient,
+  demarcheId: string,
+  paymentMode: string,
+  amount: number,
+  transUuid: string,
+): Promise<string> {
+  console.log(`📋 Processing client payment for demarche: ${demarcheId}, mode: ${paymentMode}`);
+
+  const { data: demarche, error: demarcheError } = await supabase
+    .from("demarches")
+    .select("*, garages(*), vehicules(immatriculation)")
+    .eq("id", demarcheId)
+    .single();
+
+  if (demarcheError || !demarche) {
+    console.error("❌ Demarche not found:", demarcheError);
+    return "demarche_not_found";
+  }
+
+  // --- IDEMPOTENCE (Option A, sans migration) ---------------------------
+  // 1) Part client déjà payée → on ne refait rien (évite double facture).
+  if (demarche.client_paid === true) {
+    console.log("↩️ Part client déjà payée — IPN ignorée (idempotence)");
+    return "already_paid";
+  }
+  // 2) Un paiement avec ce même identifiant Sogecommerce existe déjà.
+  if (transUuid) {
+    const { data: existing } = await supabase
+      .from("paiements")
+      .select("id")
+      .eq("stripe_payment_id", transUuid)
+      .maybeSingle();
+    if (existing) {
+      console.log("↩️ Paiement déjà enregistré — IPN ignorée (idempotence)");
+      return "already_processed";
+    }
+  }
+
+  const garage = demarche.garages as Garage;
+  const realImmat = (demarche.immatriculation === "TEMP" && (demarche as any).vehicules?.immatriculation)
+    ? (demarche as any).vehicules.immatriculation
+    : demarche.immatriculation;
+
+  // Mise à jour de la démarche : le client a payé sa part.
+  const updateFields: Record<string, unknown> = {
+    client_paid: true,
+    client_paid_at: new Date().toISOString(),
+    client_stripe_payment_id: transUuid,
+    updated_at: new Date().toISOString(),
+  };
+  // Dans les deux modes, le paiement client finalise le règlement.
+  if (paymentMode === "split" || paymentMode === "client_pays_all") {
+    updateFields.status = "en_attente";
+    updateFields.paye = true;
+    updateFields.is_draft = false;
+  }
+
+  const { error: updateError } = await supabase
+    .from("demarches")
+    .update(updateFields)
+    .eq("id", demarcheId);
+
+  if (updateError) {
+    console.error("❌ Failed to update demarche:", updateError);
+    return "update_failed";
+  }
+  console.log("✅ Demarche updated with client payment");
+
+  // Crée l'enregistrement paiement (payer_type = client).
+  const { error: paiementError } = await supabase
+    .from("paiements")
+    .insert({
+      demarche_id: demarcheId,
+      garage_id: demarche.garage_id,
+      montant: amount,
+      status: "valide",
+      stripe_payment_id: transUuid,
+      validated_at: new Date().toISOString(),
+      payer_type: "client",
+    });
+
+  if (paiementError) {
+    console.error("❌ Failed to create paiement:", paiementError);
+  }
+
+  // --- Facture + confirmations (les deux modes finalisent) --------------
+  const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+
+  const { data: facture, error: factureError } = await supabase
+    .from("factures")
+    .insert({
+      numero: factureNumero,
+      demarche_id: demarcheId,
+      garage_id: demarche.garage_id,
+      montant_ht: amount,
+      montant_ttc: amount,
+      tva: 0,
+    })
+    .select()
+    .single();
+
+  let clientPdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
+  if (factureError) {
+    console.error("❌ Failed to create facture:", factureError);
+  } else {
+    console.log("✅ Facture created:", facture?.numero);
+
+    try {
+      const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage);
+      const pdfFileName = `facture_${facture.numero}.pdf`;
+
+      clientPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+      const { error: uploadError } = await supabase.storage
+        .from("factures")
+        .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+        await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+        console.log("✅ PDF uploaded:", pdfFileName);
+      } else {
+        console.error("❌ PDF upload failed:", uploadError);
+      }
+    } catch (pdfError) {
+      console.error("❌ PDF generation failed:", pdfError);
+    }
+  }
+
+  // Lie la facture à la démarche
+  if (facture) {
+    await supabase
+      .from("demarches")
+      .update({ facture_id: facture.id })
+      .eq("id", demarcheId);
+  }
+
+  // Email de confirmation au client (facture en PJ)
+  if (demarche.client_email) {
+    await sendEmail("client_payment_confirmed", demarche.client_email, {
+      immatriculation: realImmat,
+      montant_ttc: amount.toFixed(2),
+      reference: demarche.numero_demarche,
+    }, clientPdfAttachment);
+    console.log("✅ Client payment confirmation email with invoice sent to", demarche.client_email);
+  }
+
+  // Notification au garage (facture en PJ)
+  await delay(600);
+  if (garage?.email) {
+    await sendEmail("garage_client_paid", garage.email, {
+      garage_name: garage.raison_sociale,
+      client_email: demarche.client_email || "N/A",
+      immatriculation: realImmat,
+      montant_ttc: amount.toFixed(2),
+      reference: demarche.numero_demarche,
+      demarche_id: demarcheId,
+    }, clientPdfAttachment);
+    console.log("✅ Garage notified with invoice: client paid");
+  }
+
+  // Notification in-app pour le garage (cloche temps réel)
+  const { error: notifError } = await supabase
+    .from("notifications")
+    .insert({
+      garage_id: demarche.garage_id,
+      demarche_id: demarcheId,
+      type: "client_payment_confirmed",
+      message: `Le client a payé ${amount.toFixed(2)} € pour la démarche ${demarche.numero_demarche} (${realImmat})`,
+    });
+
+  if (notifError) {
+    console.error("❌ Failed to insert client_payment_confirmed notification:", notifError);
+  } else {
+    console.log("✅ Notification client_payment_confirmed inserted for garage");
+  }
+
+  // Notifications admin
+  await delay(600);
+  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+    await delay(600);
+    await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
+      type: demarche.type,
+      reference: demarche.numero_demarche,
+      immatriculation: realImmat,
+      client_name: garage?.raison_sociale || "N/A",
+      montant_ttc: amount.toFixed(2),
+      is_free_token: demarche.is_free_token || false,
+    });
+  }
+  console.log("✅ Admin notification emails sent");
+
+  return "client_paid";
+}
+
+// ---------------------------------------------------------------------------
 // Point d'entrée
 // ---------------------------------------------------------------------------
 serve(async (req) => {
@@ -921,6 +1123,21 @@ serve(async (req) => {
         amount,
         transUuid,
         fields["vads_cust_email"] || "",
+      );
+    } else if (flowType === "client_payment") {
+      // --- Parcours CLIENT-VIA-LIEN (part client d'une démarche) --------
+      const demarcheId = fields["vads_ext_info_demarche_id"];
+      const paymentMode = fields["vads_ext_info_payment_mode"] || "client_pays_all";
+      if (!demarcheId) {
+        console.error("❌ vads_ext_info_demarche_id manquant dans l'IPN (client_payment)");
+        return new Response("missing demarche id", { status: 400, headers: corsHeaders });
+      }
+      outcome = await handleClientPayment(
+        supabase,
+        demarcheId,
+        paymentMode,
+        amount,
+        transUuid,
       );
     } else {
       // --- Parcours DÉMARCHE PRO (comportement existant) ----------------
