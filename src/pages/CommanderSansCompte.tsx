@@ -18,6 +18,7 @@ import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 
 // Step indicator
 const StepIndicator = ({ currentStep, steps }: { currentStep: number; steps: string[] }) => (
@@ -205,6 +206,69 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
   );
 };
 
+// Variante Sogecommerce (redirection page hébergée SG). Sans dépendance Stripe.
+const SogecommerceCheckout = ({ order, formData }: { order: any; formData: any }) => {
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const totalAmount = calculateGuestOrderTTC(
+    order.montant_ht || 0,
+    order.frais_dossier || 30,
+    {
+      smsNotifications: formData.sms_notifications,
+      emailNotifications: formData.email_notifications,
+      dossierPrioritaire: order.dossier_prioritaire,
+      certificatNonGage: order.certificat_non_gage,
+    }
+  );
+
+  const handlePay = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-sogecommerce-guest-payment",
+        {
+          body: {
+            orderId: order.id,
+            returnUrl: `${window.location.origin}/merci/${order.tracking_number}`,
+          },
+        }
+      );
+      if (error) throw error;
+      redirectToSogecommerce(data); // quitte le site vers la page SG
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast({
+        title: "❌ Erreur",
+        description: error.message || "Impossible de démarrer le paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <Button
+      onClick={handlePay}
+      disabled={isProcessing}
+      size="lg"
+      className="w-full text-lg h-14"
+    >
+      {isProcessing ? (
+        <>
+          <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+          Redirection vers le paiement...
+        </>
+      ) : (
+        <>
+          <CreditCard className="w-5 h-5 mr-2" />
+          Payer {totalAmount.toFixed(2)} €
+        </>
+      )}
+    </Button>
+  );
+};
+
 const CommanderSansCompte = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -242,7 +306,7 @@ const CommanderSansCompte = () => {
   }, [order?.demarche_type]);
 
   useEffect(() => {
-    initializeStripe();
+    if (!USE_SOGECOMMERCE) initializeStripe(); // inutile en mode Sogecommerce
   }, []);
 
   // Pre-fill form from logged-in user's profile
@@ -823,8 +887,10 @@ const CommanderSansCompte = () => {
               certificatNonGage={order.certificat_non_gage}
             />
 
-            {/* Stripe payment */}
-            {stripePromise ? (
+            {/* Paiement */}
+            {USE_SOGECOMMERCE ? (
+              <SogecommerceCheckout order={order} formData={formData} />
+            ) : stripePromise ? (
               <Elements stripe={stripePromise}>
                 <InlineCheckoutForm
                   order={order}
