@@ -166,15 +166,12 @@ serve(async (req) => {
       });
     }
 
-    // --- 4. Vérifications (mêmes garde-fous que le parcours Stripe) ------
+    // --- 4. Vérifications (alignées sur le parcours Stripe) -------------
+    // NB : on n'exige PAS documents_complets — sur ce site le particulier
+    // paie D'ABORD, puis envoie ses documents APRÈS (comme la branche guest
+    // de create-payment-intent, qui ne vérifie que amount/order_id).
     if (order.paye === true) {
       return new Response(JSON.stringify({ error: "Commande déjà payée" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    if (order.documents_complets !== true) {
-      return new Response(JSON.stringify({ error: "Documents incomplets" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
