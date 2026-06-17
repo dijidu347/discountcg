@@ -34,5 +34,9 @@ export function redirectToSogecommerce(data: SogecommerceFormData): void {
   }
 
   document.body.appendChild(form);
+  // Drapeau lu par les pages ayant un garde-fou beforeunload (ex: ResultatCarteGrise),
+  // pour ne pas afficher l'avertissement "quitter la page" lors d'une redirection
+  // paiement volontaire.
+  (window as any).__sogeRedirecting = true;
   form.submit();
 }
