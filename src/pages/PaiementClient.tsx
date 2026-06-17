@@ -9,9 +9,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PayPalButton } from "@/components/PayPalButton";
-import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { formatPrice } from "@/lib/utils";
+import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 
 // ---------------------------------------------------------------------------
 // Stripe card form (inline, same pattern as PaiementDemarche)
@@ -96,6 +95,54 @@ const StripeCardForm = ({
 };
 
 // ---------------------------------------------------------------------------
+// Variante Sogecommerce (redirection page hébergée SG). Sans dépendance Stripe.
+// ---------------------------------------------------------------------------
+const SogecommerceClientCheckout = ({ token, amount }: { token: string; amount: number }) => {
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handlePay = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-sogecommerce-client-payment",
+        { body: { token, returnUrl: window.location.href } }
+      );
+      if (error) throw error;
+      redirectToSogecommerce(data); // quitte le site vers la page SG
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de démarrer le paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <h3 className="font-semibold text-base">Paiement sécurisé</h3>
+      <p className="text-sm text-muted-foreground">Carte bancaire, Apple Pay, Google Pay…</p>
+      <Button onClick={handlePay} disabled={isProcessing} size="lg" className="w-full text-lg h-12">
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Redirection vers le paiement...
+          </>
+        ) : (
+          <>
+            <CheckCircle className="w-5 h-5 mr-2" />
+            Payer {formatPrice(amount)} EUR
+          </>
+        )}
+      </Button>
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------------------
 // Main page component
 // ---------------------------------------------------------------------------
 type PageStatus = "loading" | "ready" | "success" | "expired" | "already_paid" | "error";
@@ -159,6 +206,12 @@ const PaiementClient = () => {
         .select("*")
         .eq("demarche_id", d.id);
       if (trackingData) setTrackingServices(trackingData);
+
+      // Mode Sogecommerce : pas de Stripe ni de clientSecret, on redirige au clic.
+      if (USE_SOGECOMMERCE) {
+        setStatus("ready");
+        return;
+      }
 
       // 5. Load Stripe 2 (client payments always use Stripe 2 for carte grise fees)
       const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
@@ -319,14 +372,13 @@ const PaiementClient = () => {
   // ---------------------------------------------------------------------------
   // status === "ready"
   // ---------------------------------------------------------------------------
-  if (!demarche || !clientSecret || !stripePromise) return null;
+  if (!demarche) return null;
+  if (!USE_SOGECOMMERCE && (!clientSecret || !stripePromise)) return null;
 
   const totalAmount = calculateTotal(demarche);
   const prixCG = Number(demarche.prix_carte_grise) || 0;
   const frais = Number(demarche.frais_dossier) || 0;
   const isClientPaysAll = demarche.payment_mode === "client_pays_all";
-  const isCarteGriseDemarche = prixCG > 0;
-  const canUsePayPal4x = totalAmount >= 30;
 
   return (
     <div className="min-h-screen bg-background">
@@ -349,98 +401,16 @@ const PaiementClient = () => {
                 <CardDescription>Tous les paiements sont securises et cryptes</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* Stripe card form */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-base">Carte bancaire</h3>
-                  <p className="text-sm text-muted-foreground">Visa, Mastercard, American Express</p>
-                  <Elements stripe={stripePromise}>
-                    <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
-                  </Elements>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
+                {USE_SOGECOMMERCE ? (
+                  <SogecommerceClientCheckout token={token!} amount={totalAmount} />
+                ) : (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-base">Carte bancaire</h3>
+                    <p className="text-sm text-muted-foreground">Visa, Mastercard, American Express</p>
+                    <Elements stripe={stripePromise}>
+                      <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
+                    </Elements>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
-                  </div>
-                </div>
-
-                {/* Apple Pay / Google Pay */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-base">Paiement rapide</h3>
-                  <p className="text-sm text-muted-foreground">Apple Pay, Google Pay et autres portefeuilles electroniques</p>
-                  <Elements stripe={stripePromise}>
-                    <StripeWalletPayment
-                      amount={totalAmount}
-                      clientSecret={clientSecret}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        toast({
-                          title: "Paiement refuse",
-                          description: error,
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                  </Elements>
-                </div>
-
-                {!isCarteGriseDemarche && (
-                  <>
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">Ou</span>
-                      </div>
-                    </div>
-
-                    {/* PayPal — démarches non carte grise uniquement */}
-                    {canUsePayPal4x ? (
-                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-1">Paiement recommande</p>
-                            <h3 className="text-xl font-bold">Payez en 4x sans frais</h3>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-primary">{formatPrice(totalAmount / 4)} EUR</p>
-                            <p className="text-sm text-muted-foreground">par mois</p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          soit 4 mensualites de <span className="font-semibold text-foreground">{formatPrice(totalAmount / 4)} EUR</span>
-                        </p>
-                        <PayPalButton
-                          amount={totalAmount}
-                          onSuccess={handlePaymentSuccess}
-                          onError={(error) => {
-                            console.error("PayPal error:", error);
-                            toast({ title: "Erreur PayPal", description: "Impossible de charger PayPal", variant: "destructive" });
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <div className="border rounded-lg p-6 space-y-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">PayPal</h3>
-                          <p className="text-sm text-muted-foreground">Paiement securise via PayPal</p>
-                        </div>
-                        <PayPalButton
-                          amount={totalAmount}
-                          onSuccess={handlePaymentSuccess}
-                          onError={(error) => {
-                            console.error("PayPal error:", error);
-                            toast({ title: "Erreur PayPal", description: "Impossible de charger PayPal", variant: "destructive" });
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground">Le paiement en 4x est disponible a partir de 30 EUR</p>
-                      </div>
-                    )}
-                  </>
                 )}
 
                 <p className="text-xs text-muted-foreground text-center pt-2">
