@@ -125,9 +125,13 @@ serve(async (req) => {
   try {
     // --- 1. Secrets Sogecommerce ----------------------------------------
     const siteId = Deno.env.get("SOGE_SITE_ID");
-    const testKey = Deno.env.get("SOGE_KEY_TEST");
-    const signatureKey = Deno.env.get("SOGE_SIGNATURE_KEY") || testKey;
     const mode = (Deno.env.get("SOGE_MODE") || "TEST").toUpperCase();
+    // Clé de signature choisie selon le mode : PRODUCTION -> SOGE_KEY_PROD, sinon SOGE_KEY_TEST.
+    // SOGE_SIGNATURE_KEY reste accepté en dernier recours (compat ascendante).
+    const modeKey = mode === "PRODUCTION"
+      ? Deno.env.get("SOGE_KEY_PROD")
+      : Deno.env.get("SOGE_KEY_TEST");
+    const signatureKey = modeKey || Deno.env.get("SOGE_SIGNATURE_KEY");
     const signAlgo = (Deno.env.get("SOGE_SIGN_ALGO") || "HMAC-SHA-256").toUpperCase();
     const paymentUrl = Deno.env.get("SOGE_PAYMENT_URL") || DEFAULT_PAYMENT_URL;
 
