@@ -11,6 +11,7 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
+import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 
 const CheckoutForm = ({ order }: { order: any }) => {
   const stripe = useStripe();
@@ -184,6 +185,69 @@ const CheckoutForm = ({ order }: { order: any }) => {
   );
 };
 
+// Variante Sogecommerce (redirection page hébergée SG). Sans dépendance Stripe.
+const SogecommerceCheckout = ({ order }: { order: any }) => {
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handlePay = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-sogecommerce-guest-payment",
+        {
+          body: {
+            orderId: order.id,
+            returnUrl: `${window.location.origin}/merci/${order.tracking_number}`,
+          },
+        }
+      );
+      if (error) throw error;
+      // Redirige vers la page de paiement Société Générale (quitte le site).
+      redirectToSogecommerce(data);
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast({
+        title: "❌ Erreur",
+        description: error.message || "Impossible de démarrer le paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      setIsProcessing(false); // en cas de succès, on a déjà quitté la page
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <GuestPaymentDetailsSummary
+        prixCarteGrise={order.montant_ht || 0}
+        fraisDossier={order.frais_dossier || 30}
+        smsNotifications={order.sms_notifications}
+        emailNotifications={order.email_notifications}
+        dossierPrioritaire={order.dossier_prioritaire}
+        certificatNonGage={order.certificat_non_gage}
+      />
+      <Button
+        onClick={handlePay}
+        disabled={isProcessing}
+        size="lg"
+        className="w-full text-lg h-14"
+      >
+        {isProcessing ? (
+          <>
+            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+            Redirection vers le paiement...
+          </>
+        ) : (
+          <>
+            <CheckCircle className="w-5 h-5 mr-2" />
+            Payer maintenant
+          </>
+        )}
+      </Button>
+    </div>
+  );
+};
+
 const PaiementGuestOrder = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -193,7 +257,7 @@ const PaiementGuestOrder = () => {
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
 
   useEffect(() => {
-    initializeStripe();
+    if (!USE_SOGECOMMERCE) initializeStripe(); // inutile en mode Sogecommerce
     loadOrder();
   }, [orderId]);
 
@@ -282,7 +346,7 @@ const PaiementGuestOrder = () => {
 
   if (!order) return null;
 
-  if (!stripePromise) {
+  if (!USE_SOGECOMMERCE && !stripePromise) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -316,9 +380,13 @@ const PaiementGuestOrder = () => {
             </p>
           </div>
 
-          <Elements stripe={stripePromise}>
-            <CheckoutForm order={order} />
-          </Elements>
+          {USE_SOGECOMMERCE ? (
+            <SogecommerceCheckout order={order} />
+          ) : (
+            <Elements stripe={stripePromise}>
+              <CheckoutForm order={order} />
+            </Elements>
+          )}
         </div>
       </div>
 
