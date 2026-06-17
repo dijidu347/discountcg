@@ -80,6 +80,19 @@ interface Facture {
   garage_id?: string;
 }
 
+interface GuestOrder {
+  id: string;
+  tracking_number: string;
+  email: string;
+  nom: string;
+  prenom: string;
+  immatriculation: string;
+  montant_ttc: number;
+  montant_ht: number;
+  frais_dossier: number;
+  demarche_type: string;
+}
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -321,6 +334,64 @@ async function generateDemarcheFacturePDF(
   return await pdfDoc.save();
 }
 
+// PDF facture commande particulier (guest) — recopié de webhook-stripe.
+async function generateGuestFacturePDF(
+  facture: Facture,
+  order: GuestOrder,
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]);
+  const { width, height } = page.getSize();
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const blue = rgb(0.145, 0.388, 0.922);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const margin = 50;
+  let y = height - margin;
+
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 24, font: fontBold, color: blue });
+  const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+
+  y -= 40;
+  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  y -= 20;
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(`${order.prenom} ${order.nom}`, { x: width / 2, y, size: 12, font: fontBold, color: black });
+  y -= 18;
+  page.drawText("Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(order.email, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 28, color: blue });
+  page.drawText("DÉSIGNATION", { x: margin + 10, y: y + 8, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+  page.drawText("MONTANT", { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: rgb(1, 1, 1) });
+
+  y -= 35;
+  page.drawText(`Carte grise - ${order.immatriculation}`, { x: margin + 10, y: y + 8, size: 10, font: fontRegular, color: black });
+  page.drawText(`Réf: ${order.tracking_number}`, { x: margin + 10, y: y - 8, size: 9, font: fontRegular, color: gray });
+  page.drawText(`${facture.montant_ttc.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: blue });
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 2, color: gray });
+  y -= 25;
+  page.drawText("TOTAL TTC", { x: width / 2, y: y + 8, size: 12, font: fontBold, color: black });
+  page.drawText(`${facture.montant_ttc.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 14, font: fontBold, color: blue });
+
+  y -= 60;
+  page.drawText("Merci pour votre confiance !", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  y -= 15;
+  page.drawText("DISCOUNT DRIVER - SAS - Service de cartes grises en ligne", { x: margin, y, size: 9, font: fontRegular, color: gray });
+
+  return await pdfDoc.save();
+}
+
 // ---------------------------------------------------------------------------
 // Outils IPN
 // ---------------------------------------------------------------------------
@@ -552,6 +623,231 @@ async function handleDemarchePayment(
 }
 
 // ---------------------------------------------------------------------------
+// Traitement métier d'une COMMANDE PARTICULIER (guest) payée.
+// Recopié de handleGuestOrderPayment (webhook-stripe), adapté aux champs
+// Sogecommerce : montant = vads_amount, identifiant = vads_trans_uuid,
+// email de secours = vads_cust_email.
+// ---------------------------------------------------------------------------
+async function handleGuestOrderPayment(
+  supabase: SupabaseClient,
+  orderId: string,
+  amount: number,
+  transUuid: string,
+  custEmail: string,
+): Promise<string> {
+  console.log(`📋 Processing guest order payment: ${orderId}`);
+
+  const { data: order, error: orderError } = await supabase
+    .from("guest_orders")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+
+  if (orderError || !order) {
+    console.error("❌ Guest order not found:", orderError);
+    return "order_not_found";
+  }
+
+  // --- IDEMPOTENCE (Option A, sans migration) ---------------------------
+  if (order.paye === true) {
+    console.log("↩️ Commande déjà payée — IPN ignorée (idempotence)");
+    return "already_paid";
+  }
+
+  // Montant payé (autoritatif = celui de Sogecommerce) vs valeurs en base.
+  const actualTTC = (order.montant_ttc && order.montant_ttc > 0) ? order.montant_ttc : amount;
+  const actualHT = (order.montant_ht && order.montant_ht > 0)
+    ? order.montant_ht
+    : Math.max(0, amount - (order.frais_dossier || 30));
+
+  const { error: updateError } = await supabase
+    .from("guest_orders")
+    .update({
+      paye: true,
+      status: "paye",
+      paid_at: new Date().toISOString(),
+      payment_intent_id: transUuid,
+      montant_ht: actualHT,
+      montant_ttc: actualTTC,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orderId);
+
+  if (updateError) {
+    console.error("❌ Failed to update guest order:", updateError);
+    return "update_failed";
+  }
+  console.log("✅ Guest order marked as paid, montant_ttc:", actualTTC);
+
+  // Relit la commande (les infos ont pu être saisies avant le paiement)
+  const { data: freshOrder } = await supabase
+    .from("guest_orders")
+    .select("*")
+    .eq("id", orderId)
+    .single();
+  const orderData = freshOrder || order;
+
+  // Email : base d'abord, puis email du ticket Sogecommerce en secours.
+  const clientEmail = orderData.email || custEmail || "";
+  if (!orderData.email && clientEmail) {
+    console.log("📧 Email absent en base, utilisation de l'email Sogecommerce:", clientEmail);
+    await supabase.from("guest_orders")
+      .update({ email: clientEmail, updated_at: new Date().toISOString() })
+      .eq("id", orderId);
+  }
+
+  // --- Création / liaison du compte particulier (parité Stripe) ---------
+  try {
+    let existingUser = null;
+    if (clientEmail) {
+      const { data: listData } = await supabase.auth.admin.listUsers();
+      existingUser = listData?.users?.find((u: any) => u.email === clientEmail) ?? null;
+    }
+    let userId: string | null = null;
+
+    if (existingUser) {
+      userId = existingUser.id;
+      console.log("✅ Found existing user:", userId);
+    }
+
+    if (!userId && clientEmail) {
+      const tempPassword = Math.random().toString(36).slice(-12) + "Aa1!";
+      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
+        email: clientEmail,
+        password: tempPassword,
+        email_confirm: true,
+        user_metadata: {
+          account_type: "particulier",
+          full_name: `${orderData.prenom || ""} ${orderData.nom || ""}`.trim() || "Client",
+        },
+      });
+      if (!createUserError && newUser) {
+        userId = newUser.user!.id;
+        console.log("✅ Created new user:", userId);
+      } else {
+        console.error("⚠️ Failed to create user:", createUserError?.message);
+      }
+    }
+
+    if (userId) {
+      await supabase
+        .from("guest_orders")
+        .update({ user_id: userId })
+        .eq("id", orderId);
+
+      await supabase
+        .from("particulier_profiles")
+        .upsert({
+          user_id: userId,
+          email: clientEmail,
+          nom: orderData.nom || "",
+          prenom: orderData.prenom || "",
+          telephone: orderData.telephone || "",
+        }, { onConflict: "user_id" });
+
+      await supabase
+        .from("user_roles")
+        .upsert({ user_id: userId, role: "particulier" as any }, { onConflict: "user_id,role" });
+
+      console.log("✅ User linked to guest order");
+    }
+  } catch (authError) {
+    console.error("⚠️ Failed to create/link user account:", authError);
+  }
+
+  // --- Facture ----------------------------------------------------------
+  const { data: factureNumero, error: rpcError } = await supabase.rpc("generate_facture_numero");
+  if (rpcError) {
+    console.error("❌ Failed to generate facture numero:", rpcError);
+  }
+
+  const { data: facture, error: factureError } = await supabase
+    .from("factures")
+    .insert({
+      numero: factureNumero,
+      guest_order_id: orderId,
+      montant_ht: actualHT,
+      montant_ttc: actualTTC,
+      tva: 0,
+    })
+    .select()
+    .single();
+
+  let guestPdfAttachment: Array<{ filename: string; content: string }> | undefined;
+
+  if (factureError) {
+    console.error("❌ Failed to create facture:", factureError);
+  } else {
+    console.log("✅ Facture created:", facture?.numero);
+
+    try {
+      const pdfBytes = await generateGuestFacturePDF(facture, { ...orderData, email: clientEmail });
+      const pdfFileName = `facture_${facture.numero}.pdf`;
+
+      guestPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+      const { error: uploadError } = await supabase.storage
+        .from("factures")
+        .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+        await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", facture.id);
+        console.log("✅ Guest PDF uploaded:", pdfFileName);
+      } else {
+        console.error("❌ PDF upload failed:", uploadError);
+      }
+    } catch (pdfError) {
+      console.error("❌ Guest PDF generation failed:", pdfError);
+    }
+  }
+
+  // --- Email de confirmation au client (facture en PJ) ------------------
+  if (clientEmail) {
+    try {
+      const trackingUrl = `https://discountcartegrise.fr/suivi/${orderData.tracking_number}`;
+      await sendEmail("payment_confirmed", clientEmail, {
+        tracking_number: orderData.tracking_number,
+        prenom: orderData.prenom || "Client",
+        nom: orderData.nom || "",
+        immatriculation: orderData.immatriculation,
+        montant_ttc: actualTTC.toFixed(2),
+        tracking_url: trackingUrl,
+      }, guestPdfAttachment);
+      console.log("✅ Client confirmation email with invoice sent to:", clientEmail);
+    } catch (emailError) {
+      console.error("❌ Failed to send client confirmation email:", emailError);
+    }
+  } else {
+    console.error("❌ CRITICAL: No email available for client! Order:", orderId, "Tracking:", orderData.tracking_number);
+  }
+
+  // --- Notifications admin ----------------------------------------------
+  const clientName = `${orderData.prenom || ""} ${orderData.nom || ""}`.trim() || clientEmail || "Client";
+  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+    await delay(600);
+    try {
+      await sendEmail("admin_new_guest_order", ADMIN_EMAILS[i], {
+        client_name: clientName,
+        client_email: clientEmail || "Non renseigné",
+        client_phone: orderData.telephone || "Non renseigné",
+        tracking_number: orderData.tracking_number,
+        immatriculation: orderData.immatriculation,
+        demarche_type: orderData.demarche_type || "CG",
+        order_id: orderData.id,
+        documents_count: 0,
+        montant_ttc: actualTTC.toFixed(2),
+      });
+    } catch (emailError) {
+      console.error("❌ Failed to send admin notification:", emailError);
+    }
+  }
+  console.log("✅ Admin notification emails sent");
+
+  return "guest_paid";
+}
+
+// ---------------------------------------------------------------------------
 // Point d'entrée
 // ---------------------------------------------------------------------------
 serve(async (req) => {
@@ -599,35 +895,54 @@ serve(async (req) => {
       return new Response("ignored (not successful)", { status: 200, headers: corsHeaders });
     }
 
-    // --- 5. Récupération de nos étiquettes ------------------------------
-    const demarcheId = fields["vads_ext_info_demarche_id"];
-    const paymentMode = fields["vads_ext_info_payment_mode"] || "pro_pays_all";
+    // --- 5. Routage par type de payeur (comme webhook-stripe) -----------
+    // vads_ext_info_type : "guest_order" (particulier) ; absent → démarche pro.
+    const flowType = fields["vads_ext_info_type"] || "demarche";
     const transUuid = fields["vads_trans_uuid"] || fields["vads_trans_id"] || "";
     const amount = Number(fields["vads_amount"] || "0") / 100;
 
-    if (!demarcheId) {
-      console.error("❌ vads_ext_info_demarche_id manquant dans l'IPN");
-      return new Response("missing demarche id", { status: 400, headers: corsHeaders });
-    }
-
-    if (paymentMode === "client_pays_all") {
-      console.log("ℹ️ Mode client_pays_all non géré par cette fonction (côté pro uniquement).");
-      return new Response("ignored (client mode)", { status: 200, headers: corsHeaders });
-    }
-
-    // --- 6. Traitement métier (base de données) -------------------------
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
 
-    const outcome = await handleDemarchePayment(
-      supabase,
-      demarcheId,
-      paymentMode,
-      amount,
-      transUuid,
-    );
+    let outcome: string;
+
+    if (flowType === "guest_order") {
+      // --- Parcours PARTICULIER (guest) ---------------------------------
+      const orderId = fields["vads_ext_info_order_id"];
+      if (!orderId) {
+        console.error("❌ vads_ext_info_order_id manquant dans l'IPN");
+        return new Response("missing order id", { status: 400, headers: corsHeaders });
+      }
+      outcome = await handleGuestOrderPayment(
+        supabase,
+        orderId,
+        amount,
+        transUuid,
+        fields["vads_cust_email"] || "",
+      );
+    } else {
+      // --- Parcours DÉMARCHE PRO (comportement existant) ----------------
+      const demarcheId = fields["vads_ext_info_demarche_id"];
+      const paymentMode = fields["vads_ext_info_payment_mode"] || "pro_pays_all";
+
+      if (!demarcheId) {
+        console.error("❌ vads_ext_info_demarche_id manquant dans l'IPN");
+        return new Response("missing demarche id", { status: 400, headers: corsHeaders });
+      }
+      if (paymentMode === "client_pays_all") {
+        console.log("ℹ️ Mode client_pays_all non géré par cette fonction (côté pro uniquement).");
+        return new Response("ignored (client mode)", { status: 200, headers: corsHeaders });
+      }
+      outcome = await handleDemarchePayment(
+        supabase,
+        demarcheId,
+        paymentMode,
+        amount,
+        transUuid,
+      );
+    }
 
     // Toujours 200 quand on a reconnu et traité (ou volontairement ignoré)
     // l'IPN, pour éviter les rejeux de Société Générale.

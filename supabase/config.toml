@@ -36,6 +36,9 @@ verify_jwt = false
 [functions.webhook-sogecommerce]
 verify_jwt = false
 
+[functions.create-sogecommerce-guest-payment]
+verify_jwt = false
+
 [functions.get-signed-url]
 verify_jwt = false
 
