@@ -8,6 +8,7 @@ import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
+import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 
 interface PaymentMethodsProps {
   amount: number;
@@ -140,9 +141,11 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
   const [isPaid, setIsPaid] = useState(false);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [showCardForm, setShowCardForm] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
+    if (USE_SOGECOMMERCE) return; // pas de Stripe en mode Sogecommerce
     const initStripe = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('get-stripe-key');
@@ -157,6 +160,27 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
     };
     initStripe();
   }, []);
+
+  // Paiement via Sogecommerce (redirection page hébergée SG).
+  const handleSogecommercePay = async () => {
+    setIsProcessing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "create-sogecommerce-guest-payment",
+        { body: { orderId, returnUrl: window.location.href } }
+      );
+      if (error) throw error;
+      redirectToSogecommerce(data); // quitte le site vers la page SG
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de démarrer le paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
+      setIsProcessing(false);
+    }
+  };
 
   const handlePaymentSuccess = async () => {
     try {
@@ -212,6 +236,41 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
               <p className="text-sm">Merci ! Vous pouvez maintenant déposer vos documents.</p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Mode Sogecommerce : un seul bouton qui redirige vers la page hébergée SG.
+  if (USE_SOGECOMMERCE) {
+    return (
+      <Card>
+        <CardContent className="pt-6 space-y-6">
+          <div className="space-y-3">
+            <h3 className="font-medium text-sm text-muted-foreground">Paiement sécurisé</h3>
+            <p className="text-sm text-muted-foreground">Carte bancaire, Apple Pay, Google Pay…</p>
+            <Button
+              onClick={handleSogecommercePay}
+              disabled={isProcessing}
+              size="lg"
+              className="w-full"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Redirection vers le paiement...
+                </>
+              ) : (
+                <>
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  Payer {formatPrice(amount)} €
+                </>
+              )}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground text-center pt-4">
+            🔒 Tous les paiements sont sécurisés et cryptés
+          </p>
         </CardContent>
       </Card>
     );
