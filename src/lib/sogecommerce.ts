@@ -4,7 +4,7 @@
 //   true  = paiement via Sogecommerce (redirection page hébergée Société Générale)
 //   false = retour à l'ancien paiement Stripe (sans redéployer le reste)
 // Permet un retour arrière immédiat en cas de souci en production.
-export const USE_SOGECOMMERCE = true;
+export const USE_SOGECOMMERCE = false;
 
 export interface SogecommerceFormData {
   paymentUrl: string;
