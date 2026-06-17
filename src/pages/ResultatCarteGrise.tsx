@@ -107,10 +107,10 @@ export default function ResultatCarteGrise() {
         setOrderId(orderIdParam);
         setDepartement(departementParam);
 
-        // Load demarche type + email from order
+        // Load demarche type + email + paid status from order
         const { data: orderData } = await supabase
           .from("guest_orders")
-          .select("demarche_type, email")
+          .select("demarche_type, email, paye")
           .eq("id", orderIdParam)
           .single();
         if (orderData?.demarche_type) {
@@ -119,6 +119,11 @@ export default function ResultatCarteGrise() {
         if (orderData?.email) {
           setEmail(orderData.email);
           setIsEmailSaved(true);
+        }
+        // Au retour de la page de paiement Sogecommerce, la commande est déjà
+        // payée (webhook) → restaurer l'état pour afficher l'étape documents.
+        if (orderData?.paye) {
+          setIsPaid(true);
         }
 
         // Auto-fill email from connected user
@@ -232,7 +237,8 @@ export default function ResultatCarteGrise() {
   // Bloquer le refresh/fermeture pendant la commande
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (!isPaid && orderId) {
+      // Ne pas avertir lors d'une redirection paiement volontaire vers Sogecommerce.
+      if (!isPaid && orderId && !(window as any).__sogeRedirecting) {
         e.preventDefault();
         e.returnValue = "Votre commande est en cours. Êtes-vous sûr de vouloir quitter ?";
       }
