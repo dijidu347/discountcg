@@ -181,6 +181,7 @@ async function sendEmail(
   to: string,
   data: Record<string, unknown>,
   attachments?: Array<{ filename: string; content: string }>,
+  cc?: string,
 ): Promise<void> {
   try {
     console.log(`📧 Sending email type: ${type} to: ${to}`);
@@ -196,7 +197,7 @@ async function sendEmail(
           "Authorization": `Bearer ${serviceRoleKey}`,
           "apikey": serviceRoleKey,
         },
-        body: JSON.stringify({ type, to, data, attachments }),
+        body: JSON.stringify({ type, to, data, attachments, cc }),
       },
     );
 
@@ -522,10 +523,66 @@ async function handleDemarchePayment(
     console.error("❌ Failed to create paiement:", paiementError);
   }
 
-  // Mode split : pas de facture ni email tant que le client n'a pas payé.
+  // Mode split : pas de facture ni email garage tant que le client n'a pas payé.
+  // En revanche, on génère le LIEN CLIENT (token + email), comme le faisait le
+  // front après le paiement Stripe (create-client-payment-link).
   if (paymentMode === "split") {
-    console.log("📋 Split mode: skipping facture & emails — waiting for client payment");
-    return "split_pro_paid";
+    // Idempotence : si un lien client existe déjà, on ne le régénère pas.
+    if (demarche.client_payment_token) {
+      console.log("↩️ Lien client déjà existant — pas de régénération");
+      return "split_pro_paid_link_exists";
+    }
+
+    // Génère le token (même logique que create-client-payment-link)
+    const clientPaymentToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 30);
+
+    await supabase
+      .from("demarches")
+      .update({
+        client_payment_token: clientPaymentToken,
+        client_payment_token_expires_at: expiresAt.toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", demarcheId);
+
+    // Notification in-app pour le garage (cloche temps réel)
+    const { error: notifError } = await supabase
+      .from("notifications")
+      .insert({
+        garage_id: demarche.garage_id,
+        demarche_id: demarcheId,
+        type: "client_payment_link_sent",
+        message: `Lien de paiement envoyé au client pour la démarche ${demarche.numero_demarche} (${realImmat})`,
+      });
+    if (notifError) {
+      console.error("❌ Failed to insert client_payment_link_sent notification:", notifError);
+    }
+
+    // Email au client (cc garage), type client_payment_link
+    if (demarche.client_email) {
+      await sendEmail(
+        "client_payment_link",
+        demarche.client_email,
+        {
+          payment_url: `https://discountcartegrise.fr/paiement-client/${clientPaymentToken}`,
+          garage_name: garage?.raison_sociale,
+          immatriculation: realImmat,
+          type: demarche.type,
+          client_nom: demarche.client_nom || "",
+          client_prenom: demarche.client_prenom || "",
+          expires_at: expiresAt.toISOString(),
+        },
+        undefined, // pas de pièce jointe
+        garage?.email, // cc garage
+      );
+      console.log("✅ Split mode: lien client généré et email envoyé au client");
+    } else {
+      console.log("⚠️ Split mode: token généré mais pas d'email client (client_email absent)");
+    }
+
+    return "split_pro_paid_link_created";
   }
 
   // --- Génération de facture (pro_pays_all) -----------------------------
