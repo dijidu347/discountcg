@@ -756,7 +756,8 @@ const PaiementDemarche = () => {
     );
   }
 
-  if (!demarche || !clientSecret || !stripePromise) return null;
+  if (!demarche) return null;
+  if (!USE_SOGECOMMERCE && (!clientSecret || !stripePromise)) return null;
 
   // Calculer le montant correct sans TVA directement
   const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
