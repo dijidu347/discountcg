@@ -10,8 +10,8 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PayPalButton } from "@/components/PayPalButton";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
+import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PaymentDetailsSummary, type PaymentCalculationResult } from "@/components/payment/PaymentDetailsSummary";
 import { formatPrice } from "@/lib/utils";
@@ -265,37 +265,42 @@ const PaiementDemarche = () => {
         setActionRapide(actionData);
       }
 
-      // Récupérer les clés publiques Stripe
-      const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
+      // Mode Sogecommerce : pas de Stripe ni de clientSecret (redirection au clic).
+      // On garde garage/tracking/action déjà chargés (nécessaires au solde + récap).
+      if (!USE_SOGECOMMERCE) {
+        // Récupérer les clés publiques Stripe
+        const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
 
-      if (keyError || !keyData?.publishableKey) {
-        throw new Error("Impossible de charger la clé Stripe");
-      }
-
-      // Créer le payment intent d'abord — le backend détermine quel Stripe utiliser
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
-        "create-payment-intent",
-        {
-          body: {
-            demarcheId,
-            paymentType: paymentMode === 'split' ? 'split_pro' : 'full',
-            paymentMode,
-          },
+        if (keyError || !keyData?.publishableKey) {
+          throw new Error("Impossible de charger la clé Stripe");
         }
-      );
 
-      if (paymentError || !paymentData?.clientSecret) {
-        throw new Error("Impossible de créer le paiement");
+        // Créer le payment intent d'abord — le backend détermine quel Stripe utiliser
+        const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
+          "create-payment-intent",
+          {
+            body: {
+              demarcheId,
+              paymentType: paymentMode === 'split' ? 'split_pro' : 'full',
+              paymentMode,
+            },
+          }
+        );
+
+        if (paymentError || !paymentData?.clientSecret) {
+          throw new Error("Impossible de créer le paiement");
+        }
+
+        // Charger le bon Stripe basé sur le compte utilisé par le backend
+        const useStripe2 = paymentData.useStripe2;
+        const stripeKey = useStripe2 && keyData.publishableKey2 ? keyData.publishableKey2 : keyData.publishableKey;
+        console.log('Using Stripe account (from backend):', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)');
+        const stripe = await loadStripe(stripeKey);
+        setStripePromise(stripe);
+
+        setClientSecret(paymentData.clientSecret);
       }
 
-      // Charger le bon Stripe basé sur le compte utilisé par le backend
-      const useStripe2 = paymentData.useStripe2;
-      const stripeKey = useStripe2 && keyData.publishableKey2 ? keyData.publishableKey2 : keyData.publishableKey;
-      console.log('Using Stripe account (from backend):', useStripe2 ? '2 (carte grise)' : '1 (frais dossier)');
-      const stripe = await loadStripe(stripeKey);
-      setStripePromise(stripe);
-
-      setClientSecret(paymentData.clientSecret);
       setIsLoading(false);
     } catch (error: any) {
       console.error("Payment initialization error:", error);
@@ -517,6 +522,36 @@ const PaiementDemarche = () => {
     }
   };
 
+  // Paiement carte via Sogecommerce (redirection page hébergée SG).
+  const handleSogecommercePay = async () => {
+    if (!demarcheId) return;
+    const urlMode = searchParams.get('mode');
+    const currentPaymentMode = (demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
+      ? demarche.payment_mode
+      : (urlMode || demarche?.payment_mode || 'pro_pays_all');
+
+    // En split, on revient sur la page avec pro_paid=true (affiche l'UI lien client,
+    // le token ayant été généré par le webhook). Sinon, page de succès.
+    const returnUrl = currentPaymentMode === 'split'
+      ? `${window.location.origin}/paiement-demarche/${demarcheId}?mode=split&pro_paid=true`
+      : `${window.location.origin}/paiement-succes/${demarcheId}`;
+
+    try {
+      const { data, error } = await supabase.functions.invoke("create-sogecommerce-payment", {
+        body: { demarcheId, paymentMode: currentPaymentMode, returnUrl },
+      });
+      if (error) throw error;
+      redirectToSogecommerce(data); // quitte le site vers la page SG
+    } catch (e: any) {
+      console.error("Payment error:", e);
+      toast({
+        title: "Erreur",
+        description: e.message || "Impossible de démarrer le paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handlePaymentSuccess = async () => {
     const urlMode = searchParams.get('mode');
     const currentPaymentMode = (demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
@@ -540,39 +575,45 @@ const PaiementDemarche = () => {
         }
 
         // Auto-create and send client payment link
-        try {
-          const { data, error: linkError } = await supabase.functions.invoke("create-client-payment-link", {
-            body: {
-              demarcheId,
-              paymentMode: 'split',
-              clientEmail: demarche?.client_email || searchParams.get('email') || '',
-              clientPhone: demarche?.client_phone || searchParams.get('phone') || '',
-            },
-          });
+        // NB : en mode Sogecommerce, c'est le WEBHOOK qui génère le lien client
+        // après le paiement de la part garage → on neutralise ici pour éviter
+        // une double génération. (Ce handler n'est de toute façon pas appelé par
+        // le chemin carte Soge, qui redirige ; garde défensive.)
+        if (!USE_SOGECOMMERCE) {
+          try {
+            const { data, error: linkError } = await supabase.functions.invoke("create-client-payment-link", {
+              body: {
+                demarcheId,
+                paymentMode: 'split',
+                clientEmail: demarche?.client_email || searchParams.get('email') || '',
+                clientPhone: demarche?.client_phone || searchParams.get('phone') || '',
+              },
+            });
 
-          if (linkError || !data?.paymentUrl) {
-            throw new Error("Impossible de créer le lien de paiement");
+            if (linkError || !data?.paymentUrl) {
+              throw new Error("Impossible de créer le lien de paiement");
+            }
+
+            setClientPaymentUrl(data.paymentUrl);
+            setLinkSent(true);
+
+            // Refresh demarche
+            const { data: updated } = await supabase.from("demarches").select("*").eq("id", demarcheId).single();
+            if (updated) setDemarche(updated);
+
+            toast({
+              title: "Paiement validé !",
+              description: `Votre part a été payée. Un lien a été envoyé à ${demarche?.client_email}`,
+              variant: "success" as any,
+            });
+          } catch (linkError: any) {
+            console.error("Error creating client link:", linkError);
+            toast({
+              title: "Paiement validé",
+              description: "Votre part a été payée mais le lien client n'a pas pu être envoyé. Veuillez réessayer.",
+              variant: "destructive",
+            });
           }
-
-          setClientPaymentUrl(data.paymentUrl);
-          setLinkSent(true);
-
-          // Refresh demarche
-          const { data: updated } = await supabase.from("demarches").select("*").eq("id", demarcheId).single();
-          if (updated) setDemarche(updated);
-
-          toast({
-            title: "Paiement validé !",
-            description: `Votre part a été payée. Un lien a été envoyé à ${demarche?.client_email}`,
-            variant: "success" as any,
-          });
-        } catch (linkError: any) {
-          console.error("Error creating client link:", linkError);
-          toast({
-            title: "Paiement validé",
-            description: "Votre part a été payée mais le lien client n'a pas pu être envoyé. Veuillez réessayer.",
-            variant: "destructive",
-          });
         }
         return; // Don't navigate away - show the link UI
       }
@@ -731,10 +772,6 @@ const PaiementDemarche = () => {
   // Vérifier si le paiement par solde est possible (utiliser finalAmount au lieu de calculatedTotal)
   const canPayWithBalance = garage && finalAmount > 0 && garage.token_balance >= finalAmount;
 
-  // PayPal uniquement pour les démarches non carte grise
-  const isCarteGriseDemarche = prixCarteGrise > 0;
-  const canUsePayPal4x = finalAmount >= 30;
-  
 
   return (
     <div className="min-h-screen bg-background">
@@ -845,50 +882,34 @@ const PaiementDemarche = () => {
                   </div>
                 )}
 
-                {/* 1. Formulaire de carte Stripe */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-base">Carte bancaire</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Visa, Mastercard, American Express
-                  </p>
-                  <Elements stripe={stripePromise}>
-                    <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
-                  </Elements>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
+                {/* 1. Paiement carte */}
+                {USE_SOGECOMMERCE ? (
+                  <div className="space-y-3">
+                    <h3 className="font-semibold text-base">Carte bancaire</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Visa, Mastercard, Apple Pay, Google Pay…
+                    </p>
+                    <Button
+                      onClick={handleSogecommercePay}
+                      size="lg"
+                      className="w-full text-lg h-12"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Payer {formatPrice(finalAmount)} €
+                    </Button>
                   </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
-                  </div>
-                </div>
-
-                {/* 2. Apple Pay & Google Pay */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-base">Paiement rapide</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Apple Pay, Google Pay et autres portefeuilles électroniques
-                  </p>
-                  <Elements stripe={stripePromise}>
-                    <StripeWalletPayment 
-                      amount={finalAmount} 
-                      clientSecret={clientSecret}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        toast({
-                          title: "❌ Paiement refusé",
-                          description: error,
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                  </Elements>
-                </div>
-
-                {!isCarteGriseDemarche && (
+                ) : (
                   <>
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-base">Carte bancaire</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Visa, Mastercard, American Express
+                      </p>
+                      <Elements stripe={stripePromise}>
+                        <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
+                      </Elements>
+                    </div>
+
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
@@ -898,48 +919,27 @@ const PaiementDemarche = () => {
                       </div>
                     </div>
 
-                    {/* PayPal — démarches non carte grise uniquement */}
-                    {canUsePayPal4x ? (
-                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-muted-foreground mb-1">Paiement recommandé</p>
-                            <h3 className="text-xl font-bold">Payez en 4x sans frais</h3>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-2xl font-bold text-primary">{formatPrice(finalAmount / 4)} €</p>
-                            <p className="text-sm text-muted-foreground">par mois</p>
-                          </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          soit 4 mensualités de <span className="font-semibold text-foreground">{formatPrice(finalAmount / 4)} €</span>
-                        </p>
-                        <PayPalButton
+                    {/* 2. Apple Pay & Google Pay (fallback Stripe uniquement) */}
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-base">Paiement rapide</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Apple Pay, Google Pay et autres portefeuilles électroniques
+                      </p>
+                      <Elements stripe={stripePromise}>
+                        <StripeWalletPayment
                           amount={finalAmount}
+                          clientSecret={clientSecret}
                           onSuccess={handlePaymentSuccess}
                           onError={(error) => {
-                            console.error("PayPal error:", error);
-                            toast({ title: "Erreur PayPal", description: "Impossible de charger PayPal", variant: "destructive" });
+                            toast({
+                              title: "❌ Paiement refusé",
+                              description: error,
+                              variant: "destructive",
+                            });
                           }}
                         />
-                      </div>
-                    ) : (
-                      <div className="border rounded-lg p-6 space-y-4">
-                        <div>
-                          <h3 className="text-lg font-semibold">PayPal</h3>
-                          <p className="text-sm text-muted-foreground">Paiement sécurisé via PayPal</p>
-                        </div>
-                        <PayPalButton
-                          amount={finalAmount}
-                          onSuccess={handlePaymentSuccess}
-                          onError={(error) => {
-                            console.error("PayPal error:", error);
-                            toast({ title: "Erreur PayPal", description: "Impossible de charger PayPal", variant: "destructive" });
-                          }}
-                        />
-                        <p className="text-xs text-muted-foreground">Le paiement en 4x est disponible à partir de 30€</p>
-                      </div>
-                    )}
+                      </Elements>
+                    </div>
                   </>
                 )}
 
