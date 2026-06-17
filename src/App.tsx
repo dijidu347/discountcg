@@ -31,6 +31,7 @@ const DevisCarteGrise = React.lazy(() => import("./pages/DevisCarteGrise"));
 const Simulateur = React.lazy(() => import("./pages/Simulateur"));
 const ResultatCarteGrise = React.lazy(() => import("./pages/ResultatCarteGrise"));
 const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
+const MajiConcepts = React.lazy(() => import("./pages/MajiConcepts"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
 const AllDemarches = React.lazy(() => import("./pages/admin/AllDemarches"));
 const AdminDemarcheDetail = React.lazy(() => import("./pages/admin/DemarcheDetail"));
@@ -103,6 +104,7 @@ const App = () => (
             <Route path="/mes-factures" element={<MesFactures />} />
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
+            <Route path="/maji-concepts" element={<MajiConcepts />} />
             <Route path="/acheter-jetons" element={<AcheterJetons />} />
             <Route path="/paiement-recharge" element={<PaiementRecharge />} />
             <Route path="/paiement-recharge-succes" element={<PaiementRechargeSucces />} />
