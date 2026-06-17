@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.webhook-stripe]
 verify_jwt = false
 
+[functions.webhook-sogecommerce]
+verify_jwt = false
+
 [functions.get-signed-url]
 verify_jwt = false
 
