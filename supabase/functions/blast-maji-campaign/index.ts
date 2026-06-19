@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
         rejected.push(e);
       }
     }
-    let recipients = [...set].sort();
+    let recipients = [...set]; // keep DB insertion order to match the first run's indices
     if (testEmail) recipients = [testEmail.toLowerCase()];
     if (endIdx !== undefined || startIdx > 0) {
       recipients = recipients.slice(startIdx, endIdx);
