@@ -172,6 +172,8 @@ Deno.serve(async (req) => {
     }
     const dryRun = url.searchParams.get('dry') === '1';
     const testEmail = url.searchParams.get('test');
+    const startIdx = parseInt(url.searchParams.get('start') || '0', 10);
+    const endIdx = url.searchParams.get('end') ? parseInt(url.searchParams.get('end')!, 10) : undefined;
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -184,47 +186,57 @@ Deno.serve(async (req) => {
       .not('email', 'is', null);
     if (error) throw error;
 
+    // Strict RFC-ish email validation; reject anything Resend would refuse
+    const EMAIL_RE = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
     const set = new Set<string>();
+    const rejected: string[] = [];
     for (const row of data || []) {
       const e = (row.email || '').trim().toLowerCase();
-      if (e && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) set.add(e);
+      if (!e) continue;
+      if (EMAIL_RE.test(e) && e.length <= 254 && !e.includes('..')) {
+        set.add(e);
+      } else {
+        rejected.push(e);
+      }
     }
-    let recipients = [...set];
+    let recipients = [...set].sort();
     if (testEmail) recipients = [testEmail.toLowerCase()];
+    if (endIdx !== undefined || startIdx > 0) {
+      recipients = recipients.slice(startIdx, endIdx);
+    }
 
     if (dryRun) {
-      return new Response(JSON.stringify({ count: recipients.length, sample: recipients.slice(0, 5) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return new Response(JSON.stringify({ count: recipients.length, rejected_count: rejected.length, rejected_sample: rejected.slice(0, 10), sample: recipients.slice(0, 5) }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const results: { sent: number; failed: number; errors: any[] } = { sent: 0, failed: 0, errors: [] };
-    const batchSize = 100;
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const slice = recipients.slice(i, i + batchSize);
-      const payload = slice.map((to) => ({
-        from: FROM,
-        to: [to],
-        reply_to: REPLY_TO,
-        subject: SUBJECT,
-        html: HTML_TEMPLATE,
-      }));
-      const res = await fetch('https://api.resend.com/emails/batch', {
+    // Send one-by-one to avoid an invalid address poisoning a batch
+    for (const to of recipients) {
+      const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${RESEND_API_KEY}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          from: FROM,
+          to: [to],
+          reply_to: REPLY_TO,
+          subject: SUBJECT,
+          html: HTML_TEMPLATE,
+        }),
       });
-      const j = await res.json().catch(() => ({}));
       if (!res.ok) {
-        results.failed += slice.length;
-        results.errors.push({ batch: i, status: res.status, body: j });
+        results.failed++;
+        const j = await res.json().catch(() => ({}));
+        results.errors.push({ to, status: res.status, body: j });
       } else {
-        results.sent += slice.length;
+        results.sent++;
       }
-      // Throttle 1s between batches to stay under Resend rate limits
-      await new Promise((r) => setTimeout(r, 1100));
+      // Resend free/standard limit: 2 req/s — wait 550ms
+      await new Promise((r) => setTimeout(r, 550));
     }
+
 
     return new Response(JSON.stringify({ total: recipients.length, ...results }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
