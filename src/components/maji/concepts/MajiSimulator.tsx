@@ -40,7 +40,7 @@ export function MajiSimulator(_props: { ville?: string }) {
             Combien gagneriez-vous en <span className="text-emerald-400">dépôt-vente auto</span> avec MaJi Auto&nbsp;?
           </h3>
           <p className="text-[12px] text-emerald-200/80 mt-1.5 leading-snug">
-            Estimation prudente : <span className="font-bold text-emerald-300">1 200 € de marge moyenne</span> par véhicule vendu en dépôt-vente (packs garantie/financement inclus).
+            Estimation prudente : <span className="font-bold text-emerald-300">1 200 € de marge moyenne</span> par véhicule vendu en dépôt-vente.
           </p>
 
           {/* Chiffre hero */}
