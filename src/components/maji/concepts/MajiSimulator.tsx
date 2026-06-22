@@ -34,13 +34,13 @@ export function MajiSimulator(_props: { ville?: string }) {
         {/* GAUCHE : simulateur */}
         <div className="flex-1 p-5 md:p-6">
           <p className="text-[10px] text-emerald-300 font-semibold uppercase tracking-wider">
-            MaJi Auto · Simulateur de revenus
+            MaJi Auto · Réseau de dépôt-vente automobile
           </p>
           <h3 className="font-black text-xl md:text-2xl leading-tight mt-1">
-            Combien pourriez-vous gagner avec MaJi Auto&nbsp;?
+            Combien gagneriez-vous en <span className="text-emerald-400">dépôt-vente auto</span> avec MaJi Auto&nbsp;?
           </h3>
           <p className="text-[12px] text-emerald-200/80 mt-1.5 leading-snug">
-            Estimation prudente basée sur <span className="font-bold text-emerald-300">1 200 € de marge moyenne</span> par mandat (packs garantie/financement inclus).
+            Estimation prudente : <span className="font-bold text-emerald-300">1 200 € de marge moyenne</span> par véhicule vendu en dépôt-vente (packs garantie/financement inclus).
           </p>
 
           {/* Chiffre hero */}
