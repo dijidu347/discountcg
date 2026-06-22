@@ -30,15 +30,18 @@ export function MajiSimulator(_props: { ville?: string }) {
         </span>
       </div>
 
-      <div className="flex flex-col lg:flex-row">
+      <div className="flex flex-col lg:flex-row lg:items-stretch">
         {/* GAUCHE : simulateur */}
         <div className="flex-1 p-5 md:p-6">
           <p className="text-[10px] text-emerald-300 font-semibold uppercase tracking-wider">
-            MaJi Auto · Combien pourriez-vous gagner ?
+            MaJi Auto · Simulateur de revenus
           </p>
-          <h3 className="font-black text-xl leading-tight mt-1">
-            Votre dépôt-vente, en chiffres
+          <h3 className="font-black text-xl md:text-2xl leading-tight mt-1">
+            Combien pourriez-vous gagner avec MaJi Auto&nbsp;?
           </h3>
+          <p className="text-[12px] text-emerald-200/80 mt-1.5 leading-snug">
+            Estimation prudente basée sur <span className="font-bold text-emerald-300">1 200 € de marge moyenne</span> par mandat (packs garantie/financement inclus).
+          </p>
 
           {/* Chiffre hero */}
           <div className="mt-4 flex items-end gap-3">
@@ -98,26 +101,31 @@ export function MajiSimulator(_props: { ville?: string }) {
           </button>
         </div>
 
-        {/* DROITE : vidéo (poster + play) — même pattern que MajiZoneCheck */}
-        <div className="lg:w-[420px] xl:w-[460px] flex-shrink-0 p-4 lg:p-5 lg:pl-0">
+        {/* DROITE : vidéo — occupe toute la hauteur du bloc pour avoir une vraie présence */}
+        <div className="lg:w-[380px] xl:w-[420px] flex-shrink-0 p-4 lg:p-5 lg:pl-0 flex">
           <button
             onClick={() => setVideoOpen(true)}
-            className="group relative w-full aspect-video rounded-xl overflow-hidden bg-black shadow-md ring-1 ring-emerald-400/20"
+            className="group relative w-full aspect-video lg:aspect-auto min-h-[220px] rounded-xl overflow-hidden bg-black shadow-2xl shadow-emerald-900/50 ring-2 ring-emerald-400/30 hover:ring-emerald-400/60 transition-all"
             aria-label="Voir la présentation MaJi Auto"
           >
             <img
               src={MAJI_VIDEO_POSTER}
-              alt="Présentation MaJi Auto — 5 mandats offerts"
+              alt="Présentation MaJi Auto — réseau de dépôt-vente"
               loading="lazy"
               className="w-full h-full object-cover"
             />
-            <span className="absolute inset-0 bg-black/30 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-              <span className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-white/95 shadow-xl group-hover:scale-110 transition-transform">
-                <Play className="h-6 w-6 text-emerald-600 fill-current ml-0.5" />
+            {/* Voile dégradé pour fondre le poster dans le thème sombre */}
+            <span className="absolute inset-0 bg-gradient-to-br from-transparent via-black/20 to-slate-900/40 group-hover:from-black/10 group-hover:to-slate-900/30 transition-colors" />
+            {/* Halo lumineux émeraude derrière le bouton play */}
+            <span className="absolute inset-0 flex items-center justify-center">
+              <span className="absolute w-24 h-24 rounded-full bg-emerald-400/30 blur-2xl group-hover:bg-emerald-400/50 transition-colors" />
+              <span className="relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-2xl group-hover:scale-110 transition-transform">
+                <Play className="h-7 w-7 text-emerald-600 fill-current ml-1" />
               </span>
             </span>
-            <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 bg-black/60 text-white text-[11px] font-semibold px-2 py-1 rounded-full backdrop-blur-sm">
-              <Play className="h-2.5 w-2.5 fill-current" /> Présentation · 1 min
+            {/* Label en bas */}
+            <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 bg-emerald-500/90 text-white text-[11px] font-black px-2.5 py-1 rounded-full backdrop-blur-sm uppercase tracking-wider shadow-lg">
+              <Play className="h-2.5 w-2.5 fill-current" /> Voir la présentation · 1 min
             </span>
           </button>
         </div>
