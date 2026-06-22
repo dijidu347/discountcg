@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { CheckCircle2, ArrowRight, Sparkles, Play, Gift } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { isZoneFree, openMajiApply } from "@/components/maji/maji-shared";
-
-const MAJI_VIDEO_SRC = "https://maji-auto.fr/presentation-promo.mp4";
-const MAJI_VIDEO_POSTER = "/videos/maji-presentation-poster.jpg";
+import {
+  isZoneFree,
+  openMajiApply,
+  MAJI_VIDEO_SRC,
+  MAJI_VIDEO_POSTER,
+} from "@/components/maji/maji-shared";
 
 const BADGES = ["0 € d'entrée", "99 €/mois", "Sans engagement", "Zone exclusive"];
 

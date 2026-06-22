@@ -5,6 +5,10 @@
 export const MAJI_URL = "https://maji-auto.fr";
 export const MAJI_APPLY_URL = "https://maji-auto.fr/rejoindre-le-reseau";
 
+// Vidéo de présentation (utilisée par tous les blocs MaJi)
+export const MAJI_VIDEO_SRC = "https://maji-auto.fr/presentation-promo.mp4";
+export const MAJI_VIDEO_POSTER = "/videos/maji-presentation-poster.jpg";
+
 // Offre (chiffres officiels du pitch)
 export const MAJI_MENSUEL = 99; // €/mois
 export const MAJI_PAR_MANDAT = 80; // € commission réseau par mandat validé
