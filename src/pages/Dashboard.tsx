@@ -180,7 +180,6 @@ export default function Dashboard() {
                   <Button variant="ghost" size="sm" onClick={() => navigate(coffreLink)} className="relative bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20">
                     <Archive className="mr-2 h-4 w-4" />
                     Coffre-fort
-                    <Badge className="absolute -top-2 -right-3 bg-amber-500 text-white text-[9px] px-1.5 py-0 h-4 leading-4 animate-pulse">Nouveau</Badge>
                   </Button>
                 )}
                 <Button variant="ghost" size="sm" onClick={() => navigate("/support")}>
@@ -241,7 +240,6 @@ export default function Dashboard() {
                       >
                         <Archive className="mr-2 h-4 w-4" />
                         Coffre-fort
-                        <Badge className="ml-2 bg-amber-500 text-white text-[9px] px-1.5 py-0 h-4 leading-4">Nouveau</Badge>
                       </Button>
                     )}
                     <Button
