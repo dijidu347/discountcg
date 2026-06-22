@@ -12,7 +12,7 @@ export const MAJI_VIDEO_POSTER = "/videos/maji-presentation-poster.jpg";
 // Offre (chiffres officiels du pitch)
 export const MAJI_MENSUEL = 99; // €/mois
 export const MAJI_PAR_MANDAT = 80; // € commission réseau par mandat validé
-export const MAJI_MANDATS_OFFERTS = 5; // 5 premiers mandats offerts à vie
+export const MAJI_MANDATS_OFFERTS = 5; // 5 premiers mandats offerts
 export const MAJI_COMMISSION_MOY_MANDAT = 1200; // marge moyenne agent par mandat (packs inclus, ordre de grandeur)
 
 // Villes déjà prises (zones non disponibles) — avec coordonnées [lon, lat] pour la carte

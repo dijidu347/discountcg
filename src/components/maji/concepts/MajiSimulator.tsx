@@ -85,7 +85,7 @@ export function MajiSimulator(_props: { ville?: string }) {
           </div>
 
           <p className="text-[11px] text-emerald-200/60 mt-3">
-            {MAJI_MENSUEL}€/mois + {MAJI_PAR_MANDAT}€/mandat · 5 premiers mandats offerts à vie · 0€ d'entrée
+            {MAJI_MENSUEL}€/mois + {MAJI_PAR_MANDAT}€/mandat · 5 premiers mandats offerts · 0€ d'entrée
           </p>
 
           <button
