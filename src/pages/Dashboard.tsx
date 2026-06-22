@@ -16,6 +16,7 @@ import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 // MaJi Auto : promo partenaire (widget hero "votre ville est-elle libre ?" + vidéo)
 import { MajiZoneCheck } from "@/components/maji/concepts/MajiZoneCheck";
+import { MajiSimulator } from "@/components/maji/concepts/MajiSimulator";
 
 export default function Dashboard() {
   const {
@@ -381,6 +382,11 @@ export default function Dashboard() {
         {/* MaJi Auto — Hero promo : vérif de zone libre + vidéo de présentation */}
         <div className="mb-8">
           <MajiZoneCheck ville={garage?.ville} />
+        </div>
+
+        {/* MaJi Auto — Simulateur de revenus (curseur mandats/mois) */}
+        <div className="mb-8">
+          <MajiSimulator />
         </div>
 
         {/* Coffre-fort Widget — visible uniquement pour abonnés actifs */}
