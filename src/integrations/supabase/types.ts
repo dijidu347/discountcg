@@ -1083,6 +1083,7 @@ export type Database = {
       }
       guest_orders: {
         Row: {
+          admin_viewed: boolean | null
           adresse: string
           certificat_non_gage: boolean | null
           code_postal: string
@@ -1130,6 +1131,7 @@ export type Database = {
           ville: string
         }
         Insert: {
+          admin_viewed?: boolean | null
           adresse: string
           certificat_non_gage?: boolean | null
           code_postal: string
@@ -1177,6 +1179,7 @@ export type Database = {
           ville: string
         }
         Update: {
+          admin_viewed?: boolean | null
           adresse?: string
           certificat_non_gage?: boolean | null
           code_postal?: string
