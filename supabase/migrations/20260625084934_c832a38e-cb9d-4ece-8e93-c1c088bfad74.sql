@@ -1,0 +1,1 @@
+ALTER TABLE public.guest_orders ADD COLUMN IF NOT EXISTS admin_viewed boolean DEFAULT false;
