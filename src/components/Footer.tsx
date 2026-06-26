@@ -11,10 +11,10 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Flag_of_France.svg/1200px-Flag_of_France.svg.png" 
-                alt="Drapeau français"
-                className="w-8 h-5 rounded-sm border border-secondary-foreground/20 object-cover"
+              <img
+                src="/logo-dcg.png"
+                alt="DCG Discount Carte Grise"
+                className="h-8 w-auto object-contain"
               />
               <span className="text-xl font-bold">DiscountCG</span>
             </div>
