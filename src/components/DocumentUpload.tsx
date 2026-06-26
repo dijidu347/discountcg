@@ -361,6 +361,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
       
       {/* Upload zone - only show if not at max files */}
       {uploadedFiles.length < maxFiles && (
+        <>
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -395,6 +396,12 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           </>
         )}
       </div>
+        {pdfOnly && (
+          <p className="text-xs text-muted-foreground mt-1">
+            Format PDF uniquement, moins de 1 Mo.
+          </p>
+        )}
+        </>
       )}
     </div>
   );
