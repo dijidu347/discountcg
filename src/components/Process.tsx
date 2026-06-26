@@ -42,11 +42,6 @@ const Process = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               {steps.map((step, index) => (
                 <div key={index} className="relative">
-                  {/* Mobile Connecting Line */}
-                  {index < steps.length - 1 && (
-                    <div className="md:hidden absolute left-8 top-20 bottom-0 w-1 bg-gradient-to-b from-primary to-accent -translate-x-1/2"></div>
-                  )}
-
                   <div className="text-center">
                     <div className="relative inline-flex items-center justify-center w-16 h-16 bg-primary rounded-full mb-6 shadow-lg z-10">
                       <step.icon className="w-8 h-8 text-primary-foreground" />
