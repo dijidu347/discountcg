@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileText, CheckCircle2, AlertTriangle, Download, Plus, X } from "lucide-react";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { isPdfOnlyProDemarche } from "@/lib/documentRestrictions";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { Label } from "@/components/ui/label";
 
@@ -504,6 +505,9 @@ export function DocumentsNecessaires({
     [demarcheType, questionnaireAnswers]
   );
 
+  // Pour ces 9 démarches PRO: documents en PDF de moins de 1 Mo uniquement
+  const pdfOnly = isPdfOnlyProDemarche(demarcheType);
+
   // Pièces supplémentaires
   const [additionalDocs, setAdditionalDocs] = useState<{id: number; name: string}[]>([]);
   const [newDocName, setNewDocName] = useState("");
@@ -682,6 +686,7 @@ export function DocumentsNecessaires({
                         documentType={doc.id}
                         label=""
                         onUploadComplete={() => onDocumentUpload(doc.id)}
+                        pdfOnly={pdfOnly}
                       />
                     </div>
                   </div>
@@ -700,6 +705,7 @@ export function DocumentsNecessaires({
                           documentType={`${doc.id}_verso`}
                           label=""
                           onUploadComplete={() => onDocumentUpload(`${doc.id}_verso`)}
+                          pdfOnly={pdfOnly}
                         />
                       </div>
                     </div>
@@ -763,6 +769,7 @@ export function DocumentsNecessaires({
                       customName={doc.name}
                       label=""
                       onUploadComplete={() => onDocumentUpload(`autre_piece_${doc.id}`)}
+                      pdfOnly={pdfOnly}
                     />
                   </div>
                   <Button

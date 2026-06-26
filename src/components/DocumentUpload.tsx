@@ -7,6 +7,7 @@ import { FileText, CheckCircle, Loader2, X, Upload, Download, FileCheck } from "
 import { useToast } from "@/hooks/use-toast";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { cn } from "@/lib/utils";
+import { validatePdfOnlyFile } from "@/lib/documentRestrictions";
 
 interface UploadedFile {
   id: string;
@@ -23,9 +24,10 @@ interface DocumentUploadProps {
   onUploadComplete?: () => void;
   isBlocked?: boolean;
   blockedMessage?: string;
+  pdfOnly?: boolean; // Si true: n'accepte que des PDF de moins de 1 Mo
 }
 
-export function DocumentUpload({ demarcheId, documentType, label, customName, onUploadComplete, isBlocked = false, blockedMessage }: DocumentUploadProps) {
+export function DocumentUpload({ demarcheId, documentType, label, customName, onUploadComplete, isBlocked = false, blockedMessage, pdfOnly = false }: DocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -110,6 +112,19 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
 
   const handleUpload = async (file: File) => {
     if (!file) return;
+
+    // Restriction PDF < 1 Mo pour certaines démarches
+    if (pdfOnly) {
+      const validationError = validatePdfOnlyFile(file);
+      if (validationError) {
+        toast({
+          title: "Fichier refusé",
+          description: validationError,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
 
     setUploading(true);
 
@@ -361,7 +376,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           ref={fileInputRef}
           type="file"
           onChange={handleFileChange}
-          accept=".pdf,.jpg,.jpeg,.png,image/*"
+          accept={pdfOnly ? "application/pdf,.pdf" : ".pdf,.jpg,.jpeg,.png,image/*"}
           disabled={uploading}
           className="hidden"
         />

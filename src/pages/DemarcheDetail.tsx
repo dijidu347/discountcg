@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { isPdfOnlyProDemarche } from "@/lib/documentRestrictions";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Mail, Phone, Zap, FileCheck as FileCheckIcon, CreditCard, Loader2, Plus } from "lucide-react";
@@ -722,6 +723,7 @@ export default function DemarcheDetail() {
                       onUploadComplete={loadData}
                       isBlocked={isUploadBlocked}
                       blockedMessage="Paiement requis pour renvoyer des documents"
+                      pdfOnly={isPdfOnlyProDemarche(demarche.type)}
                     />
                   ))}
                   
@@ -760,6 +762,7 @@ export default function DemarcheDetail() {
                       label={`Document supplémentaire ${index + 1}`}
                       customName={`Pièce supplémentaire ${index + 1}`}
                       onUploadComplete={loadData}
+                      pdfOnly={isPdfOnlyProDemarche(demarche.type)}
                     />
                   ))}
                   

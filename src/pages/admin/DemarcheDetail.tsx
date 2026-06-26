@@ -13,6 +13,7 @@ import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, StorageBucket } from "@/lib/storage-utils";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { isPdfOnlyProDemarche } from "@/lib/documentRestrictions";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { Badge } from "@/components/ui/badge";
@@ -1372,6 +1373,7 @@ export default function DemarcheDetail() {
                         demarcheId={demarche.id}
                         documentType={`admin_document_${slotId}`}
                         label={`Pièce jointe ${idx + 1}`}
+                        pdfOnly={isPdfOnlyProDemarche(demarche.type)}
                         onUploadComplete={async (uploadedFileName?: string) => {
                           // Mettre le statut à "finalisé" et marquer comme vu automatiquement
                           await supabase
