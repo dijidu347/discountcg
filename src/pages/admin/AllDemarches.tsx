@@ -464,7 +464,14 @@ export default function AllDemarches() {
                         )}
                       </TableCell>
                       <TableCell className="font-mono text-xs font-semibold text-primary">{d.numero_demarche}</TableCell>
-                      <TableCell className="font-medium">{d.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {d.immatriculation}
+                        {(d.marque || d.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {d.garages?.raison_sociale}
@@ -532,7 +539,14 @@ export default function AllDemarches() {
                   return (
                     <TableRow key={d.id} className="bg-amber-50/50 dark:bg-amber-950/10">
                       <TableCell className="font-mono text-xs font-semibold text-amber-700">{d.numero_demarche}</TableCell>
-                      <TableCell className="font-medium">{d.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {d.immatriculation}
+                        {(d.marque || d.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm">{d.garages?.raison_sociale}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-amber-600 border-amber-400 text-xs">
@@ -632,7 +646,14 @@ export default function AllDemarches() {
                   {paginate(refusees, pageRefusees).map((d: any) => (
                     <TableRow key={d.id} className="bg-red-50/50 dark:bg-red-950/10">
                       <TableCell className="font-mono text-xs font-semibold text-red-700">{d.numero_demarche}</TableCell>
-                      <TableCell className="font-medium">{d.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {d.immatriculation}
+                        {(d.marque || d.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {d.garages?.raison_sociale}
@@ -692,7 +713,14 @@ export default function AllDemarches() {
                   {paginate(terminees, pageTerminees).map((d: any) => (
                     <TableRow key={d.id} className="bg-green-50/50 dark:bg-green-950/10">
                       <TableCell className="font-mono text-xs font-semibold text-green-700">{d.numero_demarche}</TableCell>
-                      <TableCell className="font-medium">{d.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {d.immatriculation}
+                        {(d.marque || d.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {d.garages?.raison_sociale}

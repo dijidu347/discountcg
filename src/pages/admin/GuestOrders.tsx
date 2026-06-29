@@ -23,6 +23,8 @@ interface GuestOrder {
   id: string;
   tracking_number: string;
   immatriculation: string;
+  marque: string | null;
+  modele: string | null;
   nom: string;
   prenom: string;
   email: string;
@@ -481,7 +483,14 @@ export default function GuestOrders() {
                         )}
                       </TableCell>
                       <TableCell className="font-mono text-xs font-semibold text-primary">{o.tracking_number}</TableCell>
-                      <TableCell className="font-medium">{o.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {o.immatriculation}
+                        {(o.marque || o.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[o.marque, o.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>{renderClientCell(o)}</TableCell>
                       <TableCell>{o.demarche_type || "—"}</TableCell>
                       <TableCell>{getPaymentStatusBadge(o)}</TableCell>
@@ -539,7 +548,14 @@ export default function GuestOrders() {
                   {paginate(refusees, pageRefusees).map((o) => (
                     <TableRow key={o.id} className="bg-red-50/50 dark:bg-red-950/10">
                       <TableCell className="font-mono text-xs font-semibold text-red-700">{o.tracking_number}</TableCell>
-                      <TableCell className="font-medium">{o.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {o.immatriculation}
+                        {(o.marque || o.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[o.marque, o.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>{renderClientCell(o)}</TableCell>
                       <TableCell>{o.demarche_type || "—"}</TableCell>
                       <TableCell>{getPaymentStatusBadge(o)}</TableCell>
@@ -592,7 +608,14 @@ export default function GuestOrders() {
                   {paginate(terminees, pageTerminees).map((o) => (
                     <TableRow key={o.id} className="bg-green-50/50 dark:bg-green-950/10">
                       <TableCell className="font-mono text-xs font-semibold text-green-700">{o.tracking_number}</TableCell>
-                      <TableCell className="font-medium">{o.immatriculation}</TableCell>
+                      <TableCell className="font-medium">
+                        {o.immatriculation}
+                        {(o.marque || o.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[o.marque, o.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>{renderClientCell(o)}</TableCell>
                       <TableCell>{o.demarche_type || "—"}</TableCell>
                       <TableCell>{getPaymentStatusBadge(o)}</TableCell>
