@@ -34,7 +34,7 @@ const fetchAllDemarches = async (
   while (keepGoing) {
     const { data, error } = await supabase
       .from("demarches")
-      .select("*, garages(raison_sociale, is_verified)")
+      .select("*, garages(raison_sociale, is_verified), vehicules(marque, modele)")
       .order("created_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
@@ -466,9 +466,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-primary">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.marque || d.modele) && (
+                        {(d.vehicules?.marque || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
@@ -541,9 +541,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-amber-700">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.marque || d.modele) && (
+                        {(d.vehicules?.marque || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
@@ -648,9 +648,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-red-700">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.marque || d.modele) && (
+                        {(d.vehicules?.marque || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
@@ -715,9 +715,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-green-700">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.marque || d.modele) && (
+                        {(d.vehicules?.marque || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.marque, d.modele].filter(Boolean).join(" ")}
+                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
