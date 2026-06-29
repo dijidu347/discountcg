@@ -466,9 +466,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-primary">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.vehicules?.marque || d.vehicules?.modele) && (
+                        {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
+                            {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
@@ -541,9 +541,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-amber-700">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.vehicules?.marque || d.vehicules?.modele) && (
+                        {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
+                            {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
@@ -648,9 +648,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-red-700">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.vehicules?.marque || d.vehicules?.modele) && (
+                        {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
+                            {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
@@ -715,9 +715,9 @@ export default function AllDemarches() {
                       <TableCell className="font-mono text-xs font-semibold text-green-700">{d.numero_demarche}</TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
-                        {(d.vehicules?.marque || d.vehicules?.modele) && (
+                        {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[d.vehicules?.marque, d.vehicules?.modele].filter(Boolean).join(" ")}
+                            {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>

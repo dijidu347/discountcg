@@ -27,6 +27,7 @@ import { StripePayment } from "@/components/StripePayment";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice } from "@/lib/utils";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
+import { getVehicleByPlate } from "@/lib/vehicle-api";
 
 // Types de démarches PRO qui nécessitent un traitement spécial
 const PRO_DEMARCHE_TYPES = [
@@ -322,6 +323,28 @@ export default function NouvelleDemarche() {
     }
   };
 
+  // Enrichit la démarche avec marque/modèle récupérés via l'API plaque.
+  // Fire-and-forget : ne doit JAMAIS bloquer ni faire échouer la création,
+  // et ne ralentit pas la navigation (pas de await côté appelant).
+  const enrichDemarcheWithVehicle = (newDemarcheId: string, plate: string) => {
+    if (!plate || plate === 'TEMP') return;
+    void (async () => {
+      try {
+        const res = await getVehicleByPlate(plate);
+        const marque = res?.data?.marque;
+        const modele = res?.data?.modele;
+        if (res?.success && (marque || modele)) {
+          await supabase
+            .from('demarches')
+            .update({ marque: marque ?? null, modele: modele ?? null } as any)
+            .eq('id', newDemarcheId);
+        }
+      } catch (e) {
+        console.log("Enrichissement marque/modèle ignoré:", e);
+      }
+    })();
+  };
+
   const handleAutoCreateDraft = async () => {
     if (!garage || demarcheId || !actionDetails) return;
 
@@ -396,12 +419,14 @@ export default function NouvelleDemarche() {
           .single();
         if (!retryError && retryData) {
           setDemarcheId(retryData.id);
+          enrichDemarcheWithVehicle(retryData.id, selectedImmatriculation);
         } else {
           console.error("Retry also failed:", retryError);
         }
       }
     } else if (data) {
       setDemarcheId(data.id);
+      enrichDemarcheWithVehicle(data.id, selectedImmatriculation);
     }
   };
 
@@ -415,6 +440,9 @@ export default function NouvelleDemarche() {
         .from('demarches')
         .update({ immatriculation, vehicule_id: vehicleId })
         .eq('id', demarcheId);
+      // Enrichit marque/modèle maintenant que la vraie plaque est connue
+      // (fire-and-forget ; ignore TEMP/plaque vide en interne)
+      enrichDemarcheWithVehicle(demarcheId, immatriculation);
     }
   };
 
