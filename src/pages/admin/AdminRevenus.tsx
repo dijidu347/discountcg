@@ -9,11 +9,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Input } from "@/components/ui/input";
 import {
   ArrowLeft, DollarSign, TrendingUp, TrendingDown, Minus,
-  CreditCard, Coins, Calendar as CalendarIcon, BarChart3, Users, FileText,
+  CreditCard, Coins, BarChart3, Users, FileText,
   ArrowUpRight, ArrowDownRight, Activity, Euro, Eye, Archive
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -21,7 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line
 } from "recharts";
-import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, parse, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -191,7 +190,15 @@ export default function AdminRevenus() {
   const dateRange = useMemo(() => {
     const now = new Date();
     if (period === "custom" && customDateRange.from) {
-      return { start: customDateRange.from, end: customDateRange.to || now };
+      return {
+        start: startOfDay(customDateRange.from),
+        end: customDateRange.to ? endOfDay(customDateRange.to) : now,
+      };
+    }
+    if (period === "today") return { start: startOfDay(now), end: endOfDay(now) };
+    if (period === "yesterday") {
+      const y = subDays(now, 1);
+      return { start: startOfDay(y), end: endOfDay(y) };
     }
     if (period === "7") return { start: subDays(now, 7), end: now };
     if (period === "30") return { start: subDays(now, 30), end: now };
@@ -510,6 +517,8 @@ export default function AdminRevenus() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="today">Aujourd'hui</SelectItem>
+                <SelectItem value="yesterday">Hier</SelectItem>
                 <SelectItem value="7">7 derniers jours</SelectItem>
                 <SelectItem value="30">30 derniers jours</SelectItem>
                 <SelectItem value="90">3 derniers mois</SelectItem>
@@ -519,29 +528,40 @@ export default function AdminRevenus() {
               </SelectContent>
             </Select>
             {period === "custom" && (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-[240px] justify-start text-left font-normal", !customDateRange.from && "text-muted-foreground")}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {customDateRange.from ? (
-                      customDateRange.to ? (
-                        `${format(customDateRange.from, "dd/MM/yy")} - ${format(customDateRange.to, "dd/MM/yy")}`
-                      ) : format(customDateRange.from, "dd/MM/yyyy")
-                    ) : "Choisir les dates"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="end">
-                  <Calendar
-                    mode="range"
-                    selected={customDateRange.from ? { from: customDateRange.from, to: customDateRange.to } : undefined}
-                    onSelect={(range) => setCustomDateRange({ from: range?.from, to: range?.to })}
-                    numberOfMonths={2}
-                    disabled={(date) => date > new Date()}
-                    className={cn("p-3 pointer-events-auto")}
-                    locale={fr}
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground">Du</span>
+                  <Input
+                    type="date"
+                    max={format(new Date(), "yyyy-MM-dd")}
+                    value={customDateRange.from ? format(customDateRange.from, "yyyy-MM-dd") : ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCustomDateRange((prev) => ({
+                        ...prev,
+                        from: v ? parse(v, "yyyy-MM-dd", new Date()) : undefined,
+                      }));
+                    }}
+                    className="w-[160px]"
                   />
-                </PopoverContent>
-              </Popover>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground">Au</span>
+                  <Input
+                    type="date"
+                    max={format(new Date(), "yyyy-MM-dd")}
+                    value={customDateRange.to ? format(customDateRange.to, "yyyy-MM-dd") : ""}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCustomDateRange((prev) => ({
+                        ...prev,
+                        to: v ? parse(v, "yyyy-MM-dd", new Date()) : undefined,
+                      }));
+                    }}
+                    className="w-[160px]"
+                  />
+                </div>
+              </div>
             )}
           </div>
         </div>
