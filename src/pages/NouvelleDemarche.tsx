@@ -431,14 +431,19 @@ export default function NouvelleDemarche() {
   };
 
   const handleVehicleSelect = async (vehicleId: string, immatriculation: string, vehicleData?: any) => {
-    setSelectedVehicleId(vehicleId);
+    // Les CG passent un id bidon "temp-..." (généré par VehicleFormCG) qui n'est pas
+    // un UUID : il ferait échouer l'update sur la FK vehicule_id. On ne garde que les vrais ids.
+    const realVehicleId = (vehicleId && !vehicleId.startsWith('temp-')) ? vehicleId : null;
+    setSelectedVehicleId(realVehicleId);
     setSelectedImmatriculation(immatriculation);
 
     // Update the draft demarche immatriculation in DB if it exists
     if (demarcheId && immatriculation) {
+      const updatePayload: any = { immatriculation };
+      if (realVehicleId) updatePayload.vehicule_id = realVehicleId;
       await supabase
         .from('demarches')
-        .update({ immatriculation, vehicule_id: vehicleId })
+        .update(updatePayload)
         .eq('id', demarcheId);
       // Enrichit marque/modèle maintenant que la vraie plaque est connue
       // (fire-and-forget ; ignore TEMP/plaque vide en interne)
