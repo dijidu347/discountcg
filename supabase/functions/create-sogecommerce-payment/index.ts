@@ -254,7 +254,7 @@ serve(async (req) => {
       vads_amount: String(amountCents),
       vads_ctx_mode: mode, // TEST en bac à sable
       vads_currency: "978", // EUR
-      vads_order_id: String(demarcheId).slice(0, 64),
+      vads_order_id: String(demarche.numero_demarche || demarcheId).slice(0, 64),
       vads_page_action: "PAYMENT",
       vads_payment_config: "SINGLE",
       vads_site_id: siteId,
