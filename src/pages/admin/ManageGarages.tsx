@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, Clock, History, Plus, AlertCircle, Upload } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, Clock, History, Plus, AlertCircle, Upload, Coins } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -80,6 +80,9 @@ export default function ManageGarages() {
   const [notificationSubject, setNotificationSubject] = useState("");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [sendingNotification, setSendingNotification] = useState(false);
+  const [showOfferTokensDialog, setShowOfferTokensDialog] = useState(false);
+  const [tokensToOffer, setTokensToOffer] = useState("");
+  const [offeringTokens, setOfferingTokens] = useState(false);
   const [notificationHistory, setNotificationHistory] = useState<Notification[]>([]);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [activeTab, setActiveTab] = useState("documents");
@@ -573,6 +576,63 @@ export default function ManageGarages() {
     }
   };
 
+  const handleOfferTokens = async () => {
+    if (!selectedGarage) return;
+
+    const nbTokens = Number(tokensToOffer);
+    if (!Number.isInteger(nbTokens) || nbTokens < 1) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez saisir un nombre entier de jetons (minimum 1)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setOfferingTokens(true);
+    try {
+      // 1 jeton = 5 € ; token_balance est stocké EN EUROS
+      const creditEuros = nbTokens * 5;
+
+      // Relire le solde actuel pour éviter d'écraser une valeur périmée
+      const { data: current, error: readError } = await supabase
+        .from('garages')
+        .select('token_balance')
+        .eq('id', selectedGarage.id)
+        .single();
+
+      if (readError) throw readError;
+
+      const newBalance = (current?.token_balance || 0) + creditEuros;
+
+      const { error: updateError } = await supabase
+        .from('garages')
+        .update({ token_balance: newBalance })
+        .eq('id', selectedGarage.id);
+
+      if (updateError) throw updateError;
+
+      toast({
+        title: "Jetons offerts",
+        description: `${nbTokens} jeton(s) offert(s) — nouveau solde : ${newBalance} €`,
+      });
+
+      await loadGarages();
+      setSelectedGarage((prev: any) => (prev ? { ...prev, token_balance: newBalance } : prev));
+      setShowOfferTokensDialog(false);
+      setTokensToOffer("");
+    } catch (error) {
+      console.error('Error offering tokens:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'offrir les jetons",
+        variant: "destructive",
+      });
+    } finally {
+      setOfferingTokens(false);
+    }
+  };
+
   const handleAddRequiredDoc = async () => {
     if (!newDocForm.nom_document.trim() || !newDocForm.code.trim()) return;
     setSavingDoc(true);
@@ -967,6 +1027,17 @@ export default function ManageGarages() {
 
               <TabsContent value="notifications" className="flex-1 overflow-auto mt-4">
                 <div className="space-y-4">
+                  <Card className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Solde actuel</p>
+                      <p className="text-lg font-bold">{selectedGarage?.token_balance || 0} €</p>
+                    </div>
+                    <Button variant="outline" onClick={() => setShowOfferTokensDialog(true)}>
+                      <Coins className="mr-2 h-4 w-4" />
+                      Offrir des jetons
+                    </Button>
+                  </Card>
+
                   <Button onClick={() => setShowNotificationDialog(true)} className="w-full">
                     <Send className="mr-2 h-4 w-4" />
                     Envoyer une notification
@@ -1113,6 +1184,56 @@ export default function ManageGarages() {
                   <>
                     <Send className="mr-2 h-4 w-4" />
                     Envoyer
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Offer Tokens Dialog */}
+        <Dialog open={showOfferTokensDialog} onOpenChange={setShowOfferTokensDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Offrir des jetons</DialogTitle>
+              <DialogDescription>
+                Créditer le solde de {selectedGarage?.raison_sociale}. Un jeton vaut 5 €.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="tokens">Nombre de jetons à offrir</Label>
+                <Input
+                  id="tokens"
+                  type="number"
+                  min={1}
+                  step={1}
+                  placeholder="Ex: 3"
+                  value={tokensToOffer}
+                  onChange={(e) => setTokensToOffer(e.target.value)}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Équivaut à {(parseInt(tokensToOffer, 10) || 0) * 5} €
+              </p>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowOfferTokensDialog(false)}>
+                Annuler
+              </Button>
+              <Button
+                onClick={handleOfferTokens}
+                disabled={!Number.isInteger(Number(tokensToOffer)) || Number(tokensToOffer) < 1 || offeringTokens}
+              >
+                {offeringTokens ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Traitement...
+                  </>
+                ) : (
+                  <>
+                    <Coins className="mr-2 h-4 w-4" />
+                    Offrir
                   </>
                 )}
               </Button>
