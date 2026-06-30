@@ -28,6 +28,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice } from "@/lib/utils";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
+import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Types de démarches PRO qui nécessitent un traitement spécial
 const PRO_DEMARCHE_TYPES = [
@@ -79,6 +81,7 @@ export default function NouvelleDemarche() {
     { id: 5, name: "" }
   ]);
   const [carteGrisePrice, setCarteGrisePrice] = useState<number>(0);
+  const [expressSelected, setExpressSelected] = useState(false);
   // trackingServicePrice supprimé - options SMS retirées
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -142,6 +145,7 @@ export default function NouvelleDemarche() {
         setSelectedImmatriculation(draft.immatriculation || "");
         setSelectedVehicleId(draft.vehicule_id);
         setCarteGrisePrice(draft.prix_carte_grise || 0);
+        setExpressSelected(draft.express || false);
         setDraftLoaded(true);
       }
     };
@@ -190,11 +194,11 @@ export default function NouvelleDemarche() {
       // Pour DA et DC, on n'a pas besoin de carteGrisePrice
       if (formData.type === 'DA' || formData.type === 'DC') {
         updateDemarcheMontant();
-      } else if (carteGrisePrice > 0) {
+      } else if (carteGrisePrice > 0 || isExpressEligible(formData.type)) {
         updateDemarcheMontant();
       }
     }
-  }, [carteGrisePrice, demarcheId, actionDetails, formData.type]);
+  }, [carteGrisePrice, demarcheId, actionDetails, formData.type, expressSelected]);
 
   // Jeton gratuit uniquement pour DA et DC
   const isFreeTokenEligible = freeTokenAvailable && (formData.type === 'DA' || formData.type === 'DC');
@@ -232,9 +236,9 @@ export default function NouvelleDemarche() {
     
     // Total des services
     const totalServicesHT = fraisDossierHT;
-    
-    // Total TTC = carte grise + services (pas de TVA)
-    const totalTTC = prixCarteGrise + totalServicesHT;
+
+    // Total TTC = carte grise + services + surcoût express (pas de TVA)
+    const totalTTC = prixCarteGrise + totalServicesHT + getExpressSurchargePro();
 
     await supabase
       .from('demarches')
@@ -243,6 +247,7 @@ export default function NouvelleDemarche() {
         frais_dossier: fraisDossierHT,
         montant_ht: totalServicesHT,
         montant_ttc: totalTTC,
+        express: expressSelected,
       } as any)
       .eq('id', demarcheId);
   };
@@ -359,9 +364,9 @@ export default function NouvelleDemarche() {
     
     // Total des services (pas d'options au début)
     const totalServicesHT = fraisDossierHT;
-    
-    // Total TTC = carte grise + services (pas de TVA)
-    const totalTTC = prixCarteGrise + totalServicesHT;
+
+    // Total TTC = carte grise + services + surcoût express (pas de TVA)
+    const totalTTC = prixCarteGrise + totalServicesHT + getExpressSurchargePro();
 
     const insertData: any = {
         garage_id: garage.id,
@@ -372,6 +377,7 @@ export default function NouvelleDemarche() {
         frais_dossier: fraisDossierHT,
         montant_ht: totalServicesHT,
         montant_ttc: totalTTC,
+        express: expressSelected,
         status: 'en_saisie',
         is_draft: true,
         paye: false,
@@ -409,6 +415,7 @@ export default function NouvelleDemarche() {
             frais_dossier: fraisDossierHT,
             montant_ht: totalServicesHT,
             montant_ttc: totalTTC,
+            express: expressSelected,
             status: 'en_saisie',
             is_draft: true,
             paye: false,
@@ -466,17 +473,21 @@ export default function NouvelleDemarche() {
     return actionDetails?.prix || 0;
   };
 
+  // Surcoût de l'option express (0 si non sélectionnée ou type non éligible)
+  const getExpressSurchargePro = () =>
+    (expressSelected && isExpressEligible(formData.type)) ? getExpressSurcharge(formData.type) : 0;
+
   const getTotalPrice = () => {
     const basePrice = getFraisDossier();
     // Pour DA, DC et démarches PRO, pas de prix carte grise
     const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC' || PRO_DEMARCHE_TYPES.includes(formData.type)) ? 0 : carteGrisePrice;
-    return basePrice + vehiclePrice;
+    return basePrice + vehiclePrice + getExpressSurchargePro();
   };
 
   // En mode split: le pro paie uniquement les frais de dossier (+ options tracking)
   // Le client paie la carte grise (taxe régionale)
   const getProPrice = () => {
-    return getFraisDossier();
+    return getFraisDossier() + getExpressSurchargePro();
   };
 
   const getClientPrice = () => {
@@ -485,8 +496,8 @@ export default function NouvelleDemarche() {
 
   // Calcul du coût en jetons (1 jeton = 5€, arrondi au supérieur)
   const getTokenCost = () => {
-    // Pour les CG, le calcul est basé sur les frais de dossier uniquement (pas la carte grise)
-    const fraisToConvert = getFraisDossier();
+    // Pour les CG, le calcul est basé sur les frais de dossier (+ express) uniquement (pas la carte grise)
+    const fraisToConvert = getFraisDossier() + getExpressSurchargePro();
     return Math.ceil(fraisToConvert / 5);
   };
 
@@ -680,6 +691,7 @@ export default function NouvelleDemarche() {
           payment_mode: paymentMode || 'pro_pays_all',
           client_email: clientEmail || null,
           client_phone: clientPhone || null,
+          express: expressSelected,
       };
       console.log("=== UPDATE DEMARCHE ===", { demarcheId, paymentMode, clientEmail, updateData });
       const { error: updateError } = await supabase
@@ -1312,9 +1324,31 @@ export default function NouvelleDemarche() {
                 </>
               )}
 
-              <Button 
+              {isExpressEligible(formData.type) && (
+                <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/30">
+                  <Checkbox
+                    id="express-option"
+                    checked={expressSelected}
+                    onCheckedChange={(checked) => {
+                      const newValue = checked === true;
+                      setExpressSelected(newValue);
+                      if (demarcheId) {
+                        supabase
+                          .from('demarches')
+                          .update({ express: newValue } as any)
+                          .eq('id', demarcheId);
+                      }
+                    }}
+                  />
+                  <Label htmlFor="express-option" className="cursor-pointer">
+                    {EXPRESS_LABEL} (+{getExpressSurcharge(formData.type)} €)
+                  </Label>
+                </div>
+              )}
+
+              <Button
                 type="submit"
-                size="lg" 
+                size="lg"
                 disabled={
                   loading || 
                   isQuestionnaireBlocked ||
