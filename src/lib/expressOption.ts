@@ -1,7 +1,7 @@
 // Source unique de vérité pour l'option "Traitement express (2h)".
 // Réutilisée par le parcours pro et le parcours invité.
 
-export const EXPRESS_LABEL = "Traitement express (2h)";
+export const EXPRESS_LABEL = "Traitement express en 2h";
 
 // Surcoût de l'option express par type de démarche éligible.
 export const EXPRESS_SURCHARGE: Record<string, number> = {

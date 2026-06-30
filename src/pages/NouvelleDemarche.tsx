@@ -1341,7 +1341,8 @@ export default function NouvelleDemarche() {
                     }}
                   />
                   <Label htmlFor="express-option" className="cursor-pointer">
-                    {EXPRESS_LABEL} (+{getExpressSurcharge(formData.type)} €)
+                    <span className="font-medium">{EXPRESS_LABEL}</span>
+                    <span className="ml-2 text-primary font-semibold">+{getExpressSurcharge(formData.type)} €</span>
                   </Label>
                 </div>
               )}
