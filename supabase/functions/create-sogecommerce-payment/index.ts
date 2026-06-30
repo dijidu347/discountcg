@@ -221,7 +221,9 @@ serve(async (req) => {
 
     const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
     const fraisDossier = Number(demarche.frais_dossier) || 0;
-    const totalServices = fraisDossier + optionsTotal;
+    const EXPRESS_SURCHARGE: Record<string, number> = { DA: 5, DC: 5, CG: 10, CPI_WW: 99 };
+    const expressSurcharge = demarche.express ? (EXPRESS_SURCHARGE[demarche.type] || 0) : 0;
+    const totalServices = fraisDossier + optionsTotal + expressSurcharge;
 
     let calculatedTotal: number;
     if (paymentMode === "split") {
