@@ -418,6 +418,7 @@ export type Database = {
           commentaire: string | null
           created_at: string
           documents_complets: boolean | null
+          express: boolean
           facture_id: string | null
           frais_dossier: number | null
           garage_id: string
@@ -458,6 +459,7 @@ export type Database = {
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
+          express?: boolean
           facture_id?: string | null
           frais_dossier?: number | null
           garage_id: string
@@ -498,6 +500,7 @@ export type Database = {
           commentaire?: string | null
           created_at?: string
           documents_complets?: boolean | null
+          express?: boolean
           facture_id?: string | null
           frais_dossier?: number | null
           garage_id?: string
@@ -1104,6 +1107,7 @@ export type Database = {
           email: string
           email_notifications: boolean
           energie: string | null
+          express: boolean
           frais_dossier: number
           has_cotitulaire: boolean | null
           id: string
@@ -1152,6 +1156,7 @@ export type Database = {
           email: string
           email_notifications?: boolean
           energie?: string | null
+          express?: boolean
           frais_dossier?: number
           has_cotitulaire?: boolean | null
           id?: string
@@ -1200,6 +1205,7 @@ export type Database = {
           email?: string
           email_notifications?: boolean
           energie?: string | null
+          express?: boolean
           frais_dossier?: number
           has_cotitulaire?: boolean | null
           id?: string
