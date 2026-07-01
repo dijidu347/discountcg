@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Receipt } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { getExpressSurcharge } from "@/lib/expressOption";
 
 interface GuestPaymentDetailsSummaryProps {
   prixCarteGrise: number;
@@ -130,13 +131,16 @@ export const calculateGuestOrderTTC = (
     emailNotifications?: boolean;
     dossierPrioritaire?: boolean;
     certificatNonGage?: boolean;
+    express?: boolean;
+    demarcheType?: string;
   } = {}
 ): number => {
   const smsPrix = options.smsNotifications ? 5 : 0;
   const emailPrix = options.emailNotifications ? 5 : 0;
   const prioritairePrix = options.dossierPrioritaire ? 5 : 0;
   const nonGagePrix = options.certificatNonGage ? 10 : 0;
-  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix;
+  const expressPrix = options.express ? getExpressSurcharge(options.demarcheType) : 0;
+  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix + expressPrix;
   // Pas de TVA - total = carte grise + services
   return prixCarteGrise + totalServicesHT;
 };
