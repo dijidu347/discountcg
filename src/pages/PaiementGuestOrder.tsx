@@ -39,6 +39,8 @@ const CheckoutForm = ({ order }: { order: any }) => {
           emailNotifications: order.email_notifications,
           dossierPrioritaire: order.dossier_prioritaire,
           certificatNonGage: order.certificat_non_gage,
+          express: order.express,
+          demarcheType: order.demarche_type,
         }
       );
 
@@ -91,6 +93,8 @@ const CheckoutForm = ({ order }: { order: any }) => {
             emailNotifications: order.email_notifications,
             dossierPrioritaire: order.dossier_prioritaire,
             certificatNonGage: order.certificat_non_gage,
+            express: order.express,
+            demarcheType: order.demarche_type,
           }
         );
         
@@ -161,6 +165,8 @@ const CheckoutForm = ({ order }: { order: any }) => {
         emailNotifications={order.email_notifications}
         dossierPrioritaire={order.dossier_prioritaire}
         certificatNonGage={order.certificat_non_gage}
+        express={order.express}
+        demarcheType={order.demarche_type}
       />
 
       <Button
@@ -225,6 +231,8 @@ const SogecommerceCheckout = ({ order }: { order: any }) => {
         emailNotifications={order.email_notifications}
         dossierPrioritaire={order.dossier_prioritaire}
         certificatNonGage={order.certificat_non_gage}
+        express={order.express}
+        demarcheType={order.demarche_type}
       />
       <Button
         onClick={handlePay}
