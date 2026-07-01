@@ -15,6 +15,8 @@ import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
 import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, CheckCircle, UserPlus, LogIn } from "lucide-react";
+import { ExpressOptionCard } from "@/components/ExpressOptionCard";
+import { getExpressSurcharge } from "@/lib/expressOption";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
@@ -45,11 +47,10 @@ export default function ResultatCarteGrise() {
   const [isPriceSaved, setIsPriceSaved] = useState(false);
 
   // Nouvelles options
-  const [dossierPrioritaire, setDossierPrioritaire] = useState(false);
+  const [express, setExpress] = useState(false);
   const [certificatNonGage, setCertificatNonGage] = useState(false);
 
   const emailPrix = 5;
-  const dossierPrioritairePrix = 5;
   const certificatNonGagePrix = 10;
 
   const fraisDossier = 30;
@@ -60,7 +61,7 @@ export default function ResultatCarteGrise() {
     const prixCarteGrise = calculation.prixTotal;
     let optionsPrix = 0;
     if (emailNotifications) optionsPrix += emailPrix;
-    if (dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
+    if (express) optionsPrix += getExpressSurcharge(demarcheType);
     if (certificatNonGage) optionsPrix += certificatNonGagePrix;
     
     const totalServicesHT = fraisDossier + optionsPrix;
@@ -110,12 +111,13 @@ export default function ResultatCarteGrise() {
         // Load demarche type + email + paid status from order
         const { data: orderData } = await supabase
           .from("guest_orders")
-          .select("demarche_type, email, paye")
+          .select("demarche_type, email, paye, express")
           .eq("id", orderIdParam)
           .single();
         if (orderData?.demarche_type) {
           setDemarcheType(orderData.demarche_type);
         }
+        setExpress(orderData?.express || false);
         if (orderData?.email) {
           setEmail(orderData.email);
           setIsEmailSaved(true);
@@ -199,7 +201,7 @@ export default function ResultatCarteGrise() {
       const prixCarteGrise = calculation.prixTotal;
       let optionsPrix = 0;
       if (emailNotifications) optionsPrix += emailPrix;
-      if (dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
+      if (express) optionsPrix += getExpressSurcharge(demarcheType);
       if (certificatNonGage) optionsPrix += certificatNonGagePrix;
 
       const totalServicesHT = fraisDossier + optionsPrix;
@@ -213,7 +215,8 @@ export default function ResultatCarteGrise() {
           frais_dossier: fraisDossier,
           sms_notifications: false,
           email_notifications: emailNotifications,
-          dossier_prioritaire: dossierPrioritaire,
+          dossier_prioritaire: false,
+          express: express,
           certificat_non_gage: certificatNonGage,
           marque: vehicleInfo?.marque || null,
           modele: vehicleInfo?.modele || null,
@@ -232,7 +235,7 @@ export default function ResultatCarteGrise() {
     };
 
     updateOrder();
-  }, [orderId, calculation, emailNotifications, dossierPrioritaire, certificatNonGage, vehicleInfo, fraisDossier]);
+  }, [orderId, calculation, emailNotifications, express, certificatNonGage, vehicleInfo, fraisDossier]);
 
   // Bloquer le refresh/fermeture pendant la commande
   useEffect(() => {
@@ -305,26 +308,8 @@ export default function ResultatCarteGrise() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {/* Dossier Prioritaire */}
-                  <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-                    dossierPrioritaire ? 'border-orange-500 bg-orange-50 dark:bg-orange-950' : 'border-border bg-card hover:bg-accent/50'
-                  }`}>
-                    <Checkbox
-                      id="dossier_prioritaire"
-                      checked={dossierPrioritaire}
-                      onCheckedChange={(checked) => setDossierPrioritaire(checked as boolean)}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="dossier_prioritaire" className="cursor-pointer flex items-center gap-2 font-medium">
-                        <Zap className="w-4 h-4 text-orange-500" />
-                        Dossier Prioritaire
-                        <span className="ml-auto text-orange-500 font-semibold">+{dossierPrioritairePrix},00 €</span>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Démarche traitée en priorité, vous garantissant des délais plus rapides
-                      </p>
-                    </div>
-                  </div>
+                  {/* Dossier Prioritaire (option express) */}
+                  <ExpressOptionCard demarcheType={demarcheType} checked={express} onCheckedChange={setExpress} />
 
                   {/* Certificat de non-gage */}
                   <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
@@ -468,7 +453,8 @@ export default function ResultatCarteGrise() {
                             documents_count: 0,
                             montant_ttc: totalPaid,
                             options: {
-                              dossier_prioritaire: dossierPrioritaire,
+                              dossier_prioritaire: false,
+                              express: express,
                               certificat_non_gage: certificatNonGage,
                               email_notifications: emailNotifications,
                             }
@@ -530,11 +516,12 @@ export default function ResultatCarteGrise() {
               departement={departement}
               vehicleInfo={vehicleInfo || undefined}
               fraisDossier={fraisDossier}
+              demarcheType={demarcheType}
               selectedOptions={{
                 smsNotifications: false,
                 emailNotifications,
                 packNotifications: false,
-                dossierPrioritaire,
+                dossierPrioritaire: express,
                 certificatNonGage,
               }}
               isPaid={isPaid}

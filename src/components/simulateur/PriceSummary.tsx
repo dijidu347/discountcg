@@ -6,6 +6,7 @@ import { Separator } from "@/components/ui/separator";
 import { Car, ChevronDown, ChevronUp } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatPrice } from "@/lib/utils";
+import { getExpressSurcharge } from "@/lib/expressOption";
 
 interface VehicleInfo {
   marque?: string;
@@ -19,6 +20,7 @@ interface PriceSummaryProps {
   departement: string;
   vehicleInfo?: VehicleInfo;
   fraisDossier?: number;
+  demarcheType?: string;
   selectedOptions?: {
     smsNotifications: boolean;
     emailNotifications: boolean;
@@ -34,6 +36,7 @@ export const PriceSummary = ({
   departement, 
   vehicleInfo,
   fraisDossier = 30,
+  demarcheType,
   selectedOptions,
   isPaid = false
 }: PriceSummaryProps) => {
@@ -43,7 +46,7 @@ export const PriceSummary = ({
   const emailPrix = 5;
   const smsPrix = 5;
   const packPrix = 10;
-  const dossierPrioritairePrix = 5;
+  const dossierPrioritairePrix = getExpressSurcharge(demarcheType);
   const certificatNonGagePrix = 10;
 
   // Calcul sans TVA
