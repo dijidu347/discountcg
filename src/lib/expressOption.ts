@@ -1,7 +1,9 @@
 // Source unique de vérité pour l'option "Traitement express (2h)".
 // Réutilisée par le parcours pro et le parcours invité.
 
-export const EXPRESS_LABEL = "Traitement express en 2h";
+export const EXPRESS_LABEL = "Dossier Prioritaire";
+
+export const EXPRESS_DESCRIPTION = "Démarche traitée en priorité, vous garantissant un traitement en 2h au lieu de 24h";
 
 // Surcoût de l'option express par type de démarche éligible.
 export const EXPRESS_SURCHARGE: Record<string, number> = {
