@@ -9,6 +9,7 @@ export const EXPRESS_SURCHARGE: Record<string, number> = {
   DC: 5,
   CG: 10,
   CPI_WW: 99,
+  WW_PROVISOIRE_PRO: 99, // code pro de la WW provisoire
 };
 
 // true uniquement si le type est l'une des clés de EXPRESS_SURCHARGE.
