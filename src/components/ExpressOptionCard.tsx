@@ -13,7 +13,7 @@ export const ExpressOptionCard = ({ demarcheType, checked, onCheckedChange }: Ex
   if (!isExpressEligible(demarcheType)) return null;
   return (
     <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-      checked ? "border-orange-500 bg-orange-50 dark:bg-orange-950" : "border-border bg-card hover:bg-accent/50"
+      checked ? "border-orange-500 bg-orange-50 dark:bg-orange-950" : "border-border bg-card hover:bg-muted/50"
     }`}>
       <Checkbox id="express_option" checked={checked} onCheckedChange={(c) => onCheckedChange(c as boolean)} />
       <div className="flex-1">

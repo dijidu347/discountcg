@@ -313,7 +313,7 @@ export default function ResultatCarteGrise() {
 
                   {/* Certificat de non-gage */}
                   <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-                    certificatNonGage ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-border bg-card hover:bg-accent/50'
+                    certificatNonGage ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-border bg-card hover:bg-muted/50'
                   }`}>
                     <Checkbox
                       id="certificat_non_gage"
@@ -344,7 +344,7 @@ export default function ResultatCarteGrise() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className={`flex items-start space-x-3 p-4 rounded-lg border transition-colors ${
-                    emailNotifications ? 'border-primary bg-primary/5' : 'bg-card hover:bg-accent/50'
+                    emailNotifications ? 'border-primary bg-primary/5' : 'bg-card hover:bg-muted/50'
                   }`}>
                     <Checkbox
                       id="email_notif"
