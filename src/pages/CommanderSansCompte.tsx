@@ -13,6 +13,7 @@ import { Upload, FileCheck, CreditCard, Loader2, Shield, Clock, User, Mail, MapP
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
+import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 import { motion, AnimatePresence } from "framer-motion";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -71,6 +72,8 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
       emailNotifications: formData.email_notifications,
       dossierPrioritaire: order.dossier_prioritaire,
       certificatNonGage: order.certificat_non_gage,
+      express: formData.express,
+      demarcheType: order?.demarche_type,
     }
   );
 
@@ -124,6 +127,8 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
             emailNotifications: formData.email_notifications,
             dossierPrioritaire: order.dossier_prioritaire,
             certificatNonGage: order.certificat_non_gage,
+            express: formData.express,
+            demarcheType: order?.demarche_type,
           }
         );
 
@@ -219,6 +224,8 @@ const SogecommerceCheckout = ({ order, formData }: { order: any; formData: any }
       emailNotifications: formData.email_notifications,
       dossierPrioritaire: order.dossier_prioritaire,
       certificatNonGage: order.certificat_non_gage,
+      express: formData.express,
+      demarcheType: order?.demarche_type,
     }
   );
 
@@ -291,6 +298,7 @@ const CommanderSansCompte = () => {
     ville: "",
     sms_notifications: false,
     email_notifications: false,
+    express: false,
   });
 
   const stepLabels = ["Informations", "Documents", "Récapitulatif", "Paiement"];
@@ -368,6 +376,7 @@ const CommanderSansCompte = () => {
         ville: data.ville || "",
         sms_notifications: data.sms_notifications || false,
         email_notifications: data.email_notifications ?? false,
+        express: data.express || false,
       });
     }
   };
@@ -441,6 +450,7 @@ const CommanderSansCompte = () => {
       // Update order with customer info + link to user if logged in
       const updatePayload: any = {
         ...formData,
+        express: formData.express,
         documents_complets: true,
         updated_at: new Date().toISOString(),
       };
@@ -510,6 +520,8 @@ const CommanderSansCompte = () => {
             emailNotifications: formData.email_notifications,
             dossierPrioritaire: order.dossier_prioritaire,
             certificatNonGage: order.certificat_non_gage,
+            express: formData.express,
+            demarcheType: order?.demarche_type,
           }
         );
         await supabase.functions.invoke('send-email', {
@@ -712,6 +724,14 @@ const CommanderSansCompte = () => {
                   <Checkbox id="sms_notif" checked={formData.sms_notifications} onCheckedChange={(checked) => setFormData({ ...formData, sms_notifications: checked as boolean })} />
                   <Label htmlFor="sms_notif" className="cursor-pointer">Notifications par SMS (+5€)</Label>
                 </div>
+                {isExpressEligible(order?.demarche_type) && (
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="express_option" checked={formData.express} onCheckedChange={(checked) => setFormData({ ...formData, express: checked as boolean })} />
+                    <Label htmlFor="express_option" className="cursor-pointer">
+                      {EXPRESS_LABEL} <span className="text-primary font-semibold">+{getExpressSurcharge(order?.demarche_type)} €</span>
+                    </Label>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -848,6 +868,8 @@ const CommanderSansCompte = () => {
               emailNotifications={formData.email_notifications}
               dossierPrioritaire={order.dossier_prioritaire}
               certificatNonGage={order.certificat_non_gage}
+              express={formData.express}
+              demarcheType={order?.demarche_type}
             />
 
             <div className="flex gap-4">
@@ -885,6 +907,8 @@ const CommanderSansCompte = () => {
               emailNotifications={formData.email_notifications}
               dossierPrioritaire={order.dossier_prioritaire}
               certificatNonGage={order.certificat_non_gage}
+              express={formData.express}
+              demarcheType={order?.demarche_type}
             />
 
             {/* Paiement */}

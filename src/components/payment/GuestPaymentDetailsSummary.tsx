@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Receipt } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
-import { getExpressSurcharge } from "@/lib/expressOption";
+import { getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 
 interface GuestPaymentDetailsSummaryProps {
   prixCarteGrise: number;
@@ -11,6 +11,8 @@ interface GuestPaymentDetailsSummaryProps {
   emailNotifications?: boolean;
   dossierPrioritaire?: boolean;
   certificatNonGage?: boolean;
+  express?: boolean;
+  demarcheType?: string;
 }
 
 export const GuestPaymentDetailsSummary = ({
@@ -20,15 +22,18 @@ export const GuestPaymentDetailsSummary = ({
   emailNotifications = false,
   dossierPrioritaire = false,
   certificatNonGage = false,
+  express = false,
+  demarcheType,
 }: GuestPaymentDetailsSummaryProps) => {
   // Options pricing
   const smsPrix = smsNotifications ? 5 : 0;
   const emailPrix = emailNotifications ? 5 : 0;
   const prioritairePrix = dossierPrioritaire ? 5 : 0;
   const nonGagePrix = certificatNonGage ? 10 : 0;
+  const expressPrix = express ? getExpressSurcharge(demarcheType) : 0;
 
   // Total services HT (frais dossier + toutes les options)
-  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix;
+  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix + expressPrix;
 
   // Total = carte grise + services HT (pas de TVA)
   const total = prixCarteGrise + totalServicesHT;
@@ -90,6 +95,12 @@ export const GuestPaymentDetailsSummary = ({
             <div className="flex justify-between items-center">
               <span className="text-sm">Suivi par SMS</span>
               <span className="font-medium">5.00 €</span>
+            </div>
+          )}
+          {express && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm">{EXPRESS_LABEL}</span>
+              <span className="font-medium">{formatPrice(getExpressSurcharge(demarcheType))} €</span>
             </div>
           )}
         </div>
