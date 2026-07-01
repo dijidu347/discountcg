@@ -14,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
+import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -724,14 +725,11 @@ const CommanderSansCompte = () => {
                   <Checkbox id="sms_notif" checked={formData.sms_notifications} onCheckedChange={(checked) => setFormData({ ...formData, sms_notifications: checked as boolean })} />
                   <Label htmlFor="sms_notif" className="cursor-pointer">Notifications par SMS (+5€)</Label>
                 </div>
-                {isExpressEligible(order?.demarche_type) && (
-                  <div className="flex items-center space-x-2">
-                    <Checkbox id="express_option" checked={formData.express} onCheckedChange={(checked) => setFormData({ ...formData, express: checked as boolean })} />
-                    <Label htmlFor="express_option" className="cursor-pointer">
-                      {EXPRESS_LABEL} <span className="text-primary font-semibold">+{getExpressSurcharge(order?.demarche_type)} €</span>
-                    </Label>
-                  </div>
-                )}
+                <ExpressOptionCard
+                  demarcheType={order?.demarche_type}
+                  checked={formData.express}
+                  onCheckedChange={(checked) => setFormData({ ...formData, express: checked })}
+                />
               </CardContent>
             </Card>
 

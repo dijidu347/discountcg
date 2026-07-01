@@ -28,6 +28,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatPrice } from "@/lib/utils";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
+import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -1324,28 +1325,16 @@ export default function NouvelleDemarche() {
                 </>
               )}
 
-              {isExpressEligible(formData.type) && (
-                <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/30">
-                  <Checkbox
-                    id="express-option"
-                    checked={expressSelected}
-                    onCheckedChange={(checked) => {
-                      const newValue = checked === true;
-                      setExpressSelected(newValue);
-                      if (demarcheId) {
-                        supabase
-                          .from('demarches')
-                          .update({ express: newValue } as any)
-                          .eq('id', demarcheId);
-                      }
-                    }}
-                  />
-                  <Label htmlFor="express-option" className="cursor-pointer">
-                    <span className="font-medium">{EXPRESS_LABEL}</span>
-                    <span className="ml-2 text-primary font-semibold">+{getExpressSurcharge(formData.type)} €</span>
-                  </Label>
-                </div>
-              )}
+              <ExpressOptionCard
+                demarcheType={formData.type}
+                checked={expressSelected}
+                onCheckedChange={(checked) => {
+                  setExpressSelected(checked);
+                  if (demarcheId) {
+                    supabase.from('demarches').update({ express: checked } as any).eq('id', demarcheId);
+                  }
+                }}
+              />
 
               <Button
                 type="submit"

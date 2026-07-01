@@ -15,6 +15,7 @@ import Footer from "@/components/Footer";
 import { formatPrice } from "@/lib/utils";
 import { Helmet } from "react-helmet-async";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
+import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 
 interface DemarcheTypeInfo {
   id: string;
@@ -248,24 +249,14 @@ export default function DemarcheSimple() {
                 <p className="font-bold text-primary text-lg">{formatPrice(totalTTC)}€</p>
               </div>
             </div>
-            {isExpressEligible(demarcheType) && (
-              <div className="flex items-center space-x-2 mt-4">
-                <Checkbox
-                  id="express_option"
-                  checked={express}
-                  onCheckedChange={async (checked) => {
-                    setExpress(checked as boolean);
-                    await supabase
-                      .from('guest_orders')
-                      .update({ express: checked as boolean })
-                      .eq('id', orderId);
-                  }}
-                />
-                <Label htmlFor="express_option" className="cursor-pointer">
-                  {EXPRESS_LABEL} <span className="text-primary font-semibold">+{getExpressSurcharge(demarcheType)} €</span>
-                </Label>
-              </div>
-            )}
+            <ExpressOptionCard
+              demarcheType={demarcheType}
+              checked={express}
+              onCheckedChange={async (checked) => {
+                setExpress(checked);
+                await supabase.from('guest_orders').update({ express: checked }).eq('id', orderId);
+              }}
+            />
             {demarcheTypeInfo?.description && (
               <p className="text-sm text-muted-foreground mt-4">{demarcheTypeInfo.description}</p>
             )}
