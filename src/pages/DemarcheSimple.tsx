@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
@@ -12,6 +14,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { formatPrice } from "@/lib/utils";
 import { Helmet } from "react-helmet-async";
+import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 
 interface DemarcheTypeInfo {
   id: string;
@@ -63,6 +66,7 @@ export default function DemarcheSimple() {
   const [email, setEmail] = useState<string>("");
   const [isEmailSaved, setIsEmailSaved] = useState(false);
   const [authUser, setAuthUser] = useState<any>(null);
+  const [express, setExpress] = useState(false);
 
   // Auto-fill email from authenticated user
   useEffect(() => {
@@ -76,7 +80,7 @@ export default function DemarcheSimple() {
   }, []);
 
   const fraisHT = demarcheTypeInfo?.prix_base || 0;
-  const totalTTC = fraisHT; // Pas de TVA pour DA/DC
+  const totalTTC = fraisHT + ((express && isExpressEligible(demarcheType)) ? getExpressSurcharge(demarcheType) : 0); // Pas de TVA pour DA/DC
 
   useEffect(() => {
     const loadData = async () => {
@@ -113,11 +117,13 @@ export default function DemarcheSimple() {
         // Vérifier si la commande existe et son statut
         const { data: order, error } = await supabase
           .from('guest_orders')
-          .select('paye, nom, prenom, email')
+          .select('paye, nom, prenom, email, express')
           .eq('id', orderIdParam)
           .single();
 
         if (error) throw error;
+
+        setExpress(order?.express || false);
 
         if (order?.paye) {
           setIsPaid(true);
@@ -242,6 +248,24 @@ export default function DemarcheSimple() {
                 <p className="font-bold text-primary text-lg">{formatPrice(totalTTC)}€</p>
               </div>
             </div>
+            {isExpressEligible(demarcheType) && (
+              <div className="flex items-center space-x-2 mt-4">
+                <Checkbox
+                  id="express_option"
+                  checked={express}
+                  onCheckedChange={async (checked) => {
+                    setExpress(checked as boolean);
+                    await supabase
+                      .from('guest_orders')
+                      .update({ express: checked as boolean })
+                      .eq('id', orderId);
+                  }}
+                />
+                <Label htmlFor="express_option" className="cursor-pointer">
+                  {EXPRESS_LABEL} <span className="text-primary font-semibold">+{getExpressSurcharge(demarcheType)} €</span>
+                </Label>
+              </div>
+            )}
             {demarcheTypeInfo?.description && (
               <p className="text-sm text-muted-foreground mt-4">{demarcheTypeInfo.description}</p>
             )}
