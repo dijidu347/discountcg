@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1011,6 +1012,7 @@ export default function DemarcheDetail() {
                       <span className="font-mono text-sm font-semibold text-primary px-2 py-1 bg-primary/10 rounded">
                         {demarche.numero_demarche}
                       </span>
+                      <ExpressBadge express={demarche.express} />
                     </CardTitle>
                     <CardDescription>
                       Créée le {new Date(demarche.created_at).toLocaleDateString('fr-FR')} • {demarche.immatriculation}

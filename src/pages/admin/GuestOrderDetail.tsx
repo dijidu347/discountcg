@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -49,6 +50,7 @@ interface GuestOrder {
   montant_ttc: number;
   frais_dossier: number;
   status: string;
+  express?: boolean;
   paye: boolean;
   documents_complets: boolean;
   commentaire: string | null;
@@ -448,6 +450,7 @@ export default function GuestOrderDetail() {
           <div className="flex items-center gap-2">
             {order.demarche_type && <Badge variant="outline">{order.demarche_type}</Badge>}
             <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
+            <ExpressBadge express={order.express} />
           </div>
         </div>
 

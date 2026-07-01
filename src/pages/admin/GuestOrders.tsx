@@ -19,6 +19,8 @@ import {
 // Types
 // ──────────────────────────────────────────────────────────────────────
 
+import { ExpressBadge } from "@/components/admin/ExpressBadge";
+
 interface GuestOrder {
   id: string;
   tracking_number: string;
@@ -36,6 +38,7 @@ interface GuestOrder {
   dossier_prioritaire?: boolean;
   certificat_non_gage?: boolean;
   status: string;
+  express?: boolean;
   paye: boolean;
   documents_complets: boolean;
   admin_viewed?: boolean | null;
@@ -482,7 +485,12 @@ export default function GuestOrders() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-semibold text-primary">{o.tracking_number}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-primary">
+                        <div className="flex items-center gap-2">
+                          {o.tracking_number}
+                          <ExpressBadge express={o.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {o.immatriculation}
                         {(o.marque || o.modele) && (
@@ -547,7 +555,12 @@ export default function GuestOrders() {
                 <TableBody>
                   {paginate(refusees, pageRefusees).map((o) => (
                     <TableRow key={o.id} className="bg-red-50/50 dark:bg-red-950/10">
-                      <TableCell className="font-mono text-xs font-semibold text-red-700">{o.tracking_number}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-red-700">
+                        <div className="flex items-center gap-2">
+                          {o.tracking_number}
+                          <ExpressBadge express={o.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {o.immatriculation}
                         {(o.marque || o.modele) && (
@@ -607,7 +620,12 @@ export default function GuestOrders() {
                 <TableBody>
                   {paginate(terminees, pageTerminees).map((o) => (
                     <TableRow key={o.id} className="bg-green-50/50 dark:bg-green-950/10">
-                      <TableCell className="font-mono text-xs font-semibold text-green-700">{o.tracking_number}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-green-700">
+                        <div className="flex items-center gap-2">
+                          {o.tracking_number}
+                          <ExpressBadge express={o.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {o.immatriculation}
                         {(o.marque || o.modele) && (

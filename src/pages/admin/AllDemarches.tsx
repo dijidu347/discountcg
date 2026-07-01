@@ -14,6 +14,7 @@ import {
   Search, ChevronLeft, ChevronRight, Download,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { ExpressBadge } from "@/components/admin/ExpressBadge";
 
 // ──────────────────────────────────────────────────────────────────────
 // Helpers
@@ -463,7 +464,12 @@ export default function AllDemarches() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell className="font-mono text-xs font-semibold text-primary">{d.numero_demarche}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-primary">
+                        <div className="flex items-center gap-2">
+                          {d.numero_demarche}
+                          <ExpressBadge express={d.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
                         {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
@@ -538,7 +544,12 @@ export default function AllDemarches() {
                     new Date(d.client_payment_token_expires_at) < new Date();
                   return (
                     <TableRow key={d.id} className="bg-amber-50/50 dark:bg-amber-950/10">
-                      <TableCell className="font-mono text-xs font-semibold text-amber-700">{d.numero_demarche}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-amber-700">
+                        <div className="flex items-center gap-2">
+                          {d.numero_demarche}
+                          <ExpressBadge express={d.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
                         {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
@@ -645,7 +656,12 @@ export default function AllDemarches() {
                 <TableBody>
                   {paginate(refusees, pageRefusees).map((d: any) => (
                     <TableRow key={d.id} className="bg-red-50/50 dark:bg-red-950/10">
-                      <TableCell className="font-mono text-xs font-semibold text-red-700">{d.numero_demarche}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-red-700">
+                        <div className="flex items-center gap-2">
+                          {d.numero_demarche}
+                          <ExpressBadge express={d.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
                         {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
@@ -712,7 +728,12 @@ export default function AllDemarches() {
                 <TableBody>
                   {paginate(terminees, pageTerminees).map((d: any) => (
                     <TableRow key={d.id} className="bg-green-50/50 dark:bg-green-950/10">
-                      <TableCell className="font-mono text-xs font-semibold text-green-700">{d.numero_demarche}</TableCell>
+                      <TableCell className="font-mono text-xs font-semibold text-green-700">
+                        <div className="flex items-center gap-2">
+                          {d.numero_demarche}
+                          <ExpressBadge express={d.express} />
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">
                         {d.immatriculation}
                         {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
