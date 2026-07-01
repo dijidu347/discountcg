@@ -111,7 +111,9 @@ function computeGuestTotal(order: any): number {
   const email = order.email_notifications ? 5 : 0;
   const prioritaire = order.dossier_prioritaire ? 5 : 0;
   const nonGage = order.certificat_non_gage ? 10 : 0;
-  return prixCarteGrise + fraisDossier + sms + email + prioritaire + nonGage;
+  const EXPRESS_SURCHARGE: Record<string, number> = { DA: 5, DC: 5, CG: 10, CPI_WW: 99 };
+  const expressSurcharge = order.express ? (EXPRESS_SURCHARGE[order.demarche_type] || 0) : 0;
+  return prixCarteGrise + fraisDossier + sms + email + prioritaire + nonGage + expressSurcharge;
 }
 
 // ---------------------------------------------------------------------------
