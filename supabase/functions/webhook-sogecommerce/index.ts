@@ -425,6 +425,34 @@ function isPaymentSuccessful(fields: Record<string, string>): boolean {
 }
 
 // ---------------------------------------------------------------------------
+// SMS d'alerte "Dossier Prioritaire" (option express) — NON bloquant.
+// Ne doit jamais casser le paiement : toute erreur est avalée dans le try/catch.
+// ---------------------------------------------------------------------------
+async function sendExpressSms(message: string) {
+  try {
+    const apiKey = Deno.env.get("SMSPARTNER_API_KEY");
+    const phoneNumber = Deno.env.get("SMS_ALERT_NUMBER");
+    if (!apiKey || !phoneNumber) {
+      console.log("SMS non envoye: SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant");
+      return;
+    }
+    const res = await fetch("https://api.smspartner.fr/v1/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ apiKey, phoneNumbers: phoneNumber, message }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data?.success === false) {
+      console.error("Echec envoi SMS Partner:", res.status, data);
+    } else {
+      console.log("SMS alerte envoye");
+    }
+  } catch (e) {
+    console.error("Exception envoi SMS:", e);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Traitement métier d'une démarche payée (recopié de webhook-stripe,
 // adapté aux champs Sogecommerce). Renvoie un texte de log.
 // ---------------------------------------------------------------------------
@@ -504,6 +532,12 @@ async function handleDemarchePayment(
     return "update_failed";
   }
   console.log("✅ Demarche updated (mode:", paymentMode, ")");
+
+  // SMS alerte dossier prioritaire (non bloquant) — uniquement quand la démarche
+  // passe réellement à payé (pro_pays_all) ; en mode split, paye reste false.
+  if (paymentMode !== "split" && demarche.express) {
+    await sendExpressSms(`Nouveau dossier PRIORITAIRE paye: ${demarche.numero_demarche} (${demarche.type}). A traiter sous 2h.`);
+  }
 
   // Crée l'enregistrement paiement (identifiant Sogecommerce dans
   // stripe_payment_id, faute de colonne dédiée).
@@ -735,6 +769,11 @@ async function handleGuestOrderPayment(
     return "update_failed";
   }
   console.log("✅ Guest order marked as paid, montant_ttc:", actualTTC);
+
+  // SMS alerte dossier prioritaire (non bloquant)
+  if (order.express) {
+    await sendExpressSms(`Nouveau dossier PRIORITAIRE paye: ${order.tracking_number} (${order.demarche_type}). A traiter sous 2h.`);
+  }
 
   // Relit la commande (les infos ont pu être saisies avant le paiement)
   const { data: freshOrder } = await supabase
