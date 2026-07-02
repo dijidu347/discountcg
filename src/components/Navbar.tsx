@@ -20,9 +20,7 @@ const Navbar = () => {
           {/* Logo officiel */}
           <button onClick={() => navigate("/")} className="flex items-center" aria-label="DiscountCarteGrise - Accueil">
             <span className="text-xl sm:text-2xl font-bold">
-              <span className="text-primary">Discount</span>
-              <span className="text-foreground">Carte</span>
-              <span className="text-[#E70203]">Grise</span>
+              <span className="bg-gradient-to-r from-[#0231C7] via-[#333333] to-[#E70203] bg-clip-text text-transparent">DiscountCarteGrise</span>
             </span>
           </button>
 

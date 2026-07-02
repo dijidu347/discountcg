@@ -11,12 +11,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <img
-                src="/logo-dcg.png"
-                alt="DCG Discount Carte Grise"
-                className="h-8 w-auto object-contain"
-              />
-              <span className="text-xl font-bold">DiscountCG</span>
+              <span className="text-xl font-bold bg-gradient-to-r from-[#0231C7] via-white to-[#E70203] bg-clip-text text-transparent" aria-label="DCG">DCG</span>
             </div>
             <p className="text-sm opacity-80">
               Vos démarches d'immatriculation simplifiées. Service rapide, professionnel et 100% sécurisé.
