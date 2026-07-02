@@ -21,7 +21,8 @@ const Navbar = () => {
           <button onClick={() => navigate("/")} className="flex items-center" aria-label="DiscountCarteGrise - Accueil">
             <span className="text-xl sm:text-2xl font-bold">
               <span className="text-primary">Discount</span>
-              <span className="text-foreground">CarteGrise</span>
+              <span className="text-foreground">Carte</span>
+              <span className="text-[#E70203]">Grise</span>
             </span>
           </button>
 
