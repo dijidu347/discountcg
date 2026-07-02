@@ -72,7 +72,10 @@ export default function DemarcheSimple() {
 
   useEffect(() => {
     if (isInfoCompleted && !isPaid) {
-      paymentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      const t = setTimeout(() => {
+        paymentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+      return () => clearTimeout(t);
     }
   }, [isInfoCompleted, isPaid]);
 
