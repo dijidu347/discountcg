@@ -287,6 +287,9 @@ const CommanderSansCompte = () => {
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, File>>({});
   const [currentStep, setCurrentStep] = useState(0);
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentStep]);
   const [direction, setDirection] = useState(1);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [formData, setFormData] = useState({
