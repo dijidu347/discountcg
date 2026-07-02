@@ -15,6 +15,7 @@ import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PaymentDetailsSummary, type PaymentCalculationResult } from "@/components/payment/PaymentDetailsSummary";
 import { formatPrice } from "@/lib/utils";
+import { getExpressSurcharge } from "@/lib/expressOption";
 
 const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
   const stripe = useStripe();
@@ -384,7 +385,8 @@ const PaiementDemarche = () => {
     const prixCG = Number(demarche.prix_carte_grise) || 0;
     const frais = Number(demarche.frais_dossier) || 0;
     const optionsSum = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
-    const amountToPayRaw = currentPaymentMode === 'split' ? (frais + optionsSum) : (prixCG + frais + optionsSum);
+    const expressPrix = demarche.express ? getExpressSurcharge(demarche.type) : 0;
+    const amountToPayRaw = (currentPaymentMode === 'split' ? (frais + optionsSum) : (prixCG + frais + optionsSum)) + expressPrix;
     const amountToPay = Math.round(amountToPayRaw * 100) / 100;
 
     if (amountToPay <= 0 || garage.token_balance < amountToPay) return;
@@ -998,6 +1000,7 @@ const PaiementDemarche = () => {
                       trackingServices={trackingServices}
                       actionRapideTitre={actionRapide?.titre}
                       prixCarteGrise={demarche.prix_carte_grise || 0}
+                      express={demarche.express}
                       onCalculated={handlePaymentCalculated}
                     />
                   </CollapsibleContent>

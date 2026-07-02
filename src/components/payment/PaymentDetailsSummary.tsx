@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
+import { getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 
 // Types pour les services de suivi
 export interface TrackingService {
@@ -25,6 +26,7 @@ interface PaymentDetailsSummaryProps {
   trackingServices: TrackingService[];
   actionRapideTitre?: string;
   prixCarteGrise?: number;        // Prix carte grise (taxe régionale)
+  express?: boolean;              // Option Dossier Prioritaire (surcoût selon le type)
   onCalculated?: (result: PaymentCalculationResult) => void;
 }
 
@@ -53,6 +55,7 @@ export const PaymentDetailsSummary = ({
   trackingServices,
   actionRapideTitre,
   prixCarteGrise: prixCarteGriseProp,
+  express = false,
   onCalculated,
 }: PaymentDetailsSummaryProps) => {
   // Détermine si c'est une démarche Carte Grise
@@ -66,9 +69,12 @@ export const PaymentDetailsSummary = ({
   
   // Options
   const optionsTotal = trackingServices.reduce((sum, s) => sum + s.price, 0);
-  
+
+  // Surcoût Dossier Prioritaire (option express) selon le type
+  const expressPrix = express ? getExpressSurcharge(demarcheType) : 0;
+
   // Total services
-  const totalServicesHT = fraisDossierHT + optionsTotal;
+  const totalServicesHT = fraisDossierHT + optionsTotal + expressPrix;
   
   // Pas de TVA
   const tva = 0;
@@ -140,6 +146,14 @@ export const PaymentDetailsSummary = ({
                 <span>{formatPrice(service.price)} €</span>
               </div>
             ))}
+
+            {/* Dossier Prioritaire (option express) */}
+            {express && (
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">{EXPRESS_LABEL}</span>
+                <span>+{expressPrix},00 €</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -195,6 +209,14 @@ export const PaymentDetailsSummary = ({
             <span>{formatPrice(service.price)} €</span>
           </div>
         ))}
+
+        {/* Dossier Prioritaire (option express) */}
+        {express && (
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-muted-foreground">{EXPRESS_LABEL}</span>
+            <span>+{expressPrix},00 €</span>
+          </div>
+        )}
       </div>
 
       <Separator />
