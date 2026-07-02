@@ -393,6 +393,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                   <Input
                     id="telephone"
                     type="tel"
+                    inputMode="tel"
                     value={telephone}
                     onChange={(e) => setTelephone(e.target.value)}
                     required
@@ -454,6 +455,8 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                   <Label htmlFor="codePostal">Code postal *</Label>
                   <Input
                     id="codePostal"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={codePostal}
                     onChange={(e) => setCodePostal(e.target.value)}
                     required

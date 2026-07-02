@@ -237,6 +237,8 @@ export default function CompleteProfile() {
                   <Input
                     id="code_postal"
                     name="code_postal"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     placeholder="75001"
                     value={formData.code_postal}
                     onChange={handleChange}
@@ -263,6 +265,7 @@ export default function CompleteProfile() {
                   id="telephone"
                   name="telephone"
                   type="tel"
+                  inputMode="tel"
                   placeholder="01 23 45 67 89"
                   value={formData.telephone}
                   onChange={handleChange}

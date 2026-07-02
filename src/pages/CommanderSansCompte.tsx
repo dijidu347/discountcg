@@ -640,7 +640,7 @@ const CommanderSansCompte = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="telephone">Téléphone *</Label>
-                    <Input id="telephone" type="tel" value={formData.telephone} onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} />
+                    <Input id="telephone" type="tel" inputMode="tel" value={formData.telephone} onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} />
                   </div>
                 </div>
 
@@ -701,7 +701,7 @@ const CommanderSansCompte = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="code_postal">Code postal *</Label>
-                    <Input id="code_postal" value={formData.code_postal} onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })} />
+                    <Input id="code_postal" inputMode="numeric" pattern="[0-9]*" value={formData.code_postal} onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="ville">Ville *</Label>

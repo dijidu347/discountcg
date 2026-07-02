@@ -163,6 +163,7 @@ export default function RegisterParticulier() {
                 <Input
                   id="telephone"
                   type="tel"
+                  inputMode="tel"
                   placeholder="06 12 34 56 78"
                   value={formData.telephone}
                   onChange={(e) => handleChange("telephone", e.target.value)}

@@ -134,11 +134,12 @@ const ContactForm = () => {
 
               <div>
                 <Label htmlFor="phone">Téléphone</Label>
-                <Input 
-                  id="phone" 
-                  name="phone" 
-                  type="tel" 
-                  placeholder="06 12 34 56 78" 
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  placeholder="06 12 34 56 78"
                   className="mt-1.5" 
                 />
               </div>

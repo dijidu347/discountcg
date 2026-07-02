@@ -264,6 +264,8 @@ export default function Register() {
                     <Label htmlFor="codePostal">Code postal *</Label>
                     <Input
                       id="codePostal"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       placeholder="75001"
                       value={formData.codePostal}
                       onChange={(e) => handleChange("codePostal", e.target.value)}
@@ -305,6 +307,7 @@ export default function Register() {
                     <Input
                       id="telephone"
                       type="tel"
+                      inputMode="tel"
                       placeholder="01 23 45 67 89"
                       value={formData.telephone}
                       onChange={(e) => handleChange("telephone", e.target.value)}

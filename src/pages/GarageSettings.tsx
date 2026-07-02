@@ -432,10 +432,12 @@ export default function GarageSettings() {
                     </div>
                     <div>
                       <Label>Téléphone</Label>
-                      <Input 
-                        value={formData.telephone} 
-                        onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} 
-                        required 
+                      <Input
+                        type="tel"
+                        inputMode="tel"
+                        value={formData.telephone}
+                        onChange={(e) => setFormData({ ...formData, telephone: e.target.value })}
+                        required
                       />
                     </div>
                   </div>
@@ -450,10 +452,12 @@ export default function GarageSettings() {
                   <div className="grid md:grid-cols-2 gap-4">
                     <div>
                       <Label>Code postal</Label>
-                      <Input 
-                        value={formData.code_postal} 
-                        onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })} 
-                        required 
+                      <Input
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={formData.code_postal}
+                        onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })}
+                        required
                       />
                     </div>
                     <div>

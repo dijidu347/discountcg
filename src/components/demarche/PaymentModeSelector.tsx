@@ -185,6 +185,7 @@ export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMod
               <Input
                 id="client_phone"
                 type="tel"
+                inputMode="tel"
                 placeholder="06 12 34 56 78"
                 value={clientPhone}
                 onChange={(e) => handlePhoneChange(e.target.value)}
