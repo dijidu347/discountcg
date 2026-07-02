@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,13 @@ export default function DemarcheSimple() {
   const [isEmailSaved, setIsEmailSaved] = useState(false);
   const [authUser, setAuthUser] = useState<any>(null);
   const [express, setExpress] = useState(false);
+  const paymentSectionRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isInfoCompleted && !isPaid) {
+      paymentSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isInfoCompleted, isPaid]);
 
   // Auto-fill email from authenticated user
   useEffect(() => {
@@ -291,7 +298,7 @@ export default function DemarcheSimple() {
           </div>
 
           {/* Step 2: Paiement (seulement après infos) */}
-          <div className="space-y-4">
+          <div ref={paymentSectionRef} className="space-y-4">
             <div className="flex items-center gap-3">
               <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
                 !isInfoCompleted ? 'bg-muted text-muted-foreground' :
