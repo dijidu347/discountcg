@@ -765,7 +765,8 @@ const PaiementDemarche = () => {
   const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
   const fraisDossier = Number(demarche.frais_dossier) || 0;
   const optionsTotal = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
-  const totalServices = fraisDossier + optionsTotal;
+  const expressPrix = demarche.express ? getExpressSurcharge(demarche.type) : 0;
+  const totalServices = fraisDossier + optionsTotal + expressPrix;
 
   // For split mode, pro only pays services (frais + options), not carte grise
   const isSplitMode = paymentMode === 'split';
