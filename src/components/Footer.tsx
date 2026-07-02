@@ -11,7 +11,11 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <span className="text-xl font-bold bg-gradient-to-r from-[#0231C7] via-white to-[#E70203] bg-clip-text text-transparent" aria-label="DCG">DCG</span>
+              <span className="text-4xl font-extrabold tracking-wide" aria-label="DCG">
+                <span className="text-[#0231C7]">D</span>
+                <span className="text-white">C</span>
+                <span className="text-[#E70203]">G</span>
+              </span>
             </div>
             <p className="text-sm opacity-80">
               Vos démarches d'immatriculation simplifiées. Service rapide, professionnel et 100% sécurisé.
