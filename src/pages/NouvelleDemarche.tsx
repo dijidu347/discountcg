@@ -660,6 +660,30 @@ export default function NouvelleDemarche() {
       }
     }
 
+    // --- Garde anti-lien-faux ---------------------------------------------
+    // Seule la carte grise (CG) porte une taxe régionale (cf. VehicleFormCG /
+    // calculatePrice, rendus uniquement pour CG). Pour tout autre type,
+    // prix_carte_grise = 0 est normal et ne doit jamais bloquer le paiement.
+    const typeIsTaxable = formData.type === 'CG';
+    // Le paiement partagé est réservé aux cartes grises.
+    if (paymentMode === 'split' && !typeIsTaxable) {
+      toast({
+        title: "Mode indisponible",
+        description: "Le paiement partagé est réservé aux cartes grises.",
+        variant: "destructive",
+      });
+      return;
+    }
+    // Carte grise : split et client_pays_all exigent une taxe réellement calculée.
+    if ((paymentMode === 'split' || paymentMode === 'client_pays_all') && typeIsTaxable && !(carteGrisePrice > 0)) {
+      toast({
+        title: "Taxe carte grise non calculée",
+        description: "Impossible d'envoyer un lien au client : la taxe n'a pas pu être calculée. Vérifiez les informations du véhicule (plaque, puissance fiscale) puis réessayez.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Update before payment
     if (demarcheId) {
       // Pour les démarches PRO avec infos véhicule, créer un véhicule dans la base

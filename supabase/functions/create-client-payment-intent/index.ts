@@ -84,6 +84,23 @@ serve(async (req) => {
       });
     }
 
+    // --- Filet anti-montant-faux ----------------------------------------
+    // Seule la carte grise (CG) porte une taxe régionale (prix_carte_grise > 0).
+    // Pour tout autre type, prix_carte_grise = 0 est normal → on ne bloque pas.
+    const typeIsTaxable = demarche.type === 'CG';
+    if (paymentMode === 'split' && !typeIsTaxable) {
+      return new Response(
+        JSON.stringify({ error: "Le paiement partagé est réservé aux cartes grises." }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+    if (typeIsTaxable && (demarche.prix_carte_grise == null || Number(demarche.prix_carte_grise) <= 0)) {
+      return new Response(
+        JSON.stringify({ error: "Taxe carte grise non calculée pour cette démarche. Le garage doit vérifier les informations du véhicule." }),
+        { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
     // Fetch tracking services for options total
     const { data: trackingServices } = await supabaseClient
       .from('tracking_services')
@@ -96,13 +113,19 @@ serve(async (req) => {
     const prixCarteGrise = Number(demarche.prix_carte_grise) || 0;
     const fraisDossier = Number(demarche.frais_dossier) || 0;
 
+    // Surcoût express. ⚠️ DOIT rester STRICTEMENT synchronisé avec la table
+    // EXPRESS_SURCHARGE de create-sogecommerce-payment (part garage) : mêmes
+    // types, mêmes montants — sinon le client serait facturé un express faux.
+    const EXPRESS_SURCHARGE: Record<string, number> = { DA: 5, DC: 5, CG: 10, CPI_WW: 99, WW_PROVISOIRE_PRO: 99 };
+    const expressSurcharge = demarche.express ? (EXPRESS_SURCHARGE[demarche.type] || 0) : 0;
+
     let calculatedTotal: number;
 
     if (paymentMode === 'client_pays_all') {
-      // Client pays everything: carte grise + frais dossier + options
-      calculatedTotal = prixCarteGrise + fraisDossier + optionsTotal;
+      // Client pays everything: carte grise + frais dossier + options + express.
+      calculatedTotal = prixCarteGrise + fraisDossier + optionsTotal + expressSurcharge;
     } else {
-      // Split: client pays only carte grise
+      // Split: client pays only carte grise (l'express reste au garage).
       calculatedTotal = prixCarteGrise;
     }
 

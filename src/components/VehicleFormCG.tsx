@@ -79,15 +79,19 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
         const data = result.data;
         setVehicleData(data);
 
-        // Calculer le prix
-        if (data.puissance_fiscale && data.date_mec) {
+        // Calculer le prix — UNIQUEMENT si la puissance fiscale est valide (> 0).
+        // Un lookup véhicule incomplet ne doit JAMAIS produire une taxe dégénérée
+        // (prixCV = 0 → total réduit aux frais fixes ~13,76 €) qui serait ensuite
+        // facturée au client. Dans ce cas, on laisse le prix à 0 et on prévient.
+        const puissanceFiscale = Number(data.puissance_fiscale);
+        if (puissanceFiscale > 0 && data.date_mec) {
           const { calculatePrice } = await import("@/utils/calculatePrice");
           const priceResult = calculatePrice(
             selectedDept.tarif,
-            Number(data.puissance_fiscale),
+            puissanceFiscale,
             data.date_mec
           );
-          
+
           setCalculatedPrice(priceResult.prixTotal);
           setPriceDetails(priceResult);
           setPriceCalculated(true);
@@ -96,6 +100,16 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
           toast({
             title: "Prix calculé",
             description: `Prix de la carte grise: ${formatPrice(priceResult.prixTotal)}€${abattementText}`
+          });
+        } else {
+          // Lookup véhicule incomplet : pas de taxe fiable → ne rien enregistrer de faux.
+          setCalculatedPrice(0);
+          setPriceCalculated(false);
+          setPriceDetails(null);
+          toast({
+            title: "Taxe carte grise non calculée",
+            description: "Informations véhicule incomplètes (puissance fiscale / date de mise en circulation). Vérifiez la plaque : sans taxe, impossible d'envoyer un lien de paiement au client.",
+            variant: "destructive",
           });
         }
       } else {
