@@ -149,8 +149,8 @@ export function CoffreWidget() {
             <video
               src="/videos/coffre-fort-promo.mp4"
               controls
-              autoPlay
               playsInline
+              preload="none"
               className="w-full"
               style={{ maxHeight: '80vh' }}
             />

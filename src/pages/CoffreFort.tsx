@@ -1006,8 +1006,8 @@ export default function CoffreFort() {
                   className="w-full"
                   style={{ maxHeight: '450px' }}
                   controls
-                  autoPlay
                   playsInline
+                  preload="none"
                 />
               )}
             </div>

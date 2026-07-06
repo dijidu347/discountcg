@@ -317,7 +317,7 @@ export default function CoffreFortSales() {
               style={{ maxHeight: '500px' }}
               controls
               playsInline
-              preload="metadata"
+              preload="none"
               poster=""
               onClick={(e) => {
                 const vid = e.target as HTMLVideoElement;
