@@ -86,6 +86,34 @@ const typeLabels: Record<string, string> = {
   CG_IMPORT: "Import étranger"
 };
 
+// Pastilles d'état documentaire d'une démarche.
+// Extensible : "Document refusé" (rouge) aujourd'hui ; "Document manquant" (orange) à venir.
+function DocumentIssueBadges({ issues }: { issues?: { rejected: boolean; missing: boolean } }) {
+  if (!issues) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {issues.rejected && (
+        <Badge
+          variant="destructive"
+          className="gap-1"
+          title="Un document a été refusé. Ouvrez le dossier (« Voir ») pour lire le motif et le corriger."
+        >
+          <XCircle className="h-3 w-3" />
+          Document refusé
+        </Badge>
+      )}
+      {/* À venir — cas manquant (orange), AlertCircle déjà importé :
+      {issues.missing && (
+        <Badge className="gap-1 bg-orange-500 hover:bg-orange-600 text-white"
+               title="Un document obligatoire est manquant.">
+          <AlertCircle className="h-3 w-3" />
+          Document manquant
+        </Badge>
+      )} */}
+    </div>
+  );
+}
+
 export default function MesDemarches() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -101,6 +129,9 @@ export default function MesDemarches() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
   const [showAllBrouillons, setShowAllBrouillons] = useState(false);
+  // État documentaire par démarche — extensible : "rejected" (rouge) maintenant,
+  // "missing" (orange) plus tard, sans changer la structure.
+  const [docIssues, setDocIssues] = useState<Record<string, { rejected: boolean; missing: boolean }>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -184,6 +215,23 @@ export default function MesDemarches() {
       if (demarchesData) {
         setDemarches(demarchesData);
         setFilteredDemarches(demarchesData);
+
+        // UNE seule requête groupée : quelles démarches ont ≥1 document REFUSÉ ?
+        // (filtre validation_status='rejected' + .in(...) sur tous les ids affichés)
+        const demarcheIds = demarchesData.map((d) => d.id);
+        if (demarcheIds.length > 0) {
+          const { data: rejectedDocs } = await supabase
+            .from('documents')
+            .select('demarche_id')
+            .eq('validation_status', 'rejected')
+            .in('demarche_id', demarcheIds);
+
+          const issues: Record<string, { rejected: boolean; missing: boolean }> = {};
+          (rejectedDocs || []).forEach((doc: any) => {
+            issues[doc.demarche_id] = { rejected: true, missing: false };
+          });
+          setDocIssues(issues);
+        }
       }
 
       // Load brouillons (drafts that are not paid)
@@ -444,6 +492,7 @@ export default function MesDemarches() {
                     >
                       <TableCell className="font-mono text-xs font-semibold text-primary">
                         {demarche.numero_demarche}
+                        <DocumentIssueBadges issues={docIssues[demarche.id]} />
                       </TableCell>
                       <TableCell className="font-medium">
                         {typeLabels[demarche.type]}
