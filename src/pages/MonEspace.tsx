@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
-  LogOut, FileText, Eye, Clock, CheckCircle, AlertCircle, Loader2, Plus, User, Download,
+  LogOut, FileText, Eye, Clock, CheckCircle, AlertCircle, XCircle, Loader2, Plus, User, Download,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -22,6 +22,34 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
   refuse: { label: "Refusé", color: "bg-red-500", icon: AlertCircle },
 };
 
+// Pastilles d'état documentaire d'une commande particulier.
+// Extensible : "Document refusé" (rouge) aujourd'hui ; "Document manquant" (orange) à venir.
+function DocumentIssueBadges({ issues }: { issues?: { rejected: boolean; missing: boolean } }) {
+  if (!issues) return null;
+  return (
+    <div className="flex flex-wrap gap-1 mt-1">
+      {issues.rejected && (
+        <Badge
+          variant="destructive"
+          className="gap-1"
+          title="Un document a été refusé. Ouvrez le suivi pour lire le motif et le corriger."
+        >
+          <XCircle className="h-3 w-3" />
+          Document refusé
+        </Badge>
+      )}
+      {/* À venir — cas manquant (orange), AlertCircle déjà importé :
+      {issues.missing && (
+        <Badge className="gap-1 bg-orange-500 hover:bg-orange-600 text-white"
+               title="Un document obligatoire est manquant.">
+          <AlertCircle className="h-3 w-3" />
+          Document manquant
+        </Badge>
+      )} */}
+    </div>
+  );
+}
+
 export default function MonEspace() {
   const { user, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -29,6 +57,9 @@ export default function MonEspace() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [adminDocs, setAdminDocs] = useState<Record<string, any[]>>({});
+  // État documentaire par commande — extensible : "rejected" (rouge) maintenant,
+  // "missing" (orange) plus tard, sans changer la structure.
+  const [docIssues, setDocIssues] = useState<Record<string, { rejected: boolean; missing: boolean }>>({});
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -104,6 +135,20 @@ export default function MonEspace() {
           docsMap[doc.order_id].push(doc);
         });
         setAdminDocs(docsMap);
+
+        // UNE seule requête groupée : quelles commandes ont ≥1 document REFUSÉ ?
+        // (filtre validation_status='rejected' + .in(...) sur tous les order_id affichés)
+        const { data: rejectedDocs } = await supabase
+          .from("guest_order_documents")
+          .select("order_id")
+          .eq("validation_status", "rejected")
+          .in("order_id", orderIds);
+
+        const issues: Record<string, { rejected: boolean; missing: boolean }> = {};
+        (rejectedDocs || []).forEach((doc: any) => {
+          issues[doc.order_id] = { rejected: true, missing: false };
+        });
+        setDocIssues(issues);
       }
     } catch (e) {
       console.error("Error loading data:", e);
@@ -189,6 +234,7 @@ export default function MonEspace() {
                               {status.label}
                             </Badge>
                           </div>
+                          <DocumentIssueBadges issues={docIssues[order.id]} />
                           <p className="text-sm text-muted-foreground">
                             N° de suivi : <span className="font-mono">{order.tracking_number}</span>
                           </p>
