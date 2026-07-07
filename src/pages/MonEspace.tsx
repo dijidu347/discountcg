@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/StatusPill";
 import {
   LogOut, FileText, Eye, Clock, CheckCircle, AlertCircle, XCircle, Loader2, Plus, User, Download,
 } from "lucide-react";
@@ -21,34 +22,6 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
   finalise: { label: "Finalisé", color: "bg-green-600", icon: CheckCircle },
   refuse: { label: "Refusé", color: "bg-red-500", icon: AlertCircle },
 };
-
-// Pastilles d'état documentaire d'une commande particulier.
-// Extensible : "Document refusé" (rouge) aujourd'hui ; "Document manquant" (orange) à venir.
-function DocumentIssueBadges({ issues }: { issues?: { rejected: boolean; missing: boolean } }) {
-  if (!issues) return null;
-  return (
-    <div className="flex flex-wrap gap-1 mt-1">
-      {issues.rejected && (
-        <Badge
-          variant="destructive"
-          className="gap-1"
-          title="Un document a été refusé. Ouvrez le suivi pour lire le motif et le corriger."
-        >
-          <XCircle className="h-3 w-3" />
-          Document refusé
-        </Badge>
-      )}
-      {/* À venir — cas manquant (orange), AlertCircle déjà importé :
-      {issues.missing && (
-        <Badge className="gap-1 bg-orange-500 hover:bg-orange-600 text-white"
-               title="Un document obligatoire est manquant.">
-          <AlertCircle className="h-3 w-3" />
-          Document manquant
-        </Badge>
-      )} */}
-    </div>
-  );
-}
 
 export default function MonEspace() {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -251,7 +224,7 @@ export default function MonEspace() {
                               {status.label}
                             </Badge>
                           </div>
-                          <DocumentIssueBadges issues={docIssues[order.id]} />
+                          <StatusPill statut={order.status} hasActiveRejectedDoc={docIssues[order.id]?.rejected ?? false} />
                           <p className="text-sm text-muted-foreground">
                             N° de suivi : <span className="font-mono">{order.tracking_number}</span>
                           </p>

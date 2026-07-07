@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/StatusPill";
 import {
   Table,
   TableBody,
@@ -85,34 +86,6 @@ const typeLabels: Record<string, string> = {
   DA_DC: "DA + DC",
   CG_IMPORT: "Import étranger"
 };
-
-// Pastilles d'état documentaire d'une démarche.
-// Extensible : "Document refusé" (rouge) aujourd'hui ; "Document manquant" (orange) à venir.
-function DocumentIssueBadges({ issues }: { issues?: { rejected: boolean; missing: boolean } }) {
-  if (!issues) return null;
-  return (
-    <div className="flex flex-wrap gap-1 mt-1">
-      {issues.rejected && (
-        <Badge
-          variant="destructive"
-          className="gap-1"
-          title="Un document a été refusé. Ouvrez le dossier (« Voir ») pour lire le motif et le corriger."
-        >
-          <XCircle className="h-3 w-3" />
-          Document refusé
-        </Badge>
-      )}
-      {/* À venir — cas manquant (orange), AlertCircle déjà importé :
-      {issues.missing && (
-        <Badge className="gap-1 bg-orange-500 hover:bg-orange-600 text-white"
-               title="Un document obligatoire est manquant.">
-          <AlertCircle className="h-3 w-3" />
-          Document manquant
-        </Badge>
-      )} */}
-    </div>
-  );
-}
 
 export default function MesDemarches() {
   const { user, loading: authLoading } = useAuth();
@@ -506,12 +479,21 @@ export default function MesDemarches() {
                     >
                       <TableCell className="font-mono text-xs font-semibold text-primary">
                         {demarche.numero_demarche}
-                        <DocumentIssueBadges issues={docIssues[demarche.id]} />
+                        <div className="mt-1">
+                          <StatusPill statut={demarche.status} hasActiveRejectedDoc={docIssues[demarche.id]?.rejected ?? false} />
+                        </div>
                       </TableCell>
                       <TableCell className="font-medium">
                         {typeLabels[demarche.type]}
                       </TableCell>
-                      <TableCell>{demarche.immatriculation}</TableCell>
+                      <TableCell>
+                        {demarche.immatriculation}
+                        {(demarche.marque || demarche.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[demarche.marque, demarche.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {/* Statut de paiement mis en avant */}
                         {demarche.status === 'paye' || demarche.paye ? (

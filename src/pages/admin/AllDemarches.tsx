@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
+import { StatusPill } from "@/components/StatusPill";
+import { TERMINAL_STATUSES } from "@/lib/demarcheStatusBadge";
 
 // ──────────────────────────────────────────────────────────────────────
 // Helpers
@@ -68,6 +70,7 @@ export default function AllDemarches() {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [demarches, setDemarches] = useState<any[]>([]);
+  const [rejectedIds, setRejectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [progressLoaded, setProgressLoaded] = useState(0);
 
@@ -111,6 +114,30 @@ export default function AllDemarches() {
 
     // On garde uniquement les non-brouillons (le bloc Brouillons a été retiré)
     setDemarches(allDemarches.filter((d) => d.is_draft === false));
+
+    // UNE seule requête groupée : refus D'ACTUALITÉ (dernier doc par type = rejected)
+    // sur les démarches non terminales — pour la pastille ROUGE côté admin aussi.
+    const ids = allDemarches
+      .filter((d) => d.is_draft === false && !TERMINAL_STATUSES.includes(d.status))
+      .map((d) => d.id);
+    if (ids.length > 0) {
+      const { data: docs } = await supabase
+        .from("documents")
+        .select("demarche_id, type_document, validation_status, created_at")
+        .in("demarche_id", ids);
+      const latestByKey: Record<string, { demarcheId: string; created_at: string; status: string | null }> = {};
+      (docs || []).forEach((doc: any) => {
+        const key = `${doc.demarche_id}|${doc.type_document}`;
+        const prev = latestByKey[key];
+        if (!prev || new Date(doc.created_at).getTime() > new Date(prev.created_at).getTime()) {
+          latestByKey[key] = { demarcheId: doc.demarche_id, created_at: doc.created_at, status: doc.validation_status };
+        }
+      });
+      const set = new Set<string>();
+      Object.values(latestByKey).forEach((v) => { if (v.status === "rejected") set.add(v.demarcheId); });
+      setRejectedIds(set);
+    }
+
     setLoading(false);
   };
 
@@ -477,6 +504,9 @@ export default function AllDemarches() {
                             {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
+                        <div className="mt-1">
+                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -557,6 +587,9 @@ export default function AllDemarches() {
                             {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
+                        <div className="mt-1">
+                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
+                        </div>
                       </TableCell>
                       <TableCell className="text-sm">{d.garages?.raison_sociale}</TableCell>
                       <TableCell>
@@ -669,6 +702,9 @@ export default function AllDemarches() {
                             {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
+                        <div className="mt-1">
+                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -741,6 +777,9 @@ export default function AllDemarches() {
                             {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
+                        <div className="mt-1">
+                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
