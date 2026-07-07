@@ -113,6 +113,14 @@ const handler = async (req: Request): Promise<Response> => {
       html: html,
     });
 
+    if (emailResponse.error) {
+      console.error("❌ Resend a refusé l'envoi:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message || "Échec Resend", resend_error: emailResponse.error }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     console.log("Email sent successfully:", emailResponse);
 
     return new Response(JSON.stringify(emailResponse), {

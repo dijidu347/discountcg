@@ -8,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, stripe-signature",
 };
 
-const ADMIN_EMAIL = "mathieugaillac4@gmail.com";
+const ADMIN_EMAIL = "contact@discountcartegrise.fr";
 
 // ── Email helpers ───────────────────────────────────────────────────────────
 
@@ -49,12 +49,15 @@ async function sendCoffreWelcomeEmail(resend: Resend, garage: { email: string; r
     </div>
   `;
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: "Coffre-fort Jimmy <noreply@discountcartegrise.fr>",
     to: [garage.email],
     subject,
     html,
   });
+  // Notification annexe d'un webhook Stripe : on logue l'échec Resend SANS throw
+  // pour ne pas faire échouer le webhook (retries Stripe) sur un simple email.
+  if (error) console.error("❌ Resend (email bienvenue coffre) a refusé l'envoi:", error);
 }
 
 async function sendAdminNotification(resend: Resend, garage: { email: string; raison_sociale: string }, eventType: "trial" | "subscribed" | "payment") {
@@ -65,7 +68,7 @@ async function sendAdminNotification(resend: Resend, garage: { email: string; ra
   };
   const { emoji, label } = labels[eventType];
 
-  await resend.emails.send({
+  const { error } = await resend.emails.send({
     from: "Jimmy Admin <noreply@discountcartegrise.fr>",
     to: [ADMIN_EMAIL],
     subject: `${emoji} Coffre-fort — ${label} : ${garage.raison_sociale}`,
@@ -81,6 +84,7 @@ async function sendAdminNotification(resend: Resend, garage: { email: string; ra
       </div>
     `,
   });
+  if (error) console.error("❌ Resend (notif admin coffre) a refusé l'envoi:", error);
 }
 
 // ── Main handler ────────────────────────────────────────────────────────────

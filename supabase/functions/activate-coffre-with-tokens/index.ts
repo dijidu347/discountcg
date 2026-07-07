@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { Resend } from "https://esm.sh/resend@2.0.0";
 
-const ADMIN_EMAIL = "mathieugaillac4@gmail.com";
+const ADMIN_EMAIL = "contact@discountcartegrise.fr";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -72,7 +72,7 @@ serve(async (req) => {
       const resendKey = Deno.env.get("RESEND_API_KEY");
       if (resendKey) {
         const resend = new Resend(resendKey);
-        await resend.emails.send({
+        const { error: emailError } = await resend.emails.send({
           from: "Jimmy Admin <noreply@discountcartegrise.fr>",
           to: [ADMIN_EMAIL],
           subject: `🪙 Coffre-fort — Abonnement jetons : ${garage.raison_sociale || "Garage"}`,
@@ -89,6 +89,8 @@ serve(async (req) => {
             </div>
           `,
         });
+        // Notification annexe (l'activation est déjà faite) : on logue sans throw.
+        if (emailError) console.error("❌ Resend (notif jetons coffre) a refusé l'envoi:", emailError);
       }
     } catch (emailErr) {
       console.error("Failed to send admin notification:", emailErr);
