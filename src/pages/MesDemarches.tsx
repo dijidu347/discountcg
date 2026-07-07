@@ -476,7 +476,7 @@ export default function MesDemarches() {
                               {demarche.client_email && (
                                 <p className="text-muted-foreground">Client : {demarche.client_email}</p>
                               )}
-                              {demarche.client_payment_token ? (
+                              {demarche.client_payment_token_expires_at ? (
                                 <p className="text-blue-600">Lien envoyé{demarche.client_payment_token_expires_at && (
                                   new Date(demarche.client_payment_token_expires_at) < new Date()
                                     ? <span className="text-red-600 font-semibold"> — Expiré</span>

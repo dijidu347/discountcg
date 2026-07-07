@@ -561,9 +561,12 @@ async function handleDemarchePayment(
   // En revanche, on génère le LIEN CLIENT (token + email), comme le faisait le
   // front après le paiement Stripe (create-client-payment-link).
   if (paymentMode === "split") {
-    // Idempotence : si un lien client existe déjà, on ne le régénère pas.
-    if (demarche.client_payment_token) {
-      console.log("↩️ Lien client déjà existant — pas de régénération");
+    // Idempotence : on ne régénère pas si un VRAI lien a déjà été généré.
+    // ⚠️ On teste client_payment_token_expires_at (null par défaut, renseigné
+    // UNIQUEMENT lors d'une vraie génération) et NON client_payment_token, qui a
+    // un DEFAULT gen_random_uuid() → toujours non-null, même pour une démarche neuve.
+    if (demarche.client_payment_token_expires_at) {
+      console.log("↩️ Lien client déjà généré — pas de régénération");
       return "split_pro_paid_link_exists";
     }
 

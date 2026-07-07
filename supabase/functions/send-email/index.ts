@@ -1062,6 +1062,17 @@ const handler = async (req: Request): Promise<Response> => {
       attachments: emailAttachments,
     });
 
+    // Le SDK Resend NE throw PAS sur erreur API : il renvoie { data, error }.
+    // On teste explicitement pour ne plus avaler les échecs (domaine non vérifié,
+    // destinataire refusé, quota, mode test…).
+    if (emailResponse.error) {
+      console.error("❌ Resend a refusé l'envoi:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message || "Échec Resend", resend_error: emailResponse.error }),
+        { status: 502, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
     console.log("✅ Email envoyé avec succès:", emailResponse);
 
     return new Response(JSON.stringify({ success: true, data: emailResponse }), {

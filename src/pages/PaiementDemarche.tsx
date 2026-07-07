@@ -205,7 +205,7 @@ const PaiementDemarche = () => {
       // If client pays all, no Stripe needed for pro — show send link UI
       if (paymentMode === 'client_pays_all') {
         // Check if link was already sent
-        if (demarcheData.client_payment_token && demarcheData.status === 'en_attente_paiement_client') {
+        if (demarcheData.client_payment_token_expires_at && demarcheData.status === 'en_attente_paiement_client') {
           setClientPaymentUrl(`https://discountcartegrise.fr/paiement-client/${demarcheData.client_payment_token}`);
           setLinkSent(true);
         }
@@ -216,7 +216,7 @@ const PaiementDemarche = () => {
       // If split and pro already paid, show send-link UI (don't load Stripe)
       const proPaid = searchParams.get('pro_paid') === 'true';
       if (paymentMode === 'split' && proPaid) {
-        if (demarcheData.client_payment_token) {
+        if (demarcheData.client_payment_token_expires_at) {
           setClientPaymentUrl(`https://discountcartegrise.fr/paiement-client/${demarcheData.client_payment_token}`);
           setLinkSent(true);
         }
@@ -226,7 +226,7 @@ const PaiementDemarche = () => {
 
       // If split and waiting for client (pro paid previously), show waiting UI
       if (paymentMode === 'split' && !demarcheData.client_paid && demarcheData.status === 'en_attente_paiement_client') {
-        if (demarcheData.client_payment_token) {
+        if (demarcheData.client_payment_token_expires_at) {
           setClientPaymentUrl(`https://discountcartegrise.fr/paiement-client/${demarcheData.client_payment_token}`);
           setLinkSent(true);
         }
