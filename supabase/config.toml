@@ -5,6 +5,8 @@ project_id = "oiotlgkfwuwshpwraneb"
     verify_jwt = false
   [functions.bootstrap-facture-cron]
     verify_jwt = false
+  [functions.carte-grise-quote]
+    verify_jwt = false
   [functions.create-payment-intent]
     verify_jwt = true
   [functions.create-resubmission-payment]
