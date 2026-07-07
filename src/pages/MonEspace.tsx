@@ -136,19 +136,36 @@ export default function MonEspace() {
         });
         setAdminDocs(docsMap);
 
-        // UNE seule requête groupée : quelles commandes ont ≥1 document REFUSÉ ?
-        // (filtre validation_status='rejected' + .in(...) sur tous les order_id affichés)
-        const { data: rejectedDocs } = await supabase
-          .from("guest_order_documents")
-          .select("order_id")
-          .eq("validation_status", "rejected")
-          .in("order_id", orderIds);
+        // Niveau 1 — statuts terminaux : une commande traitée n'affiche jamais de pastille.
+        const TERMINAL_STATUSES = ["valide", "finalise", "refuse"];
+        const orderIdsToCheck = ordersData
+          .filter((o) => !TERMINAL_STATUSES.includes(o.status))
+          .map((o) => o.id);
 
-        const issues: Record<string, { rejected: boolean; missing: boolean }> = {};
-        (rejectedDocs || []).forEach((doc: any) => {
-          issues[doc.order_id] = { rejected: true, missing: false };
-        });
-        setDocIssues(issues);
+        if (orderIdsToCheck.length > 0) {
+          // UNE seule requête groupée : tous les documents des commandes non terminales.
+          const { data: docs } = await supabase
+            .from("guest_order_documents")
+            .select("order_id, type_document, side, validation_status, created_at")
+            .in("order_id", orderIdsToCheck);
+
+          // Niveau 2 — par commande + type (+ side recto/verso), ne garder que le document
+          // le PLUS RÉCENT ; refus d'actualité seulement si ce dernier est 'rejected'.
+          const latestByKey: Record<string, { orderId: string; created_at: string; status: string | null }> = {};
+          (docs || []).forEach((doc: any) => {
+            const key = `${doc.order_id}|${doc.type_document}|${doc.side ?? ""}`;
+            const prev = latestByKey[key];
+            if (!prev || new Date(doc.created_at).getTime() > new Date(prev.created_at).getTime()) {
+              latestByKey[key] = { orderId: doc.order_id, created_at: doc.created_at, status: doc.validation_status };
+            }
+          });
+
+          const issues: Record<string, { rejected: boolean; missing: boolean }> = {};
+          Object.values(latestByKey).forEach((v) => {
+            if (v.status === "rejected") issues[v.orderId] = { rejected: true, missing: false };
+          });
+          setDocIssues(issues);
+        }
       }
     } catch (e) {
       console.error("Error loading data:", e);

@@ -216,19 +216,33 @@ export default function MesDemarches() {
         setDemarches(demarchesData);
         setFilteredDemarches(demarchesData);
 
-        // UNE seule requête groupée : quelles démarches ont ≥1 document REFUSÉ ?
-        // (filtre validation_status='rejected' + .in(...) sur tous les ids affichés)
-        const demarcheIds = demarchesData.map((d) => d.id);
+        // Niveau 1 — statuts terminaux : une démarche traitée n'affiche jamais de pastille.
+        const TERMINAL_STATUSES = ['valide', 'finalise', 'refuse'];
+        const demarcheIds = demarchesData
+          .filter((d) => !TERMINAL_STATUSES.includes(d.status))
+          .map((d) => d.id);
+
         if (demarcheIds.length > 0) {
-          const { data: rejectedDocs } = await supabase
+          // UNE seule requête groupée : tous les documents des démarches non terminales.
+          const { data: docs } = await supabase
             .from('documents')
-            .select('demarche_id')
-            .eq('validation_status', 'rejected')
+            .select('demarche_id, type_document, validation_status, created_at')
             .in('demarche_id', demarcheIds);
 
+          // Niveau 2 — par démarche + type de document, ne garder que le document le PLUS
+          // RÉCENT (created_at) ; refus d'actualité seulement si ce dernier est 'rejected'.
+          const latestByKey: Record<string, { demarcheId: string; created_at: string; status: string | null }> = {};
+          (docs || []).forEach((doc: any) => {
+            const key = `${doc.demarche_id}|${doc.type_document}`;
+            const prev = latestByKey[key];
+            if (!prev || new Date(doc.created_at).getTime() > new Date(prev.created_at).getTime()) {
+              latestByKey[key] = { demarcheId: doc.demarche_id, created_at: doc.created_at, status: doc.validation_status };
+            }
+          });
+
           const issues: Record<string, { rejected: boolean; missing: boolean }> = {};
-          (rejectedDocs || []).forEach((doc: any) => {
-            issues[doc.demarche_id] = { rejected: true, missing: false };
+          Object.values(latestByKey).forEach((v) => {
+            if (v.status === 'rejected') issues[v.demarcheId] = { rejected: true, missing: false };
           });
           setDocIssues(issues);
         }
