@@ -180,7 +180,7 @@ export default function MesDemarches() {
       // Load demarches - only show paid or free token demarches (exclude unpaid drafts)
       const { data: demarchesData } = await supabase
         .from('demarches')
-        .select('*')
+        .select('*, vehicules(marque, modele)')
         .eq('garage_id', garageData.id)
         .or('paye.eq.true,is_free_token.eq.true,status.eq.en_attente_paiement_client')
         .order('created_at', { ascending: false });
@@ -488,9 +488,9 @@ export default function MesDemarches() {
                       </TableCell>
                       <TableCell>
                         {demarche.immatriculation}
-                        {(demarche.marque || demarche.modele) && (
+                        {(demarche.marque || demarche.vehicules?.marque || demarche.modele || demarche.vehicules?.modele) && (
                           <span className="block text-xs text-muted-foreground">
-                            {[demarche.marque, demarche.modele].filter(Boolean).join(" ")}
+                            {[demarche.marque || demarche.vehicules?.marque, demarche.modele || demarche.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
                       </TableCell>
