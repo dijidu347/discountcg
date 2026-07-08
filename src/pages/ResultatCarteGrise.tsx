@@ -18,6 +18,7 @@ import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, Check
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -46,6 +47,19 @@ export default function ResultatCarteGrise() {
   const [isEmailSaved, setIsEmailSaved] = useState(false);
   const [isPriceSaved, setIsPriceSaved] = useState(false);
 
+  // Tarif du département mémorisé → recalcul via le formulaire sans re-fetch.
+  const [tarif, setTarif] = useState<number>(0);
+  // Valeurs véhicule connues (lookup/navigation), pour combiner avec la saisie manuelle.
+  const [knownPuissance, setKnownPuissance] = useState<number>(0);
+  const [knownDate, setKnownDate] = useState<string>("");
+  const [knownGenre, setKnownGenre] = useState<string>("");
+  // Saisie manuelle (menus contraints) — affichée seulement si l'info manque au SIV.
+  const [manualPuissance, setManualPuissance] = useState<string>("");
+  const [manualDate, setManualDate] = useState<string>("");
+  const [manualGenre, setManualGenre] = useState<string>("");
+  // Genre "Autre" → véhicule non calculable ici, on invite à nous contacter.
+  const [contactRequired, setContactRequired] = useState(false);
+
   // Nouvelles options
   const [express, setExpress] = useState(false);
   const [certificatNonGage, setCertificatNonGage] = useState(false);
@@ -66,6 +80,53 @@ export default function ResultatCarteGrise() {
     
     const totalServicesHT = fraisDossier + optionsPrix;
     return prixCarteGrise + totalServicesHT;
+  };
+
+  // Champs manquants au SIV (les DEUX sources vides = à saisir à la main).
+  const missingPuissance = !(knownPuissance > 0);
+  const missingDate = !knownDate;
+  const missingGenre = !knownGenre;
+
+  // Calcule le prix via calculatePrice puis met à jour l'affichage.
+  // Réutilisable au chargement ET depuis le bouton du formulaire.
+  // tarifValue : au chargement on passe le tarif frais (le state n'est pas encore à jour).
+  const calculerEtAfficher = (
+    puissance: number,
+    dateMec: string,
+    genre: string,
+    tarifValue: number = tarif,
+  ) => {
+    try {
+      const calc = calculatePrice(tarifValue, puissance, dateMec, genre);
+      setCalculation(calc);
+    } catch (e) {
+      console.error("Erreur calculatePrice:", e);
+      toast({
+        title: "Calcul impossible",
+        description: "Vérifiez la date de 1re mise en circulation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Bouton actif seulement quand tous les champs AFFICHÉS sont remplis.
+  const manualFormValid =
+    (!missingPuissance || (manualPuissance !== "" && Number(manualPuissance) > 0)) &&
+    (!missingDate || manualDate !== "") &&
+    (!missingGenre || manualGenre !== "");
+
+  // Clic « Calculer mon prix » : combine valeurs connues + saisies, gère le genre AUTRE.
+  const handleManualSubmit = () => {
+    if (missingGenre && manualGenre === "AUTRE") {
+      setContactRequired(true); // véhicule non calculable ici → aucun prix calculé/enregistré
+      return;
+    }
+    const puissance = missingPuissance ? Number(manualPuissance) : knownPuissance;
+    const dateMec = missingDate ? manualDate : knownDate;
+    const genre = missingGenre ? manualGenre : knownGenre;
+    // date_mec (et genre) en base viennent de vehicleInfo, pas de calculation → on l'aligne.
+    setVehicleInfo((prev) => ({ ...(prev ?? {}), date_mec: dateMec, genre }));
+    calculerEtAfficher(puissance, dateMec, genre);
   };
 
   // handleSaveEmail removed - email is now saved via GuestOrderInfoForm before payment
@@ -152,7 +213,6 @@ export default function ResultatCarteGrise() {
         }
 
         // Récupérer les infos véhicule via l'API (données fraîches et fiables).
-        // On hisse le résultat hors du bloc pour pouvoir l'utiliser dans le calcul.
         let freshVehicle: NormalizedVehicleData | null = null;
         if (plaqueParam) {
           const vehicleResponse = await getVehicleByPlate(plaqueParam);
@@ -162,36 +222,34 @@ export default function ResultatCarteGrise() {
           }
         }
 
-        // Puissance effective : priorité à la puissance FRAÎCHE du lookup si > 0,
-        // sinon repli sur l'état de navigation (qui peut être vide → géré ci-dessous).
+        // Valeurs effectives : priorité au lookup frais, repli sur l'état de navigation.
         const puissanceEffective =
           freshVehicle?.puissance_fiscale && freshVehicle.puissance_fiscale > 0
             ? freshVehicle.puissance_fiscale
             : vehicleData.chevauxFiscaux;
+        const dateEffective = freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation;
+        const genreEffective = freshVehicle?.genre ?? vehicleData.genre;
 
-        // Sans puissance fiable : NE PAS calculer avec 0 (éviter prixCV=0 → total 13,76)
-        // et NE PAS enregistrer de prix faux. La vraie saisie manuelle sera branchée plus tard.
-        if (!puissanceEffective || puissanceEffective <= 0) {
+        // Mémoriser le tarif (recalcul via formulaire) + les valeurs connues.
+        setTarif(tarifData.tarif);
+        setKnownPuissance(puissanceEffective && puissanceEffective > 0 ? puissanceEffective : 0);
+        setKnownDate(dateEffective || "");
+        setKnownGenre(genreEffective || "");
+
+        // Détection champ par champ (les deux sources vides = champ manquant).
+        const manquePuissance = !(puissanceEffective && puissanceEffective > 0);
+        const manqueDate = !dateEffective;
+        const manqueGenre = !genreEffective;
+
+        // Une info manque → NE PAS calculer (pas de prixCV=0, pas de prix faux enregistré).
+        // Le rendu affichera le formulaire de saisie manuelle (calculation reste null).
+        if (manquePuissance || manqueDate || manqueGenre) {
           setCalculation(null);
-          toast({
-            title: "Puissance fiscale non détectée",
-            description: "Saisie manuelle de la puissance fiscale nécessaire pour calculer le prix.",
-            variant: "destructive",
-          });
           return;
         }
 
-        // Calcul avec la puissance effective + date/genre du MÊME lookup frais
-        // quand ils sont disponibles (repli sur l'état de navigation sinon),
-        // pour que l'abattement porte sur des données cohérentes.
-        const calc = calculatePrice(
-          tarifData.tarif,
-          puissanceEffective,
-          freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation,
-          freshVehicle?.genre ?? vehicleData.genre
-        );
-
-        setCalculation(calc);
+        // Toutes les infos présentes → calcul direct (tarif frais du fetch).
+        calculerEtAfficher(puissanceEffective, dateEffective, genreEffective, tarifData.tarif);
 
       } catch (error) {
         console.error('Error loading data:', error);
@@ -288,8 +346,100 @@ export default function ResultatCarteGrise() {
     );
   }
 
+  // Cas sans prix : formulaire de saisie manuelle si au moins un champ manque,
+  // sinon comportement inchangé (rien à afficher).
   if (!calculation) {
-    return null;
+    const auMoinsUnChampManque = missingPuissance || missingDate || missingGenre;
+    if (!auMoinsUnChampManque) {
+      return null;
+    }
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto px-4 py-8 max-w-2xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                Complétez les informations du véhicule
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <p className="text-sm text-muted-foreground">
+                Certaines informations n'ont pas pu être lues automatiquement. Renseignez-les
+                pour calculer le prix exact de votre carte grise.
+              </p>
+
+              {missingPuissance && (
+                <div className="space-y-2">
+                  <Label htmlFor="manual-puissance">Puissance fiscale (P.6 de la carte grise)</Label>
+                  <Select value={manualPuissance} onValueChange={setManualPuissance}>
+                    <SelectTrigger id="manual-puissance">
+                      <SelectValue placeholder="Sélectionnez la puissance fiscale" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 40 }, (_, i) => String(i + 1)).map((cv) => (
+                        <SelectItem key={cv} value={cv}>{cv} CV</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {missingDate && (
+                <div className="space-y-2">
+                  <Label htmlFor="manual-date">Date de 1re mise en circulation (case B)</Label>
+                  <Input
+                    id="manual-date"
+                    type="date"
+                    value={manualDate}
+                    onChange={(e) => setManualDate(e.target.value)}
+                  />
+                </div>
+              )}
+
+              {missingGenre && (
+                <div className="space-y-2">
+                  <Label htmlFor="manual-genre">Genre du véhicule (case J.1)</Label>
+                  <Select
+                    value={manualGenre}
+                    onValueChange={(v) => { setManualGenre(v); setContactRequired(false); }}
+                  >
+                    <SelectTrigger id="manual-genre">
+                      <SelectValue placeholder="Sélectionnez le genre" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VP">Voiture particulière (VT, M1)</SelectItem>
+                      <SelectItem value="AUTRE">Autre type de véhicule (utilitaire, moto…)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {contactRequired ? (
+                <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 space-y-1">
+                  <p className="text-sm font-medium text-destructive">
+                    Pour ce type de véhicule, nous finalisons votre demande manuellement.
+                  </p>
+                  <p className="text-sm">
+                    Contactez-nous à l'adresse{" "}
+                    <a href="mailto:contact@discountcartegrise.fr" className="font-medium underline">
+                      contact@discountcartegrise.fr
+                    </a>{" "}
+                    en précisant votre plaque, et nous nous occupons de tout.
+                  </p>
+                </div>
+              ) : (
+                <Button onClick={handleManualSubmit} disabled={!manualFormValid} className="w-full">
+                  Calculer mon prix
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
   }
 
   return (
