@@ -31,7 +31,7 @@ const getStatusLabel = (demarche: any): string => {
     en_attente: "En attente",
     en_attente_paiement_client: "Attente paiement client",
     paye: "Payé",
-    valide: "Validé",
+    valide: "En cours",
     finalise: "Finalisé",
     refuse: "Refusé"
   };
@@ -50,32 +50,12 @@ const getStatusColor = (demarche: any): string => {
     en_attente: "bg-orange-500",
     en_attente_paiement_client: "bg-amber-500",
     paye: "bg-blue-500",
-    valide: "bg-green-500",
+    valide: "bg-blue-500",
     finalise: "bg-green-700",
     refuse: "bg-red-500"
   };
 
   return statusColors[demarche.status] || "bg-gray-500";
-};
-
-const statusLabels: Record<string, string> = {
-  en_saisie: "En saisie",
-  en_attente: "En attente",
-  en_attente_paiement_client: "Attente paiement client",
-  paye: "Payé",
-  valide: "Validé",
-  finalise: "Finalisé",
-  refuse: "Refusé"
-};
-
-const statusColors: Record<string, string> = {
-  en_saisie: "bg-gray-500",
-  en_attente: "bg-orange-500",
-  en_attente_paiement_client: "bg-amber-500",
-  paye: "bg-blue-500",
-  valide: "bg-green-500",
-  finalise: "bg-green-700",
-  refuse: "bg-red-500"
 };
 
 const typeLabels: Record<string, string> = {
@@ -378,7 +358,6 @@ export default function MesDemarches() {
                 <SelectItem value="en_attente">En attente</SelectItem>
                 <SelectItem value="en_attente_paiement_client">Attente paiement client</SelectItem>
                 <SelectItem value="paye">Payé</SelectItem>
-                <SelectItem value="valide">Validé</SelectItem>
                 <SelectItem value="finalise">Finalisé</SelectItem>
                 <SelectItem value="refuse">Refusé</SelectItem>
               </SelectContent>
@@ -450,13 +429,17 @@ export default function MesDemarches() {
                     <SelectItem value="en_attente">En attente</SelectItem>
                     <SelectItem value="en_attente_paiement_client">Attente paiement client</SelectItem>
                     <SelectItem value="paye">Payé</SelectItem>
-                    <SelectItem value="valide">Validé</SelectItem>
                     <SelectItem value="finalise">Finalisé</SelectItem>
                     <SelectItem value="refuse">Refusé</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
+              {filteredDemarches.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">Aucune démarche ne correspond à ce filtre.</p>
+                </div>
+              ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -572,6 +555,7 @@ export default function MesDemarches() {
                 </TableBody>
               </Table>
             </div>
+            )}
             </>
           )}
         </Card>
