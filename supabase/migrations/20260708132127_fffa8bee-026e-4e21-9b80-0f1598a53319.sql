@@ -1,0 +1,20 @@
+ALTER TABLE public.department_tariffs ADD COLUMN IF NOT EXISTS region text;
+
+UPDATE public.department_tariffs SET tarif=43.00, region='Auvergne-Rhone-Alpes', updated_at=now() WHERE code IN ('01','03','07','15','26','38','42','43','63','69','73','74');
+UPDATE public.department_tariffs SET tarif=60.00, region='Bourgogne-Franche-Comte', updated_at=now() WHERE code IN ('21','25','39','58','70','71','89','90');
+UPDATE public.department_tariffs SET tarif=60.00, region='Bretagne', updated_at=now() WHERE code IN ('22','29','35','56');
+UPDATE public.department_tariffs SET tarif=60.00, region='Centre-Val de Loire', updated_at=now() WHERE code IN ('18','28','36','37','41','45');
+UPDATE public.department_tariffs SET tarif=53.00, region='Corse', updated_at=now() WHERE code IN ('2A','2B','20');
+UPDATE public.department_tariffs SET tarif=60.00, region='Grand Est', updated_at=now() WHERE code IN ('08','10','51','52','54','55','57','67','68','88');
+UPDATE public.department_tariffs SET tarif=43.00, region='Hauts-de-France', updated_at=now() WHERE code IN ('02','59','60','62','80');
+UPDATE public.department_tariffs SET tarif=68.95, region='Ile-de-France', updated_at=now() WHERE code IN ('75','77','78','91','92','93','94','95');
+UPDATE public.department_tariffs SET tarif=60.00, region='Normandie', updated_at=now() WHERE code IN ('14','27','50','61','76');
+UPDATE public.department_tariffs SET tarif=58.00, region='Nouvelle-Aquitaine', updated_at=now() WHERE code IN ('16','17','19','23','24','33','40','47','64','79','86','87');
+UPDATE public.department_tariffs SET tarif=59.50, region='Occitanie', updated_at=now() WHERE code IN ('09','11','12','30','31','32','34','46','48','65','66','81','82');
+UPDATE public.department_tariffs SET tarif=51.00, region='Pays de la Loire', updated_at=now() WHERE code IN ('44','49','53','72','85');
+UPDATE public.department_tariffs SET tarif=60.00, region='Provence-Alpes-Cote d Azur', updated_at=now() WHERE code IN ('04','05','06','13','83','84');
+UPDATE public.department_tariffs SET tarif=41.00, region='Guadeloupe', updated_at=now() WHERE code='971';
+UPDATE public.department_tariffs SET tarif=53.00, region='Martinique', updated_at=now() WHERE code='972';
+UPDATE public.department_tariffs SET tarif=42.50, region='Guyane', updated_at=now() WHERE code='973';
+UPDATE public.department_tariffs SET tarif=60.00, region='La Reunion', updated_at=now() WHERE code='974';
+UPDATE public.department_tariffs SET tarif=30.00, region='Mayotte', updated_at=now() WHERE code='976';
