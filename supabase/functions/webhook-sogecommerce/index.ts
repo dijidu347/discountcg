@@ -429,11 +429,26 @@ function isPaymentSuccessful(fields: Record<string, string>): boolean {
 // Ne doit jamais casser le paiement : toute erreur est avalée dans le try/catch.
 // ---------------------------------------------------------------------------
 async function sendExpressSms(message: string) {
+  // Alerte interne par email quand le SMS échoue — NON bloquante, ne throw jamais.
+  const notifySmsFailure = async (reason: string) => {
+    try {
+      for (const admin of ADMIN_EMAILS) {
+        await sendEmail("custom_notification", admin, {
+          subject: "⚠️ Échec alerte SMS dossier prioritaire",
+          message: `Le SMS d'alerte n'a pas pu être envoyé.\n\nRaison : ${reason}\n\nMessage prévu :\n${message}`,
+        });
+      }
+    } catch (e) {
+      console.error("Echec envoi email alerte SMS:", e);
+    }
+  };
+
   try {
     const apiKey = Deno.env.get("SMSPARTNER_API_KEY");
     const phoneNumber = Deno.env.get("SMS_ALERT_NUMBER");
     if (!apiKey || !phoneNumber) {
-      console.log("SMS non envoye: SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant");
+      console.error("SMS non envoye: SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant");
+      await notifySmsFailure("SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant (secret absent)");
       return;
     }
     const res = await fetch("https://api.smspartner.fr/v1/send", {
@@ -444,11 +459,13 @@ async function sendExpressSms(message: string) {
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data?.success === false) {
       console.error("Echec envoi SMS Partner:", res.status, data);
+      await notifySmsFailure(`SMS Partner a refusé (HTTP ${res.status}) — ${JSON.stringify(data)}`);
     } else {
       console.log("SMS alerte envoye");
     }
   } catch (e) {
     console.error("Exception envoi SMS:", e);
+    await notifySmsFailure(`Exception lors de l'envoi : ${e instanceof Error ? e.message : String(e)}`);
   }
 }
 
@@ -1019,6 +1036,12 @@ async function handleClientPayment(
     return "update_failed";
   }
   console.log("✅ Demarche updated with client payment");
+
+  // SMS alerte dossier prioritaire (non bloquant). Couvre la PART CLIENT
+  // (fin d'un split ET mode client_pays_all) — cas non gérés par handleDemarchePayment.
+  if (demarche.express) {
+    await sendExpressSms(`Nouveau dossier PRIORITAIRE paye: ${demarche.numero_demarche} (${demarche.type}). A traiter rapidement.`);
+  }
 
   // Crée l'enregistrement paiement (payer_type = client).
   const { error: paiementError } = await supabase
