@@ -151,20 +151,44 @@ export default function ResultatCarteGrise() {
           return;
         }
 
-        // Récupérer les infos véhicule via l'API
+        // Récupérer les infos véhicule via l'API (données fraîches et fiables).
+        // On hisse le résultat hors du bloc pour pouvoir l'utiliser dans le calcul.
+        let freshVehicle: NormalizedVehicleData | null = null;
         if (plaqueParam) {
           const vehicleResponse = await getVehicleByPlate(plaqueParam);
           if (vehicleResponse.success && vehicleResponse.data) {
+            freshVehicle = vehicleResponse.data;
             setVehicleInfo(vehicleResponse.data);
           }
         }
 
-        // Calculer le prix
+        // Puissance effective : priorité à la puissance FRAÎCHE du lookup si > 0,
+        // sinon repli sur l'état de navigation (qui peut être vide → géré ci-dessous).
+        const puissanceEffective =
+          freshVehicle?.puissance_fiscale && freshVehicle.puissance_fiscale > 0
+            ? freshVehicle.puissance_fiscale
+            : vehicleData.chevauxFiscaux;
+
+        // Sans puissance fiable : NE PAS calculer avec 0 (éviter prixCV=0 → total 13,76)
+        // et NE PAS enregistrer de prix faux. La vraie saisie manuelle sera branchée plus tard.
+        if (!puissanceEffective || puissanceEffective <= 0) {
+          setCalculation(null);
+          toast({
+            title: "Puissance fiscale non détectée",
+            description: "Saisie manuelle de la puissance fiscale nécessaire pour calculer le prix.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Calcul avec la puissance effective + date/genre du MÊME lookup frais
+        // quand ils sont disponibles (repli sur l'état de navigation sinon),
+        // pour que l'abattement porte sur des données cohérentes.
         const calc = calculatePrice(
           tarifData.tarif,
-          vehicleData.chevauxFiscaux,
-          vehicleData.dateMiseEnCirculation,
-          vehicleData.genre
+          puissanceEffective,
+          freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation,
+          freshVehicle?.genre ?? vehicleData.genre
         );
 
         setCalculation(calc);
