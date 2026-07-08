@@ -110,6 +110,9 @@ export default function NouvelleDemarche() {
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("pro_pays_all");
   const [clientEmail, setClientEmail] = useState<string | undefined>();
   const [clientPhone, setClientPhone] = useState<string | undefined>();
+  const [clientNom, setClientNom] = useState<string | undefined>();
+  const [clientPrenom, setClientPrenom] = useState<string | undefined>();
+  const [clientAdresse, setClientAdresse] = useState<string | undefined>();
   const [paymentModeConfirmed, setPaymentModeConfirmed] = useState(false);
 
   // Keep refs in sync with state for cleanup
@@ -393,6 +396,9 @@ export default function NouvelleDemarche() {
       insertData.payment_mode = paymentMode;
       if (clientEmail) insertData.client_email = clientEmail;
       if (clientPhone) insertData.client_phone = clientPhone;
+      if (clientNom) insertData.client_nom = clientNom;
+      if (clientPrenom) insertData.client_prenom = clientPrenom;
+      if (clientAdresse) insertData.client_adresse = clientAdresse;
     }
 
     const { data, error } = await supabase
@@ -716,6 +722,9 @@ export default function NouvelleDemarche() {
           payment_mode: paymentMode || 'pro_pays_all',
           client_email: clientEmail || null,
           client_phone: clientPhone || null,
+          client_nom: clientNom || null,
+          client_prenom: clientPrenom || null,
+          client_adresse: clientAdresse || null,
           express: expressSelected,
       };
       console.log("=== UPDATE DEMARCHE ===", { demarcheId, paymentMode, clientEmail, updateData });
@@ -929,10 +938,13 @@ export default function NouvelleDemarche() {
           {actionDetails && !paymentModeConfirmed && formData.type === 'CG' && (
             <CardContent className="py-8">
               <PaymentModeSelector
-                onSelect={(mode, email, phone) => {
+                onSelect={(mode, email, phone, nom, prenom, adresse) => {
                   setPaymentMode(mode);
                   setClientEmail(email);
                   setClientPhone(phone);
+                  setClientNom(nom);
+                  setClientPrenom(prenom);
+                  setClientAdresse(adresse);
                 }}
                 onConfirm={() => setPaymentModeConfirmed(true)}
                 confirmed={false}
@@ -972,16 +984,22 @@ export default function NouvelleDemarche() {
               {/* Résumé du mode de paiement choisi (uniquement carte grise) */}
               {formData.type === 'CG' && (
                 <PaymentModeSelector
-                  onSelect={(mode, email, phone) => {
+                  onSelect={(mode, email, phone, nom, prenom, adresse) => {
                     setPaymentMode(mode);
                     setClientEmail(email);
                     setClientPhone(phone);
+                    setClientNom(nom);
+                    setClientPrenom(prenom);
+                    setClientAdresse(adresse);
                   }}
                   onConfirm={() => setPaymentModeConfirmed(false)}
                   confirmed={true}
                   initialMode={paymentMode}
                   initialClientEmail={clientEmail}
                   initialClientPhone={clientPhone}
+                  initialClientNom={clientNom}
+                  initialClientPrenom={clientPrenom}
+                  initialClientAdresse={clientAdresse}
                 />
               )}
 

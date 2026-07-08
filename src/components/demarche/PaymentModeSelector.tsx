@@ -4,16 +4,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { CreditCard, UserCheck, Split, ArrowRight } from "lucide-react";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 export type PaymentMode = "pro_pays_all" | "client_pays_all" | "split";
 
 interface PaymentModeSelectorProps {
-  onSelect: (mode: PaymentMode, clientEmail?: string, clientPhone?: string) => void;
+  onSelect: (
+    mode: PaymentMode,
+    clientEmail?: string,
+    clientPhone?: string,
+    clientNom?: string,
+    clientPrenom?: string,
+    clientAdresse?: string,
+  ) => void;
   onConfirm: () => void;
   confirmed?: boolean;
   initialMode?: PaymentMode;
   initialClientEmail?: string;
   initialClientPhone?: string;
+  initialClientNom?: string;
+  initialClientPrenom?: string;
+  initialClientAdresse?: string;
 }
 
 const PAYMENT_OPTIONS: {
@@ -42,10 +53,13 @@ const PAYMENT_OPTIONS: {
   },
 ];
 
-export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMode, initialClientEmail, initialClientPhone }: PaymentModeSelectorProps) {
+export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMode, initialClientEmail, initialClientPhone, initialClientNom, initialClientPrenom, initialClientAdresse }: PaymentModeSelectorProps) {
   const [selectedMode, setSelectedMode] = useState<PaymentMode>(initialMode || "pro_pays_all");
   const [clientEmail, setClientEmail] = useState(initialClientEmail || "");
   const [clientPhone, setClientPhone] = useState(initialClientPhone || "");
+  const [clientNom, setClientNom] = useState(initialClientNom || "");
+  const [clientPrenom, setClientPrenom] = useState(initialClientPrenom || "");
+  const [clientAdresse, setClientAdresse] = useState(initialClientAdresse || "");
   const [emailError, setEmailError] = useState("");
 
   const needsClientInfo = selectedMode === "client_pays_all" || selectedMode === "split";
@@ -57,38 +71,66 @@ export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMod
     return "";
   };
 
-  const isValid = selectedMode === "pro_pays_all" || (!validateEmail(clientEmail) && clientEmail);
+  // Nom et prénom obligatoires pour un paiement client ; adresse optionnelle (exclue).
+  const isValid =
+    selectedMode === "pro_pays_all" ||
+    (!validateEmail(clientEmail) && !!clientEmail && !!clientNom.trim() && !!clientPrenom.trim());
+
+  // Émet l'état courant vers le parent (la valeur qui vient de changer est passée en override
+  // pour éviter le décalage de setState asynchrone).
+  const emit = (o: {
+    mode?: PaymentMode;
+    email?: string;
+    phone?: string;
+    nom?: string;
+    prenom?: string;
+    adresse?: string;
+  } = {}) => {
+    const mode = o.mode ?? selectedMode;
+    if (mode === "pro_pays_all") {
+      onSelect(mode);
+      return;
+    }
+    onSelect(
+      mode,
+      (o.email ?? clientEmail) || undefined,
+      (o.phone ?? clientPhone) || undefined,
+      (o.nom ?? clientNom) || undefined,
+      (o.prenom ?? clientPrenom) || undefined,
+      (o.adresse ?? clientAdresse) || undefined,
+    );
+  };
 
   const handleModeChange = (mode: PaymentMode) => {
     setSelectedMode(mode);
-    if (mode === "pro_pays_all") {
-      setEmailError("");
-      onSelect(mode);
-    } else {
-      const error = validateEmail(clientEmail);
-      setEmailError(clientEmail ? error : "");
-      if (!error && clientEmail) {
-        onSelect(mode, clientEmail, clientPhone || undefined);
-      } else {
-        onSelect(mode, undefined, undefined);
-      }
-    }
+    setEmailError(mode === "pro_pays_all" ? "" : (clientEmail ? validateEmail(clientEmail) : ""));
+    emit({ mode });
   };
 
   const handleEmailChange = (email: string) => {
     setClientEmail(email);
-    const error = validateEmail(email);
-    setEmailError(email ? error : "");
-    if (!error && email) {
-      onSelect(selectedMode, email, clientPhone || undefined);
-    }
+    setEmailError(email ? validateEmail(email) : "");
+    emit({ email });
   };
 
   const handlePhoneChange = (phone: string) => {
     setClientPhone(phone);
-    if (clientEmail && !validateEmail(clientEmail)) {
-      onSelect(selectedMode, clientEmail, phone || undefined);
-    }
+    emit({ phone });
+  };
+
+  const handleNomChange = (nom: string) => {
+    setClientNom(nom);
+    emit({ nom });
+  };
+
+  const handlePrenomChange = (prenom: string) => {
+    setClientPrenom(prenom);
+    emit({ prenom });
+  };
+
+  const handleAdresseChange = (adresse: string) => {
+    setClientAdresse(adresse);
+    emit({ adresse });
   };
 
   const handleConfirm = () => {
@@ -167,6 +209,28 @@ export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMod
           <p className="text-sm font-medium text-blue-800">Coordonnées du client</p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="client_prenom">
+                Prénom du client <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="client_prenom"
+                placeholder="Jean"
+                value={clientPrenom}
+                onChange={(e) => handlePrenomChange(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client_nom">
+                Nom du client <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="client_nom"
+                placeholder="Dupont"
+                value={clientNom}
+                onChange={(e) => handleNomChange(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="client_email">
                 Email du client <span className="text-red-500">*</span>
               </Label>
@@ -192,6 +256,12 @@ export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMod
               />
             </div>
           </div>
+          <AddressAutocomplete
+            id="client_adresse"
+            label="Adresse du client (optionnelle)"
+            value={clientAdresse}
+            onChange={handleAdresseChange}
+          />
         </div>
       )}
 

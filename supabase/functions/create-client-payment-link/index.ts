@@ -44,7 +44,7 @@ serve(async (req) => {
     console.log('Authenticated user:', user.id);
 
     const body = await req.json();
-    const { demarcheId, paymentMode: requestedMode, clientEmail, clientPhone } = body;
+    const { demarcheId, paymentMode: requestedMode, clientEmail, clientPhone, clientNom, clientPrenom, clientAdresse } = body;
 
     if (!demarcheId) {
       return new Response(JSON.stringify({ error: 'demarcheId is required' }), {
@@ -111,6 +111,9 @@ serve(async (req) => {
         payment_mode: effectiveMode,
         client_email: clientEmail || demarche.client_email || null,
         client_phone: clientPhone || demarche.client_phone || null,
+        client_nom: clientNom || demarche.client_nom || null,
+        client_prenom: clientPrenom || demarche.client_prenom || null,
+        client_adresse: clientAdresse || demarche.client_adresse || null,
         client_payment_token: clientPaymentToken,
         client_payment_token_expires_at: expiresAt.toISOString(),
         status: 'en_attente_paiement_client',
@@ -124,6 +127,13 @@ serve(async (req) => {
     }
 
     console.log('Demarche updated with payment token');
+
+    // Filet serveur : une facture nominative client nécessite nom + prénom.
+    const finalNom = clientNom || demarche.client_nom;
+    const finalPrenom = clientPrenom || demarche.client_prenom;
+    if (!finalNom || !finalPrenom) {
+      console.warn(`⚠️ Paiement client sans nom/prénom complet (demarche ${demarcheId}): nom="${finalNom || ''}", prenom="${finalPrenom || ''}". Facture nominative impossible.`);
+    }
 
     const paymentUrl = `https://discountcartegrise.fr/paiement-client/${clientPaymentToken}`;
 

@@ -29,8 +29,6 @@ const SuiviCommande = React.lazy(() => import("./pages/SuiviCommande"));
 const RechercheSuivi = React.lazy(() => import("./pages/RechercheSuivi"));
 const Simulateur = React.lazy(() => import("./pages/Simulateur"));
 const ResultatCarteGrise = React.lazy(() => import("./pages/ResultatCarteGrise"));
-// ⚠️ TEMPORAIRE — test AddressAutocomplete, à retirer avant branchement réel.
-const TestAddress = React.lazy(() => import("./pages/TestAddress"));
 const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
 const MajiConcepts = React.lazy(() => import("./pages/MajiConcepts"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
@@ -88,8 +86,6 @@ const App = () => (
         <Route path="/complete-profile" element={<CompleteProfile />} />
           <Route path="/simulateur" element={<Simulateur />} />
           <Route path="/resultat-carte-grise" element={<ResultatCarteGrise />} />
-          {/* ⚠️ TEMPORAIRE — test AddressAutocomplete, à retirer avant branchement réel. */}
-          <Route path="/test-adresse" element={<TestAddress />} />
           <Route path="/demarche-simple" element={<DemarcheSimple />} />
         <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
         <Route path="/paiement/:orderId" element={<PaiementGuestOrder />} />
