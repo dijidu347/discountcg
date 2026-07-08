@@ -150,7 +150,7 @@ export const PriceSummary = ({
                 </p>
                 <div className="flex justify-between items-center">
                   <span className="text-sm">Taxe régionale</span>
-                  <span className="font-medium">{formatPrice(prixCarteGrise)} €</span>
+                  <span className="font-medium">{formatPrice(calculation.prixCV)} €</span>
                 </div>
               </div>
 

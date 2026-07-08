@@ -54,7 +54,7 @@ export const GuestPaymentDetailsSummary = ({
               Carte grise
             </p>
             <div className="flex justify-between items-center">
-              <span className="text-sm">Taxe régionale</span>
+              <span className="text-sm">Montant carte grise</span>
               <span className="font-medium">{formatPrice(prixCarteGrise)} €</span>
             </div>
           </div>

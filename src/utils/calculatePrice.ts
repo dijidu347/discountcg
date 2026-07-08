@@ -7,6 +7,8 @@ export interface PriceCalculation {
   fraisGestion: number;
   fraisAcheminement: number;
   taxeParafiscale: number;
+  sousTotal: number;
+  sousTotalArrondi: number;
   prixTotal: number;
   tarifDepartement: number;
   chevauxFiscaux: number;
@@ -60,6 +62,8 @@ export const calculatePrice = (
     fraisGestion,
     fraisAcheminement,
     taxeParafiscale,
+    sousTotal,
+    sousTotalArrondi,
     prixTotal,
     tarifDepartement,
     chevauxFiscaux,

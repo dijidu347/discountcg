@@ -85,6 +85,10 @@ export const DetailsCollapse = ({
                 <span className="text-muted-foreground">Taxe de gestion</span>
                 <span className="font-medium">{formatPrice(calculation.fraisGestion)} €</span>
               </div>
+              <div className="flex justify-between text-sm font-medium">
+                <span>Sous-total arrondi</span>
+                <span>{formatPrice(calculation.sousTotalArrondi)} €</span>
+              </div>
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">Redevance d'acheminement</span>
                 <span className="font-medium">{formatPrice(calculation.fraisAcheminement)} €</span>
