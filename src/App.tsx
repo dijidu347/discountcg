@@ -27,7 +27,6 @@ const PaiementDemarche = React.lazy(() => import("./pages/PaiementDemarche"));
 const PaiementSucces = React.lazy(() => import("./pages/PaiementSucces"));
 const SuiviCommande = React.lazy(() => import("./pages/SuiviCommande"));
 const RechercheSuivi = React.lazy(() => import("./pages/RechercheSuivi"));
-const DevisCarteGrise = React.lazy(() => import("./pages/DevisCarteGrise"));
 const Simulateur = React.lazy(() => import("./pages/Simulateur"));
 const ResultatCarteGrise = React.lazy(() => import("./pages/ResultatCarteGrise"));
 const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
@@ -85,7 +84,6 @@ const App = () => (
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/complete-profile" element={<CompleteProfile />} />
-          <Route path="/devis/:orderId" element={<DevisCarteGrise />} />
           <Route path="/simulateur" element={<Simulateur />} />
           <Route path="/resultat-carte-grise" element={<ResultatCarteGrise />} />
           <Route path="/demarche-simple" element={<DemarcheSimple />} />
