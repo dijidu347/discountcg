@@ -217,6 +217,7 @@ async function generateDemarcheFacturePDF(
   facture: Facture,
   demarche: Demarche,
   garage: Garage,
+  client?: { prenom?: string; nom?: string; adresse?: string; email?: string },
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
   const page = pdfDoc.addPage([595.28, 841.89]);
@@ -250,27 +251,46 @@ async function generateDemarcheFacturePDF(
   page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
   page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
 
+  // --- Colonne DESTINATAIRE (droite) : dessinée avec son propre y pour éviter les trous.
+  // Paiement client (objet `client` fourni) → au nom du client ; sinon → garage (inchangé).
+  const destX = width / 2;
+  let yDest = y - 20;
+  if (client) {
+    const nomComplet = `${client.prenom ?? ""} ${client.nom ?? ""}`.trim() || "Client";
+    page.drawText(nomComplet, { x: destX, y: yDest, size: 12, font: fontBold, color: black });
+    yDest -= 15;
+    if (client.adresse) {
+      page.drawText(client.adresse, { x: destX, y: yDest, size: 10, font: fontRegular, color: gray });
+      yDest -= 12;
+    }
+    if (client.email) {
+      page.drawText(client.email, { x: destX, y: yDest, size: 10, font: fontRegular, color: gray });
+      yDest -= 12;
+    }
+  } else {
+    page.drawText(garage?.raison_sociale || "Client", { x: destX, y: yDest, size: 12, font: fontBold, color: black });
+    yDest -= 15;
+    page.drawText(garage?.adresse || "", { x: destX, y: yDest, size: 10, font: fontRegular, color: gray });
+    yDest -= 12;
+    page.drawText(`${garage?.code_postal || ""} ${garage?.ville || ""}`, { x: destX, y: yDest, size: 10, font: fontRegular, color: gray });
+    yDest -= 12;
+    page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: destX, y: yDest, size: 10, font: fontRegular, color: gray });
+    yDest -= 24;
+    page.drawText(garage?.email || "", { x: destX, y: yDest, size: 10, font: fontRegular, color: gray });
+  }
+
+  // --- Colonne ÉMETTEUR (gauche) : INCHANGÉE (mêmes textes, mêmes positions y).
   y -= 20;
   page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
-  page.drawText(garage?.raison_sociale || "Client", { x: width / 2, y, size: 12, font: fontBold, color: black });
-
   y -= 15;
   page.drawText("SAS - Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
-  page.drawText(garage?.adresse || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
-
   y -= 12;
   page.drawText("SIRET : 820 073 484 00017", { x: margin, y, size: 10, font: fontRegular, color: gray });
-  page.drawText(`${garage?.code_postal || ""} ${garage?.ville || ""}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
-
   y -= 12;
   page.drawText("24 RUE DU CROUZET, 34770 GIGEAN", { x: margin, y, size: 10, font: fontRegular, color: gray });
-  page.drawText(`SIRET : ${garage?.siret || "N/A"}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
-
   y -= 12;
   page.drawText("contact@discountcartegrise.fr", { x: margin, y, size: 10, font: fontRegular, color: gray });
-
   y -= 12;
-  page.drawText(garage?.email || "", { x: width / 2, y, size: 10, font: fontRegular, color: gray });
 
   // Détails de la démarche
   y -= 40;
@@ -1084,7 +1104,12 @@ async function handleClientPayment(
     console.log("✅ Facture created:", facture?.numero);
 
     try {
-      const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage);
+      const pdfBytes = await generateDemarcheFacturePDF(facture, demarche, garage, {
+        prenom: demarche.client_prenom,
+        nom: demarche.client_nom,
+        adresse: demarche.client_adresse,
+        email: demarche.client_email,
+      });
       const pdfFileName = `facture_${facture.numero}.pdf`;
 
       clientPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
