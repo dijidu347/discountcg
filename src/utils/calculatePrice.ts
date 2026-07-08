@@ -47,7 +47,11 @@ export const calculatePrice = (
     abattement = true;
   }
 
-  const prixTotal = prixCV + taxeParafiscale + fraisGestion + fraisAcheminement;
+  // Arrondi à l'euro SUPÉRIEUR du sous-total (hors redevance), avec recalage
+  // au centime pour éviter qu'une erreur de virgule flottante fasse sauter un euro.
+  const sousTotal = prixCV + taxeParafiscale + fraisGestion;
+  const sousTotalArrondi = Math.ceil(Math.round(sousTotal * 100) / 100);
+  const prixTotal = sousTotalArrondi + fraisAcheminement;
 
   return {
     prixCV,
