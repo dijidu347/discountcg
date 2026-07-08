@@ -408,12 +408,15 @@ export type Database = {
       demarches: {
         Row: {
           admin_viewed: boolean | null
+          client_adresse: string | null
           client_email: string | null
+          client_nom: string | null
           client_paid: boolean
           client_paid_at: string | null
           client_payment_token: string | null
           client_payment_token_expires_at: string | null
           client_phone: string | null
+          client_prenom: string | null
           client_stripe_payment_id: string | null
           commentaire: string | null
           created_at: string
@@ -449,12 +452,15 @@ export type Database = {
         }
         Insert: {
           admin_viewed?: boolean | null
+          client_adresse?: string | null
           client_email?: string | null
+          client_nom?: string | null
           client_paid?: boolean
           client_paid_at?: string | null
           client_payment_token?: string | null
           client_payment_token_expires_at?: string | null
           client_phone?: string | null
+          client_prenom?: string | null
           client_stripe_payment_id?: string | null
           commentaire?: string | null
           created_at?: string
@@ -490,12 +496,15 @@ export type Database = {
         }
         Update: {
           admin_viewed?: boolean | null
+          client_adresse?: string | null
           client_email?: string | null
+          client_nom?: string | null
           client_paid?: boolean
           client_paid_at?: string | null
           client_payment_token?: string | null
           client_payment_token_expires_at?: string | null
           client_phone?: string | null
+          client_prenom?: string | null
           client_stripe_payment_id?: string | null
           commentaire?: string | null
           created_at?: string
