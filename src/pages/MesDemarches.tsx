@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { StatusPill } from "@/components/StatusPill";
+import { STATUS_CATEGORIES, getStatusCategory } from "@/lib/demarcheStatusBadge";
 import {
   Table,
   TableBody,
@@ -111,9 +112,15 @@ export default function MesDemarches() {
       );
     }
     
-    // Apply status filter
+    // Apply status filter — par CATÉGORIE de pastille (même logique que StatusPill),
+    // pas par statut brut : refuse → doc refusé (flag docIssues) → getStatusCategory.
     if (statusFilter !== "all") {
-      filtered = filtered.filter(d => d.status === statusFilter);
+      filtered = filtered.filter((d) => {
+        const category = d.status === "refuse"
+          ? "refuse"
+          : (docIssues[d.id]?.rejected ? "doc_refuse" : getStatusCategory(d.status));
+        return category === statusFilter;
+      });
     }
 
     // Apply type filter
@@ -142,7 +149,7 @@ export default function MesDemarches() {
     });
     
     setFilteredDemarches(filtered);
-  }, [demarches, searchQuery, statusFilter, typeFilter, sortField, sortDirection]);
+  }, [demarches, searchQuery, statusFilter, typeFilter, sortField, sortDirection, docIssues]);
 
   const loadData = async () => {
     if (!user) return;
@@ -354,12 +361,9 @@ export default function MesDemarches() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="en_saisie">En saisie</SelectItem>
-                <SelectItem value="en_attente">En attente</SelectItem>
-                <SelectItem value="en_attente_paiement_client">Attente paiement client</SelectItem>
-                <SelectItem value="paye">Payé</SelectItem>
-                <SelectItem value="finalise">Finalisé</SelectItem>
-                <SelectItem value="refuse">Refusé</SelectItem>
+                {STATUS_CATEGORIES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -425,12 +429,9 @@ export default function MesDemarches() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les statuts</SelectItem>
-                    <SelectItem value="en_saisie">En saisie</SelectItem>
-                    <SelectItem value="en_attente">En attente</SelectItem>
-                    <SelectItem value="en_attente_paiement_client">Attente paiement client</SelectItem>
-                    <SelectItem value="paye">Payé</SelectItem>
-                    <SelectItem value="finalise">Finalisé</SelectItem>
-                    <SelectItem value="refuse">Refusé</SelectItem>
+                    {STATUS_CATEGORIES.map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
