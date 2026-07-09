@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { typeHasPaymentChoice, paymentModeLabel } from "@/lib/demarchePayment";
+import { getExpressSurcharge } from "@/lib/expressOption";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1093,6 +1094,12 @@ export default function DemarcheDetail() {
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Frais de dossier</span>
                         <span className="font-medium">{demarche.frais_dossier.toFixed(2)} €</span>
+                      </div>
+                    )}
+                    {demarche.express && !trackingServices.some((s: any) => s.service_type === 'dossier_prioritaire') && (
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Option prioritaire</span>
+                        <span className="font-medium">+{getExpressSurcharge(demarche.type).toFixed(2)} €</span>
                       </div>
                     )}
                     {trackingServices.length > 0 && (
