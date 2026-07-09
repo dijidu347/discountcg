@@ -1649,6 +1649,39 @@ export type Database = {
         }
         Relationships: []
       }
+      tariff_changes: {
+        Row: {
+          applied_at: string | null
+          applique: boolean
+          created_at: string
+          date_effet: string
+          id: string
+          note: string | null
+          nouveau_tarif: number
+          region: string
+        }
+        Insert: {
+          applied_at?: string | null
+          applique?: boolean
+          created_at?: string
+          date_effet: string
+          id?: string
+          note?: string | null
+          nouveau_tarif: number
+          region: string
+        }
+        Update: {
+          applied_at?: string | null
+          applique?: boolean
+          created_at?: string
+          date_effet?: string
+          id?: string
+          note?: string | null
+          nouveau_tarif?: number
+          region?: string
+        }
+        Relationships: []
+      }
       token_pricing: {
         Row: {
           active: boolean
