@@ -21,6 +21,7 @@ import { VehicleFormCG } from "@/components/VehicleFormCG";
 import { VehicleFormSimple } from "@/components/VehicleFormSimple";
 import { VehicleInfoFormPro, VehicleInfoPro } from "@/components/VehicleInfoFormPro";
 import { PaymentModeSelector, PaymentMode } from "@/components/demarche/PaymentModeSelector";
+import { typeHasPaymentChoice } from "@/lib/demarchePayment";
 import { DocumentsNecessaires, getDocumentsConfig } from "@/components/DocumentsNecessaires";
 // TrackingServiceOption supprimé - options SMS retirées
 import { StripePayment } from "@/components/StripePayment";
@@ -935,7 +936,7 @@ export default function NouvelleDemarche() {
 
         <Card className="max-w-4xl mx-auto">
           {/* Étape 1 : Choix du mode de paiement (uniquement pour carte grise CG) */}
-          {actionDetails && !paymentModeConfirmed && formData.type === 'CG' && (
+          {actionDetails && !paymentModeConfirmed && typeHasPaymentChoice(formData.type) && (
             <CardContent className="py-8">
               <PaymentModeSelector
                 onSelect={(mode, email, phone, nom, prenom, adresse) => {
@@ -982,7 +983,7 @@ export default function NouvelleDemarche() {
             )}
             <form onSubmit={handleSubmitPayment} className="space-y-6">
               {/* Résumé du mode de paiement choisi (uniquement carte grise) */}
-              {formData.type === 'CG' && (
+              {typeHasPaymentChoice(formData.type) && (
                 <PaymentModeSelector
                   onSelect={(mode, email, phone, nom, prenom, adresse) => {
                     setPaymentMode(mode);

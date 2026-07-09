@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { typeHasPaymentChoice, paymentModeLabel } from "@/lib/demarchePayment";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1070,6 +1071,12 @@ export default function DemarcheDetail() {
                             : "❌ Non payé"}
                     </p>
                   </div>
+                  {typeHasPaymentChoice(demarche.type) && (
+                    <div>
+                      <Label>Mode de paiement</Label>
+                      <p className="text-sm font-medium mt-1">{paymentModeLabel(demarche.payment_mode)}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Détails des prix */}
@@ -1487,6 +1494,26 @@ export default function DemarcheDetail() {
                     <Label>Adresse</Label>
                     <p className="font-medium">{garage.adresse}<br />{garage.code_postal} {garage.ville}</p>
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Client (paiement partagé ou délégué au client uniquement) */}
+            {typeHasPaymentChoice(demarche.type) &&
+              (demarche.payment_mode === 'split' || demarche.payment_mode === 'client_pays_all') && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {(demarche.client_prenom || demarche.client_nom) && (
+                    <p className="font-medium">
+                      {[demarche.client_prenom, demarche.client_nom].filter(Boolean).join(" ")}
+                    </p>
+                  )}
+                  {demarche.client_email && (
+                    <p className="text-muted-foreground">{demarche.client_email}</p>
+                  )}
                 </CardContent>
               </Card>
             )}
