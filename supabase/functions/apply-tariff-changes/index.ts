@@ -19,31 +19,6 @@ function json(status: number, body: unknown) {
 // --- Helpers de notification RECOPIÉS de webhook-sogecommerce ---------------
 // (les edge functions ne partagent pas leur code → recopie, comme le pattern existant)
 
-// SMS d'alerte via SMS Partner — NON bloquant, ne throw jamais.
-async function sendExpressSms(message: string) {
-  try {
-    const apiKey = Deno.env.get("SMSPARTNER_API_KEY");
-    const phoneNumber = Deno.env.get("SMS_ALERT_NUMBER");
-    if (!apiKey || !phoneNumber) {
-      console.error("SMS non envoye: SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant");
-      return;
-    }
-    const res = await fetch("https://api.smspartner.fr/v1/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey, phoneNumbers: phoneNumber, message }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.success === false) {
-      console.error("Echec envoi SMS Partner:", res.status, data);
-    } else {
-      console.log("SMS alerte envoye");
-    }
-  } catch (e) {
-    console.error("Exception envoi SMS:", e);
-  }
-}
-
 // Email via l'edge function send-email (type custom_notification) — NON bloquant.
 async function sendEmail(type: string, to: string, data: Record<string, unknown>) {
   try {
@@ -153,24 +128,34 @@ serve(async (req) => {
       }
     }
 
-    // 5) Notification (uniquement s'il s'est passé quelque chose), NON bloquante.
+    // 5) Notification EMAIL (uniquement s'il s'est passé quelque chose), NON bloquante.
+    //    Un seul email : section "appliqués" et/ou section "erreurs" selon les cas.
+    //    Rien à appliquer → aucun email (silencieux).
     if (appliques.length > 0 || erreurs.length > 0) {
-      const lignes = [
-        ...appliques.map((a) => `Region ${a.region} -> ${a.nouveau_tarif} euros/CV (${a.departements} departements)`),
-        ...erreurs.map((e) => `ATTENTION Region ${e.region} introuvable, non appliquee`),
-      ];
-      const message = `Veilleur tarifs carte grise\n${lignes.join("\n")}`;
+      const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      const sections: string[] = [];
+
+      if (appliques.length > 0) {
+        const lignes = appliques
+          .map((a) => `- Region ${a.region} -> ${a.nouveau_tarif} euros/CV (${a.departements} departements)`)
+          .join("\n");
+        sections.push(`Changements appliques le ${today} :\n${lignes}`);
+      }
+      if (erreurs.length > 0) {
+        const lignes = erreurs
+          .map((e) => `- Region "${e.region}" introuvable : NON appliquee`)
+          .join("\n");
+        sections.push(`ATTENTION - erreurs (aucune modification pour ces regions) :\n${lignes}`);
+      }
+
+      // Le sujet signale l'erreur en priorité (cas mixte inclus).
+      const subject = erreurs.length > 0
+        ? "ATTENTION Veilleur tarifs - erreur"
+        : "Veilleur tarifs - changement applique";
+      const message = sections.join("\n\n");
 
       try {
-        await sendExpressSms(message);
-      } catch (e) {
-        console.error("Notif SMS échouée (non bloquant):", e);
-      }
-      try {
-        await sendEmail("custom_notification", ADMIN_EMAIL, {
-          subject: "Veilleur tarifs carte grise",
-          message,
-        });
+        await sendEmail("custom_notification", ADMIN_EMAIL, { subject, message });
       } catch (e) {
         console.error("Notif email échouée (non bloquant):", e);
       }
