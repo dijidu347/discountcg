@@ -657,81 +657,6 @@ export default function AllDemarches() {
           </Card>
         )}
 
-        {/* ── Section REFUSÉES ─────────────────────────────────── */}
-        <Card className="p-6 mb-8 border-2 border-red-500/20 bg-red-50/5">
-          <div className="flex items-center gap-3 mb-6">
-            <XCircle className="h-6 w-6 text-red-600" />
-            <h1 className="text-2xl font-bold text-red-700 dark:text-red-500">
-              Démarches refusées
-            </h1>
-            <Badge variant="outline" className="border-red-500 text-red-600">
-              {refusees.length}
-            </Badge>
-          </div>
-
-          {refusees.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucune démarche refusée</p>
-          ) : (
-            <>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>N° Démarche</TableHead>
-                    <TableHead>Immatriculation</TableHead>
-                    <TableHead>Garage</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Paiement</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginate(refusees, pageRefusees).map((d: any) => (
-                    <TableRow key={d.id} className="bg-red-50/50 dark:bg-red-950/10">
-                      <TableCell className="font-mono text-xs font-semibold text-red-700">
-                        <div className="flex items-center gap-2">
-                          {d.numero_demarche}
-                          <ExpressBadge express={d.express} />
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {d.immatriculation}
-                        {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
-                          <span className="block text-xs text-muted-foreground">
-                            {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
-                          </span>
-                        )}
-                        <div className="mt-1">
-                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {d.garages?.raison_sociale}
-                          {d.garages?.is_verified && (
-                            <Badge className="bg-green-500 text-xs">Vérifié</Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>{d.type}</TableCell>
-                      <TableCell>{getPaymentStatusBadge(d)}</TableCell>
-                      <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
-                      <TableCell>{new Date(d.created_at).toLocaleDateString("fr-FR")}</TableCell>
-                      <TableCell>
-                        <Link to={`/admin/demarche/${d.id}`}>
-                          <Button variant="outline" size="sm">Voir</Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              <Pagination page={pageRefusees} total={refusees.length} onChange={setPageRefusees} />
-            </>
-          )}
-        </Card>
-
         {/* ── Section TERMINÉES ────────────────────────────────── */}
         <Card className="p-6 mb-8 border-2 border-green-500/20 bg-green-50/5">
           <div className="flex items-center gap-3 mb-6">
@@ -803,6 +728,81 @@ export default function AllDemarches() {
                 </TableBody>
               </Table>
               <Pagination page={pageTerminees} total={terminees.length} onChange={setPageTerminees} />
+            </>
+          )}
+        </Card>
+
+        {/* ── Section REFUSÉES ─────────────────────────────────── */}
+        <Card className="p-6 mb-8 border-2 border-red-500/20 bg-red-50/5">
+          <div className="flex items-center gap-3 mb-6">
+            <XCircle className="h-6 w-6 text-red-600" />
+            <h1 className="text-2xl font-bold text-red-700 dark:text-red-500">
+              Démarches refusées
+            </h1>
+            <Badge variant="outline" className="border-red-500 text-red-600">
+              {refusees.length}
+            </Badge>
+          </div>
+
+          {refusees.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">Aucune démarche refusée</p>
+          ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>N° Démarche</TableHead>
+                    <TableHead>Immatriculation</TableHead>
+                    <TableHead>Garage</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Paiement</TableHead>
+                    <TableHead>Montant</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginate(refusees, pageRefusees).map((d: any) => (
+                    <TableRow key={d.id} className="bg-red-50/50 dark:bg-red-950/10">
+                      <TableCell className="font-mono text-xs font-semibold text-red-700">
+                        <div className="flex items-center gap-2">
+                          {d.numero_demarche}
+                          <ExpressBadge express={d.express} />
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">
+                        {d.immatriculation}
+                        {(d.marque || d.vehicules?.marque || d.modele || d.vehicules?.modele) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
+                          </span>
+                        )}
+                        <div className="mt-1">
+                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {d.garages?.raison_sociale}
+                          {d.garages?.is_verified && (
+                            <Badge className="bg-green-500 text-xs">Vérifié</Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{d.type}</TableCell>
+                      <TableCell>{getPaymentStatusBadge(d)}</TableCell>
+                      <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
+                      <TableCell>{new Date(d.created_at).toLocaleDateString("fr-FR")}</TableCell>
+                      <TableCell>
+                        <Link to={`/admin/demarche/${d.id}`}>
+                          <Button variant="outline" size="sm">Voir</Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <Pagination page={pageRefusees} total={refusees.length} onChange={setPageRefusees} />
             </>
           )}
         </Card>
