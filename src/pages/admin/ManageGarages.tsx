@@ -64,6 +64,7 @@ export default function ManageGarages() {
   const [garagesAVerifier, setGaragesAVerifier] = useState<any[]>([]);
   const [garagesVerifies, setGaragesVerifies] = useState<any[]>([]);
   const [garagesEnAttente, setGaragesEnAttente] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedGarage, setSelectedGarage] = useState<any>(null);
   const [verificationDocs, setVerificationDocs] = useState<any[]>([]);
@@ -678,6 +679,24 @@ export default function ManageGarages() {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
+  // Recherche EN MÉMOIRE par nom (raison_sociale) OU email — appliquée aux 3 buckets.
+  const filtrerGarages = (liste: any[]) => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return liste;
+    return liste.filter(
+      (g) => g.raison_sociale?.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q),
+    );
+  };
+  const filteredAVerifier = filtrerGarages(garagesAVerifier);
+  const filteredEnAttente = filtrerGarages(garagesEnAttente);
+  const filteredVerifies = filtrerGarages(garagesVerifies);
+  const aucunResultat =
+    searchQuery.trim() !== "" &&
+    filteredAVerifier.length === 0 &&
+    filteredEnAttente.length === 0 &&
+    filteredVerifies.length === 0 &&
+    garagesAVerifier.length + garagesEnAttente.length + garagesVerifies.length > 0;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
       <Helmet>
@@ -695,6 +714,19 @@ export default function ManageGarages() {
             Gérer les documents requis
           </Button>
         </div>
+
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <Input
+            placeholder="Rechercher un garage (nom ou email)..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1"
+          />
+        </div>
+
+        {aucunResultat && (
+          <p className="text-muted-foreground text-center py-8">Aucun garage ne correspond à la recherche</p>
+        )}
 
         {/* Section À VÉRIFIER */}
         <Card className="p-6 mb-8 border-2 border-orange-500/20 bg-orange-50/5">
@@ -719,7 +751,7 @@ export default function ManageGarages() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {garagesAVerifier.map((garage) => (
+                {filteredAVerifier.map((garage) => (
                   <TableRow key={garage.id} className={!garage.verification_admin_viewed ? "bg-red-50 dark:bg-red-950/20" : "bg-orange-50/50 dark:bg-orange-950/10"}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -773,7 +805,7 @@ export default function ManageGarages() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {garagesEnAttente.map((garage) => (
+                {filteredEnAttente.map((garage) => (
                   <TableRow key={garage.id}>
                     <TableCell className="font-medium text-muted-foreground">
                       {garage.raison_sociale}
@@ -816,7 +848,7 @@ export default function ManageGarages() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {garagesVerifies.map((garage) => (
+                {filteredVerifies.map((garage) => (
                   <TableRow key={garage.id} className="bg-green-50/50 dark:bg-green-950/10">
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
