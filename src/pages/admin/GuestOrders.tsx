@@ -20,6 +20,7 @@ import {
 // ──────────────────────────────────────────────────────────────────────
 
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
+import { getExpressSurcharge } from "@/lib/expressOption";
 
 interface GuestOrder {
   id: string;
@@ -147,13 +148,16 @@ export default function GuestOrders() {
   };
 
   // ── Montant à afficher : montant réellement payé (source de vérité) sinon estimation ──
+  // Estimation alignée à l'identique sur computeGuestTotal (edge create-sogecommerce-guest-payment) :
+  // montant_ht + frais_dossier + sms + certificat_non_gage + express(surcharge selon type).
+  // Sans dossier_prioritaire (colonne morte) ni email (non facturé).
   const getDisplayAmount = (o: GuestOrder): number => {
     if (o.paye && o.montant_ttc && o.montant_ttc > 0) return o.montant_ttc;
     return (o.montant_ht || 0)
       + (o.frais_dossier || 0)
-      + (o.dossier_prioritaire ? 5 : 0)
+      + (o.sms_notifications ? 5 : 0)
       + (o.certificat_non_gage ? 10 : 0)
-      + (o.sms_notifications ? 5 : 0);
+      + (o.express ? getExpressSurcharge(o.demarche_type) : 0);
   };
 
   // ── Filtres dérivés ────────────────────────────────────────────────

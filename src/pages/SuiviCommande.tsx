@@ -35,6 +35,7 @@ import { GuestDocumentUpload } from "@/components/GuestDocumentUpload";
 import { SimpleDownloadButton } from "@/components/SimpleDownloadButton";
 import { GuestOrderChat } from "@/components/GuestOrderChat";
 import { cn } from "@/lib/utils";
+import { getExpressSurcharge } from "@/lib/expressOption";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
@@ -455,14 +456,14 @@ const SuiviCommande = () => {
               <CardTitle>Options souscrites</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {/* Options supplémentaires */}
-              {order.dossier_prioritaire && (
+              {/* Options supplémentaires — priorité via la colonne `express` (vrai surcoût selon le type) */}
+              {order.express && (
                 <div className="flex items-center justify-between p-3 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800">
                   <div className="flex items-center gap-2">
                     <Badge className="bg-orange-500">Prioritaire</Badge>
                     <span className="text-sm">Dossier Prioritaire</span>
                   </div>
-                  <span className="text-sm text-orange-600 font-medium">+5,00 €</span>
+                  <span className="text-sm text-orange-600 font-medium">+{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span>
                 </div>
               )}
               
@@ -606,7 +607,7 @@ const SuiviCommande = () => {
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
                 )}
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
-                {order.dossier_prioritaire && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
+                {order.express && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
                 {order.certificat_non_gage && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Suivi SMS</span><span className="font-medium">5.00 €</span></div>}
                 <div className="border-t pt-2 flex justify-between font-bold text-lg">

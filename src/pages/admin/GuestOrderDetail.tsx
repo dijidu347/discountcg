@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban, Loader2, Package, CreditCard, Truck, Clock } from "lucide-react";
 import { SecureDownloadButton } from "@/components/SecureDownloadButton";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
+import { getExpressSurcharge } from "@/lib/expressOption";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -601,11 +602,11 @@ export default function GuestOrderDetail() {
             </Card>
 
             {/* Options & payment details */}
-            {(order.dossier_prioritaire || order.certificat_non_gage || order.sms_notifications) && (
+            {(order.express || order.certificat_non_gage || order.sms_notifications) && (
               <Card className="border-orange-300">
                 <CardHeader><CardTitle className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-orange-500" /> Options client</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
-                  {order.dossier_prioritaire && <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-300"><Badge className="bg-orange-500 text-white">PRIORITAIRE</Badge><span className="text-sm font-bold text-orange-600">+5 €</span></div>}
+                  {order.express && <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-300"><Badge className="bg-orange-500 text-white">PRIORITAIRE</Badge><span className="text-sm font-bold text-orange-600">+{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
                   {order.certificat_non_gage && <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-300"><Badge className="bg-blue-500 text-white">NON-GAGE</Badge><span className="text-sm font-bold text-blue-600">+10 €</span></div>}
                   {order.sms_notifications && <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50 dark:bg-purple-950 border border-purple-300"><Badge className="bg-purple-500 text-white">SMS</Badge><span className="text-sm font-bold text-purple-600">+5 €</span></div>}
                 </CardContent>
@@ -620,15 +621,18 @@ export default function GuestOrderDetail() {
                   <div className="flex justify-between"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
-                {order.dossier_prioritaire && <div className="flex justify-between"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
+                {order.express && <div className="flex justify-between"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
                 {order.certificat_non_gage && <div className="flex justify-between"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between"><span className="text-muted-foreground">SMS</span><span className="font-medium">5.00 €</span></div>}
+                {/* Total aligné à l'identique sur computeGuestTotal (edge create-sogecommerce-guest-payment) :
+                    montant_ht + frais_dossier + sms + certificat_non_gage + express(surcharge selon type).
+                    Sans dossier_prioritaire (colonne morte) ni email (non facturé). */}
                 <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{(
                   (order.montant_ht || 0) +
                   (order.frais_dossier || 0) +
-                  (order.dossier_prioritaire ? 5 : 0) +
+                  (order.sms_notifications ? 5 : 0) +
                   (order.certificat_non_gage ? 10 : 0) +
-                  (order.sms_notifications ? 5 : 0)
+                  (order.express ? getExpressSurcharge(order.demarche_type) : 0)
                 ).toFixed(2)} €</span></div>
                 <div className="pt-2 flex gap-2 flex-wrap">
                   <Badge variant={order.paye ? "default" : "secondary"} className={order.paye ? "bg-green-600" : ""}>{order.paye ? "Payé" : "Non payé"}</Badge>

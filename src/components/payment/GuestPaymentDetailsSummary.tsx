@@ -73,13 +73,9 @@ export const GuestPaymentDetailsSummary = ({
             <span className="font-medium">{formatPrice(fraisDossier)} €</span>
           </div>
 
-          {/* Options */}
-          {dossierPrioritaire && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Dossier prioritaire</span>
-              <span className="font-medium">5.00 €</span>
-            </div>
-          )}
+          {/* Options — la priorité est affichée via la ligne `express` ci-dessous
+              (libellé "Dossier Prioritaire" + vrai surcoût selon le type). La colonne
+              dossier_prioritaire (morte, jamais renseignée) n'est plus affichée. */}
           {certificatNonGage && (
             <div className="flex justify-between items-center">
               <span className="text-sm">Certificat de non-gage</span>
