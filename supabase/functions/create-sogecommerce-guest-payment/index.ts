@@ -205,7 +205,7 @@ serve(async (req) => {
       vads_amount: String(amountCents),
       vads_ctx_mode: mode,
       vads_currency: "978", // EUR
-      vads_order_id: String(orderId).slice(0, 64),
+      vads_order_id: String(order.tracking_number || orderId).slice(0, 64),
       vads_page_action: "PAYMENT",
       vads_payment_config: "SINGLE",
       vads_site_id: siteId,
