@@ -100,7 +100,10 @@ async function computeSignature(
 // Calcul du montant guest CÔTÉ SERVEUR
 // (recopie de calculateGuestOrderTTC, src/components/payment/GuestPaymentDetailsSummary.tsx)
 //   total = prix_carte_grise(montant_ht) + frais_dossier + options
-//   options : sms +5, email +5, dossier_prioritaire +5, certificat_non_gage +10
+//   options : sms +5, dossier_prioritaire +5, certificat_non_gage +10
+//   NB : l'option "Suivi email" (+5) a été SUPPRIMÉE de la facturation guest.
+//        La colonne email_notifications reste (le suivi email est gratuit et
+//        ne déclenche aucun envoi conditionnel), mais n'est PLUS facturée.
 // ---------------------------------------------------------------------------
 function computeGuestTotal(order: any): number {
   const prixCarteGrise = Number(order.montant_ht) || 0;
@@ -108,12 +111,11 @@ function computeGuestTotal(order: any): number {
     ? 30
     : Number(order.frais_dossier);
   const sms = order.sms_notifications ? 5 : 0;
-  const email = order.email_notifications ? 5 : 0;
   const prioritaire = order.dossier_prioritaire ? 5 : 0;
   const nonGage = order.certificat_non_gage ? 10 : 0;
   const EXPRESS_SURCHARGE: Record<string, number> = { DA: 5, DC: 5, CG: 10, CPI_WW: 99 };
   const expressSurcharge = order.express ? (EXPRESS_SURCHARGE[order.demarche_type] || 0) : 0;
-  return prixCarteGrise + fraisDossier + sms + email + prioritaire + nonGage + expressSurcharge;
+  return prixCarteGrise + fraisDossier + sms + prioritaire + nonGage + expressSurcharge;
 }
 
 // ---------------------------------------------------------------------------

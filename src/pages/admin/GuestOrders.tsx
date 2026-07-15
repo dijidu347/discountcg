@@ -153,7 +153,6 @@ export default function GuestOrders() {
       + (o.frais_dossier || 0)
       + (o.dossier_prioritaire ? 5 : 0)
       + (o.certificat_non_gage ? 10 : 0)
-      + (o.email_notifications ? 5 : 0)
       + (o.sms_notifications ? 5 : 0);
   };
 

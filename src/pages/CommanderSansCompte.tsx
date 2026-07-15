@@ -720,10 +720,7 @@ const CommanderSansCompte = () => {
                 <CardTitle>Options de suivi</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center space-x-2">
-                  <Checkbox id="email_notif" checked={formData.email_notifications} onCheckedChange={(checked) => setFormData({ ...formData, email_notifications: checked as boolean })} />
-                  <Label htmlFor="email_notif" className="cursor-pointer">Notifications par email (+5€)</Label>
-                </div>
+                {/* Option "Suivi par email" (+5) supprimée de la facturation guest. */}
                 <div className="flex items-center space-x-2">
                   <Checkbox id="sms_notif" checked={formData.sms_notifications} onCheckedChange={(checked) => setFormData({ ...formData, sms_notifications: checked as boolean })} />
                   <Label htmlFor="sms_notif" className="cursor-pointer">Notifications par SMS (+5€)</Label>

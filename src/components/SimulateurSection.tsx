@@ -203,8 +203,8 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
             adresse: '',
             code_postal: '',
             ville: '',
-            montant_ht: prixHT,
-            montant_ttc: prixHT, // Pas de TVA pour DA/DC
+            montant_ht: 0,
+            montant_ttc: 0, // Pas de TVA pour DA/DC ; total recalculé côté serveur (frais_dossier + options)
             frais_dossier: prixHT,
             status: 'en_attente',
             paye: false,

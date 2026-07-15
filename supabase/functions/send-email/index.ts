@@ -949,7 +949,6 @@ const getEmailTemplate = (type: string, data: any) => {
       const optionsHtml = data.options ? `
         ${data.options.dossier_prioritaire ? '<p style="margin: 4px 0;">🔶 <strong>Dossier Prioritaire</strong> (+5€)</p>' : ''}
         ${data.options.certificat_non_gage ? '<p style="margin: 4px 0;">🔵 <strong>Certificat de non-gage</strong> (+10€)</p>' : ''}
-        ${data.options.email_notifications ? '<p style="margin: 4px 0;">📧 <strong>Suivi par email</strong> (+5€)</p>' : ''}
         ${data.options.sms_notifications ? '<p style="margin: 4px 0;">💬 <strong>Suivi par SMS</strong> (+5€)</p>' : ''}
       ` : '';
       const montantDisplay = data.montant_ttc ? `${Number(data.montant_ttc).toFixed(2)} €` : '0.00 €';

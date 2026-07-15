@@ -26,14 +26,14 @@ export const GuestPaymentDetailsSummary = ({
   demarcheType,
 }: GuestPaymentDetailsSummaryProps) => {
   // Options pricing
+  // NB : l'option "Suivi email" (+5) a été supprimée de la facturation guest.
   const smsPrix = smsNotifications ? 5 : 0;
-  const emailPrix = emailNotifications ? 5 : 0;
   const prioritairePrix = dossierPrioritaire ? 5 : 0;
   const nonGagePrix = certificatNonGage ? 10 : 0;
   const expressPrix = express ? getExpressSurcharge(demarcheType) : 0;
 
   // Total services HT (frais dossier + toutes les options)
-  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix + expressPrix;
+  const totalServicesHT = fraisDossier + smsPrix + prioritairePrix + nonGagePrix + expressPrix;
 
   // Total = carte grise + services HT (pas de TVA)
   const total = prixCarteGrise + totalServicesHT;
@@ -83,12 +83,6 @@ export const GuestPaymentDetailsSummary = ({
             <div className="flex justify-between items-center">
               <span className="text-sm">Certificat de non-gage</span>
               <span className="font-medium">10.00 €</span>
-            </div>
-          )}
-          {emailNotifications && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm">Suivi par email</span>
-              <span className="font-medium">5.00 €</span>
             </div>
           )}
           {smsNotifications && (
@@ -146,12 +140,12 @@ export const calculateGuestOrderTTC = (
     demarcheType?: string;
   } = {}
 ): number => {
+  // NB : l'option "Suivi email" (+5) a été supprimée de la facturation guest.
   const smsPrix = options.smsNotifications ? 5 : 0;
-  const emailPrix = options.emailNotifications ? 5 : 0;
   const prioritairePrix = options.dossierPrioritaire ? 5 : 0;
   const nonGagePrix = options.certificatNonGage ? 10 : 0;
   const expressPrix = options.express ? getExpressSurcharge(options.demarcheType) : 0;
-  const totalServicesHT = fraisDossier + smsPrix + emailPrix + prioritairePrix + nonGagePrix + expressPrix;
+  const totalServicesHT = fraisDossier + smsPrix + prioritairePrix + nonGagePrix + expressPrix;
   // Pas de TVA - total = carte grise + services
   return prixCarteGrise + totalServicesHT;
 };

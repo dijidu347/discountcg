@@ -155,7 +155,7 @@ export default function DemarcheSimple() {
             // Auto-save to DB so user doesn't need to click "Continuer en tant qu'invité"
             await supabase
               .from('guest_orders')
-              .update({ email: user.email, email_notifications: true, updated_at: new Date().toISOString() })
+              .update({ email: user.email, updated_at: new Date().toISOString() })
               .eq('id', orderIdParam);
             setIsEmailSaved(true);
           }

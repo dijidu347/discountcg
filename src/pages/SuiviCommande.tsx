@@ -608,7 +608,6 @@ const SuiviCommande = () => {
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
                 {order.dossier_prioritaire && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">5.00 €</span></div>}
                 {order.certificat_non_gage && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
-                {order.email_notifications && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Suivi email</span><span className="font-medium">5.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Suivi SMS</span><span className="font-medium">5.00 €</span></div>}
                 <div className="border-t pt-2 flex justify-between font-bold text-lg">
                   <span>Total payé</span>
