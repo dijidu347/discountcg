@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Sources legales (gardees en local, jamais versionnees)
+legal-source/
