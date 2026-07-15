@@ -39,9 +39,8 @@ export default function ResultatCarteGrise() {
   const [isInfoCompleted, setIsInfoCompleted] = useState(false);
   const [demarcheType, setDemarcheType] = useState<string>("CG");
   
-  // Options de suivi
-  const [emailNotifications, setEmailNotifications] = useState(false);
-  
+  // Option "Suivi email" (+5) supprimée du parcours guest (jamais facturée).
+
   // Email obligatoire avant paiement
   const [email, setEmail] = useState("");
   const [isEmailSaved, setIsEmailSaved] = useState(false);
@@ -64,7 +63,6 @@ export default function ResultatCarteGrise() {
   const [express, setExpress] = useState(false);
   const [certificatNonGage, setCertificatNonGage] = useState(false);
 
-  const emailPrix = 5;
   const certificatNonGagePrix = 10;
 
   const fraisDossier = 30;
@@ -74,10 +72,9 @@ export default function ResultatCarteGrise() {
     if (!calculation) return 0;
     const prixCarteGrise = calculation.prixTotal;
     let optionsPrix = 0;
-    if (emailNotifications) optionsPrix += emailPrix;
     if (express) optionsPrix += getExpressSurcharge(demarcheType);
     if (certificatNonGage) optionsPrix += certificatNonGagePrix;
-    
+
     const totalServicesHT = fraisDossier + optionsPrix;
     return prixCarteGrise + totalServicesHT;
   };
@@ -282,7 +279,6 @@ export default function ResultatCarteGrise() {
       setIsPriceSaved(false);
       const prixCarteGrise = calculation.prixTotal;
       let optionsPrix = 0;
-      if (emailNotifications) optionsPrix += emailPrix;
       if (express) optionsPrix += getExpressSurcharge(demarcheType);
       if (certificatNonGage) optionsPrix += certificatNonGagePrix;
 
@@ -296,7 +292,7 @@ export default function ResultatCarteGrise() {
           montant_ttc: montantTTC,
           frais_dossier: fraisDossier,
           sms_notifications: false,
-          email_notifications: emailNotifications,
+          email_notifications: false,
           dossier_prioritaire: false,
           express: express,
           certificat_non_gage: certificatNonGage,
@@ -317,7 +313,7 @@ export default function ResultatCarteGrise() {
     };
 
     updateOrder();
-  }, [orderId, calculation, emailNotifications, express, certificatNonGage, vehicleInfo, fraisDossier]);
+  }, [orderId, calculation, express, certificatNonGage, vehicleInfo, fraisDossier]);
 
   // Bloquer le refresh/fermeture pendant la commande
   useEffect(() => {
@@ -517,26 +513,8 @@ export default function ResultatCarteGrise() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className={`flex items-start space-x-3 p-4 rounded-lg border transition-colors ${
-                    emailNotifications ? 'border-primary bg-primary/5' : 'bg-card hover:bg-muted/50'
-                  }`}>
-                    <Checkbox
-                      id="email_notif"
-                      checked={emailNotifications}
-                      onCheckedChange={(checked) => setEmailNotifications(checked as boolean)}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="email_notif" className="cursor-pointer flex items-center gap-2 font-medium">
-                        <Mail className="w-4 h-4 text-primary" />
-                        Suivi par email
-                        <span className="ml-auto text-primary font-semibold">+{emailPrix},00 €</span>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Recevez les mises à jour de votre dossier par email
-                      </p>
-                    </div>
-                  </div>
-                  
+                  {/* Option "Suivi par email" (+5) supprimée du parcours guest. */}
+
                   {/* SMS - Coming soon */}
                   <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50 opacity-60">
                     <Checkbox
@@ -630,7 +608,7 @@ export default function ResultatCarteGrise() {
                               dossier_prioritaire: false,
                               express: express,
                               certificat_non_gage: certificatNonGage,
-                              email_notifications: emailNotifications,
+                              email_notifications: false,
                             }
                           }
                         }
@@ -693,7 +671,7 @@ export default function ResultatCarteGrise() {
               demarcheType={demarcheType}
               selectedOptions={{
                 smsNotifications: false,
-                emailNotifications,
+                emailNotifications: false,
                 packNotifications: false,
                 dossierPrioritaire: express,
                 certificatNonGage,

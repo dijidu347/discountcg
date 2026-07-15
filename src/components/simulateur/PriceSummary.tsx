@@ -43,7 +43,7 @@ export const PriceSummary = ({
   const [isOpen, setIsOpen] = useState(false);
 
   // Prix des options
-  const emailPrix = 5;
+  // NB : l'option "Suivi email" (+5) a été supprimée du parcours guest.
   const smsPrix = 5;
   const packPrix = 10;
   const dossierPrioritairePrix = getExpressSurcharge(demarcheType);
@@ -55,7 +55,6 @@ export const PriceSummary = ({
   if (selectedOptions?.packNotifications) {
     optionsPrix = packPrix;
   } else {
-    if (selectedOptions?.emailNotifications) optionsPrix += emailPrix;
     if (selectedOptions?.smsNotifications) optionsPrix += smsPrix;
   }
   if (selectedOptions?.dossierPrioritaire) optionsPrix += dossierPrioritairePrix;
@@ -179,12 +178,6 @@ export const PriceSummary = ({
                   <div className="flex justify-between items-center text-sm">
                     <span>Pack Suivi Complet</span>
                     <span className="font-medium">{formatPrice(packPrix)} €</span>
-                  </div>
-                )}
-                {!selectedOptions?.packNotifications && selectedOptions?.emailNotifications && (
-                  <div className="flex justify-between items-center text-sm">
-                    <span>Suivi par email</span>
-                    <span className="font-medium">{formatPrice(emailPrix)} €</span>
                   </div>
                 )}
                 {!selectedOptions?.packNotifications && selectedOptions?.smsNotifications && (
