@@ -7,6 +7,7 @@ import { Car, ChevronDown, ChevronUp } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatPrice } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
+import { DetailsCollapse } from "@/components/simulateur/DetailsCollapse";
 
 interface VehicleInfo {
   marque?: string;
@@ -148,9 +149,12 @@ export const PriceSummary = ({
                   Carte grise
                 </p>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm">Taxe régionale</span>
-                  <span className="font-medium">{formatPrice(calculation.prixCV)} €</span>
+                  <span className="text-sm">Prix de la carte grise</span>
+                  <span className="font-medium">{formatPrice(prixCarteGrise)} €</span>
                 </div>
+                {/* Détail du calcul carte grise : déplié à la demande, juste sous le prix.
+                    Réplié par défaut (état interne de DetailsCollapse). */}
+                <DetailsCollapse calculation={calculation} />
               </div>
 
               {/* Services */}
@@ -190,12 +194,9 @@ export const PriceSummary = ({
 
               <Separator />
 
-              {/* Totaux */}
+              {/* Totaux — sous-total "Carte grise" retiré : redondant avec la ligne
+                  "Prix de la carte grise" du bloc Carte grise ci-dessus. */}
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>Carte grise</span>
-                  <span>{formatPrice(prixCarteGrise)} €</span>
-                </div>
                 <div className="flex justify-between items-center text-sm">
                   <span>Total services</span>
                   <span>{formatPrice(totalServices)} €</span>

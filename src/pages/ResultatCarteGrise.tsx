@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { PriceSummary } from "@/components/simulateur/PriceSummary";
-import { DetailsCollapse } from "@/components/simulateur/DetailsCollapse";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadList } from "@/components/upload/UploadList";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
@@ -678,8 +677,6 @@ export default function ResultatCarteGrise() {
               }}
               isPaid={isPaid}
             />
-
-            <DetailsCollapse calculation={calculation} />
           </div>
         </div>
       </div>
