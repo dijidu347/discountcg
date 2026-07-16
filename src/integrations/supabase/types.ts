@@ -438,12 +438,16 @@ export type Database = {
           paye: boolean | null
           payment_mode: string
           prix_carte_grise: number | null
+          prix_cv: number | null
+          prix_cv_avant_abattement: number | null
           pro_payment_pending: boolean
           requires_resubmission_payment: boolean | null
           resubmission_paid: boolean | null
           resubmission_payment_amount: number | null
           resubmission_payment_intent_id: string | null
+          sous_total_arrondi: number | null
           status: Database["public"]["Enums"]["demarche_status"]
+          taxe_parafiscale: number | null
           type: Database["public"]["Enums"]["demarche_type"]
           updated_at: string
           validated_at: string | null
@@ -482,12 +486,16 @@ export type Database = {
           paye?: boolean | null
           payment_mode?: string
           prix_carte_grise?: number | null
+          prix_cv?: number | null
+          prix_cv_avant_abattement?: number | null
           pro_payment_pending?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
           resubmission_payment_intent_id?: string | null
+          sous_total_arrondi?: number | null
           status?: Database["public"]["Enums"]["demarche_status"]
+          taxe_parafiscale?: number | null
           type: Database["public"]["Enums"]["demarche_type"]
           updated_at?: string
           validated_at?: string | null
@@ -526,12 +534,16 @@ export type Database = {
           paye?: boolean | null
           payment_mode?: string
           prix_carte_grise?: number | null
+          prix_cv?: number | null
+          prix_cv_avant_abattement?: number | null
           pro_payment_pending?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
           resubmission_payment_intent_id?: string | null
+          sous_total_arrondi?: number | null
           status?: Database["public"]["Enums"]["demarche_status"]
+          taxe_parafiscale?: number | null
           type?: Database["public"]["Enums"]["demarche_type"]
           updated_at?: string
           validated_at?: string | null
@@ -1208,6 +1220,7 @@ export type Database = {
           energie: string | null
           express: boolean
           frais_dossier: number
+          genre: string | null
           has_cotitulaire: boolean | null
           id: string
           immatriculation: string
@@ -1222,13 +1235,17 @@ export type Database = {
           paye: boolean
           payment_intent_id: string | null
           prenom: string
+          prix_cv: number | null
+          prix_cv_avant_abattement: number | null
           puiss_fisc: number | null
           requires_resubmission_payment: boolean | null
           resubmission_paid: boolean | null
           resubmission_payment_amount: number | null
           resubmission_payment_intent_id: string | null
           sms_notifications: boolean
+          sous_total_arrondi: number | null
           status: string
+          taxe_parafiscale: number | null
           telephone: string
           tracking_number: string
           updated_at: string
@@ -1257,6 +1274,7 @@ export type Database = {
           energie?: string | null
           express?: boolean
           frais_dossier?: number
+          genre?: string | null
           has_cotitulaire?: boolean | null
           id?: string
           immatriculation: string
@@ -1271,13 +1289,17 @@ export type Database = {
           paye?: boolean
           payment_intent_id?: string | null
           prenom: string
+          prix_cv?: number | null
+          prix_cv_avant_abattement?: number | null
           puiss_fisc?: number | null
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
           resubmission_payment_intent_id?: string | null
           sms_notifications?: boolean
+          sous_total_arrondi?: number | null
           status?: string
+          taxe_parafiscale?: number | null
           telephone: string
           tracking_number: string
           updated_at?: string
@@ -1306,6 +1328,7 @@ export type Database = {
           energie?: string | null
           express?: boolean
           frais_dossier?: number
+          genre?: string | null
           has_cotitulaire?: boolean | null
           id?: string
           immatriculation?: string
@@ -1320,13 +1343,17 @@ export type Database = {
           paye?: boolean
           payment_intent_id?: string | null
           prenom?: string
+          prix_cv?: number | null
+          prix_cv_avant_abattement?: number | null
           puiss_fisc?: number | null
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
           resubmission_payment_intent_id?: string | null
           sms_notifications?: boolean
+          sous_total_arrondi?: number | null
           status?: string
+          taxe_parafiscale?: number | null
           telephone?: string
           tracking_number?: string
           updated_at?: string
