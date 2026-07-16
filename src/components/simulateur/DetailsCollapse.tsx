@@ -1,9 +1,7 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { PriceCalculation } from "@/utils/calculatePrice";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Card, CardContent } from "@/components/ui/card";
 import { formatPrice } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 
@@ -17,19 +15,13 @@ export const DetailsCollapse = ({
   const [isOpen, setIsOpen] = useState(false);
   
   return (
-    <Card className="border-muted">
-      <CardContent className="pt-4">
-        <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" className="w-full flex items-center justify-between p-2 h-auto">
-              <span className="flex items-center gap-2 text-sm font-medium">
-                <Info className="w-4 h-4" />
-                Détail du calcul carte grise
-              </span>
-              {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-4 space-y-3">
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger className="flex items-center gap-1.5 py-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+        <Info className="w-3.5 h-3.5" />
+        <span>Détail du calcul carte grise</span>
+        {isOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2 space-y-3">
             {/* Informations véhicule */}
             <div className="text-xs text-muted-foreground space-y-1">
               <div className="flex justify-between">
@@ -101,9 +93,7 @@ export const DetailsCollapse = ({
                 </div>
               </div>
             </div>
-          </CollapsibleContent>
-        </Collapsible>
-      </CardContent>
-    </Card>
+      </CollapsibleContent>
+    </Collapsible>
   );
 };
