@@ -447,7 +447,7 @@ const PaiementClient = () => {
 
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Prix carte grise</span>
+                    <span className="text-muted-foreground">Prix de la carte grise</span>
                     <span>{formatPrice(prixCG)} EUR</span>
                   </div>
                   {isClientPaysAll && (

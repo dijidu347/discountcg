@@ -1086,7 +1086,7 @@ export default function DemarcheDetail() {
                   <div className="space-y-2 text-sm">
                     {demarche.prix_carte_grise && demarche.prix_carte_grise > 0 && (
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Taxe régionale (carte grise)</span>
+                        <span className="text-muted-foreground">Prix de la carte grise</span>
                         <span className="font-medium">{demarche.prix_carte_grise.toFixed(2)} €</span>
                       </div>
                     )}

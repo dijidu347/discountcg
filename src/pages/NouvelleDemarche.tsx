@@ -1421,11 +1421,11 @@ export default function NouvelleDemarche() {
                       Frais de dossier : {isFreeTokenEligible ? (
                         <><span className="line-through text-muted-foreground">{formatPrice(getOriginalFraisDossier())}€</span> <span className="text-green-600 font-bold">0€ (offert)</span></>
                       ) : `${formatPrice(getFraisDossier())}€`}
-                      {paymentMode !== 'split' && (formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice > 0 && ` + Prix carte grise : ${formatPrice(carteGrisePrice)}€`}
+                      {paymentMode !== 'split' && (formData.type !== 'DA' && formData.type !== 'DC') && carteGrisePrice > 0 && ` + Prix de la carte grise : ${formatPrice(carteGrisePrice)}€`}
                       <br />
                       {paymentMode === 'split' ? (
                         <>Votre part (frais de dossier) : {formatPrice(getProPrice())}€
-                        <br />Part client (taxe régionale) : {formatPrice(getClientPrice())}€ — un lien lui sera envoyé</>
+                        <br />Part client (Prix de la carte grise) : {formatPrice(getClientPrice())}€ — un lien lui sera envoyé</>
                       ) : (
                         <>Montant total : {formatPrice(getTotalPrice())}€</>
                       )}
