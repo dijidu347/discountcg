@@ -89,7 +89,8 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
           const priceResult = calculatePrice(
             selectedDept.tarif,
             puissanceFiscale,
-            data.date_mec
+            data.date_mec,
+            data.genre
           );
 
           setCalculatedPrice(priceResult.prixTotal);
