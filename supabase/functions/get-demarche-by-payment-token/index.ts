@@ -28,7 +28,7 @@ serve(async (req) => {
 
     const { data: demarche, error } = await supabase
       .from('demarches')
-      .select('id, type, immatriculation, prix_carte_grise, frais_dossier, montant_ht, montant_ttc, payment_mode, client_paid, client_payment_token_expires_at, garages(raison_sociale)')
+      .select('id, type, immatriculation, prix_carte_grise, frais_dossier, montant_ht, montant_ttc, payment_mode, client_paid, client_payment_token_expires_at, prix_cv, prix_cv_avant_abattement, taxe_parafiscale, sous_total_arrondi, garages(raison_sociale)')
       .eq('client_payment_token', token)
       .single();
 

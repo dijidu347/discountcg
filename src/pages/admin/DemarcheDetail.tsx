@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { typeHasPaymentChoice, paymentModeLabel } from "@/lib/demarchePayment";
 import { getExpressSurcharge } from "@/lib/expressOption";
+import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -837,6 +838,15 @@ export default function DemarcheDetail() {
     return null;
   }
 
+  // Détail du calcul carte grise depuis le snapshot persisté (null si absent).
+  const carteGriseDetail = carteGriseDetailFromColumns({
+    prix_cv: demarche.prix_cv,
+    prix_cv_avant_abattement: demarche.prix_cv_avant_abattement,
+    taxe_parafiscale: demarche.taxe_parafiscale,
+    sous_total_arrondi: demarche.sous_total_arrondi,
+    prix_total: demarche.prix_carte_grise,
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
       <Helmet>
@@ -1085,10 +1095,13 @@ export default function DemarcheDetail() {
                   <h4 className="font-medium text-sm mb-3">Détails des prix</h4>
                   <div className="space-y-2 text-sm">
                     {demarche.prix_carte_grise && demarche.prix_carte_grise > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Prix de la carte grise</span>
-                        <span className="font-medium">{demarche.prix_carte_grise.toFixed(2)} €</span>
-                      </div>
+                      <>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Prix de la carte grise</span>
+                          <span className="font-medium">{demarche.prix_carte_grise.toFixed(2)} €</span>
+                        </div>
+                        {carteGriseDetail && <DetailsCollapse detail={carteGriseDetail} />}
+                      </>
                     )}
                     {demarche.frais_dossier && demarche.frais_dossier > 0 && (
                       <div className="flex justify-between">

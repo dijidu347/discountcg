@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
 import { getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
+import { DetailsCollapse, CarteGriseDetail } from "@/components/simulateur/DetailsCollapse";
 
 // Types pour les services de suivi
 export interface TrackingService {
@@ -27,6 +28,7 @@ interface PaymentDetailsSummaryProps {
   actionRapideTitre?: string;
   prixCarteGrise?: number;        // Prix carte grise (taxe régionale)
   express?: boolean;              // Option Dossier Prioritaire (surcoût selon le type)
+  carteGriseDetail?: CarteGriseDetail | null; // Détail du calcul (snapshot persisté), pour le dépliable
   onCalculated?: (result: PaymentCalculationResult) => void;
 }
 
@@ -56,6 +58,7 @@ export const PaymentDetailsSummary = ({
   actionRapideTitre,
   prixCarteGrise: prixCarteGriseProp,
   express = false,
+  carteGriseDetail,
   onCalculated,
 }: PaymentDetailsSummaryProps) => {
   // Détermine si c'est une démarche Carte Grise
@@ -117,6 +120,7 @@ export const PaymentDetailsSummary = ({
                 <span className="font-medium">{formatPrice(prixCarteGrise)} €</span>
               </div>
             </div>
+            {carteGriseDetail && <DetailsCollapse detail={carteGriseDetail} />}
           </div>
         )}
 

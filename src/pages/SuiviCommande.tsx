@@ -36,6 +36,7 @@ import { SimpleDownloadButton } from "@/components/SimpleDownloadButton";
 import { GuestOrderChat } from "@/components/GuestOrderChat";
 import { cn } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
+import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
@@ -302,6 +303,16 @@ const SuiviCommande = () => {
   const statusInfo = getStatusInfo(order.status);
   const StatusIcon = statusInfo.icon;
   const steps = getSteps();
+
+  // Détail du calcul carte grise depuis le snapshot persisté (null si absent :
+  // anciennes commandes, DA/DC…). Le total = montant_ht (ligne "Prix de la carte grise").
+  const carteGriseDetail = carteGriseDetailFromColumns({
+    prix_cv: order.prix_cv,
+    prix_cv_avant_abattement: order.prix_cv_avant_abattement,
+    taxe_parafiscale: order.taxe_parafiscale,
+    sous_total_arrondi: order.sous_total_arrondi,
+    prix_total: order.montant_ht,
+  });
 
   // Group documents by type and side, filter out empty verso
   const groupedDocuments = documents.reduce((acc: any[], doc) => {
@@ -606,7 +617,10 @@ const SuiviCommande = () => {
                 {/* Vraie taxe carte grise : jamais pour DA/DC (aucune taxe véhicule ; pour ces types,
                     montant_ht contient le cumul des options reclassé par le webhook après paiement). */}
                 {(order.demarche_type !== 'DA' && order.demarche_type !== 'DC') && (order.montant_ht || 0) > 0 && (
-                  <div className="flex justify-between text-sm"><span className="text-muted-foreground">Prix de la carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
+                  <>
+                    <div className="flex justify-between text-sm"><span className="text-muted-foreground">Prix de la carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
+                    {carteGriseDetail && <DetailsCollapse detail={carteGriseDetail} />}
+                  </>
                 )}
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
                 {order.express && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier Prioritaire 2h</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}

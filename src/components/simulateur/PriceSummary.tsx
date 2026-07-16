@@ -154,7 +154,7 @@ export const PriceSummary = ({
                 </div>
                 {/* Détail du calcul carte grise : déplié à la demande, juste sous le prix.
                     Réplié par défaut (état interne de DetailsCollapse). */}
-                <DetailsCollapse calculation={calculation} />
+                <DetailsCollapse detail={calculation} />
               </div>
 
               {/* Services */}

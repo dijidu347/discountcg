@@ -14,6 +14,7 @@ import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PaymentDetailsSummary, type PaymentCalculationResult } from "@/components/payment/PaymentDetailsSummary";
+import { carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { formatPrice } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
 
@@ -1002,6 +1003,13 @@ const PaiementDemarche = () => {
                       actionRapideTitre={actionRapide?.titre}
                       prixCarteGrise={demarche.prix_carte_grise || 0}
                       express={demarche.express}
+                      carteGriseDetail={carteGriseDetailFromColumns({
+                        prix_cv: demarche.prix_cv,
+                        prix_cv_avant_abattement: demarche.prix_cv_avant_abattement,
+                        taxe_parafiscale: demarche.taxe_parafiscale,
+                        sous_total_arrondi: demarche.sous_total_arrondi,
+                        prix_total: demarche.prix_carte_grise,
+                      })}
                       onCalculated={handlePaymentCalculated}
                     />
                   </CollapsibleContent>

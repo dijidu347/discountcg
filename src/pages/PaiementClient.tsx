@@ -10,6 +10,7 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { formatPrice } from "@/lib/utils";
+import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 
 // ---------------------------------------------------------------------------
@@ -379,6 +380,14 @@ const PaiementClient = () => {
   const prixCG = Number(demarche.prix_carte_grise) || 0;
   const frais = Number(demarche.frais_dossier) || 0;
   const isClientPaysAll = demarche.payment_mode === "client_pays_all";
+  // Détail du calcul carte grise depuis le snapshot persisté (null si absent).
+  const carteGriseDetail = carteGriseDetailFromColumns({
+    prix_cv: demarche.prix_cv,
+    prix_cv_avant_abattement: demarche.prix_cv_avant_abattement,
+    taxe_parafiscale: demarche.taxe_parafiscale,
+    sous_total_arrondi: demarche.sous_total_arrondi,
+    prix_total: demarche.prix_carte_grise,
+  });
 
   return (
     <div className="min-h-screen bg-background">
@@ -450,6 +459,7 @@ const PaiementClient = () => {
                     <span className="text-muted-foreground">Prix de la carte grise</span>
                     <span>{formatPrice(prixCG)} EUR</span>
                   </div>
+                  {carteGriseDetail && <DetailsCollapse detail={carteGriseDetail} />}
                   {isClientPaysAll && (
                     <>
                       <div className="flex justify-between items-center text-sm">
