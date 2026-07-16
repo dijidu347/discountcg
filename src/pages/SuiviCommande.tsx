@@ -603,11 +603,13 @@ const SuiviCommande = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
-                {(order.montant_ht || 0) > 0 && (
+                {/* Vraie taxe carte grise : jamais pour DA/DC (aucune taxe véhicule ; pour ces types,
+                    montant_ht contient le cumul des options reclassé par le webhook après paiement). */}
+                {(order.demarche_type !== 'DA' && order.demarche_type !== 'DC') && (order.montant_ht || 0) > 0 && (
                   <div className="flex justify-between text-sm"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
                 )}
                 <div className="flex justify-between text-sm"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
-                {order.express && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
+                {order.express && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Dossier Prioritaire 2h</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
                 {order.certificat_non_gage && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Suivi SMS</span><span className="font-medium">5.00 €</span></div>}
                 <div className="border-t pt-2 flex justify-between font-bold text-lg">

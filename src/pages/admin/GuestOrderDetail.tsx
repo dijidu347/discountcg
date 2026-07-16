@@ -617,18 +617,21 @@ export default function GuestOrderDetail() {
             <Card>
               <CardHeader><CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5 text-primary" /> Paiement</CardTitle></CardHeader>
               <CardContent className="space-y-2">
-                {(order.montant_ht || 0) > 0 && (
+                {/* Vraie taxe carte grise : 0 pour DA/DC (aucune taxe véhicule). Pour ces types,
+                    montant_ht ne contient pas une taxe mais le cumul des options reclassé par le
+                    webhook après paiement (amount − frais_dossier) — on ne l'affiche donc jamais ici. */}
+                {(order.demarche_type !== 'DA' && order.demarche_type !== 'DC') && (order.montant_ht || 0) > 0 && (
                   <div className="flex justify-between"><span className="text-muted-foreground">Taxe carte grise</span><span className="font-medium">{(order.montant_ht || 0).toFixed(2)} €</span></div>
                 )}
                 <div className="flex justify-between"><span className="text-muted-foreground">Frais de dossier</span><span className="font-medium">{(order.frais_dossier || 0).toFixed(2)} €</span></div>
-                {order.express && <div className="flex justify-between"><span className="text-muted-foreground">Dossier prioritaire</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
+                {order.express && <div className="flex justify-between"><span className="text-muted-foreground">Dossier Prioritaire 2h</span><span className="font-medium">{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
                 {order.certificat_non_gage && <div className="flex justify-between"><span className="text-muted-foreground">Certificat non-gage</span><span className="font-medium">10.00 €</span></div>}
                 {order.sms_notifications && <div className="flex justify-between"><span className="text-muted-foreground">SMS</span><span className="font-medium">5.00 €</span></div>}
-                {/* Total aligné à l'identique sur computeGuestTotal (edge create-sogecommerce-guest-payment) :
-                    montant_ht + frais_dossier + sms + certificat_non_gage + express(surcharge selon type).
-                    Sans dossier_prioritaire (colonne morte) ni email (non facturé). */}
+                {/* Total = vraie taxe carte grise (0 pour DA/DC) + frais_dossier + sms + certificat + express.
+                    On repart de la vraie taxe (et non de montant_ht brut) car pour un DA/DC payé le surcoût
+                    express est déjà rangé dans montant_ht par le webhook : l'y compter ferait un doublon. */}
                 <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span className="text-primary">{(
-                  (order.montant_ht || 0) +
+                  ((order.demarche_type !== 'DA' && order.demarche_type !== 'DC') ? (order.montant_ht || 0) : 0) +
                   (order.frais_dossier || 0) +
                   (order.sms_notifications ? 5 : 0) +
                   (order.certificat_non_gage ? 10 : 0) +
