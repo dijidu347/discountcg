@@ -24,7 +24,7 @@ interface VehicleFormCGProps {
   garageId: string;
   onVehicleSelect: (vehicleId: string, immatriculation: string, vehicleData?: any) => void;
   selectedVehicleId?: string | null;
-  onPriceCalculated?: (price: number) => void;
+  onPriceCalculated?: (price: number, details?: PriceCalculation | null) => void;
 }
 
 export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, onPriceCalculated }: VehicleFormCGProps) {
@@ -141,9 +141,10 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const handleValidate = () => {
     if (!vehicleData) return;
 
-    // Notifier le parent du prix calculé
+    // Notifier le parent du prix calculé + du détail complet (snapshot).
+    // Le détail vient du même priceResult que le prix — aucun recalcul.
     if (onPriceCalculated && calculatedPrice > 0) {
-      onPriceCalculated(calculatedPrice);
+      onPriceCalculated(calculatedPrice, priceDetails);
     }
 
     // Créer un objet véhicule temporaire avec les données

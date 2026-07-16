@@ -300,6 +300,15 @@ export default function ResultatCarteGrise() {
           energie: vehicleInfo?.energie || null,
           date_mec: vehicleInfo?.date_mec || null,
           puiss_fisc: calculation.chevauxFiscaux,
+          // Snapshot du détail carte grise, figé au moment du calcul (issu de
+          // l'objet `calculation` déjà en main — aucun recalcul, aucun impact
+          // sur les montants). `genre` était déjà passé à calculatePrice (l.96),
+          // on ne fait ici que le persister.
+          genre: vehicleInfo?.genre || null,
+          prix_cv: calculation.prixCV,
+          prix_cv_avant_abattement: calculation.prixCVAvantAbattement ?? null,
+          taxe_parafiscale: calculation.taxeParafiscale,
+          sous_total_arrondi: calculation.sousTotalArrondi,
         })
         .eq('id', orderId);
 

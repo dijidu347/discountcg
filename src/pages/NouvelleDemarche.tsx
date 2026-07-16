@@ -31,6 +31,7 @@ import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils"
 import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
+import type { PriceCalculation } from "@/utils/calculatePrice";
 import { Checkbox } from "@/components/ui/checkbox";
 
 // Types de démarches PRO qui nécessitent un traitement spécial
@@ -83,6 +84,8 @@ export default function NouvelleDemarche() {
     { id: 5, name: "" }
   ]);
   const [carteGrisePrice, setCarteGrisePrice] = useState<number>(0);
+  // Détail complet du calcul carte grise (snapshot), remonté par VehicleFormCG.
+  const [carteGriseDetails, setCarteGriseDetails] = useState<PriceCalculation | null>(null);
   const [expressSelected, setExpressSelected] = useState(false);
   // trackingServicePrice supprimé - options SMS retirées
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
@@ -230,6 +233,22 @@ export default function NouvelleDemarche() {
     console.log("actionDetails:", actionDetails?.code);
   }, [formData.type, questionnaireCompleted, demarcheId, isQuestionnaireBlocked, garage, actionDetails]);
 
+  // Snapshot du détail carte grise (figé au calcul). Renvoyé UNIQUEMENT quand le
+  // détail est en main ET qu'il y a une taxe carte grise (jamais DA/DC). Sinon
+  // objet vide → ces colonnes ne sont pas incluses dans l'écriture, pour ne pas
+  // écraser un snapshot déjà persisté (ex : rechargement d'un brouillon, où
+  // carteGriseDetails est null). Aucun recalcul : valeurs issues de priceResult.
+  const buildCarteGriseSnapshot = (): Record<string, number | null> => {
+    const prixCG = (formData.type === 'DA' || formData.type === 'DC') ? 0 : carteGrisePrice;
+    if (!carteGriseDetails || prixCG <= 0) return {};
+    return {
+      prix_cv: carteGriseDetails.prixCV,
+      prix_cv_avant_abattement: carteGriseDetails.prixCVAvantAbattement ?? null,
+      taxe_parafiscale: carteGriseDetails.taxeParafiscale,
+      sous_total_arrondi: carteGriseDetails.sousTotalArrondi,
+    };
+  };
+
   const updateDemarcheMontant = async () => {
     if (!demarcheId || !actionDetails) return;
 
@@ -253,6 +272,7 @@ export default function NouvelleDemarche() {
         montant_ht: totalServicesHT,
         montant_ttc: totalTTC,
         express: expressSelected,
+        ...buildCarteGriseSnapshot(),
       } as any)
       .eq('id', demarcheId);
   };
@@ -389,6 +409,7 @@ export default function NouvelleDemarche() {
         vehicule_id: selectedVehicleId,
         // Le jeton gratuit ne s'applique qu'aux DA/DC
         is_free_token: isFreeTokenApplicable,
+        ...buildCarteGriseSnapshot(),
     };
 
     // Ajouter les champs split payment seulement si le mode n'est pas le défaut
@@ -429,6 +450,7 @@ export default function NouvelleDemarche() {
             paye: false,
             vehicule_id: selectedVehicleId,
             is_free_token: isFreeTokenApplicable,
+            ...buildCarteGriseSnapshot(),
           } as any)
           .select()
           .single();
@@ -466,8 +488,9 @@ export default function NouvelleDemarche() {
     }
   };
 
-  const handlePriceCalculated = (price: number) => {
+  const handlePriceCalculated = (price: number, details?: PriceCalculation | null) => {
     setCarteGrisePrice(price);
+    setCarteGriseDetails(details ?? null);
   };
 
 
