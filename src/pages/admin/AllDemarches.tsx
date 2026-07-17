@@ -17,6 +17,7 @@ import { formatPrice } from "@/lib/utils";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { StatusPill } from "@/components/StatusPill";
 import { TERMINAL_STATUSES } from "@/lib/demarcheStatusBadge";
+import { isATraiter } from "@/lib/demarcheFilters";
 
 // ──────────────────────────────────────────────────────────────────────
 // Helpers
@@ -180,17 +181,9 @@ export default function AllDemarches() {
   }, [demarches, searchQuery, yearFilter, typeFilter]);
 
   // ── Buckets filtrés ────────────────────────────────────────────────
-  const aTraiter = useMemo(
-    () =>
-      filtered.filter(
-        (d) =>
-          (d.paye === true || d.is_free_token === true) &&
-          d.status !== "finalise" &&
-          d.status !== "refuse" &&
-          d.status !== "en_attente_paiement_client"
-      ),
-    [filtered]
-  );
+  // Source unique de vérité : prédicat partagé isATraiter (identique au count
+  // SQL du tableau de bord). `filtered` est déjà non-brouillon (is_draft=false).
+  const aTraiter = useMemo(() => filtered.filter(isATraiter), [filtered]);
   const attenteClient = useMemo(
     () => filtered.filter((d) => d.status === "en_attente_paiement_client"),
     [filtered]

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { applyATraiterFilters } from "@/lib/demarcheFilters";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -69,10 +70,26 @@ export default function AdminDashboard() {
       .from('garages')
       .select('id, verification_requested_at, is_verified, verification_admin_viewed');
 
-    // Count total demarches (no 1000 row limit)
+    // Count total demarches NON-BROUILLON (aligné sur la page liste qui exclut
+    // is_draft = true). Count SQL exact, sans plafond 1000 lignes.
     const { count: totalDemarchesCount } = await supabase
       .from('demarches')
-      .select('*', { count: 'exact', head: true });
+      .select('*', { count: 'exact', head: true })
+      .eq('is_draft', false);
+
+    // "À traiter" : count SQL exact, filtres appliqués CÔTÉ BASE via la source
+    // unique de vérité partagée avec la page liste. Aucune ligne transférée,
+    // donc aucun échantillonnage/troncature à 1000 lignes.
+    const { count: demarchesATraiterCount } = await applyATraiterFilters(
+      supabase.from('demarches').select('*', { count: 'exact', head: true }),
+    );
+
+    // "À traiter" ET jamais vues par l'admin ("nouvelles") : même count SQL exact,
+    // + admin_viewed IS NOT TRUE (couvre false ET null, comme le prédicat JS
+    // `!admin_viewed`). Aucune troncature à 1000 lignes.
+    const { count: demarchesNonVuesCount } = await applyATraiterFilters(
+      supabase.from('demarches').select('*', { count: 'exact', head: true }),
+    ).not('admin_viewed', 'is', true);
 
     const { data: demarches } = await supabase
       .from('demarches')
@@ -114,18 +131,10 @@ export default function AdminDashboard() {
       .select('status, payment_mode')
       .in('status', ['active', 'trialing']);
 
-    // Démarches à traiter = finalisées (pas brouillon) ET (payées OU jeton gratuit) ET pas encore finalisées ET pas refusées ET pas en attente client
-    const demarchesATraiter = demarches?.filter(d =>
-      d.is_draft === false && (d.paye === true || d.is_free_token === true) && d.status !== 'finalise' && d.status !== 'refuse' && d.status !== 'en_attente_paiement_client'
-    ) || [];
-
     // Démarches en attente paiement client
     const demarchesAttenteClient = demarches?.filter(d =>
       d.status === 'en_attente_paiement_client' && d.is_draft === false
     ) || [];
-
-    // Démarches non vues par l'admin
-    const demarchesNonVues = demarchesATraiter.filter(d => !d.admin_viewed);
 
     // Garages à vérifier = verification_requested_at not null ET is_verified false ET pas encore vu par admin
     const garagesAVerifier = garages?.filter(g => 
@@ -153,9 +162,9 @@ export default function AdminDashboard() {
     const coffreActive = coffreSubs || [];
     setStats({
       totalGarages: garages?.length || 0,
-      totalDemarches: totalDemarchesCount || demarches?.length || 0,
-      demarchesATraiter: demarchesATraiter.length,
-      demarchesNonVues: demarchesNonVues.length,
+      totalDemarches: totalDemarchesCount || 0,
+      demarchesATraiter: demarchesATraiterCount || 0,
+      demarchesNonVues: demarchesNonVuesCount || 0,
       totalPaiements: paiementsTotal + creditsTotal,
       garagesAVerifier: garagesAVerifier.length,
       demarchesToday: demarchesTodayPaid.length,
