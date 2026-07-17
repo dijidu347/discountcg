@@ -413,15 +413,8 @@ export default function ResultatCarteGrise() {
                       <SelectValue placeholder="Sélectionnez le genre" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="VP">Voiture particulière (VP)</SelectItem>
-                      <SelectItem value="CTTE">Camionnette / utilitaire ≤ 3,5 t (CTTE)</SelectItem>
-                      <SelectItem value="MTL">Moto (MTL, MTT1, MTT2)</SelectItem>
-                      <SelectItem value="CL">Cyclomoteur ≤ 50 cm³ (CL)</SelectItem>
-                      <SelectItem value="QM">Quadricycle à moteur (QM)</SelectItem>
-                      <SelectItem value="VASP">Camping-car / véhicule spécialisé (VASP)</SelectItem>
-                      <SelectItem value="REM">Remorque &gt; 500 kg (REM)</SelectItem>
-                      <SelectItem value="TRA">Tracteur agricole (TRA)</SelectItem>
-                      <SelectItem value="AUTRE">Poids lourd &gt; 3,5 t / autre (nous contacter)</SelectItem>
+                      <SelectItem value="VP">Voiture particulière (VT, M1)</SelectItem>
+                      <SelectItem value="AUTRE">Autre type de véhicule (utilitaire, moto…)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
