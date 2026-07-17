@@ -1,168 +1,57 @@
+## Objectif
 
+Calculer nous-mêmes le prix de la carte grise selon le **genre du véhicule** (case J.1) au lieu de faire confiance aveuglément à l'API. Cela corrige les prix pour motos (demi-tarif), CTTE (Y.2 = 34 €), remorques (Y.1 = 0), quads, VASP, cyclomoteurs et tracteurs agricoles.
 
-# Ajouter les demarches particuliers avec funnel complet et admin
+## Règles appliquées (2026, sources officielles service-public / BOFIP)
 
-## Resume
+| Genre (J.1) | Y.1 régionale | Y.2 transport | Y.3 malus | Abattement 10 ans |
+|---|---|---|---|---|
+| **VP** voiture | CV × tarif dpt | — | si neuf/import | -50 % |
+| **CTTE** utilitaire ≤3,5 t | CV × tarif dpt | **34 €** | — | -50 % |
+| **CAM/TRR >3,5 t** | *hors périmètre en ligne* | *manuel* | — | — |
+| **MTL / MTT1 / MTT2 / MTL1** moto | CV × tarif dpt × **50 %** | — | — | -50 % (pas cumul) |
+| **CL** cyclomoteur | **0 €** | — | — | — |
+| **QM** quadricycle | CV × tarif dpt | — | — | -50 % |
+| **REM / SREM** remorque | **0 €** | — | — | — |
+| **VASP** camping-car/ambulance | CV × tarif dpt | — | — | -50 % |
+| **TRA** tracteur agricole | **0 €** | — | — | — |
 
-Ajouter 9 nouvelles demarches pour les particuliers (en plus des CG et DC existants) sur la page d'accueil, avec les documents specifiques "Particuliers" tires des images fournies, un funnel complet (simulateur, paiement, infos, documents), et un menu admin "Actions rapides Particuliers" pour gerer prix, documents et statut.
+Toutes les catégories paient **Y.4 = 11 €** et **Y.5 = 2,76 €**.
 
-## Demarches a ajouter
+**Électrique / hybride / GPL / E85** : tarif plein partout (règle 2025 confirmée, plus d'exonération nationale).
 
-D'apres les images fournies, voici les demarches particuliers a creer (colonne "Particuliers" uniquement) :
+**Malus CO2 (Y.3)** : uniquement si case « véhicule neuf ou importé jamais immatriculé en France » cochée dans le formulaire manuel. Sinon 0.
 
-1. **Carte Grise** (CG) - Deja existant, documents a completer
-2. **Declaration de Cession** (DC) - Deja existant, documents a completer
-3. **Changement d'adresse** (CHGT_ADRESSE) - Nouveau
-4. **Immatriculer un vehicule neuf** (CG_NEUF) - Nouveau
-5. **Duplicata** (DUPLICATA) - Nouveau
-6. **Demande de FIV** (FIV) - Nouveau
-7. **Modification ou correction** (MODIF_CG) - Nouveau
-8. **Changement d'adresse locataire** (CHGT_ADRESSE_LOCATAIRE) - Nouveau
-9. **Succession et heritage** (SUCCESSION) - Nouveau
-10. **Ajouter ou retirer un co-titulaire** (COTITULAIRE) - Nouveau
+## Modifications
 
-## Documents par demarche (Particuliers)
+### 1. `src/utils/calculatePrice.ts`
+Refonte complète autour d'une table `GENRE_RULES` qui définit pour chaque genre : coefficient Y.1 (0, 0.5, 1), Y.2 fixe (0 ou 34), et éligibilité à l'abattement 10 ans. Ajout d'un genre `AUTRE` qui retombe sur VP. Le paramètre `genre` reste optionnel (défaut = VP) pour ne pas casser les appels existants.
 
-### Carte Grise (CG) - existant, documents deja configures
-Deja OK.
+Correctif au passage : le code actuel applique la taxe parafiscale (34 €) aux CYCL, REM, SREM, TRA, VASP — c'est faux. Y.2 est uniquement pour CTTE (et poids lourds).
 
-### Declaration de Cession (DC) - existant, documents a ajouter
-- Piece d'identite (recto/verso)
-- Certificat d'immatriculation barre
-- Mandat signe Cerfa 13757
-- Certificat de cession signe Cerfa 16776
-- Piece d'identite de l'acquereur (recto/verso) - facultatif
+### 2. `supabase/functions/carte-grise-quote/index.ts`
+Après le retour API, recalculer nous-mêmes le prix via une copie serveur de la même logique, en s'appuyant sur `vehicle.genre` + `vehicle.puissance_fiscale` + `vehicle.date_mise_en_circulation` + tarif régional (à récupérer via département → `department_tariffs`). Renvoyer `price.total` = **notre calcul**, avec `price.apiTotal` en debug. Détecter poids lourd (CAM/TRR + PTAC>3500) → `incomplete: true, reason: 'heavy_vehicle'`.
 
-### Changement d'adresse (CHGT_ADRESSE) - prix fixe 30EUR
-- Piece d'identite (recto/verso)
-- Certificat d'immatriculation
-- Mandat signe Cerfa 13757
-- Demande d'immatriculation signee Cerfa 13750
-- Justificatif de domicile de moins de 6 mois
+### 3. `src/components/VehicleFormCG.tsx` (pro)
+Quand le lookup API est **incomplet** (genre inconnu, CV=0, ou poids lourd), afficher un **panneau de saisie manuelle** avec :
+- Menu genre : Voiture (VP), Utilitaire (CTTE), Moto (MTL), Quadricycle (QM), Camping-car/VASP, Remorque (REM), Cyclomoteur (CL), Tracteur agricole (TRA)
+- Si CAM/TRR/>3,5t → message « Contactez-nous pour ce type de véhicule »
+- Champs : CV fiscaux, date 1ère MEC
+- Case optionnelle : « Véhicule neuf ou importé (jamais immatriculé en France) » → si cochée, champ CO2 g/km apparaît pour calcul malus
 
-### Vehicule neuf (CG_NEUF) - prix regional + frais
-- Piece d'identite (recto/verso)
-- Permis de conduire (recto/verso)
-- Justificatif de domicile de moins de 6 mois
-- Attestation d'assurance
-- Mandat signe Cerfa 13757
-- Cerfa 13749 (remis par le constructeur)
-- Piece d'identite du co-titulaire (si necessaire) - facultatif
-- Contrat de location + mandat societe (si LOA) - facultatif
+### 4. `src/pages/ResultatCarteGrise.tsx` (guest / simulateur public)
+Même comportement : si l'API renvoie `incomplete`, proposer la saisie manuelle avec les mêmes champs.
 
-### Duplicata (DUPLICATA) - prix fixe 29.90EUR
-- Piece d'identite (recto/verso)
-- Permis de conduire (recto/verso)
-- Justificatif de domicile de moins de 6 mois
-- Attestation d'assurance
-- Mandat signe Cerfa 13757
-- Demande d'immatriculation signee Cerfa 13750
-- Declaration de perte ou de vol signee Cerfa 13753
-- Controle technique en cours de validite
-- Mandat societe de location (si LOA) - facultatif
+## Détails techniques
 
-### Demande de FIV (FIV) - prix fixe 19.90EUR
-- Piece d'identite du titulaire (recto/verso)
-- Permis de conduire du titulaire (recto/verso)
-- Justificatif de domicile de moins de 6 mois
-- Mandat signe Cerfa 13757
-- Declaration de perte ou de vol signee Cerfa 13753
-- Mandat societe de location (si LOA) - facultatif
+- `PriceCalculation` interface étendue avec `genre: string` et `malus: number`.
+- Fonction utilitaire `computeMalusCO2(co2: number, dateMEC: string): number` avec le barème WLTP 2026 (seuil 108 g/km, progression jusqu'à 70 000 €).
+- Table `GENRE_RULES` exportée pour être réutilisée par les 4 emplacements (pas de duplication).
+- Aucune modification de la DB (tout est calculé en front + edge).
+- Snapshot en DB inchangé : `prix_cv`, `taxe_parafiscale`, `frais_gestion`, `frais_acheminement` sont déjà là et suffisent (on ajoute malus dans `taxe_parafiscale` si nécessaire, ou colonne séparée si tu préfères).
 
-### Modification ou correction (MODIF_CG) - prix fixe 29.90EUR
-- Piece d'identite (recto/verso)
-- Permis de conduire (recto/verso)
-- Justificatif de domicile de moins de 6 mois
-- Attestation d'assurance
-- Certificat d'immatriculation
-- Mandat signe Cerfa 13757
-- Demande d'immatriculation signee Cerfa 13750
-- Piece justificative officielle de la modification
-- Controle technique en cours de validite
+## Non-fait (à part si tu demandes)
 
-### Changement d'adresse locataire (CHGT_ADRESSE_LOCATAIRE) - prix fixe 30EUR
-- Piece d'identite (recto/verso)
-- Certificat d'immatriculation
-- Mandat signe par le locataire Cerfa 13757
-- Mandat signe et tamponné par le bailleur
-- Demande d'immatriculation signee par le locataire Cerfa 13750
-- Justificatif de domicile de moins de 6 mois
-
-### Succession et heritage (SUCCESSION) - prix fixe 29.90EUR
-Deux cas : heritier garde / heritier vend. Documents communs :
-- Piece d'identite de l'heritier (recto/verso)
-- Permis de conduire (recto/verso)
-- Justificatif de domicile de moins de 6 mois
-- Ancien certificat d'immatriculation
-- Mandat Cerfa 13757 signe
-- Demande d'immatriculation Cerfa 13750 signee
-- Certificat de deces
-- Acte notarie ou justificatif qualite d'heritier
-- Lettre de desistement (si plusieurs heritiers) - conditionnel
-- Controle technique en cours de validite (vehicules +4 ans)
-
-### Ajouter ou retirer un co-titulaire (COTITULAIRE) - prix fixe 29.90EUR
-Deux cas : ajouter / retirer. Documents communs :
-- Piece d'identite et permis du titulaire (recto/verso)
-- Piece d'identite et permis du co-titulaire (recto/verso)
-- Justificatif de domicile de moins de 6 mois
-- Attestation d'assurance
-- Mandat signe Cerfa 13757
-- Demande d'immatriculation signee Cerfa 13750
-- Attestation ou acte de mariage/pacs (ajouter) OU Certificat de cession ou acte de divorce (retirer) - conditionnel
-- Controle technique en cours de validite
-
-## Plan technique
-
-### Etape 1 : Migration base de donnees
-
-Inserer les nouvelles demarches dans `guest_demarche_types` :
-- CHGT_ADRESSE (30EUR, require_carte_grise_price: false)
-- CG_NEUF (20EUR, require_carte_grise_price: true)
-- DUPLICATA (29.90EUR, require_carte_grise_price: false)
-- FIV (19.90EUR, require_carte_grise_price: false)
-- MODIF_CG (29.90EUR, require_carte_grise_price: false)
-- CHGT_ADRESSE_LOCATAIRE (30EUR, require_carte_grise_price: false)
-- SUCCESSION (29.90EUR, require_carte_grise_price: false)
-- COTITULAIRE (29.90EUR, require_carte_grise_price: false)
-
-Mettre a jour les documents de DC existants dans `guest_order_required_documents`.
-
-Inserer tous les documents requis pour chaque nouveau type dans `guest_order_required_documents`.
-
-### Etape 2 : Mise a jour SimulateurSection
-
-- Supprimer le filtre qui exclut DA (garder le filtre) et afficher tous les types actifs
-- Ajouter des icones pour chaque nouveau code de demarche
-- Le formulaire adapte deja l'affichage selon `require_carte_grise_price` (departement oui/non)
-
-### Etape 3 : Mise a jour DemarcheSimple
-
-- Etendre le composant pour supporter les nouveaux types (au-dela de DA/DC)
-- Les documents sont deja charges dynamiquement depuis `guest_order_required_documents`
-- Ajouter les icones correspondantes
-
-### Etape 4 : Mise a jour UploadListSimple
-
-- Etendre le type du prop `demarcheType` pour accepter tous les nouveaux codes
-- Verifier que le chargement des documents depuis la BDD fonctionne pour tous types
-
-### Etape 5 : Page admin "Actions rapides Particuliers"
-
-Creer une nouvelle page `src/pages/admin/ManageGuestActions.tsx` qui reprend le meme design que `ManageActions.tsx` (PRO) mais travaille sur les tables `guest_demarche_types` et `guest_order_required_documents` :
-- Lister toutes les demarches particuliers avec prix, statut actif/inactif
-- Editer le prix, le titre, la description, le statut
-- Gerer les documents obligatoires/optionnels par demarche
-- Flags : require_vehicle_info, require_carte_grise_price
-
-### Etape 6 : Integration admin
-
-- Ajouter le lien "Actions rapides Particuliers" dans le dashboard admin, section "Espace Particuliers"
-- Ajouter la route `/admin/guest-actions` dans App.tsx
-
-### Etape 7 : Ajustement du funnel
-
-- Les demarches avec `require_carte_grise_price: true` (CG, CG_NEUF) passeront par le parcours avec API vehicule et calcul regional
-- Les autres demarches passeront par le parcours `DemarcheSimple` (prix fixe, paiement, infos, documents)
-- Pour SUCCESSION et COTITULAIRE, ajouter un questionnaire simple dans le flux pour determiner les documents conditionnels
-
+- CAM/TRR >3,5 t vendus en ligne (barème PTAC 127/189/285 €) → confirmé « manuel/contact »
+- Gestion Hauts-de-France demi-tarif électrique 2026 (cas très marginal)
+- Exceptions collection, successions, etc.
