@@ -55,11 +55,11 @@ export const ExpressOptionCard = ({ demarcheType, checked, onCheckedChange }: Ex
         >
           <Zap className="w-4 h-4 text-orange-500" />
           {EXPRESS_LABEL}
-          {!available && (
-            <span className="text-xs font-normal text-muted-foreground">({EXPRESS_UNAVAILABLE_MESSAGE})</span>
-          )}
           <span className="ml-auto text-orange-500 font-semibold">+{getExpressSurcharge(demarcheType)},00 €</span>
         </Label>
+        {!available && (
+          <p className="text-xs text-muted-foreground mt-1">({EXPRESS_UNAVAILABLE_MESSAGE})</p>
+        )}
         <p className="text-sm text-muted-foreground mt-1">
           {EXPRESS_DESCRIPTION}
         </p>
