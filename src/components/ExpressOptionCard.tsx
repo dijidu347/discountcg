@@ -1,7 +1,15 @@
+import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Zap } from "lucide-react";
-import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL, EXPRESS_DESCRIPTION } from "@/lib/expressOption";
+import {
+  isExpressEligible,
+  getExpressSurcharge,
+  isExpressAvailable,
+  EXPRESS_LABEL,
+  EXPRESS_DESCRIPTION,
+  EXPRESS_UNAVAILABLE_MESSAGE,
+} from "@/lib/expressOption";
 
 interface ExpressOptionCardProps {
   demarcheType?: string;
@@ -10,16 +18,46 @@ interface ExpressOptionCardProps {
 }
 
 export const ExpressOptionCard = ({ demarcheType, checked, onCheckedChange }: ExpressOptionCardProps) => {
+  // Disponibilité horaire (Europe/Paris), purement PRÉSENTATIONNELLE : hors
+  // créneau la carte est grisée et la case n'est plus cochable. Ce composant ne
+  // modifie JAMAIS l'état express de lui-même (pas d'auto-décochage), pour ne
+  // jamais écrire en base ni changer le prix d'une commande déjà payable.
+  // Réévaluée périodiquement pour griser la carte si la page franchit la fin du
+  // créneau. Hooks appelés AVANT tout return conditionnel (Rules of Hooks).
+  const [available, setAvailable] = useState(() => isExpressAvailable());
+  useEffect(() => {
+    const id = setInterval(() => setAvailable(isExpressAvailable()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   if (!isExpressEligible(demarcheType)) return null;
+
   return (
-    <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-      checked ? "border-orange-500 bg-orange-50 dark:bg-orange-950" : "border-border bg-card hover:bg-muted/50"
-    }`}>
-      <Checkbox id="express_option" checked={checked} onCheckedChange={(c) => onCheckedChange(c as boolean)} />
+    <div
+      className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
+        !available
+          ? "border-border bg-muted/40 opacity-60"
+          : checked
+          ? "border-orange-500 bg-orange-50 dark:bg-orange-950"
+          : "border-border bg-card hover:bg-muted/50"
+      }`}
+    >
+      <Checkbox
+        id="express_option"
+        checked={checked}
+        disabled={!available && !checked}
+        onCheckedChange={(c) => onCheckedChange(c as boolean)}
+      />
       <div className="flex-1">
-        <Label htmlFor="express_option" className="cursor-pointer flex items-center gap-2 font-medium">
+        <Label
+          htmlFor="express_option"
+          className={`flex items-center gap-2 font-medium ${(!available && !checked) ? "cursor-not-allowed" : "cursor-pointer"}`}
+        >
           <Zap className="w-4 h-4 text-orange-500" />
           {EXPRESS_LABEL}
+          {!available && (
+            <span className="text-xs font-normal text-muted-foreground">({EXPRESS_UNAVAILABLE_MESSAGE})</span>
+          )}
           <span className="ml-auto text-orange-500 font-semibold">+{getExpressSurcharge(demarcheType)},00 €</span>
         </Label>
         <p className="text-sm text-muted-foreground mt-1">
