@@ -18,15 +18,27 @@ export interface PriceCalculation {
 // Y.2 — Taxe de développement des actions de formation professionnelle (transports routiers)
 // Applicable aux CTTE (camionnettes ≤ 3,5T), taux 2025
 const TAXE_PARAFISCALE_CTTE = 34;
-const GENRES_AVEC_TAXE_PARAFISCALE = ['CTTE', 'CYCL', 'REM', 'SREM', 'TRA', 'VASP'];
+// Y.2 : seule la camionnette/utilitaire ≤ 3,5 t (CTTE) paie la parafiscale
+// transport. Le simulateur officiel montre 0 pour tous les autres genres.
+const GENRES_AVEC_TAXE_PARAFISCALE = ['CTTE'];
 
 // Genres moto (codes officiels arrêté du 9 février 2009) → demi-tarif Y.1.
 export const MOTO_GENRES = ["MTL", "MTT1", "MTT2"];
 
-// Genres reconnus par le calcul (VP + genres parafiscale + motos). Sert au
-// garde-fou : tout autre code de genre présent est logué (console.warn) au lieu
-// d'être facturé au plein tarif silencieusement.
-const GENRES_CONNUS = new Set<string>(['VP', ...GENRES_AVEC_TAXE_PARAFISCALE, ...MOTO_GENRES]);
+// Genres exonérés de taxe régionale Y.1 (prixCV forcé à 0) : cyclomoteur (CL),
+// tracteur / matériel agricole (TRA, MAGA), remorques (REM, SREM). Ni demi-tarif
+// ni abattement ne s'appliquent ensuite — zéro.
+export const GENRES_EXONERES_Y1 = ["CL", "TRA", "MAGA", "REM", "SREM"];
+
+// Genres reconnus par le calcul (VP/VASP plein tarif + parafiscale + motos +
+// exonérés). Sert au garde-fou : tout autre code de genre présent est logué
+// (console.warn) au lieu d'être facturé au plein tarif silencieusement.
+const GENRES_CONNUS = new Set<string>([
+  'VP', 'VASP',
+  ...GENRES_AVEC_TAXE_PARAFISCALE,
+  ...MOTO_GENRES,
+  ...GENRES_EXONERES_Y1,
+]);
 
 export const calculatePrice = (
   tarifDepartement: number,
@@ -58,15 +70,19 @@ export const calculatePrice = (
   }
 
   const isMoto = !!genreUpper && MOTO_GENRES.includes(genreUpper);
+  const isExonereY1 = !!genreUpper && GENRES_EXONERES_Y1.includes(genreUpper);
+  const isCyclomoteur = genreUpper === "CL";
 
   let prixCV = chevauxFiscaux * tarifDepartement;
   let prixCVAvantAbattement: number | undefined;
   let abattement = false;
 
-  // Demi-tarif moto (Y.1 ÷ 2) OU abattement 10 ans, JAMAIS les deux (pas de
-  // quart de tarif). Une moto ancienne reste à demi-tarif simple ; pour une
-  // moto, `abattement` reste false (pas de badge « abattement 10 ans »).
-  if (isMoto) {
+  // Priorité : exonération Y.1 (prixCV = 0, ni demi-tarif ni abattement) →
+  // sinon demi-tarif moto (Y.1 ÷ 2) → sinon abattement 10 ans. Jamais cumulés
+  // (pas de quart de tarif ; pour un exonéré ou une moto, `abattement` reste false).
+  if (isExonereY1) {
+    prixCV = 0;
+  } else if (isMoto) {
     prixCV = prixCV * 0.5;
   } else if (anciennete >= 10) {
     prixCVAvantAbattement = prixCV;
@@ -76,16 +92,19 @@ export const calculatePrice = (
 
   // Arrondi à l'euro SUPÉRIEUR du sous-total (hors redevance), avec recalage
   // au centime pour éviter qu'une erreur de virgule flottante fasse sauter un euro.
+  // Y.5 redevance d'acheminement : non facturée au cyclomoteur (CL) uniquement.
+  const fraisAcheminementFacture = isCyclomoteur ? 0 : fraisAcheminement;
+
   const sousTotal = prixCV + taxeParafiscale + fraisGestion;
   const sousTotalArrondi = Math.ceil(Math.round(sousTotal * 100) / 100);
-  const prixTotal = sousTotalArrondi + fraisAcheminement;
+  const prixTotal = sousTotalArrondi + fraisAcheminementFacture;
 
   return {
     prixCV,
     prixCVAvantAbattement,
     abattement,
     fraisGestion,
-    fraisAcheminement,
+    fraisAcheminement: fraisAcheminementFacture,
     taxeParafiscale,
     sousTotal,
     sousTotalArrondi,
