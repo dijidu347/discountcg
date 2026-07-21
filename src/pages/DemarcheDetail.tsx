@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { FactureButton } from "@/components/FactureButton";
 import { DemarcheChat } from "@/components/DemarcheChat";
 import { formatPrice } from "@/lib/utils";
+import { pushAchatValide } from "@/lib/gtm";
 
 const statusLabels: Record<string, string> = {
   en_saisie: "En saisie",
@@ -80,6 +81,13 @@ export default function DemarcheDetail() {
       loadData();
     }
   }, [user, id]);
+
+  // Conversion GTM : uniquement quand la base confirme le paiement (paye === true).
+  useEffect(() => {
+    if (demarche?.paye === true && id) {
+      pushAchatValide(id, Number(demarche.montant_ttc || 0));
+    }
+  }, [demarche, id]);
 
   const loadData = async () => {
     if (!user || !id) return;

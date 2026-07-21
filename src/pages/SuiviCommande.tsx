@@ -36,6 +36,7 @@ import { SimpleDownloadButton } from "@/components/SimpleDownloadButton";
 import { GuestOrderChat } from "@/components/GuestOrderChat";
 import { cn } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
+import { pushAchatValide } from "@/lib/gtm";
 import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 
 const SuiviCommande = () => {
@@ -63,6 +64,13 @@ const SuiviCommande = () => {
     loadOrder();
     loadDocuments();
   }, [trackingNumber]);
+
+  // Conversion GTM : uniquement quand la base confirme le paiement (paye === true).
+  useEffect(() => {
+    if (order?.paye === true && trackingNumber) {
+      pushAchatValide(trackingNumber, Number(order.montant_ttc || 0));
+    }
+  }, [order, trackingNumber]);
 
   const loadRequiredDocuments = async () => {
     const { data } = await supabase
