@@ -14,8 +14,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
-// MaJi Auto : promo partenaire (widget hero "votre ville est-elle libre ?" + vidéo)
-import { MajiSimulator } from "@/components/maji/concepts/MajiSimulator";
 
 export default function Dashboard() {
   const {
@@ -377,11 +375,6 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
-
-        {/* MaJi Auto — Simulateur de revenus + vidéo de présentation */}
-        <div className="mb-8">
-          <MajiSimulator />
-        </div>
 
         {/* Coffre-fort Widget — visible uniquement pour abonnés actifs */}
         {coffreBeta && coffreActive && (
