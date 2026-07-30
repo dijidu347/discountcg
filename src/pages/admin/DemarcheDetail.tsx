@@ -291,15 +291,18 @@ export default function DemarcheDetail() {
 
       setNotifications(notificationsData || []);
 
-      // Load document previews
+      // Load document previews — images only, rendered at 200px.
+      // PDFs and other formats show a static icon, so they need no signed URL:
+      // the transformation endpoint rejects non-image sources anyway.
       if (documentsData && documentsData.length > 0) {
         const previews: Record<string, string> = {};
         for (const doc of documentsData) {
-          if (doc.url) {
+          const isImageDoc = /\.(jpg|jpeg|png|gif|webp)$/i.test(doc.nom_fichier || "");
+          if (doc.url && isImageDoc) {
             const bucket = extractBucketFromUrl(doc.url);
             const path = extractPathFromUrl(doc.url);
             if (bucket && path) {
-              const signedUrl = await getSignedUrl(bucket as StorageBucket, path);
+              const signedUrl = await getSignedUrl(bucket as StorageBucket, path, undefined, 200);
               if (signedUrl) {
                 previews[doc.id] = signedUrl;
               }
@@ -1259,11 +1262,11 @@ export default function DemarcheDetail() {
                                 )}
                                 
                                 {/* Preview thumbnail */}
-                                {previewUrl && (
-                                  <div className="mt-3">
-                                    {isImage ? (
-                                      <img 
-                                        src={previewUrl} 
+                                <div className="mt-3">
+                                  {isImage ? (
+                                    previewUrl && (
+                                      <img
+                                        src={previewUrl}
                                         alt={doc.nom_fichier}
                                         className="w-24 h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
                                         onClick={() => setViewerState({
@@ -1273,39 +1276,35 @@ export default function DemarcheDetail() {
                                           type: doc.type_document
                                         })}
                                       />
-                                    ) : isPdf ? (
-                                      <div 
-                                        className="w-24 h-24 rounded border overflow-hidden cursor-pointer hover:opacity-80 transition-opacity relative group"
-                                        onClick={() => setViewerState({
-                                          isOpen: true,
-                                          url: doc.url,
-                                          name: doc.nom_fichier,
-                                          type: doc.type_document
-                                        })}
-                                      >
-                                        <iframe 
-                                          src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                                          className="w-full h-full pointer-events-none"
-                                          title={doc.nom_fichier}
-                                        />
-                                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
-                                      </div>
-                                    ) : (
-                                      <div 
-                                        className="w-24 h-24 bg-muted rounded border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
-                                        onClick={() => setViewerState({
-                                          isOpen: true,
-                                          url: doc.url,
-                                          name: doc.nom_fichier,
-                                          type: doc.type_document
-                                        })}
-                                      >
-                                        <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                                        <span className="text-xs text-muted-foreground mt-1">Fichier</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
+                                    )
+                                  ) : isPdf ? (
+                                    <div
+                                      className="w-24 h-24 bg-muted rounded border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
+                                      onClick={() => setViewerState({
+                                        isOpen: true,
+                                        url: doc.url,
+                                        name: doc.nom_fichier,
+                                        type: doc.type_document
+                                      })}
+                                    >
+                                      <FileText className="h-8 w-8 text-muted-foreground" />
+                                      <span className="text-xs text-muted-foreground mt-1">PDF</span>
+                                    </div>
+                                  ) : (
+                                    <div
+                                      className="w-24 h-24 bg-muted rounded border flex flex-col items-center justify-center cursor-pointer hover:bg-muted/80 transition-colors"
+                                      onClick={() => setViewerState({
+                                        isOpen: true,
+                                        url: doc.url,
+                                        name: doc.nom_fichier,
+                                        type: doc.type_document
+                                      })}
+                                    >
+                                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                                      <span className="text-xs text-muted-foreground mt-1">Fichier</span>
+                                    </div>
+                                  )}
+                                </div>
                               </div>
                             </div>
                             <div className="flex flex-col gap-2">

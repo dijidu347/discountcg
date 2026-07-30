@@ -248,7 +248,8 @@ export default function GuestOrderDetail() {
               const bucket = extractBucketFromUrl(d.url);
               const path = extractPathFromUrl(d.url);
               if (bucket && path) {
-                const signed = await getSignedUrl(bucket, path, orderData?.tracking_number);
+                // 200px render: these are 96px card thumbnails, not full views
+                const signed = await getSignedUrl(bucket, path, orderData?.tracking_number, 200);
                 if (signed) previews[d.id] = signed;
               }
             })

@@ -236,7 +236,8 @@ export default function CoffreFort() {
     const [src, setThumbSrc] = useState<string | null>(null);
     useEffect(() => {
       if (doc.file_type !== "application/pdf") {
-        getSignedUrl("coffre-fort-documents", doc.file_path).then(setThumbSrc);
+        // 200px render — the card thumbnail never needs the full image
+        getSignedUrl("coffre-fort-documents", doc.file_path, undefined, 200).then(setThumbSrc);
       }
     }, [doc.file_path]);
     if (doc.file_type === "application/pdf") {

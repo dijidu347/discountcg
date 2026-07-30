@@ -13,6 +13,12 @@ interface SignedUrlRequest {
   bucket: string;
   path: string;
   trackingNumber?: string;
+  /**
+   * Optional target width in pixels. When provided, the signed URL points at the
+   * image transformation endpoint and serves a downscaled render instead of the
+   * original file. Images only — the renderer rejects PDFs.
+   */
+  width?: number;
 }
 
 serve(async (req) => {
@@ -73,7 +79,7 @@ serve(async (req) => {
       );
     }
     
-    const { bucket, path, trackingNumber: bodyTrackingNumber } = requestBody;
+    const { bucket, path, trackingNumber: bodyTrackingNumber, width } = requestBody;
     const effectiveTrackingNumber = trackingNumber || bodyTrackingNumber;
 
     // Validate required fields
@@ -224,12 +230,21 @@ serve(async (req) => {
       );
     }
 
-    // Generate signed URL (valid for 1 hour)
-    console.log(`🔐 Creating signed URL for bucket: "${bucket}", path: "${path}"`);
-    
+    // Generate signed URL (valid for 1 hour).
+    // With a width, the SDK targets /render/image/sign/... and serves a
+    // downscaled render; without it, /object/sign/... serves the original.
+    const requestedWidth =
+      typeof width === "number" && Number.isFinite(width) && width > 0
+        ? Math.min(Math.round(width), 2000)
+        : null;
+
+    console.log(
+      `🔐 Creating signed URL for bucket: "${bucket}", path: "${path}", width: ${requestedWidth ?? "original"}`
+    );
+
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from(bucket)
-      .createSignedUrl(path, 3600);
+      .createSignedUrl(path, 3600, requestedWidth ? { transform: { width: requestedWidth } } : undefined);
 
     if (signedUrlError) {
       console.error("❌ Error creating signed URL:", signedUrlError);

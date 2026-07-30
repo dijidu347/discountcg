@@ -10,12 +10,16 @@ const VALID_BUCKETS: StorageBucket[] = ["demarche-documents", "guest-order-docum
  * @param bucket - The storage bucket name (must be one of the valid buckets)
  * @param path - The file path within the bucket (e.g., "garage_id/file.pdf")
  * @param trackingNumber - Optional tracking number for guest order access
+ * @param width - Optional target width in pixels. Serves a downscaled render
+ *                instead of the original file — use it for list thumbnails.
+ *                Images only: the transformation endpoint rejects PDFs.
  * @returns The signed URL or null if failed
  */
 export const getSignedUrl = async (
   bucket: StorageBucket,
   path: string,
-  trackingNumber?: string
+  trackingNumber?: string,
+  width?: number
 ): Promise<string | null> => {
   try {
     // Validate bucket
@@ -57,7 +61,7 @@ export const getSignedUrl = async (
     
     // Call edge function with explicit JSON body
     const response = await supabase.functions.invoke("get-signed-url", {
-      body: { bucket, path: cleanPath, trackingNumber },
+      body: { bucket, path: cleanPath, trackingNumber, width },
       headers,
     });
     
