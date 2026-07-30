@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
+import { compressFile, isFileTooLarge } from "@/lib/file-compression";
 
 interface UploadedFile {
   id: string;
@@ -45,6 +46,7 @@ export function GuestDocumentUpload({
   orderIdForNotif
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [optimisticFiles, setOptimisticFiles] = useState<{ [key: string]: UploadedFile }>({});
   const rectoInputRef = useRef<HTMLInputElement>(null);
   const versoInputRef = useRef<HTMLInputElement>(null);
@@ -96,7 +98,34 @@ export function GuestDocumentUpload({
       .toLowerCase();
   };
 
-  const handleUpload = async (file: File, side: 'recto' | 'verso') => {
+  const handleUpload = async (originalFile: File, side: 'recto' | 'verso') => {
+    // Reject oversized files up front — PDFs pass through uncompressed.
+    if (isFileTooLarge(originalFile)) {
+      toast({
+        title: "Fichier trop lourd",
+        description: "Ce fichier dépasse la taille maximale de 50 Mo. Si c'est un PDF scanné, essayez de le rescanner en qualité normale plutôt qu'en haute définition.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Compress images before upload — PDFs and other formats pass through.
+    setIsCompressing(true);
+    let file: File;
+    try {
+      const result = await compressFile(originalFile);
+      file = result.file;
+    } catch (compressionError) {
+      toast({
+        title: "Erreur",
+        description: "La compression de l'image a échoué. Veuillez réessayer.",
+        variant: "destructive"
+      });
+      return;
+    } finally {
+      setIsCompressing(false);
+    }
+
     setUploading(true);
 
     try {
@@ -353,8 +382,8 @@ export function GuestDocumentUpload({
             ref={rectoInputRef}
             type="file"
             onChange={(e) => handleFileChange(e, 'recto')}
-            accept=".pdf,.jpg,.jpeg,.png,image/*"
-            disabled={uploading}
+            accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
+            disabled={uploading || isCompressing}
             className="hidden"
           />
           {renderFileStatus(rectoFile, 'recto')}
@@ -368,8 +397,8 @@ export function GuestDocumentUpload({
               ref={rectoInputRef}
               type="file"
               onChange={(e) => handleFileChange(e, 'recto')}
-              accept=".pdf,.jpg,.jpeg,.png,image/*"
-              disabled={uploading}
+              accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
+              disabled={uploading || isCompressing}
               className="hidden"
             />
             {renderFileStatus(rectoFile, 'recto')}
@@ -381,8 +410,8 @@ export function GuestDocumentUpload({
               ref={versoInputRef}
               type="file"
               onChange={(e) => handleFileChange(e, 'verso')}
-              accept=".pdf,.jpg,.jpeg,.png,image/*"
-              disabled={uploading}
+              accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
+              disabled={uploading || isCompressing}
               className="hidden"
             />
             {renderFileStatus(versoFile, 'verso')}
@@ -390,7 +419,12 @@ export function GuestDocumentUpload({
         </div>
       )}
 
-      {uploading && (
+      {isCompressing ? (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Optimisation de l'image...</span>
+        </div>
+      ) : uploading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>Upload en cours...</span>

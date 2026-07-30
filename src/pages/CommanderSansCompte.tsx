@@ -21,6 +21,7 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
+import { compressFile, isFileTooLarge } from "@/lib/file-compression";
 
 // Step indicator
 const StepIndicator = ({ currentStep, steps }: { currentStep: number; steps: string[] }) => (
@@ -286,6 +287,7 @@ const CommanderSansCompte = () => {
   const [order, setOrder] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [uploadedDocs, setUploadedDocs] = useState<Record<string, File>>({});
+  const [compressingDoc, setCompressingDoc] = useState<string | null>(null);
   const [currentStep, setCurrentStep] = useState(0);
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -403,13 +405,38 @@ const CommanderSansCompte = () => {
     setDocuments(uniqueDocs);
   };
 
-  const handleFileChange = (documentName: string, file: File | null) => {
-    if (file) {
-      setUploadedDocs({ ...uploadedDocs, [documentName]: file });
-    } else {
+  const handleFileChange = async (documentName: string, file: File | null) => {
+    if (!file) {
       const newDocs = { ...uploadedDocs };
       delete newDocs[documentName];
       setUploadedDocs(newDocs);
+      return;
+    }
+
+    // Reject oversized files up front — PDFs pass through uncompressed.
+    if (isFileTooLarge(file)) {
+      toast({
+        title: "Fichier trop lourd",
+        description: "Ce fichier dépasse la taille maximale de 50 Mo. Si c'est un PDF scanné, essayez de le rescanner en qualité normale plutôt qu'en haute définition.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Compress on selection so the upload loop — and the stored record — already
+    // carry the final file. PDFs pass through untouched.
+    setCompressingDoc(documentName);
+    try {
+      const { file: compressed } = await compressFile(file);
+      setUploadedDocs(prev => ({ ...prev, [documentName]: compressed }));
+    } catch (compressionError) {
+      toast({
+        title: "Erreur",
+        description: "La compression de l'image a échoué. Veuillez réessayer.",
+        variant: "destructive",
+      });
+    } finally {
+      setCompressingDoc(null);
     }
   };
 
@@ -778,10 +805,16 @@ const CommanderSansCompte = () => {
                     </div>
                     <Input
                       type="file"
-                      accept=".pdf,.jpg,.jpeg,.png,image/*"
+                      accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
+                      disabled={compressingDoc === doc.nom_document}
                       onChange={(e) => handleFileChange(doc.nom_document, e.target.files?.[0] || null)}
                     />
-                    {uploadedDocs[doc.nom_document] && (
+                    {compressingDoc === doc.nom_document ? (
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Optimisation de l'image...
+                      </p>
+                    ) : uploadedDocs[doc.nom_document] && (
                       <p className="text-sm text-green-600 flex items-center gap-1">
                         <FileCheck className="w-4 h-4" />
                         {uploadedDocs[doc.nom_document].name}

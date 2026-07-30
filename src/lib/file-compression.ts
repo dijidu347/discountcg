@@ -18,6 +18,19 @@ export interface CompressedFile {
   compressedSize: number;
 }
 
+/**
+ * Forces a ".jpg" extension on the compressed file name.
+ *
+ * The content is always JPEG once compressed, so the name must say so. Files
+ * arriving without any extension (common with Android shares and scanner apps)
+ * would otherwise keep a bare name, and callers deriving the storage extension
+ * with `name.split(".").pop()` would build a nonsensical path.
+ */
+function toJpgName(name: string): string {
+  const withoutExtension = name.replace(/\.[^.]+$/, "");
+  return `${withoutExtension || "document"}.jpg`;
+}
+
 export function isAcceptedFileType(file: File): boolean {
   const lowerName = file.name.toLowerCase();
   // Some browsers (desktop) report empty or "application/octet-stream" MIME type for HEIC
@@ -39,8 +52,12 @@ export async function compressFile(file: File): Promise<CompressedFile> {
   const isHeic = file.type === "image/heic" || file.type === "image/heif" ||
     lowerName.endsWith(".heic") || lowerName.endsWith(".heif");
 
-  // PDF: pass through (true PDF compression requires server-side tools)
-  if (file.type === "application/pdf") {
+  // Non-image files (PDF, doc, xls, csv, txt…): pass through untouched.
+  // Only images are compressed — anything else would make imageCompression throw.
+  // HEIC is tested separately because some browsers report an empty MIME type.
+  const isImage = file.type.startsWith("image/") || isHeic;
+
+  if (!isImage) {
     return { file, originalSize, compressedSize: file.size };
   }
 
@@ -73,7 +90,7 @@ export async function compressFile(file: File): Promise<CompressedFile> {
 
   const compressedFile = new File(
     [compressed],
-    imageFile.name.replace(/\.[^.]+$/, ".jpg"),
+    toJpgName(imageFile.name),
     { type: "image/jpeg" }
   );
 

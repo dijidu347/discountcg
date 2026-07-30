@@ -2,7 +2,7 @@ import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from "@tansta
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
-import { isAcceptedFileType, isFileTooLarge } from "@/lib/coffre-compression";
+import { isAcceptedFileType, isFileTooLarge } from "@/lib/file-compression";
 
 const PAGE_SIZE = 20;
 

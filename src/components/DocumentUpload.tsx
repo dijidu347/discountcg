@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { cn } from "@/lib/utils";
 import { validatePdfOnlyFile } from "@/lib/documentRestrictions";
+import { compressFile, isFileTooLarge } from "@/lib/file-compression";
 
 interface UploadedFile {
   id: string;
@@ -29,6 +30,7 @@ interface DocumentUploadProps {
 
 export function DocumentUpload({ demarcheId, documentType, label, customName, onUploadComplete, isBlocked = false, blockedMessage, pdfOnly = false }: DocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -110,12 +112,23 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
     }
   };
 
-  const handleUpload = async (file: File) => {
-    if (!file) return;
+  const handleUpload = async (originalFile: File) => {
+    if (!originalFile) return;
+
+    // Reject oversized files up front — PDFs are not compressed, so nothing
+    // downstream would shrink them.
+    if (isFileTooLarge(originalFile)) {
+      toast({
+        title: "Fichier trop lourd",
+        description: "Ce fichier dépasse la taille maximale de 50 Mo. Si c'est un PDF scanné, essayez de le rescanner en qualité normale plutôt qu'en haute définition.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     // Restriction PDF < 1 Mo pour certaines démarches
     if (pdfOnly) {
-      const validationError = validatePdfOnlyFile(file);
+      const validationError = validatePdfOnlyFile(originalFile);
       if (validationError) {
         toast({
           title: "Fichier refusé",
@@ -126,10 +139,27 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
       }
     }
 
+    // Compress images before upload — PDFs and other formats pass through.
+    setIsCompressing(true);
+    let file: File;
+    try {
+      const result = await compressFile(originalFile);
+      file = result.file;
+    } catch (compressionError) {
+      toast({
+        title: "Erreur",
+        description: "La compression de l'image a échoué. Veuillez réessayer.",
+        variant: "destructive"
+      });
+      return;
+    } finally {
+      setIsCompressing(false);
+    }
+
     setUploading(true);
 
     try {
-      // Upload to storage
+      // Upload to storage — name and extension come from the compressed file
       const fileExt = file.name.split('.').pop();
       const fileName = `${demarcheId}/${documentType}_${Date.now()}.${fileExt}`;
       
@@ -370,19 +400,24 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           className={cn(
             "relative border-2 border-dashed rounded-md p-3 transition-all cursor-pointer flex items-center justify-between gap-2",
             isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
-            uploading && "cursor-not-allowed opacity-75"
+            (uploading || isCompressing) && "cursor-not-allowed opacity-75"
           )}
         >
         <Input
           ref={fileInputRef}
           type="file"
           onChange={handleFileChange}
-          accept={pdfOnly ? "application/pdf,.pdf" : ".pdf,.jpg,.jpeg,.png,image/*"}
-          disabled={uploading}
+          accept={pdfOnly ? "application/pdf,.pdf" : ".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"}
+          disabled={uploading || isCompressing}
           className="hidden"
         />
-        
-        {uploading ? (
+
+        {isCompressing ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-sm text-muted-foreground flex-1">Optimisation de l'image...</span>
+          </>
+        ) : uploading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground flex-1">Upload en cours...</span>

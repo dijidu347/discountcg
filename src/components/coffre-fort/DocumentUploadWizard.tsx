@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, Upload, FileText, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { COFFRE_CATEGORIES, getCategoryInfo } from "@/lib/coffre-categories";
-import { isAcceptedFileType, isFileTooLarge, isPdfTooBig, compressFile, type CompressedFile } from "@/lib/coffre-compression";
+import { isAcceptedFileType, isFileTooLarge, isPdfTooBig, compressFile, type CompressedFile } from "@/lib/file-compression";
 
 interface Props {
   open: boolean;
