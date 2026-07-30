@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff } from "lucide-react";
-import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, StorageBucket } from "@/lib/storage-utils";
+import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, downloadPrivateFileFromUrl, StorageBucket } from "@/lib/storage-utils";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { isPdfOnlyProDemarche } from "@/lib/documentRestrictions";
@@ -1325,29 +1325,19 @@ export default function DemarcheDetail() {
                                 size="sm" 
                                 variant="outline"
                                 onClick={async () => {
-                                  if (previewUrl) {
-                                    try {
-                                      const response = await fetch(previewUrl);
-                                      const blob = await response.blob();
-                                      const blobUrl = URL.createObjectURL(blob);
-                                      const link = document.createElement('a');
-                                      link.href = blobUrl;
-                                      link.download = doc.nom_fichier;
-                                      document.body.appendChild(link);
-                                      link.click();
-                                      document.body.removeChild(link);
-                                      URL.revokeObjectURL(blobUrl);
-                                    } catch (error) {
-                                      console.error('Download error:', error);
-                                      toast({
-                                        title: "Erreur",
-                                        description: "Impossible de télécharger le fichier",
-                                        variant: "destructive"
-                                      });
-                                    }
+                                  // Always fetch the ORIGINAL at click time. previewUrl is a
+                                  // 200px thumbnail render, and is empty for PDFs.
+                                  try {
+                                    await downloadPrivateFileFromUrl(doc.url, doc.nom_fichier);
+                                  } catch (error) {
+                                    console.error('Download error:', error);
+                                    toast({
+                                      title: "Erreur",
+                                      description: "Impossible de télécharger le fichier",
+                                      variant: "destructive"
+                                    });
                                   }
                                 }}
-                                disabled={!previewUrl}
                               >
                                 <Download className="h-4 w-4 mr-2" />
                                 Télécharger
