@@ -91,6 +91,30 @@ const guestFooter = `
   <p style="color: #6b7280; font-size: 14px;">L'équipe DiscountCarteGrise</p>
 `;
 
+/**
+ * MODULE 05 — Pied d'email MaJi Auto.
+ *
+ * L'emplacement que tout le monde oublie : cet email est ouvert par presque tous
+ * les garages, puisqu'il annonce leur carte grise. Un bloc en pied y vaut dix
+ * bannières sur un dashboard.
+ *
+ * Le libellé du bouton — « Vérifier mon secteur » — est volontairement neutre :
+ * il reste honnête que le secteur soit libre ou déjà attribué, l'état réel étant
+ * affiché à l'arrivée. Aucune promesse de rendez-vous, de mandat ni de revenu.
+ */
+const majiEmailFooter = (baseUrl: string) => `
+  <div style="margin-top: 28px; padding: 16px 18px; border-radius: 8px; background-color: #F6F7F9; border: 1px solid #E7EAEF; border-top: 2px solid #003399;">
+    <div style="font-weight: 650; color: #12161C; margin-bottom: 6px;">Vous vendez déjà des véhicules.</div>
+    <div style="font-size: 14px; color: #5C6675; margin-bottom: 12px; max-width: 56ch;">
+      MaJi Auto vous apporte des véhicules en dépôt-vente dans votre secteur.
+      Un seul agent par zone.
+    </div>
+    <a href="${baseUrl}/dashboard" style="display: inline-block; padding: 8px 15px; border: 1px solid #003399; border-radius: 6px; color: #003399; font-size: 13.5px; font-weight: 600; text-decoration: none;">
+      Vérifier mon secteur
+    </a>
+  </div>
+`;
+
 const getEmailTemplate = (type: string, data: any) => {
   const baseUrl = "https://discountcartegrise.fr";
   const trackingUrl = data?.tracking_number ? `${baseUrl}/suivi/${data.tracking_number}` : "";
@@ -473,6 +497,8 @@ const getEmailTemplate = (type: string, data: any) => {
             </a>
 
             <p style="margin-top: 20px;">Merci de votre confiance !</p>
+
+            ${majiEmailFooter(baseUrl)}
 
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
             <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>

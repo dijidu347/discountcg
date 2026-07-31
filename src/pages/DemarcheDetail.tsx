@@ -14,6 +14,17 @@ import { ArrowLeft, FileText, AlertCircle, CheckCircle, XCircle, Upload, Eye, Ma
 import { useToast } from "@/hooks/use-toast";
 import { FactureButton } from "@/components/FactureButton";
 import { DemarcheChat } from "@/components/DemarcheChat";
+// MaJi Auto — bloc contextuel après une cession / déclaration d'achat
+import { MajiBlocContextuel } from "@/components/maji/recrutement/MajiBlocContextuel";
+import { MajiCandidature } from "@/components/maji/recrutement/MajiCandidature";
+import {
+  calculerSignaux,
+  departementDepuisCodePostal,
+  TYPE_ACHAT,
+  TYPE_CESSION,
+  type MajiSignaux,
+} from "@/lib/majiCiblage";
+import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 import { formatPrice } from "@/lib/utils";
 import { pushAchatValide } from "@/lib/gtm";
 
@@ -41,8 +52,12 @@ export default function DemarcheDetail() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isActive: coffreActive } = useCoffreSubscription();
   const [demarche, setDemarche] = useState<any>(null);
   const [garage, setGarage] = useState<any>(null);
+  // MaJi — signaux d'activité, chargés seulement si le bloc contextuel peut s'afficher
+  const [majiSignaux, setMajiSignaux] = useState<MajiSignaux | null>(null);
+  const [majiOuvert, setMajiOuvert] = useState(false);
   const [vehicule, setVehicule] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
@@ -81,6 +96,37 @@ export default function DemarcheDetail() {
       loadData();
     }
   }, [user, id]);
+
+  // MaJi — le bloc contextuel ne concerne qu'une cession ou une déclaration d'achat
+  // réellement engagée. On ne charge les signaux que dans ce cas précis : aucune
+  // requête supplémentaire sur les autres types de démarche.
+  const majiPertinent =
+    !!garage &&
+    (demarche?.type === TYPE_CESSION || demarche?.type === TYPE_ACHAT) &&
+    (demarche?.paye === true || demarche?.is_free_token === true);
+
+  useEffect(() => {
+    if (!majiPertinent || majiSignaux) return;
+    let annule = false;
+    (async () => {
+      // Charge le strict nécessaire au calcul du volume : type + date.
+      const { data } = await supabase
+        .from("demarches")
+        .select("type, created_at, paye")
+        .eq("garage_id", garage.id)
+        .eq("paye", true);
+      if (annule) return;
+      setMajiSignaux(
+        calculerSignaux(data ?? [], {
+          abonneCoffre: coffreActive,
+          codePostal: garage.code_postal,
+        }),
+      );
+    })();
+    return () => {
+      annule = true;
+    };
+  }, [majiPertinent, majiSignaux, garage, coffreActive]);
 
   // Conversion GTM : uniquement quand la base confirme le paiement (paye === true).
   useEffect(() => {
@@ -347,6 +393,25 @@ export default function DemarcheDetail() {
             </div>
           </div>
         ) : null}
+
+        {/* MaJi Auto — MODULE 02 : bloc contextuel.
+            Arrive au bon moment : le garage vient de clore une vente, le sujet est
+            déjà dans sa tête. Masqué si son secteur est déjà attribué. */}
+        {majiPertinent && majiSignaux?.secteurLibre && (
+          <MajiBlocContextuel
+            type={demarche.type === TYPE_ACHAT ? "DA" : "DC"}
+            onVerifier={() => setMajiOuvert(true)}
+          />
+        )}
+        {majiSignaux && (
+          <MajiCandidature
+            open={majiOuvert}
+            onOpenChange={setMajiOuvert}
+            garage={garage}
+            signaux={majiSignaux}
+            departement={departementDepuisCodePostal(garage?.code_postal)}
+          />
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Content */}

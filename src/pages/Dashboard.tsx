@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,10 @@ import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/co
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { CoffreWidget } from "@/components/coffre-fort/CoffreWidget";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
+// MaJi Auto — recrutement d'agents à partir des signaux d'activité du garage
+import { MajiTuileMiroir } from "@/components/maji/recrutement/MajiTuileMiroir";
+import { MajiCandidature } from "@/components/maji/recrutement/MajiCandidature";
+import { calculerSignaux, ciblerGarage, departementDepuisCodePostal } from "@/lib/majiCiblage";
 
 export default function Dashboard() {
   const {
@@ -29,6 +33,10 @@ export default function Dashboard() {
     validees: 0
   });
   const [recentDemarches, setRecentDemarches] = useState<any[]>([]);
+  // Toutes les démarches payées du garage — déjà chargées pour les statistiques,
+  // réutilisées telles quelles pour le ciblage MaJi (aucune requête supplémentaire).
+  const [toutesDemarches, setToutesDemarches] = useState<any[]>([]);
+  const [majiOuvert, setMajiOuvert] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
@@ -36,6 +44,17 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
   const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
+
+  // Ciblage MaJi : recalculé quand les démarches ou l'abonnement Coffre-fort changent.
+  const majiDepartement = useMemo(
+    () => departementDepuisCodePostal(garage?.code_postal),
+    [garage?.code_postal],
+  );
+  const majiSignaux = useMemo(
+    () => calculerSignaux(toutesDemarches, { abonneCoffre: coffreActive, codePostal: garage?.code_postal }),
+    [toutesDemarches, coffreActive, garage?.code_postal],
+  );
+  const majiCiblage = useMemo(() => ciblerGarage(majiSignaux), [majiSignaux]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -113,6 +132,7 @@ export default function Dashboard() {
         validees: demarches?.filter(d => d.status === 'valide' || d.status === 'finalise').length || 0
       });
       setRecentDemarches(demarches?.slice(0, 5) || []);
+      setToutesDemarches(demarches || []);
 
       // Count missing verification documents
       if (!garageData.is_verified) {
@@ -375,6 +395,27 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* MaJi Auto — MODULE 01 : la tuile miroir.
+            Ne s'affiche que si le garage a un volume de vente réel à se voir opposer
+            (≥ 5 cessions sur 90 j) ET que son secteur est encore libre. */}
+        {majiCiblage.afficherTuileMiroir && (
+          <div className="mb-8">
+            <MajiTuileMiroir
+              cessions={majiCiblage.compteurMisEnAvant}
+              onDecouvrir={() => setMajiOuvert(true)}
+            />
+          </div>
+        )}
+
+        {/* MaJi Auto — MODULES 03 + 04 : secteur et candidature pré-remplie */}
+        <MajiCandidature
+          open={majiOuvert}
+          onOpenChange={setMajiOuvert}
+          garage={garage}
+          signaux={majiSignaux}
+          departement={majiDepartement}
+        />
 
         {/* Coffre-fort Widget — visible uniquement pour abonnés actifs */}
         {coffreBeta && coffreActive && (
