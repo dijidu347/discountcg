@@ -104,8 +104,14 @@ serve(async (req) => {
 
     console.log('Generated client_payment_token:', clientPaymentToken);
 
-    // Update demarche with token, status, and payment_mode
-    const { error: updateError } = await supabaseClient
+    // Update demarche with token, status, and payment_mode.
+    // is_draft goes false in the SAME operation: once a link is out in a
+    // client's inbox the demarche is an order awaiting payment, not a draft,
+    // and must fall outside the "delete unpaid drafts" policy.
+    // The .select() is what makes this safe: an UPDATE matching zero rows
+    // raises NO error under PostgREST, so without reading the row back we
+    // could mail a link whose token was never persisted.
+    const { data: persisted, error: updateError } = await supabaseClient
       .from('demarches')
       .update({
         payment_mode: effectiveMode,
@@ -117,16 +123,41 @@ serve(async (req) => {
         client_payment_token: clientPaymentToken,
         client_payment_token_expires_at: expiresAt.toISOString(),
         status: 'en_attente_paiement_client',
+        is_draft: false,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', demarcheId);
+      .eq('id', demarcheId)
+      .select('id, client_payment_token, client_payment_token_expires_at, is_draft')
+      .maybeSingle();
 
-    if (updateError) {
-      console.error('Failed to update demarche:', updateError);
-      throw new Error('Failed to generate payment link');
+    if (updateError || !persisted) {
+      console.error('Failed to persist payment token:', updateError, 'row:', persisted);
+      return new Response(
+        JSON.stringify({
+          error: "La démarche n'a pas pu être enregistrée. Aucun email n'a été envoyé au client. Veuillez réessayer.",
+        }),
+        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    console.log('Demarche updated with payment token');
+    // The token that will travel in the email must be the one now in the row.
+    if (
+      persisted.client_payment_token !== clientPaymentToken ||
+      !persisted.client_payment_token_expires_at
+    ) {
+      console.error(
+        'Token mismatch after write — persisted:', persisted.client_payment_token,
+        'expected:', clientPaymentToken
+      );
+      return new Response(
+        JSON.stringify({
+          error: "Le lien de paiement n'a pas pu être sécurisé. Aucun email n'a été envoyé au client.",
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Demarche updated with payment token (persistence confirmed)');
 
     // Filet serveur : une facture nominative client nécessite nom + prénom.
     const finalNom = clientNom || demarche.client_nom;
@@ -135,7 +166,9 @@ serve(async (req) => {
       console.warn(`⚠️ Paiement client sans nom/prénom complet (demarche ${demarcheId}): nom="${finalNom || ''}", prenom="${finalPrenom || ''}". Facture nominative impossible.`);
     }
 
-    const paymentUrl = `https://discountcartegrise.fr/paiement-client/${clientPaymentToken}`;
+    // Built from the value read back from the database, never from the local
+    // variable: the emailed URL can only describe what is actually persisted.
+    const paymentUrl = `https://discountcartegrise.fr/paiement-client/${persisted.client_payment_token}`;
 
     // Resolve immatriculation for notification message
     const notifImmat = realImmat || demarche.immatriculation;

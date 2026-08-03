@@ -227,26 +227,43 @@ export default function MesDemarches() {
   };
 
   const handleDeleteBrouillon = async (brouillonId: string) => {
-    const { error } = await supabase
+    // A demarche whose client payment link is already out must never be
+    // deleted: the client holds that link, and removing the row kills it.
+    // .select() is required to tell "deleted" from "matched nothing" — a
+    // DELETE filtered out by these guards returns no error, just zero rows.
+    const { data: deleted, error } = await supabase
       .from('demarches')
       .delete()
       .eq('id', brouillonId)
       .eq('is_draft', true)
-      .eq('paye', false);
+      .eq('paye', false)
+      .is('client_payment_token_expires_at', null)
+      .neq('status', 'en_attente_paiement_client')
+      .select('id');
 
-    if (!error) {
-      setBrouillons(prev => prev.filter(b => b.id !== brouillonId));
-      toast({
-        title: "Brouillon supprimé",
-        description: "Le brouillon a été supprimé avec succès",
-      });
-    } else {
+    if (error) {
       toast({
         title: "Erreur",
         description: "Impossible de supprimer le brouillon",
         variant: "destructive",
       });
+      return;
     }
+
+    if (!deleted || deleted.length === 0) {
+      toast({
+        title: "Suppression impossible",
+        description: "Un lien de paiement a déjà été envoyé au client pour cette démarche. La supprimer rendrait son lien inutilisable.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setBrouillons(prev => prev.filter(b => b.id !== brouillonId));
+    toast({
+      title: "Brouillon supprimé",
+      description: "Le brouillon a été supprimé avec succès",
+    });
   };
 
   if (authLoading || loading) {
