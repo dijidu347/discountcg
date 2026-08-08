@@ -165,10 +165,12 @@ export default function ResultatCarteGrise() {
         setOrderId(orderIdParam);
         setDepartement(departementParam);
 
-        // Load demarche type + email + paid status from order
+        // Load demarche type + email + paid status + données véhicule déjà en base.
+        // Les colonnes véhicule sont lues ici pour éviter un appel payant à
+        // vehicle-lookup quand la commande a déjà été enrichie (cf. plus bas).
         const { data: orderData } = await supabase
           .from("guest_orders")
-          .select("demarche_type, email, paye, express")
+          .select("demarche_type, email, paye, express, marque, modele, energie, date_mec, puiss_fisc, genre")
           .eq("id", orderIdParam)
           .single();
         if (orderData?.demarche_type) {
@@ -208,9 +210,36 @@ export default function ResultatCarteGrise() {
           return;
         }
 
-        // Récupérer les infos véhicule via l'API (données fraîches et fiables).
+        // Infos véhicule : la base d'abord, l'API payante seulement si nécessaire.
+        // Les 3 champs indispensables au calcul (date_mec, puiss_fisc, genre) sont
+        // persistés dans guest_orders par l'effet de sauvegarde plus bas, dès le
+        // premier passage. S'ils y sont tous, rappeler vehicle-lookup n'apporte
+        // rien : reload, retour arrière, retour login/register ou retour depuis
+        // Sogecommerce réutilisent la ligne déjà enregistrée.
         let freshVehicle: NormalizedVehicleData | null = null;
-        if (plaqueParam) {
+
+        const storedDateMec = orderData?.date_mec;
+        const storedPuissFisc = orderData?.puiss_fisc;
+        const storedGenre = orderData?.genre;
+        const hasStoredVehicle =
+          !!storedDateMec && storedPuissFisc !== null && storedPuissFisc !== undefined && !!storedGenre;
+
+        if (hasStoredVehicle) {
+          // Reconstruction depuis guest_orders : puiss_fisc → puissance_fiscale,
+          // immatriculation reprise de l'URL (elle n'est pas relue en base).
+          // marque/modele/energie sont repris tels quels, null compris : ils ne
+          // conditionnent pas le calcul et ne servent qu'à l'affichage.
+          freshVehicle = {
+            marque: orderData.marque,
+            modele: orderData.modele,
+            energie: orderData.energie,
+            date_mec: storedDateMec,
+            puissance_fiscale: storedPuissFisc,
+            genre: storedGenre,
+            immatriculation: plaqueParam,
+          };
+          setVehicleInfo(freshVehicle);
+        } else if (plaqueParam) {
           const vehicleResponse = await getVehicleByPlate(plaqueParam);
           if (vehicleResponse.success && vehicleResponse.data) {
             freshVehicle = vehicleResponse.data;
@@ -284,6 +313,18 @@ export default function ResultatCarteGrise() {
       const totalServicesHT = fraisDossier + optionsPrix;
       const montantTTC = prixCarteGrise + totalServicesHT;
 
+      // Champs véhicule : on n'écrit QUE ceux qui portent une valeur réelle.
+      // Écrire null les effacerait alors qu'ils sont peut-être déjà renseignés en
+      // base — c'est le cas dès que le lookup a échoué (vehicleInfo reste null).
+      // Un champ absent de l'objet update n'est pas touché par PostgREST.
+      const vehicleFields: Record<string, string> = {};
+      if (vehicleInfo?.marque) vehicleFields.marque = vehicleInfo.marque;
+      if (vehicleInfo?.modele) vehicleFields.modele = vehicleInfo.modele;
+      if (vehicleInfo?.energie) vehicleFields.energie = vehicleInfo.energie;
+      if (vehicleInfo?.date_mec) vehicleFields.date_mec = vehicleInfo.date_mec;
+      // `genre` était déjà passé à calculatePrice (l.96), on ne fait que le persister.
+      if (vehicleInfo?.genre) vehicleFields.genre = vehicleInfo.genre;
+
       const { error } = await supabase
         .from('guest_orders')
         .update({
@@ -295,16 +336,13 @@ export default function ResultatCarteGrise() {
           dossier_prioritaire: false,
           express: express,
           certificat_non_gage: certificatNonGage,
-          marque: vehicleInfo?.marque || null,
-          modele: vehicleInfo?.modele || null,
-          energie: vehicleInfo?.energie || null,
-          date_mec: vehicleInfo?.date_mec || null,
+          ...vehicleFields,
+          // puiss_fisc vient de `calculation`, pas de vehicleInfo : il reste écrit
+          // inconditionnellement, comme avant.
           puiss_fisc: calculation.chevauxFiscaux,
           // Snapshot du détail carte grise, figé au moment du calcul (issu de
           // l'objet `calculation` déjà en main — aucun recalcul, aucun impact
-          // sur les montants). `genre` était déjà passé à calculatePrice (l.96),
-          // on ne fait ici que le persister.
-          genre: vehicleInfo?.genre || null,
+          // sur les montants).
           prix_cv: calculation.prixCV,
           prix_cv_avant_abattement: calculation.prixCVAvantAbattement ?? null,
           taxe_parafiscale: calculation.taxeParafiscale,
