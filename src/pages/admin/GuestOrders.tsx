@@ -20,6 +20,7 @@ import {
 // ──────────────────────────────────────────────────────────────────────
 
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
+import { TransactionDate } from "@/components/admin/TransactionDate";
 import { getExpressSurcharge } from "@/lib/expressOption";
 
 interface GuestOrder {
@@ -44,6 +45,8 @@ interface GuestOrder {
   documents_complets: boolean;
   admin_viewed?: boolean | null;
   created_at: string;
+  /** Instant de l'encaissement, posé par les webhooks Stripe/Sogecommerce. */
+  paid_at?: string | null;
   demarche_type?: string;
 }
 
@@ -506,7 +509,7 @@ export default function GuestOrders() {
                       <TableCell>{o.demarche_type || "—"}</TableCell>
                       <TableCell>{getPaymentStatusBadge(o)}</TableCell>
                       <TableCell>{renderAmountCell(o)}</TableCell>
-                      <TableCell>{new Date(o.created_at).toLocaleDateString("fr-FR")}</TableCell>
+                      <TableCell><TransactionDate row={o} /></TableCell>
                       <TableCell>
                         <Link to={`/admin/guest-order/${o.id}`} onClick={() => handleViewOrder(o)}>
                           <Button

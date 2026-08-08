@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
+import { TransactionDate } from "@/components/admin/TransactionDate";
 import { StatusPill } from "@/components/StatusPill";
 import { TERMINAL_STATUSES } from "@/lib/demarcheStatusBadge";
 import { isATraiter } from "@/lib/demarcheFilters";
@@ -512,7 +513,7 @@ export default function AllDemarches() {
                       <TableCell>{d.type}</TableCell>
                       <TableCell>{getPaymentStatusBadge(d)}</TableCell>
                       <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
-                      <TableCell>{new Date(d.created_at).toLocaleDateString("fr-FR")}</TableCell>
+                      <TableCell><TransactionDate row={d} /></TableCell>
                       <TableCell>
                         <Link to={`/admin/demarche/${d.id}`} onClick={() => handleViewDemarche(d)}>
                           <Button
