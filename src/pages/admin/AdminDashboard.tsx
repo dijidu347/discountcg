@@ -12,6 +12,52 @@ import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingC
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
+
+// Fenêtre glissante utilisée par la carte Revenus et la carte Démarches 30J.
+const REVENUE_PERIOD_DAYS = 30;
+
+// Borne basse "depuis toujours" : antérieure à la première démarche en base.
+const ALL_TIME_START = "2024-01-01T00:00:00.000Z";
+
+const PARIS_TZ = "Europe/Paris";
+
+// Agrégats renvoyés par la RPC public.get_admin_revenue_totals(p_start, p_end).
+// La fonction agrège côté base : aucune ligne de paiement ni de démarche n'est
+// transférée, donc le plafond PostgREST de 1000 lignes ne peut plus tronquer les
+// totaux (c'est ce qui faisait afficher 19 120 € au lieu de 28 695 €).
+// types.ts est généré depuis la base et ne connaît pas cette fonction, d'où le
+// cast à l'appel — même approche que get_public_garage_count dans Login.tsx.
+interface RevenueTotalsRow {
+  total_service_fees: number | null;
+  total_token_revenue: number | null;
+  total_revenue: number | null;
+  total_demarches: number | null;
+}
+
+// Décalage d'un fuseau à un instant donné (gère l'heure d'été).
+function tzOffsetMs(timeZone: string, at: Date): number {
+  const asTz = new Date(at.toLocaleString("en-US", { timeZone }));
+  const asUtc = new Date(at.toLocaleString("en-US", { timeZone: "UTC" }));
+  return asTz.getTime() - asUtc.getTime();
+}
+
+// Minuit du jour courant À PARIS, exprimé en instant absolu (ISO UTC).
+// Sans cette conversion, une journée calée sur UTC ferait basculer du mauvais
+// jour toutes les démarches créées entre minuit et 1h/2h du matin.
+function startOfTodayParisISO(now: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: PARIS_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const part = (type: string) => parts.find((p) => p.type === type)?.value ?? "";
+  // Minuit parisien lu naïvement comme s'il était UTC, puis corrigé du décalage
+  // réel du fuseau à cet instant (+1 en hiver, +2 en été).
+  const naif = new Date(`${part("year")}-${part("month")}-${part("day")}T00:00:00Z`);
+  return new Date(naif.getTime() - tzOffsetMs(PARIS_TZ, naif)).toISOString();
+}
+
 export default function AdminDashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -23,9 +69,12 @@ export default function AdminDashboard() {
     demarchesATraiter: 0,
     demarchesNonVues: 0,
     totalPaiements: 0,
+    revenuDemarches: 0,
+    revenuCredits: 0,
+    revenuPeriode: 0,
     garagesAVerifier: 0,
-    demarchesToday: 0,
-    demarchesTodayTokens: 0,
+    demarches30j: 0,
+    demarchesAujourdhui: 0,
     demarchesAttenteClient: 0,
     coffreAbonnes: 0,
     coffrePaying: 0,
@@ -70,13 +119,6 @@ export default function AdminDashboard() {
       .from('garages')
       .select('id, verification_requested_at, is_verified, verification_admin_viewed');
 
-    // Count total demarches NON-BROUILLON (aligné sur la page liste qui exclut
-    // is_draft = true). Count SQL exact, sans plafond 1000 lignes.
-    const { count: totalDemarchesCount } = await supabase
-      .from('demarches')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_draft', false);
-
     // "À traiter" : count SQL exact, filtres appliqués CÔTÉ BASE via la source
     // unique de vérité partagée avec la page liste. Aucune ligne transférée,
     // donc aucun échantillonnage/troncature à 1000 lignes.
@@ -91,39 +133,61 @@ export default function AdminDashboard() {
       supabase.from('demarches').select('*', { count: 'exact', head: true }),
     ).not('admin_viewed', 'is', true);
 
-    const { data: demarches } = await supabase
+    // Démarches en attente de paiement client : count SQL exact (head), donc
+    // insensible au plafond de 1000 lignes. Ce compteur venait auparavant d'un
+    // filtre JS sur un `select` tronqué : la bannière pouvait rester masquée
+    // alors que des dossiers attendaient.
+    const { count: demarchesAttenteClientCount } = await supabase
       .from('demarches')
-      .select('status, montant_ttc, is_draft, paye, is_free_token, admin_viewed, paid_with_tokens, created_at');
+      .select('*', { count: 'exact', head: true })
+      .eq('is_draft', false)
+      .eq('status', 'en_attente_paiement_client');
 
-    // Démarches payées aujourd'hui (paiement Stripe/carte + jetons)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayISO = today.toISOString();
-    const demarchesTodayPaid = demarches?.filter(d =>
-      d.created_at >= todayISO && d.paye === true && !d.is_free_token
-    ) || [];
-    const demarchesTodayTokens = demarches?.filter(d =>
-      d.created_at >= todayISO && (d.paid_with_tokens === true || d.is_free_token === true)
-    ) || [];
+    // Revenus et volumes : trois appels à la RPC d'agrégation, sur trois
+    // fenêtres. Remplace le calcul JS qui rapatriait toutes les lignes de
+    // `paiements` et `token_purchases` pour les sommer côté client — sans
+    // `.range()`, PostgREST plafonnait ces requêtes à 1000 lignes et le total
+    // était calculé sur un échantillon tronqué.
+    // Les trois fenêtres passent par la MÊME fonction : les chiffres affichés
+    // côte à côte (30 jours vs aujourd'hui) partagent donc exactement le même
+    // périmètre de calcul, ce qu'un count maison ne garantirait pas.
+    const nowISO = new Date().toISOString();
+    const periodStartISO = new Date(
+      Date.now() - REVENUE_PERIOD_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const todayStartISO = startOfTodayParisISO();
 
-    // Fetch paiements with demarche info to calculate real revenue
-    const { data: paiementsWithDemarches } = await supabase
-      .from('paiements')
-      .select(`
-        montant, 
-        status,
-        demarches!inner(
-          paid_with_tokens, 
-          is_free_token, 
-          frais_dossier,
-          type
-        )
-      `);
+    const callRevenueTotals = async (
+      startISO: string,
+      endISO: string,
+    ): Promise<RevenueTotalsRow | null> => {
+      const { data, error } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .rpc('get_admin_revenue_totals' as any, { p_start: startISO, p_end: endISO });
 
-    // Fetch token purchases (credit purchases)
-    const { data: tokenPurchases } = await supabase
-      .from('token_purchases')
-      .select('amount');
+      if (error) {
+        console.error('get_admin_revenue_totals', { startISO, endISO }, error);
+        return null;
+      }
+      // La RPC renvoie une TABLE (tableau) ; on tolère aussi un enregistrement
+      // simple si la fonction venait à être redéfinie en RETURNS record.
+      const row = Array.isArray(data) ? data[0] : data;
+      return (row as RevenueTotalsRow | undefined) ?? null;
+    };
+
+    const [totauxGlobaux, totaux30j, totauxAujourdhui] = await Promise.all([
+      callRevenueTotals(ALL_TIME_START, nowISO),
+      callRevenueTotals(periodStartISO, nowISO),
+      callRevenueTotals(todayStartISO, nowISO),
+    ]);
+
+    if (!totauxGlobaux || !totaux30j || !totauxAujourdhui) {
+      toast({
+        title: "Statistiques indisponibles",
+        description: "Les revenus et volumes de démarches n'ont pas pu être calculés.",
+        variant: "destructive",
+      });
+    }
 
     // Fetch coffre-fort subscriptions
     const { data: coffreSubs } = await supabase
@@ -131,45 +195,25 @@ export default function AdminDashboard() {
       .select('status, payment_mode')
       .in('status', ['active', 'trialing']);
 
-    // Démarches en attente paiement client
-    const demarchesAttenteClient = demarches?.filter(d =>
-      d.status === 'en_attente_paiement_client' && d.is_draft === false
-    ) || [];
-
     // Garages à vérifier = verification_requested_at not null ET is_verified false ET pas encore vu par admin
     const garagesAVerifier = garages?.filter(g => 
       g.verification_requested_at && !g.is_verified && !g.verification_admin_viewed
     ) || [];
 
-    // Calculate total revenue: 
-    // - Only validated payments where demarche was NOT paid with tokens (free or purchased)
-    // - For CG type: count only frais_dossier (20€), for DA/DC: count montant (5€)
-    const paiementsTotal = paiementsWithDemarches?.filter(p => 
-      p.status === 'valide' && 
-      !p.demarches?.paid_with_tokens && 
-      !p.demarches?.is_free_token
-    ).reduce((sum, p) => {
-      // Pour CG : compter uniquement les frais de dossier (20€)
-      // Pour DA/DC : compter le montant du paiement (5€)
-      if (p.demarches?.type === 'CG' || p.demarches?.type === 'CG_DA' || p.demarches?.type === 'CG_IMPORT') {
-        return sum + Number(p.demarches.frais_dossier || 20);
-      }
-      return sum + Number(p.montant);
-    }, 0) || 0;
-    
-    const creditsTotal = tokenPurchases?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
-
     const coffreActive = coffreSubs || [];
     setStats({
       totalGarages: garages?.length || 0,
-      totalDemarches: totalDemarchesCount || 0,
+      totalDemarches: Number(totauxGlobaux?.total_demarches ?? 0),
       demarchesATraiter: demarchesATraiterCount || 0,
       demarchesNonVues: demarchesNonVuesCount || 0,
-      totalPaiements: paiementsTotal + creditsTotal,
+      totalPaiements: Number(totauxGlobaux?.total_revenue ?? 0),
+      revenuDemarches: Number(totauxGlobaux?.total_service_fees ?? 0),
+      revenuCredits: Number(totauxGlobaux?.total_token_revenue ?? 0),
+      revenuPeriode: Number(totaux30j?.total_revenue ?? 0),
       garagesAVerifier: garagesAVerifier.length,
-      demarchesToday: demarchesTodayPaid.length,
-      demarchesTodayTokens: demarchesTodayTokens.length,
-      demarchesAttenteClient: demarchesAttenteClient.length,
+      demarches30j: Number(totaux30j?.total_demarches ?? 0),
+      demarchesAujourdhui: Number(totauxAujourdhui?.total_demarches ?? 0),
+      demarchesAttenteClient: demarchesAttenteClientCount || 0,
       coffreAbonnes: coffreActive.length,
       coffrePaying: coffreActive.filter(s => s.status === 'active' && s.payment_mode !== 'beta').length,
       coffreStripe: coffreActive.filter(s => s.payment_mode === 'stripe').length,
@@ -348,21 +392,13 @@ export default function AdminDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>Total Démarches</CardDescription>
+              <CardDescription>Démarches 30J</CardDescription>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <CardTitle className="text-3xl">{stats.totalDemarches}</CardTitle>
+              <CardTitle className="text-3xl">{stats.demarches30j}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                {stats.demarchesToday + stats.demarchesTodayTokens > 0 ? (
-                  <>
-                    {stats.demarchesToday + stats.demarchesTodayTokens} aujourd'hui
-                    {stats.demarchesToday > 0 && <span> ({stats.demarchesToday} payée{stats.demarchesToday > 1 ? 's' : ''})</span>}
-                    {stats.demarchesTodayTokens > 0 && <span> ({stats.demarchesTodayTokens} jeton{stats.demarchesTodayTokens > 1 ? 's' : ''})</span>}
-                  </>
-                ) : (
-                  "0 démarche aujourd'hui"
-                )}
+                {stats.demarchesAujourdhui} aujourd'hui
               </p>
             </CardContent>
           </Card>
@@ -380,7 +416,17 @@ export default function AdminDashboard() {
                 Voir les statistiques détaillées →
               </Button>
             </div>
-            <CardDescription>Revenu total: {stats.totalPaiements.toFixed(2)} €</CardDescription>
+            <CardDescription>
+              <span className="block text-base font-semibold text-foreground">
+                Revenu total : {stats.totalPaiements.toFixed(2)} €
+              </span>
+              <span className="block">
+                {REVENUE_PERIOD_DAYS} derniers jours : {stats.revenuPeriode.toFixed(2)} €
+              </span>
+              <span className="block text-xs mt-1">
+                Dont démarches {stats.revenuDemarches.toFixed(2)} € · jetons {stats.revenuCredits.toFixed(2)} €
+              </span>
+            </CardDescription>
           </CardHeader>
         </Card>
 
