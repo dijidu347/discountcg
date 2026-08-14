@@ -45,6 +45,7 @@ interface GuestOrder {
   documents_complets: boolean;
   admin_viewed?: boolean | null;
   created_at: string;
+  updated_at?: string | null;
   /** Instant de l'encaissement, posé par les webhooks Stripe/Sogecommerce. */
   paid_at?: string | null;
   demarche_type?: string;
@@ -92,6 +93,20 @@ const fetchAllOrders = async (
 };
 
 const PAGE_SIZE = 50;
+
+const toTime = (value?: string | null) => (value ? new Date(value).getTime() : 0);
+
+/**
+ * Même ordre que la file « À traiter » des démarches pro (AllDemarches.tsx) :
+ * non vues d'abord, puis activité la plus récente (updated_at desc).
+ * `updated_at` est posé par le trigger `trigger_guest_orders_updated_at`.
+ */
+const parActiviteRecente = (a: GuestOrder, b: GuestOrder) => {
+  const aVue = a.admin_viewed === true;
+  const bVue = b.admin_viewed === true;
+  if (aVue !== bVue) return aVue ? 1 : -1;
+  return toTime(b.updated_at ?? b.created_at) - toTime(a.updated_at ?? a.created_at);
+};
 
 // ──────────────────────────────────────────────────────────────────────
 // Composant principal
@@ -205,9 +220,11 @@ export default function GuestOrders() {
   // ── Buckets filtrés ────────────────────────────────────────────────
   const aTraiter = useMemo(
     () =>
-      filtered.filter(
-        (o) => o.paye === true && o.status !== "finalise" && o.status !== "refuse"
-      ),
+      filtered
+        .filter(
+          (o) => o.paye === true && o.status !== "finalise" && o.status !== "refuse"
+        )
+        .sort(parActiviteRecente),
     [filtered]
   );
   const terminees = useMemo(

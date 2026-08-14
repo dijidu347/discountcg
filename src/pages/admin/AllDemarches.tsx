@@ -63,6 +63,25 @@ const fetchAllDemarches = async (
 
 const PAGE_SIZE = 50;
 
+const toTime = (value?: string | null) => (value ? new Date(value).getTime() : 0);
+
+/**
+ * Ordre de la file « À traiter » :
+ *   1. les non vues (admin_viewed false OU null) en tête ;
+ *   2. dans chaque groupe, l'activité la plus récente d'abord (updated_at desc).
+ *
+ * `updated_at` est posé par le trigger `update_demarches_updated_at` à CHAQUE
+ * UPDATE de la ligne. L'ajout d'un document par le client (DocumentUpload.tsx,
+ * qui repasse admin_viewed à false) le remet donc à now() : la démarche
+ * redevient non vue ET remonte en tête. Fallback created_at si updated_at manque.
+ */
+const parActiviteRecente = (a: any, b: any) => {
+  const aVue = a.admin_viewed === true;
+  const bVue = b.admin_viewed === true;
+  if (aVue !== bVue) return aVue ? 1 : -1;
+  return toTime(b.updated_at ?? b.created_at) - toTime(a.updated_at ?? a.created_at);
+};
+
 // ──────────────────────────────────────────────────────────────────────
 // Composant principal
 // ──────────────────────────────────────────────────────────────────────
@@ -184,7 +203,12 @@ export default function AllDemarches() {
   // ── Buckets filtrés ────────────────────────────────────────────────
   // Source unique de vérité : prédicat partagé isATraiter (identique au count
   // SQL du tableau de bord). `filtered` est déjà non-brouillon (is_draft=false).
-  const aTraiter = useMemo(() => filtered.filter(isATraiter), [filtered]);
+  // `.filter()` renvoie déjà un nouveau tableau : le `.sort()` ne mute ni
+  // `filtered` ni `demarches` (les autres sections gardent leur ordre).
+  const aTraiter = useMemo(
+    () => filtered.filter(isATraiter).sort(parActiviteRecente),
+    [filtered]
+  );
   const attenteClient = useMemo(
     () => filtered.filter((d) => d.status === "en_attente_paiement_client"),
     [filtered]
