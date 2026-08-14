@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Eye, Pencil, ShieldCheck, Coins } from "lucide-react";
-import { DocumentViewer } from "@/components/DocumentViewer";
+import { ArrowLeft, Pencil, ShieldCheck, Coins } from "lucide-react";
 import { StatusPill } from "@/components/StatusPill";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import {
@@ -16,24 +15,57 @@ import {
   EDITABLE_GARAGE_FIELDS,
   GARAGE_FIELD_LABELS,
 } from "@/components/admin/GarageEditDialog";
+import { GarageVerificationPanel } from "@/components/admin/GarageVerificationPanel";
 
-interface RequiredDocument {
-  id: string;
-  code: string;
-  nom_document: string;
-  description: string;
-  obligatoire: boolean;
-  ordre: number;
-  actif: boolean;
-}
-
-/** Nombre de démarches récentes affichées. Appliqué CÔTÉ BASE via .limit(). */
+/** Nombre de démarches récentes listées. Appliqué CÔTÉ BASE via .limit(). */
 const RECENT_DEMARCHES_LIMIT = 20;
 
-const docStatusBadge = (status: string) => {
-  if (status === "approved") return { variant: "default" as const, className: "bg-green-500", label: "Approuvé" };
-  if (status === "rejected") return { variant: "destructive" as const, className: "", label: "Refusé" };
-  return { variant: "secondary" as const, className: "", label: "En attente" };
+/**
+ * Statuts considérés comme "en cours". Aligné sur la demande métier ; les
+ * démarches finalisées et refusées ont leurs propres compteurs.
+ */
+const STATUTS_EN_COURS = [
+  "en_saisie",
+  "en_attente",
+  "paye",
+  "en_attente_paiement_client",
+] as const;
+
+interface DemarcheStats {
+  total: number;
+  realisees: number;
+  enCours: number;
+  refusees: number;
+}
+
+/**
+ * Compteurs de démarches du garage.
+ *
+ * `count: "exact", head: true` demande à PostgREST un COUNT(*) SQL et NE
+ * RAPATRIE AUCUNE LIGNE (`head` = requête HEAD, corps vide). Le compte porte
+ * donc sur la TOTALITÉ des démarches du garage : ni plafond de 1000 lignes, ni
+ * filtrage JS sur un échantillon tronqué.
+ */
+const fetchDemarcheStats = async (garageId: string): Promise<DemarcheStats> => {
+  const base = () =>
+    supabase
+      .from("demarches")
+      .select("id", { count: "exact", head: true })
+      .eq("garage_id", garageId);
+
+  const [total, realisees, enCours, refusees] = await Promise.all([
+    base(),
+    base().eq("status", "finalise"),
+    base().in("status", STATUTS_EN_COURS),
+    base().eq("status", "refuse"),
+  ]);
+
+  return {
+    total: total.count ?? 0,
+    realisees: realisees.count ?? 0,
+    enCours: enCours.count ?? 0,
+    refusees: refusees.count ?? 0,
+  };
 };
 
 export default function GarageDetail() {
@@ -44,10 +76,8 @@ export default function GarageDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [garage, setGarage] = useState<any>(null);
-  const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
-  const [verificationDocs, setVerificationDocs] = useState<any[]>([]);
+  const [stats, setStats] = useState<DemarcheStats | null>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
-  const [viewerDoc, setViewerDoc] = useState<any>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
@@ -93,21 +123,22 @@ export default function GarageDetail() {
     }
     setGarage(garageData);
 
-    // Catalogue global des documents exigés (aucun garage_id : il est commun
-    // à tous les garages), puis les fichiers réellement déposés par CE garage.
-    // L'affichage croise les deux, exactement comme "Gérer les garages".
-    const [{ data: reqDocs }, { data: docs }, { data: recentes }] = await Promise.all([
-      supabase
-        .from("garage_verification_required_documents")
-        .select("*")
-        .order("ordre", { ascending: true }),
-      supabase
-        .from("verification_documents")
-        .select("*")
-        .eq("garage_id", id)
-        .order("created_at", { ascending: false }),
+    // Marque la demande de vérification comme vue. Ce marquage était déclenché
+    // par le bouton "Documents" de la liste ; c'est lui qui fait passer le
+    // garage de la section "À vérifier" à "En attente". Il doit donc suivre le
+    // bouton, sinon un garage resterait indéfiniment dans "À vérifier".
+    if (garageData.verification_requested_at && !garageData.verification_admin_viewed) {
+      await supabase
+        .from("garages")
+        .update({ verification_admin_viewed: true })
+        .eq("id", id);
+      setGarage((prev: any) => ({ ...prev, verification_admin_viewed: true }));
+    }
+
+    const [statsData, { data: recentes }] = await Promise.all([
+      fetchDemarcheStats(id),
       // Tri ET limite CÔTÉ BASE : on ne rapatrie que 20 lignes, jamais la table
-      // entière. Aucun risque de buter sur le plafond de 1000 lignes de PostgREST.
+      // entière. Aucun risque de buter sur le plafond de 1000 lignes.
       supabase
         .from("demarches")
         .select("id, numero_demarche, immatriculation, status, created_at, is_draft")
@@ -116,14 +147,10 @@ export default function GarageDetail() {
         .limit(RECENT_DEMARCHES_LIMIT),
     ]);
 
-    setRequiredDocs(reqDocs || []);
-    setVerificationDocs(docs || []);
+    setStats(statsData);
     setDemarches(recentes || []);
     setLoading(false);
   };
-
-  const getDocumentsByType = (docType: string) =>
-    verificationDocs.filter((d) => d.document_type === docType);
 
   if (authLoading || loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
@@ -176,6 +203,37 @@ export default function GarageDetail() {
           </Button>
         </div>
 
+        {/* Solde de jetons — mis en évidence */}
+        <Card className="p-6 mb-6 border-2 border-primary/30 bg-primary/5">
+          <div className="flex items-center gap-4">
+            <Coins className="h-10 w-10 text-primary shrink-0" />
+            <div>
+              <p className="text-sm text-muted-foreground">Solde de jetons</p>
+              <p className="text-3xl font-bold text-primary">{garage.token_balance ?? 0} €</p>
+            </div>
+          </div>
+        </Card>
+
+        {/* Statistiques démarches — compteurs COUNT SQL sur la totalité */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">Total démarches</p>
+            <p className="text-2xl font-bold">{stats?.total ?? 0}</p>
+          </Card>
+          <Card className="p-4 border-green-500/30 bg-green-50/30 dark:bg-green-950/10">
+            <p className="text-sm text-muted-foreground">Réalisées</p>
+            <p className="text-2xl font-bold text-green-600">{stats?.realisees ?? 0}</p>
+          </Card>
+          <Card className="p-4 border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/10">
+            <p className="text-sm text-muted-foreground">En cours</p>
+            <p className="text-2xl font-bold text-amber-600">{stats?.enCours ?? 0}</p>
+          </Card>
+          <Card className="p-4 border-red-500/30 bg-red-50/30 dark:bg-red-950/10">
+            <p className="text-sm text-muted-foreground">Refusées</p>
+            <p className="text-2xl font-bold text-red-600">{stats?.refusees ?? 0}</p>
+          </Card>
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-6 mb-6">
           {/* Coordonnées — éditables via le dialogue partagé */}
           <Card className="p-6">
@@ -190,16 +248,13 @@ export default function GarageDetail() {
             </dl>
           </Card>
 
-          {/* Infos compte — LECTURE SEULE, aucune de ces valeurs n'est éditable ici */}
+          {/* Infos compte — LECTURE SEULE */}
           <Card className="p-6">
             <h2 className="text-lg font-semibold mb-4">Compte</h2>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Solde de jetons</dt>
-                <dd className="font-medium flex items-center gap-1">
-                  <Coins className="h-4 w-4 text-muted-foreground" />
-                  {garage.token_balance ?? 0}
-                </dd>
+                <dd className="font-bold">{garage.token_balance ?? 0} €</dd>
               </div>
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Vérifié</dt>
@@ -241,111 +296,26 @@ export default function GarageDetail() {
               </div>
             </dl>
             <p className="text-xs text-muted-foreground mt-4 pt-3 border-t">
-              Ces informations sont en lecture seule. Elles se pilotent depuis les actions
-              dédiées de l'écran « Gérer les garages ».
+              Lecture seule. La vérification et le solde de jetons se pilotent depuis le
+              bloc « Vérification » ci-dessous.
             </p>
           </Card>
         </div>
 
-        {/* Documents de vérification : catalogue requis × fichiers déposés */}
-        <Card className="p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold">Documents de vérification</h2>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate("/admin/manage-garages")}
-            >
-              Gérer la vérification
-            </Button>
-          </div>
-
-          {requiredDocs.filter((d) => d.actif).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun document requis configuré.</p>
-          ) : (
-            <div className="space-y-4">
-              {requiredDocs
-                .filter((d) => d.actif)
-                .map((reqDoc) => {
-                  const docs = getDocumentsByType(reqDoc.code);
-                  const latestDoc = docs[0];
-                  const badge = latestDoc ? docStatusBadge(latestDoc.status) : null;
-
-                  return (
-                    <Card key={reqDoc.id} className="p-4">
-                      <div className="flex items-center justify-between mb-3 gap-4">
-                        <div>
-                          <h3 className="font-medium flex items-center gap-2">
-                            {reqDoc.nom_document}
-                            {reqDoc.obligatoire ? (
-                              <Badge variant="outline" className="text-xs">Obligatoire</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-xs">Optionnel</Badge>
-                            )}
-                          </h3>
-                          {reqDoc.description && (
-                            <p className="text-sm text-muted-foreground">{reqDoc.description}</p>
-                          )}
-                        </div>
-                        {badge && (
-                          <Badge variant={badge.variant} className={badge.className}>
-                            {badge.label}
-                          </Badge>
-                        )}
-                      </div>
-
-                      {docs.length === 0 ? (
-                        <p className="text-sm text-muted-foreground italic">
-                          Aucun document soumis
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {docs.map((doc) => (
-                            <div
-                              key={doc.id}
-                              className={`flex items-center justify-between p-2 rounded border ${
-                                doc.status === "rejected"
-                                  ? "bg-red-50 border-red-200 dark:bg-red-950/20"
-                                  : doc.status === "approved"
-                                  ? "bg-green-50 border-green-200 dark:bg-green-950/20"
-                                  : "bg-muted/50"
-                              }`}
-                            >
-                              <div>
-                                <p className="text-sm font-medium">{doc.nom_fichier}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {formatDateTimeParis(doc.created_at) ?? "—"}
-                                </p>
-                                {doc.rejection_reason && (
-                                  <p className="text-xs text-destructive mt-1">
-                                    Refus : {doc.rejection_reason}
-                                  </p>
-                                )}
-                              </div>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setViewerDoc(doc)}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </Card>
-                  );
-                })}
-            </div>
-          )}
-        </Card>
+        {/* Documents, vérification, notifications et jetons */}
+        <div className="mb-6">
+          <GarageVerificationPanel
+            garage={garage}
+            onGarageChanged={(patch) => setGarage((prev: any) => ({ ...prev, ...patch }))}
+          />
+        </div>
 
         {/* Démarches récentes */}
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Démarches récentes</h2>
             <Badge variant="outline">
-              {demarches.length} dernière{demarches.length > 1 ? "s" : ""}
+              {demarches.length} sur {stats?.total ?? 0}
             </Badge>
           </div>
 
@@ -396,14 +366,6 @@ export default function GarageDetail() {
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
         onSaved={(updated) => setGarage((prev: any) => ({ ...prev, ...updated }))}
-      />
-
-      <DocumentViewer
-        isOpen={!!viewerDoc}
-        onClose={() => setViewerDoc(null)}
-        documentUrl={viewerDoc?.url || ""}
-        documentName={viewerDoc?.nom_fichier || ""}
-        documentType={viewerDoc?.document_type || ""}
       />
     </div>
   );
