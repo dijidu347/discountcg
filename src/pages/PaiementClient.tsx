@@ -45,8 +45,8 @@ const StripeCardForm = ({
 
       if (paymentIntent?.status === "succeeded") {
         toast({
-          title: "Paiement accepte !",
-          description: "Votre paiement a ete valide avec succes.",
+          title: "Paiement accepté !",
+          description: "Votre paiement a été validé avec succès.",
           variant: "success" as any,
         });
         onSuccess();
@@ -54,8 +54,8 @@ const StripeCardForm = ({
     } catch (error: any) {
       console.error("Payment error:", error);
       toast({
-        title: "Paiement refuse",
-        description: error.message || "Votre paiement n'a pas pu etre traite. Veuillez reessayer.",
+        title: "Paiement refusé",
+        description: error.message || "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
         variant: "destructive",
       });
     } finally {
@@ -217,7 +217,7 @@ const PaiementClient = () => {
       // 5. Load Stripe 2 (client payments always use Stripe 2 for carte grise fees)
       const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
       if (keyError || !keyData?.publishableKey) {
-        throw new Error("Impossible de charger le systeme de paiement");
+        throw new Error("Impossible de charger le système de paiement");
       }
       const stripeKey = keyData.publishableKey2 || keyData.publishableKey;
       console.log('Client payment: using Stripe 2');
@@ -231,7 +231,7 @@ const PaiementClient = () => {
       );
 
       if (paymentError || !paymentData?.clientSecret) {
-        throw new Error("Impossible de creer le paiement");
+        throw new Error("Impossible de créer le paiement");
       }
 
       setClientSecret(paymentData.clientSecret);
@@ -286,9 +286,9 @@ const PaiementClient = () => {
             <div className="w-16 h-16 rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto flex items-center justify-center">
               <AlertTriangle className="w-8 h-8 text-amber-600" />
             </div>
-            <h1 className="text-2xl font-bold">Lien de paiement expire</h1>
+            <h1 className="text-2xl font-bold">Lien de paiement expiré</h1>
             <p className="text-muted-foreground">
-              Ce lien de paiement a expire. Veuillez contacter votre professionnel automobile pour obtenir un nouveau lien.
+              Ce lien de paiement a expiré. Veuillez contacter votre professionnel automobile pour obtenir un nouveau lien.
             </p>
           </div>
         </div>
@@ -306,9 +306,9 @@ const PaiementClient = () => {
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mx-auto flex items-center justify-center">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold">Paiement deja effectue</h1>
+            <h1 className="text-2xl font-bold">Paiement déjà effectué</h1>
             <p className="text-muted-foreground">
-              Le paiement pour cette demarche a deja ete effectue. Aucune action supplementaire n'est requise.
+              Le paiement pour cette démarche a déjà été effectué. Aucune action supplémentaire n'est requise.
             </p>
           </div>
         </div>
@@ -344,9 +344,9 @@ const PaiementClient = () => {
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 mx-auto flex items-center justify-center">
               <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-            <h1 className="text-2xl font-bold">Paiement confirme !</h1>
+            <h1 className="text-2xl font-bold">Paiement confirmé !</h1>
             <p className="text-muted-foreground">
-              Votre paiement a ete effectue avec succes. Votre demarche de carte grise est maintenant en cours de traitement.
+              Votre paiement a été effectué avec succès. Votre démarche de carte grise est maintenant en cours de traitement.
             </p>
             <Card className="text-left">
               <CardContent className="pt-6 space-y-2 text-sm">
@@ -355,13 +355,13 @@ const PaiementClient = () => {
                   <span className="font-medium">{demarche?.immatriculation}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Montant paye</span>
+                  <span className="text-muted-foreground">Montant payé</span>
                   <span className="font-bold text-primary">{formatPrice(calculateTotal(demarche))} EUR</span>
                 </div>
               </CardContent>
             </Card>
             <p className="text-xs text-muted-foreground">
-              Un email de confirmation vous sera envoye sous peu.
+              Un email de confirmation vous sera envoyé sous peu.
             </p>
           </div>
         </div>
@@ -397,7 +397,7 @@ const PaiementClient = () => {
         <div className="text-center mb-8 space-y-2">
           <h1 className="text-3xl md:text-4xl font-bold">Paiement de votre carte grise</h1>
           <p className="text-muted-foreground text-lg">
-            Finalisez le paiement de votre demarche en toute securite
+            Finalisez le paiement de votre démarche en toute sécurité
           </p>
         </div>
 
@@ -407,7 +407,7 @@ const PaiementClient = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Choisissez votre moyen de paiement</CardTitle>
-                <CardDescription>Tous les paiements sont securises et cryptes</CardDescription>
+                <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {USE_SOGECOMMERCE ? (
@@ -424,7 +424,7 @@ const PaiementClient = () => {
 
                 <p className="text-xs text-muted-foreground text-center pt-2">
                   <ShieldCheck className="w-3 h-3 inline mr-1" />
-                  Tous les paiements sont securises et cryptes
+                  Tous les paiements sont sécurisés et cryptés
                 </p>
               </CardContent>
             </Card>
@@ -434,7 +434,7 @@ const PaiementClient = () => {
           <div className="space-y-4">
             <Card className="border-2 border-primary/20 sticky top-4">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl">Recapitulatif</CardTitle>
+                <CardTitle className="text-xl">Récapitulatif</CardTitle>
                 {garageName && (
                   <CardDescription>
                     <Car className="w-4 h-4 inline mr-1" />
@@ -449,7 +449,7 @@ const PaiementClient = () => {
                     <span className="font-medium">{demarche.immatriculation}</span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground">Type de demarche</span>
+                    <span className="text-muted-foreground">Type de démarche</span>
                     <span className="font-medium">{demarche.type}</span>
                   </div>
                 </div>
@@ -485,7 +485,7 @@ const PaiementClient = () => {
 
                 <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground pt-2 border-t">
                   <CreditCard className="w-3 h-3" />
-                  <span>Paiement 100% securise</span>
+                  <span>Paiement 100% sécurisé</span>
                 </div>
               </CardContent>
             </Card>
