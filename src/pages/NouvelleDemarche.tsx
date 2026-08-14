@@ -97,6 +97,11 @@ export default function NouvelleDemarche() {
   const [conditionalDocuments, setConditionalDocuments] = useState<any[]>([]);
   const demarcheIdRef = useRef<string | null>(null);
   const paymentCompletedRef = useRef(false);
+  // Marque/modèle déjà obtenus par le formulaire véhicule pour la plaque en
+  // cours. VehicleFormCG appelle l'API plaque (payante) pour calculer la taxe :
+  // ce qu'il en rapporte est conservé ici pour ne pas la rappeler une seconde
+  // fois sur la même plaque. Réinitialisé dès que la plaque change.
+  const vehiculeConnuRef = useRef<{ plate: string; marque: string | null; modele: string | null } | null>(null);
   const [formData, setFormData] = useState({
     type: searchParams.get('type') || "",
     commentaire: ""
@@ -353,17 +358,39 @@ export default function NouvelleDemarche() {
     }
   };
 
-  // Enrichit la démarche avec marque/modèle récupérés via l'API plaque.
+  // Enrichit la démarche avec marque/modèle.
   // Fire-and-forget : ne doit JAMAIS bloquer ni faire échouer la création,
   // et ne ralentit pas la navigation (pas de await côté appelant).
-  const enrichDemarcheWithVehicle = (newDemarcheId: string, plate: string) => {
+  //
+  // L'API plaque n'est appelée QUE si marque et modèle sont réellement inconnus.
+  // Quand le formulaire véhicule les a déjà rapportés (VehicleFormCG les obtient
+  // en calculant la taxe, VehicleForm les lit dans la table vehicules), ils
+  // arrivent ici via `connu` et sont écrits directement : l'appel payant à
+  // vehicle-lookup pour une plaque déjà interrogée quelques secondes plus tôt
+  // disparaît.
+  const enrichDemarcheWithVehicle = (
+    newDemarcheId: string,
+    plate: string,
+    connu?: { plate: string; marque: string | null; modele: string | null } | null
+  ) => {
     if (!plate || plate === 'TEMP') return;
+
+    const dejaConnu =
+      connu && connu.plate === plate && (connu.marque || connu.modele) ? connu : null;
+
     void (async () => {
       try {
-        const res = await getVehicleByPlate(plate);
-        const marque = res?.data?.marque;
-        const modele = res?.data?.modele;
-        if (res?.success && (marque || modele)) {
+        let marque: string | null | undefined = dejaConnu?.marque;
+        let modele: string | null | undefined = dejaConnu?.modele;
+
+        if (!dejaConnu) {
+          const res = await getVehicleByPlate(plate);
+          if (!res?.success) return;
+          marque = res?.data?.marque;
+          modele = res?.data?.modele;
+        }
+
+        if (marque || modele) {
           await supabase
             .from('demarches')
             .update({ marque: marque ?? null, modele: modele ?? null } as any)
@@ -456,14 +483,14 @@ export default function NouvelleDemarche() {
           .single();
         if (!retryError && retryData) {
           setDemarcheId(retryData.id);
-          enrichDemarcheWithVehicle(retryData.id, selectedImmatriculation);
+          enrichDemarcheWithVehicle(retryData.id, selectedImmatriculation, vehiculeConnuRef.current);
         } else {
           console.error("Retry also failed:", retryError);
         }
       }
     } else if (data) {
       setDemarcheId(data.id);
-      enrichDemarcheWithVehicle(data.id, selectedImmatriculation);
+      enrichDemarcheWithVehicle(data.id, selectedImmatriculation, vehiculeConnuRef.current);
     }
   };
 
@@ -474,17 +501,34 @@ export default function NouvelleDemarche() {
     setSelectedVehicleId(realVehicleId);
     setSelectedImmatriculation(immatriculation);
 
+    // Le 3e argument porte les données que le formulaire a DÉJÀ obtenues pour
+    // cette plaque (VehicleFormCG les tient de l'appel API fait pour la taxe ;
+    // VehicleForm les tient de la table vehicules). On les mémorise pour la
+    // création du brouillon, qui peut survenir après cette sélection.
+    const marque: string | null = vehicleData?.marque ?? null;
+    const modele: string | null = vehicleData?.modele ?? null;
+    vehiculeConnuRef.current =
+      immatriculation && (marque || modele) ? { plate: immatriculation, marque, modele } : null;
+
     // Update the draft demarche immatriculation in DB if it exists
     if (demarcheId && immatriculation) {
       const updatePayload: any = { immatriculation };
       if (realVehicleId) updatePayload.vehicule_id = realVehicleId;
+      // Marque/modèle déjà connus : écrits dans le MÊME update, et aucun appel
+      // à l'API plaque. Sinon seulement, on retombe sur l'enrichissement.
+      if (marque) updatePayload.marque = marque;
+      if (modele) updatePayload.modele = modele;
+
       await supabase
         .from('demarches')
         .update(updatePayload)
         .eq('id', demarcheId);
-      // Enrichit marque/modèle maintenant que la vraie plaque est connue
-      // (fire-and-forget ; ignore TEMP/plaque vide en interne)
-      enrichDemarcheWithVehicle(demarcheId, immatriculation);
+
+      if (!marque && !modele) {
+        // Rien de connu : enrichissement via l'API plaque
+        // (fire-and-forget ; ignore TEMP/plaque vide en interne)
+        enrichDemarcheWithVehicle(demarcheId, immatriculation);
+      }
     }
   };
 
