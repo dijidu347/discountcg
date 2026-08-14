@@ -78,6 +78,48 @@ export const passwordChangeSchema = z.object({
   path: ["confirmPassword"],
 });
 
+// Garage profile validation schema — édition des coordonnées côté admin.
+// TOUS ces champs sont NOT NULL en base (migration 20251107143723) : le
+// formulaire ne doit jamais pouvoir envoyer une chaîne vide, sans quoi Postgres
+// renvoie une violation NOT NULL brute.
+// La règle SIRET reprend celle de CompleteProfile.tsx (14 chiffres, espaces
+// tolérés à la saisie puis retirés) ; email et téléphone reprennent celles de
+// contactSchema ci-dessus.
+export const garageSchema = z.object({
+  raison_sociale: z.string()
+    .trim()
+    .min(1, { message: "La raison sociale est obligatoire" })
+    .max(200, { message: "La raison sociale ne peut pas dépasser 200 caractères" }),
+  siret: z.string()
+    .transform(val => val.replace(/\s/g, ''))
+    .refine(val => /^\d{14}$/.test(val), {
+      message: "Le numéro SIRET doit contenir exactement 14 chiffres",
+    }),
+  adresse: z.string()
+    .trim()
+    .min(1, { message: "L'adresse est obligatoire" })
+    .max(255, { message: "L'adresse ne peut pas dépasser 255 caractères" }),
+  code_postal: z.string()
+    .trim()
+    .min(1, { message: "Le code postal est obligatoire" })
+    .max(10, { message: "Code postal invalide" }),
+  ville: z.string()
+    .trim()
+    .min(1, { message: "La ville est obligatoire" })
+    .max(100, { message: "La ville ne peut pas dépasser 100 caractères" }),
+  telephone: z.string()
+    .trim()
+    .min(1, { message: "Le téléphone est obligatoire" })
+    .max(20, { message: "Numéro de téléphone trop long" })
+    .regex(/^[0-9+\s()-]+$/, { message: "Format de téléphone invalide" }),
+  email: z.string()
+    .trim()
+    .min(1, { message: "L'email est obligatoire" })
+    .email({ message: "Email invalide" })
+    .max(255, { message: "L'email ne peut pas dépasser 255 caractères" }),
+});
+
 export type VehicleFormData = z.infer<typeof vehicleSchema>;
+export type GarageFormData = z.infer<typeof garageSchema>;
 export type ContactFormData = z.infer<typeof contactSchema>;
 export type PasswordChangeFormData = z.infer<typeof passwordChangeSchema>;
