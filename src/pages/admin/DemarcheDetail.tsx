@@ -13,7 +13,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check } from "lucide-react";
+import { formatDateTimeParis } from "@/lib/dateFormat";
+import { SITE_URL } from "@/lib/siteUrl";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, downloadPrivateFileFromUrl, StorageBucket } from "@/lib/storage-utils";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
@@ -158,6 +160,23 @@ function RejectWithPaymentDialog({
   );
 }
 
+/**
+ * État du lien de paiement client, à n'appeler QUE lorsque
+ * `client_payment_token_expires_at` est non nul (voir le commentaire de la
+ * section dans le rendu).
+ *
+ * "paid" prime sur "expired" : un lien expiré mais déjà réglé n'est pas un lien
+ * à renvoyer, c'est une démarche payée.
+ */
+const clientPaymentLinkState = (d: any): "paid" | "expired" | "active" => {
+  if (d.client_paid || d.paye) return "paid";
+  const expiresAt = new Date(d.client_payment_token_expires_at);
+  if (!Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() < Date.now()) {
+    return "expired";
+  }
+  return "active";
+};
+
 export default function DemarcheDetail() {
   const { id } = useParams();
   const { user, loading: authLoading } = useAuth();
@@ -189,6 +208,7 @@ export default function DemarcheDetail() {
   const [selectedDocs, setSelectedDocs] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [documentPreviews, setDocumentPreviews] = useState<Record<string, string>>({});
+  const [paymentLinkCopied, setPaymentLinkCopied] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -840,6 +860,22 @@ export default function DemarcheDetail() {
   if (!isAdmin || !demarche) {
     return null;
   }
+
+  // Lien de paiement client (voir le commentaire de la section dans le rendu).
+  const clientPaymentUrl = `${SITE_URL}/paiement-client/${demarche.client_payment_token}`;
+  const clientPaymentState = demarche.client_payment_token_expires_at
+    ? clientPaymentLinkState(demarche)
+    : null;
+
+  const handleCopyPaymentLink = async () => {
+    await navigator.clipboard.writeText(clientPaymentUrl);
+    setPaymentLinkCopied(true);
+    setTimeout(() => setPaymentLinkCopied(false), 2000);
+    toast({
+      title: "Lien copié !",
+      description: "Le lien a été copié dans le presse-papier",
+    });
+  };
 
   // Détail du calcul carte grise depuis le snapshot persisté (null si absent).
   const carteGriseDetail = carteGriseDetailFromColumns({
@@ -1522,6 +1558,66 @@ export default function DemarcheDetail() {
                   )}
                   {demarche.client_email && (
                     <p className="text-muted-foreground">{demarche.client_email}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Lien de paiement client.
+                N'APPARAÎT QUE si client_payment_token_expires_at est non nul :
+                c'est le seul témoin fiable d'un lien réellement émis. La colonne
+                client_payment_token a un DEFAULT gen_random_uuid()
+                (migration 20260311220117_add_split_payment_system.sql:8), elle est
+                donc renseignée sur quasiment toutes les démarches, y compris celles
+                qui n'ont jamais reçu de lien — l'afficher produirait un faux lien
+                menant nulle part. L'expiration, elle, n'est écrite que par
+                create-client-payment-link (index.ts:123-124), dans le même UPDATE
+                que le token envoyé.
+                Le payment_mode n'entre PAS dans la condition : il décrit qui paie,
+                pas le fait qu'un lien ait été émis. */}
+            {clientPaymentState && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Lien de paiement client</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  {clientPaymentState === "paid" ? (
+                    <>
+                      <Badge className="bg-green-500 text-white">Payé</Badge>
+                      {demarche.client_paid_at && (
+                        <p className="text-xs text-muted-foreground">
+                          Réglé le {formatDateTimeParis(demarche.client_paid_at)}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {clientPaymentState === "expired" && (
+                        <Badge variant="destructive">Lien expiré</Badge>
+                      )}
+                      <div className="flex items-start gap-2">
+                        <code className="flex-1 break-all rounded bg-muted px-2 py-1 text-xs">
+                          {clientPaymentUrl}
+                        </code>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCopyPaymentLink}
+                          className="shrink-0"
+                        >
+                          {paymentLinkCopied ? (
+                            <Check className="h-4 w-4 mr-1" />
+                          ) : (
+                            <Copy className="h-4 w-4 mr-1" />
+                          )}
+                          {paymentLinkCopied ? "Copié" : "Copier"}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {clientPaymentState === "expired" ? "A expiré le " : "Expire le "}
+                        {formatDateTimeParis(demarche.client_payment_token_expires_at)}
+                      </p>
+                    </>
                   )}
                 </CardContent>
               </Card>
