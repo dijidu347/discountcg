@@ -37,6 +37,7 @@ const AdminDemarcheDetail = React.lazy(() => import("./pages/admin/DemarcheDetai
 const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
 const ManageActions = React.lazy(() => import("./pages/admin/ManageActions"));
 const ManageGarages = React.lazy(() => import("./pages/admin/ManageGarages"));
+const GarageDetail = React.lazy(() => import("./pages/admin/GarageDetail"));
 const ManageAccounts = React.lazy(() => import("./pages/admin/ManageAccounts"));
 const GuestOrders = React.lazy(() => import("./pages/admin/GuestOrders"));
 const GuestOrderDetail = React.lazy(() => import("./pages/admin/GuestOrderDetail"));
@@ -120,6 +121,7 @@ const App = () => (
           <Route path="/admin/actions" element={<ManageActions />} />
           <Route path="/admin/manage-users" element={<ManageUsers />} />
           <Route path="/admin/manage-garages" element={<ManageGarages />} />
+          <Route path="/admin/garages/:id" element={<GarageDetail />} />
           <Route path="/admin/manage-accounts" element={<ManageAccounts />} />
           <Route path="/admin/notifications" element={<AdminNotifications />} />
           <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />

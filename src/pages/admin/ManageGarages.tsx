@@ -9,8 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, Clock, History, Plus, AlertCircle, Upload, Coins, Pencil } from "lucide-react";
-import { garageSchema } from "@/lib/validations";
-import { getSupabaseErrorMessage } from "@/lib/error-messages";
+import { GarageEditDialog } from "@/components/admin/GarageEditDialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -58,47 +57,6 @@ interface Notification {
   sent_by: string;
 }
 
-/**
- * Champs de coordonnées éditables par l'admin. Volontairement limité : ni
- * is_verified, ni token_balance, ni is_gold, ni unlimited_free_tokens, ni
- * user_id, ni reseau — ce sont des champs métier sensibles, qui n'ont rien à
- * faire dans un formulaire de correction de coordonnées et se pilotent depuis
- * les actions dédiées de cette page.
- */
-const EDITABLE_GARAGE_FIELDS = [
-  "raison_sociale",
-  "siret",
-  "adresse",
-  "code_postal",
-  "ville",
-  "telephone",
-  "email",
-] as const;
-
-type EditableGarageField = (typeof EDITABLE_GARAGE_FIELDS)[number];
-
-type GarageEditForm = Record<EditableGarageField, string>;
-
-const EMPTY_GARAGE_FORM: GarageEditForm = {
-  raison_sociale: "",
-  siret: "",
-  adresse: "",
-  code_postal: "",
-  ville: "",
-  telephone: "",
-  email: "",
-};
-
-const GARAGE_FIELD_LABELS: Record<EditableGarageField, string> = {
-  raison_sociale: "Raison sociale",
-  siret: "SIRET",
-  adresse: "Adresse",
-  code_postal: "Code postal",
-  ville: "Ville",
-  telephone: "Téléphone",
-  email: "Email",
-};
-
 export default function ManageGarages() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -136,9 +94,6 @@ export default function ManageGarages() {
   const [uploadingDocType, setUploadingDocType] = useState<string | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editingGarage, setEditingGarage] = useState<any>(null);
-  const [editForm, setEditForm] = useState<GarageEditForm>(EMPTY_GARAGE_FORM);
-  const [editErrors, setEditErrors] = useState<Partial<Record<EditableGarageField, string>>>({});
-  const [savingGarage, setSavingGarage] = useState(false);
   const adminFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -242,106 +197,7 @@ export default function ManageGarages() {
 
   const handleOpenEdit = (garage: any) => {
     setEditingGarage(garage);
-    setEditForm({
-      raison_sociale: garage.raison_sociale ?? "",
-      siret: garage.siret ?? "",
-      adresse: garage.adresse ?? "",
-      code_postal: garage.code_postal ?? "",
-      ville: garage.ville ?? "",
-      telephone: garage.telephone ?? "",
-      email: garage.email ?? "",
-    });
-    setEditErrors({});
     setShowEditDialog(true);
-  };
-
-  const handleSaveGarage = async () => {
-    if (!editingGarage) return;
-
-    const parsed = garageSchema.safeParse(editForm);
-    if (!parsed.success) {
-      const errors: Partial<Record<EditableGarageField, string>> = {};
-      for (const issue of parsed.error.issues) {
-        const field = issue.path[0] as EditableGarageField;
-        if (field && !errors[field]) errors[field] = issue.message;
-      }
-      setEditErrors(errors);
-      return;
-    }
-
-    setEditErrors({});
-    setSavingGarage(true);
-
-    try {
-      const values = parsed.data;
-
-      // Le .select() est ce qui rend l'opération vérifiable : il renvoie la ligne
-      // TELLE QU'ELLE EST EN BASE après l'UPDATE (clause RETURNING). Sans lui, un
-      // UPDATE qui ne matche AUCUNE ligne — id introuvable, ou politique RLS qui
-      // filtre la ligne — ne lève AUCUNE erreur côté PostgREST : on afficherait un
-      // "Enregistré" mensonger sur une écriture qui n'a rien écrit.
-      const { data: updated, error } = await supabase
-        .from("garages")
-        .update(values)
-        .eq("id", editingGarage.id)
-        .select("id, raison_sociale, siret, adresse, code_postal, ville, telephone, email")
-        .maybeSingle();
-
-      if (error) {
-        toast({
-          title: "Échec de l'enregistrement",
-          description: getSupabaseErrorMessage(error),
-          variant: "destructive",
-        });
-        return;
-      }
-
-      if (!updated) {
-        toast({
-          title: "Échec de l'enregistrement",
-          description:
-            "Aucune ligne n'a été modifiée. Le garage est introuvable ou vos droits ne permettent pas cette modification. Rien n'a été enregistré.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Relecture champ par champ : on compare ce que la base a réellement
-      // persisté avec ce qu'on a soumis. Attrape le cas où l'écriture aboutit
-      // mais qu'une valeur n'a pas pris.
-      const divergents = EDITABLE_GARAGE_FIELDS.filter(
-        (field) => (updated as any)[field] !== values[field]
-      );
-
-      if (divergents.length > 0) {
-        toast({
-          title: "Enregistrement incomplet",
-          description: `La base n'a pas retenu : ${divergents
-            .map((f) => GARAGE_FIELD_LABELS[f])
-            .join(", ")}. Vérifiez la fiche avant de réessayer.`,
-          variant: "destructive",
-        });
-        await loadGarages();
-        return;
-      }
-
-      toast({
-        title: "Garage mis à jour",
-        description: `Les coordonnées de ${updated.raison_sociale} ont été enregistrées.`,
-      });
-
-      setShowEditDialog(false);
-      setEditingGarage(null);
-
-      // Rafraîchit les 3 tableaux depuis la base…
-      await loadGarages();
-      // …et la fiche ouverte dans le dialogue documents, le cas échéant.
-      setSelectedGarage((prev: any) =>
-        prev && prev.id === updated.id ? { ...prev, ...updated } : prev
-      );
-    } finally {
-      setSavingGarage(false);
-    }
   };
 
   const handleViewDocs = async (garage: any) => {
@@ -904,7 +760,11 @@ export default function ManageGarages() {
               </TableHeader>
               <TableBody>
                 {filteredAVerifier.map((garage) => (
-                  <TableRow key={garage.id} className={!garage.verification_admin_viewed ? "bg-red-50 dark:bg-red-950/20" : "bg-orange-50/50 dark:bg-orange-950/10"}>
+                  <TableRow
+                    key={garage.id}
+                    onClick={() => navigate(`/admin/garages/${garage.id}`)}
+                    className={`cursor-pointer ${!garage.verification_admin_viewed ? "bg-red-50 dark:bg-red-950/20" : "bg-orange-50/50 dark:bg-orange-950/10"}`}
+                  >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {garage.raison_sociale}
@@ -923,7 +783,7 @@ export default function ManageGarages() {
                       {new Date(garage.verification_requested_at).toLocaleDateString('fr-FR')}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" onClick={() => handleViewDocs(garage)} className="bg-orange-600 hover:bg-orange-700">
                           <Eye className="h-4 w-4 mr-2" />
                           Vérifier
@@ -964,7 +824,11 @@ export default function ManageGarages() {
               </TableHeader>
               <TableBody>
                 {filteredEnAttente.map((garage) => (
-                  <TableRow key={garage.id}>
+                  <TableRow
+                    key={garage.id}
+                    onClick={() => navigate(`/admin/garages/${garage.id}`)}
+                    className="cursor-pointer"
+                  >
                     <TableCell className="font-medium text-muted-foreground">
                       {garage.raison_sociale}
                     </TableCell>
@@ -972,7 +836,7 @@ export default function ManageGarages() {
                     <TableCell className="text-muted-foreground">{garage.email}</TableCell>
                     <TableCell className="text-muted-foreground">{garage.telephone}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" onClick={() => handleViewDocs(garage)}>
                           <Eye className="h-4 w-4 mr-2" />
                           Voir
@@ -1013,7 +877,11 @@ export default function ManageGarages() {
               </TableHeader>
               <TableBody>
                 {filteredVerifies.map((garage) => (
-                  <TableRow key={garage.id} className="bg-green-50/50 dark:bg-green-950/10">
+                  <TableRow
+                    key={garage.id}
+                    onClick={() => navigate(`/admin/garages/${garage.id}`)}
+                    className="cursor-pointer bg-green-50/50 dark:bg-green-950/10"
+                  >
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         {garage.raison_sociale}
@@ -1027,7 +895,7 @@ export default function ManageGarages() {
                     <TableCell>{garage.email}</TableCell>
                     <TableCell>{garage.telephone}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <Button size="sm" variant="outline" onClick={() => handleViewDocs(garage)}>
                           <Eye className="h-4 w-4 mr-2" />
                           Documents
@@ -1045,68 +913,21 @@ export default function ManageGarages() {
           )}
         </Card>
 
-        {/* Dialogue d'édition des coordonnées du garage */}
-        <Dialog
+        {/* Édition des coordonnées — composant partagé avec la fiche garage. */}
+        <GarageEditDialog
+          garage={editingGarage}
           open={showEditDialog}
           onOpenChange={(open) => {
             setShowEditDialog(open);
-            if (!open) {
-              setEditingGarage(null);
-              setEditErrors({});
-            }
+            if (!open) setEditingGarage(null);
           }}
-        >
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Modifier le garage</DialogTitle>
-              <DialogDescription>
-                Correction des coordonnées uniquement. La vérification, les jetons et le
-                statut Gold se gèrent depuis les actions dédiées.
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4 py-2">
-              {EDITABLE_GARAGE_FIELDS.map((field) => (
-                <div key={field}>
-                  <Label htmlFor={`garage-${field}`}>{GARAGE_FIELD_LABELS[field]}</Label>
-                  <Input
-                    id={`garage-${field}`}
-                    type={field === "email" ? "email" : "text"}
-                    value={editForm[field]}
-                    onChange={(e) =>
-                      setEditForm((prev) => ({ ...prev, [field]: e.target.value }))
-                    }
-                    className="mt-1"
-                    aria-invalid={!!editErrors[field]}
-                  />
-                  {editErrors[field] && (
-                    <p className="text-xs text-destructive mt-1">{editErrors[field]}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setShowEditDialog(false)}
-                disabled={savingGarage}
-              >
-                Annuler
-              </Button>
-              <Button onClick={handleSaveGarage} disabled={savingGarage}>
-                {savingGarage ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  "Enregistrer"
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+          onSaved={async (updated) => {
+            await loadGarages();
+            setSelectedGarage((prev: any) =>
+              prev && prev.id === updated.id ? { ...prev, ...updated } : prev
+            );
+          }}
+        />
 
         {/* Hidden file input for admin upload */}
         <input
