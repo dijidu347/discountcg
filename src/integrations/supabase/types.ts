@@ -1839,6 +1839,36 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_cache: {
+        Row: {
+          data: Json | null
+          expires_at: string
+          fetched_at: string
+          found: boolean
+          hit_count: number
+          last_hit_at: string | null
+          plate: string
+        }
+        Insert: {
+          data?: Json | null
+          expires_at: string
+          fetched_at?: string
+          found: boolean
+          hit_count?: number
+          last_hit_at?: string | null
+          plate: string
+        }
+        Update: {
+          data?: Json | null
+          expires_at?: string
+          fetched_at?: string
+          found?: boolean
+          hit_count?: number
+          last_hit_at?: string | null
+          plate?: string
+        }
+        Relationships: []
+      }
       vehicules: {
         Row: {
           carrosserie: string | null
