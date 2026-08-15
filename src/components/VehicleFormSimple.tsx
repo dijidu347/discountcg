@@ -10,7 +10,14 @@ import { getVehicleByPlate } from "@/lib/vehicle-api";
 
 interface VehicleFormSimpleProps {
   garageId: string;
-  onVehicleSelect: (vehicleId: string, immatriculation: string) => void;
+  /**
+   * 3e argument optionnel : la ligne `vehicules` correspondante, qui porte déjà
+   * marque et modèle. Le parent s'en sert pour ne PAS relancer l'API de plaque
+   * (payante) sur une immatriculation dont il connaît déjà les infos. Même
+   * contrat que VehicleForm et VehicleFormCG. Optionnel : les appelants qui
+   * n'ont rien à transmettre (bouton « Changer ») restent valides.
+   */
+  onVehicleSelect: (vehicleId: string, immatriculation: string, vehicleData?: any) => void;
   selectedVehicleId?: string | null;
 }
 
@@ -183,7 +190,10 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       await loadVehicles();
       
       if (data) {
-        onVehicleSelect(data.id, data.immatriculation);
+        // `data` vient de l'upsert et porte marque/modèle déjà obtenus par
+        // getVehicleByPlate ci-dessus : les transmettre évite au parent de
+        // relancer l'API de plaque sur la même immatriculation.
+        onVehicleSelect(data.id, data.immatriculation, data);
       }
     } catch (error: any) {
       console.error("Erreur:", error);
@@ -236,7 +246,9 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       await loadVehicles();
       
       if (data) {
-        onVehicleSelect(data.id, data.immatriculation);
+        // Saisie manuelle : marque/modèle peuvent être nuls. Le parent retombe
+        // alors sur l'enrichissement API, ce qui est le comportement voulu.
+        onVehicleSelect(data.id, data.immatriculation, data);
       }
     } catch (error: any) {
       console.error("Erreur:", error);
@@ -261,7 +273,9 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
   const handleVehicleSelect = (vehicleId: string) => {
     const vehicle = vehicles.find(v => v.id === vehicleId);
     if (vehicle) {
-      onVehicleSelect(vehicle.id, vehicle.immatriculation);
+      // Véhicule déjà en base : ses marque/modèle suffisent, aucun appel API
+      // n'est nécessaire côté parent.
+      onVehicleSelect(vehicle.id, vehicle.immatriculation, vehicle);
     }
   };
 
