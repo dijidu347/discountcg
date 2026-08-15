@@ -199,14 +199,17 @@ async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: n
   if (!admin) return;
   try {
     const now = new Date();
+    // On n'inclut pas hit_count ni last_hit_at dans le payload:
+    //  - à l'insertion (nouvelle plaque), ils prennent leurs valeurs par défaut (0 / null);
+    //  - en cas de conflit (rafraîchissement forcé d'une plaque déjà en cache),
+    //    PostgREST ne met à jour que les colonnes présentes dans le payload,
+    //    donc hit_count et last_hit_at sont préservés.
     const { error } = await admin.from('vehicle_cache').upsert({
       plate,
       found,
       data,
       fetched_at: now.toISOString(),
       expires_at: new Date(now.getTime() + ttlMs).toISOString(),
-      hit_count: 0,
-      last_hit_at: null,
     }, { onConflict: 'plate' });
     if (error) throw error;
   } catch (e) {
