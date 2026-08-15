@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,36 +9,112 @@ const corsHeaders = {
 const RAPIDAPI_KEY = Deno.env.get('RAPIDAPI_KEY');
 const RAPIDAPI_HOST = 'api-de-plaque-d-immatriculation-france.p.rapidapi.com';
 
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+
+const TTL_FOUND_MS = 90 * 24 * 60 * 60 * 1000; // 90 jours
+const TTL_NOT_FOUND_MS = 24 * 60 * 60 * 1000;  // 24 heures
+
+const admin = SUPABASE_URL && SERVICE_ROLE_KEY
+  ? createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } })
+  : null;
+
+type NormalizedVehicle = {
+  marque?: unknown;
+  modele?: unknown;
+  couleur?: unknown;
+  puissance_fiscale?: unknown;
+  energie?: unknown;
+  date_mec?: unknown;
+  co2?: unknown;
+  immatriculation?: unknown;
+  vin?: unknown;
+  genre?: unknown;
+};
+
+function normalize(apiResponse: any): NormalizedVehicle {
+  // Support both wrapped ({ data: { AWN_... } }) and flat ({ AWN_... }) structures
+  const v = apiResponse?.data ?? apiResponse;
+  return {
+    marque: v?.AWN_marque,
+    modele: v?.AWN_modele,
+    couleur: v?.AWN_couleur,
+    puissance_fiscale: v?.AWN_puissance_fiscale,
+    energie: v?.AWN_energie,
+    date_mec: v?.AWN_date_mise_en_circulation,
+    co2: v?.AWN_emission_co_2,
+    immatriculation: v?.AWN_immat,
+    vin: v?.AWN_vin,
+    genre: v?.AWN_genre,
+  };
+}
+
+function isFilled(value: unknown): boolean {
+  return value !== null && value !== undefined && String(value).trim() !== '';
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { plate } = await req.json();
+    const body = await req.json();
+    const plate = body?.plate;
+    const force = body?.force === true;
 
     if (!plate || typeof plate !== 'string') {
-      console.error('Invalid plate provided:', plate);
+      console.error('Invalid plate provided');
       return new Response(
         JSON.stringify({ success: false, error: 'Plaque invalide' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Clean the plate (remove spaces and dashes)
-    const cleanPlate = plate.replace(/[-\s]/g, '');
-    
-    // Validate plate format (basic check)
+    // Normalisation: majuscules, sans tirets ni espaces
+    const cleanPlate = plate.replace(/[-\s]/g, '').toUpperCase();
+
     if (cleanPlate.length < 5 || cleanPlate.length > 10) {
-      console.error('Invalid plate format:', cleanPlate);
+      console.error('Invalid plate format');
       return new Response(
         JSON.stringify({ success: false, error: 'Format de plaque invalide' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // ---- 1) Lecture du cache (jamais bloquante) ----
+    if (!force && admin) {
+      try {
+        const { data: cached, error } = await admin
+          .from('vehicle_cache')
+          .select('found, data, expires_at, hit_count')
+          .eq('plate', cleanPlate)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (cached && new Date(cached.expires_at).getTime() > Date.now()) {
+          // Incrément non bloquant
+          admin
+            .from('vehicle_cache')
+            .update({ hit_count: (cached.hit_count ?? 0) + 1, last_hit_at: new Date().toISOString() })
+            .eq('plate', cleanPlate)
+            .then(({ error: e }) => { if (e) console.error('vehicle_cache hit update failed:', e.message); });
+
+          console.log(`vehicle-lookup ${cleanPlate} source=cache found=${cached.found}`);
+          return new Response(
+            JSON.stringify({ success: true, data: cached.data ?? normalize(null) }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+      } catch (e) {
+        console.error('vehicle_cache read failed:', e instanceof Error ? e.message : e);
+      }
+    }
+
+    // ---- 2) Appel RapidAPI ----
     if (!RAPIDAPI_KEY) {
+      // Panne de config: ne rien écrire dans le cache
       console.error('RAPIDAPI_KEY not configured');
       return new Response(
         JSON.stringify({ success: false, error: 'Service non configuré' }),
@@ -45,55 +122,71 @@ serve(async (req) => {
       );
     }
 
-    console.log('Looking up vehicle for plate:', cleanPlate);
-
-    const response = await fetch(
-      `https://${RAPIDAPI_HOST}/?plaque=${cleanPlate}`,
-      {
+    let response: Response;
+    try {
+      response = await fetch(`https://${RAPIDAPI_HOST}/?plaque=${cleanPlate}`, {
         method: 'GET',
         headers: {
           'plaque': cleanPlate,
           'x-rapidapi-host': RAPIDAPI_HOST,
           'x-rapidapi-key': RAPIDAPI_KEY,
         },
-      }
-    );
-
-    if (!response.ok) {
-      console.error('RapidAPI error:', response.status, response.statusText);
+      });
+    } catch (e) {
+      // Erreur réseau: ne rien écrire dans le cache
+      console.error('RapidAPI network error:', e instanceof Error ? e.message : e);
       return new Response(
-        JSON.stringify({ success: false, error: `Erreur API: ${response.status}` }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, error: 'Erreur réseau API' }),
+        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const apiResponse = await response.json();
-    console.log('Vehicle lookup successful for plate:', cleanPlate);
-    console.log('Raw API response:', JSON.stringify(apiResponse));
+    if (!response.ok) {
+      const status = response.status;
+      console.error(`RapidAPI error status=${status} plate=${cleanPlate}`);
 
-    // Normalize the data from the API
-    // Support both wrapped ({ data: { AWN_... } }) and flat ({ AWN_... }) response structures
-    const vehicleData = apiResponse.data ?? apiResponse;
-    const normalizedData = {
-      marque: vehicleData?.AWN_marque,
-      modele: vehicleData?.AWN_modele,
-      couleur: vehicleData?.AWN_couleur,
-      puissance_fiscale: vehicleData?.AWN_puissance_fiscale,
-      energie: vehicleData?.AWN_energie,
-      date_mec: vehicleData?.AWN_date_mise_en_circulation,
-      co2: vehicleData?.AWN_emission_co_2,
-      immatriculation: vehicleData?.AWN_immat,
-      vin: vehicleData?.AWN_vin,
-      genre: vehicleData?.AWN_genre,
-    };
+      // 404 explicite = véhicule inconnu -> cache négatif 24h
+      if (status === 404 && admin) {
+        await writeCache(cleanPlate, false, null, TTL_NOT_FOUND_MS);
+      }
+      // 5xx, 401/403, 429... -> ne rien écrire
 
+      return new Response(
+        JSON.stringify({ success: false, error: `Erreur API: ${status}` }),
+        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    let apiResponse: any = null;
+    try {
+      apiResponse = await response.json();
+    } catch {
+      apiResponse = null;
+    }
+
+    const normalizedData = normalize(apiResponse);
+    const found = isFilled(normalizedData.marque) || isFilled(normalizedData.puissance_fiscale);
+
+    console.log(`vehicle-lookup ${cleanPlate} source=api found=${found}`);
+
+    // ---- 3) Écriture du cache ----
+    if (admin) {
+      await writeCache(
+        cleanPlate,
+        found,
+        found ? normalizedData : null,
+        found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS
+      );
+    }
+
+    // Contrat de réponse inchangé
     return new Response(
       JSON.stringify({ success: true, data: normalizedData }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    console.error('Error in vehicle-lookup:', error);
+    console.error('Error in vehicle-lookup:', error instanceof Error ? error.message : error);
     const message = error instanceof Error ? error.message : 'Erreur inconnue';
     return new Response(
       JSON.stringify({ success: false, error: message }),
@@ -101,3 +194,22 @@ serve(async (req) => {
     );
   }
 });
+
+async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: number) {
+  if (!admin) return;
+  try {
+    const now = new Date();
+    const { error } = await admin.from('vehicle_cache').upsert({
+      plate,
+      found,
+      data,
+      fetched_at: now.toISOString(),
+      expires_at: new Date(now.getTime() + ttlMs).toISOString(),
+      hit_count: 0,
+      last_hit_at: null,
+    }, { onConflict: 'plate' });
+    if (error) throw error;
+  } catch (e) {
+    console.error('vehicle_cache write failed:', e instanceof Error ? e.message : e);
+  }
+}
