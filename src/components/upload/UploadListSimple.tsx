@@ -78,7 +78,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         .select('non_gage_mode')
         .eq('id', orderId)
         .single();
-      const attendNonGage = (orderMode as any)?.non_gage_mode === 'fourni';
+      const attendNonGage = orderMode?.non_gage_mode === 'fourni';
       setNonGageFourni(attendNonGage);
 
       // Load required documents from DB

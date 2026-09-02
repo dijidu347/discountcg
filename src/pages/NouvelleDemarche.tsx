@@ -173,7 +173,7 @@ export default function NouvelleDemarche() {
         setSelectedVehicleId(draft.vehicule_id);
         setCarteGrisePrice(draft.prix_carte_grise || 0);
         setExpressSelected(draft.express || false);
-        setNonGageMode(((draft as any).non_gage_mode as NonGageMode) || null);
+        setNonGageMode((draft.non_gage_mode as NonGageMode) || null);
         setDraftLoaded(true);
       }
     };

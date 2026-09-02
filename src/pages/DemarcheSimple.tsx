@@ -144,7 +144,7 @@ export default function DemarcheSimple() {
         if (error) throw error;
 
         setExpress(order?.express || false);
-        setNonGageMode(((order as any)?.non_gage_mode as NonGageMode) || null);
+        setNonGageMode((order?.non_gage_mode as NonGageMode) || null);
 
         if (order?.paye) {
           setIsPaid(true);
@@ -289,7 +289,7 @@ export default function DemarcheSimple() {
                     // alimente déjà le calcul serveur, la facture et les e-mails.
                     await supabase
                       .from('guest_orders')
-                      .update({ non_gage_mode: mode, certificat_non_gage: mode === 'facture' } as any)
+                      .update({ non_gage_mode: mode, certificat_non_gage: mode === 'facture' })
                       .eq('id', orderId);
                   }}
                   disabled={isPaid}
