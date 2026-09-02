@@ -14,10 +14,6 @@ interface CgvAcceptanceProps {
 // positif du client (art. 1127-2 du Code civil, « double clic »). Une case
 // pré-cochée ne vaudrait pas acceptation.
 //
-// Le libellé mentionne explicitement le caractère définitif de la commande :
-// c'est ce qui permet de soutenir que le client en a été informé avant de payer,
-// l'article 10 des CGV n'étant opposable que s'il a été porté à sa connaissance.
-//
 // Le lien vers les CGV est placé HORS du <Label> : à l'intérieur, un clic dessus
 // cocherait aussi la case.
 export const CgvAcceptance = ({ checked, onCheckedChange, idPrefix = "cgv" }: CgvAcceptanceProps) => (
@@ -40,9 +36,7 @@ export const CgvAcceptance = ({ checked, onCheckedChange, idPrefix = "cgv" }: Cg
       >
         conditions générales de ventes
       </Link>
-      <Label htmlFor={`${idPrefix}_acceptance`} className="font-normal cursor-pointer">
-        , dont l'article 10 : ma commande est définitive et ne fera l'objet d'aucun remboursement.
-      </Label>
+      .
     </p>
   </div>
 );
