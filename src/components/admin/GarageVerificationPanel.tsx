@@ -486,8 +486,8 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
 
     setOfferingTokens(true);
     try {
-      // 1 jeton = 5 € ; token_balance est stocké EN EUROS
-      const creditEuros = nbTokens * 5;
+      // 1 jeton = 1 € ; token_balance est stocké EN EUROS.
+      const creditEuros = nbTokens;
 
       // Relire le solde actuel pour éviter d'écraser une valeur périmée
       const { data: current, error: readError } = await supabase
@@ -878,7 +878,7 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
           <DialogHeader>
             <DialogTitle>Offrir des jetons</DialogTitle>
             <DialogDescription>
-              Créditer le solde de {garage.raison_sociale}. Un jeton vaut 5 €.
+              Créditer le solde de {garage.raison_sociale}. Un jeton vaut 1 €.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -895,7 +895,7 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
               />
             </div>
             <p className="text-sm text-muted-foreground">
-              Équivaut à {(parseInt(tokensToOffer, 10) || 0) * 5} €
+              Équivaut à {(parseInt(tokensToOffer, 10) || 0)} €
             </p>
           </div>
           <DialogFooter>

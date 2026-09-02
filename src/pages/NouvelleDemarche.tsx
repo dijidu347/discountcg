@@ -569,11 +569,11 @@ export default function NouvelleDemarche() {
     return (formData.type === 'DA' || formData.type === 'DC' || PRO_DEMARCHE_TYPES.includes(formData.type)) ? 0 : carteGrisePrice;
   };
 
-  // Calcul du coût en jetons (1 jeton = 5€, arrondi au supérieur)
+  // Coût en jetons. 1 jeton = 1 € : garages.token_balance est stocké EN EUROS
+  // (cf. webhook-stripe, PaiementDemarche, Dashboard). Aucune conversion à faire.
   const getTokenCost = () => {
     // Pour les CG, le calcul est basé sur les frais de dossier (+ express) uniquement (pas la carte grise)
-    const fraisToConvert = getFraisDossier() + getExpressSurchargePro();
-    return Math.ceil(fraisToConvert / 5);
+    return getFraisDossier() + getExpressSurchargePro();
   };
 
   const canPayWithTokens = () => {
@@ -589,7 +589,7 @@ export default function NouvelleDemarche() {
     if (tokenBalance < tokenCost) {
       toast({
         title: "Solde insuffisant",
-        description: `Vous avez ${tokenBalance} jeton(s), mais ${tokenCost} sont nécessaires.`,
+        description: `Votre solde est de ${formatPrice(tokenBalance)}€, mais ${formatPrice(tokenCost)}€ sont nécessaires.`,
         variant: "destructive"
       });
       return;
@@ -599,7 +599,7 @@ export default function NouvelleDemarche() {
 
     try {
       // Déduire les jetons du solde
-      const newBalance = tokenBalance - tokenCost;
+      const newBalance = Math.round((tokenBalance - tokenCost) * 100) / 100;
       const { error: updateError } = await supabase
         .from('garages')
         .update({ token_balance: newBalance })
@@ -1511,7 +1511,7 @@ export default function NouvelleDemarche() {
                               <div>
                                 <p className="font-semibold">Payer avec vos jetons</p>
                                 <p className="text-sm text-muted-foreground">
-                                  Coût : {getTokenCost()} jeton{getTokenCost() > 1 ? 's' : ''} • Votre solde : {tokenBalance} jeton{tokenBalance > 1 ? 's' : ''}
+                                  Coût : {formatPrice(getTokenCost())}€ • Votre solde : {formatPrice(tokenBalance)}€
                                 </p>
                               </div>
                             </div>
@@ -1525,7 +1525,7 @@ export default function NouvelleDemarche() {
                           </div>
                           {!canPayWithTokens() && tokenBalance > 0 && (
                             <p className="text-sm text-destructive mt-2">
-                              Il vous manque {getTokenCost() - tokenBalance} jeton{getTokenCost() - tokenBalance > 1 ? 's' : ''} pour cette démarche.
+                              Il vous manque {formatPrice(getTokenCost() - tokenBalance)}€ pour cette démarche.
                             </p>
                           )}
                         </CardContent>
