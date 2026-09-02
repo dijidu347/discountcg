@@ -171,7 +171,7 @@ const CheckoutForm = ({ order }: { order: any }) => {
         demarcheType={order.demarche_type}
       />
 
-      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver idPrefix="cgv_stripe" />
+      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} idPrefix="cgv_stripe" />
 
       <Button
         type="submit"
@@ -239,7 +239,7 @@ const SogecommerceCheckout = ({ order }: { order: any }) => {
         express={order.express}
         demarcheType={order.demarche_type}
       />
-      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver idPrefix="cgv_soge" />
+      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} idPrefix="cgv_soge" />
 
       <Button
         onClick={handlePay}

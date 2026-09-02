@@ -809,7 +809,7 @@ const PaiementDemarche = () => {
                 <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver />
+                <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
 
                 {/* 0. Paiement par solde */}
                 {garage && garage.token_balance > 0 && (
