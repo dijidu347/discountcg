@@ -72,10 +72,15 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
         [tampon, "tampon", "tampon_path"],
       ] as const) {
         if (!dataUrl) continue;
-        const path = `${garage.id}/${nom}.png`;
+        // Le type vient du blob lui-même : une image importée peut être un
+        // JPEG, et forcer image/png stockerait des octets JPEG sous une
+        // etiquette mensongere.
+        const blob = dataUrlToBlob(dataUrl);
+        const extension = blob.type === "image/jpeg" ? "jpg" : "png";
+        const path = `${garage.id}/${nom}.${extension}`;
         const { error } = await supabase.storage
           .from(BUCKET)
-          .upload(path, dataUrlToBlob(dataUrl), { upsert: true, contentType: "image/png" });
+          .upload(path, blob, { upsert: true, contentType: blob.type });
         if (error) throw error;
         patch[cle] = path;
       }

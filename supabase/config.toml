@@ -21,6 +21,8 @@ project_id = "oiotlgkfwuwshpwraneb"
     verify_jwt = false
   [functions.download-file]
     verify_jwt = false
+  [functions.generate-mandat]
+    verify_jwt = false
   [functions.generate-facture]
     verify_jwt = false
   [functions.generate-token-facture]
