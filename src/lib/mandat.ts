@@ -216,3 +216,18 @@ export function natureOperation(code: string | null | undefined, fallback?: stri
   const base = code.replace(/_PRO$/, "");
   return NATURE_OPERATION[base] ?? fallback ?? code;
 }
+
+// ---------------------------------------------------------------------------
+// Démarches où le mandant ne peut être que le professionnel.
+//
+// La déclaration d'achat constate qu'un professionnel a acquis un véhicule, le
+// plus souvent pour le revendre. Le mandant est donc necessairement le garage :
+// lui proposer de designer son client n'aurait aucun sens et produirait une
+// declaration au nom de quelqu'un qui n'a rien achete.
+// ---------------------------------------------------------------------------
+const MANDANT_TOUJOURS_GARAGE = ["DA"];
+
+export function mandantImposeGarage(type: string | null | undefined): boolean {
+  if (!type) return false;
+  return MANDANT_TOUJOURS_GARAGE.includes(type.replace(/_PRO$/, ""));
+}

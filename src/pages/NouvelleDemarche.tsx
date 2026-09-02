@@ -33,7 +33,7 @@ import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
-import { natureOperation, formatSignataire, type MandatData } from "@/lib/mandat";
+import { natureOperation, formatSignataire, mandantImposeGarage, type MandatData } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -215,6 +215,16 @@ export default function NouvelleDemarche() {
       loadActionDetails();
     }
   }, [formData.type]);
+
+  // Declaration d'achat : le mandant ne peut etre que le garage. On le fixe des
+  // la selection du type, sans attendre un choix qui ne sera pas propose.
+  useEffect(() => {
+    if (!mandantImposeGarage(formData.type) || mandantType === 'garage') return;
+    setMandantType('garage');
+    if (demarcheId) {
+      supabase.from('demarches').update({ mandant_type: 'garage' }).eq('id', demarcheId);
+    }
+  }, [formData.type, mandantType, demarcheId]);
 
   useEffect(() => {
     // Auto-create draft when type is selected (seulement si pas de brouillon existant)
@@ -1518,6 +1528,13 @@ export default function NouvelleDemarche() {
                           <div className="space-y-3">
                             <div className="p-4 rounded-lg border-2 border-border bg-card space-y-3">
                               <p className="font-medium text-sm">Qui donne le mandat ?</p>
+                              {mandantImposeGarage(formData.type) ? (
+                                <p className="text-sm text-muted-foreground">
+                                  Votre garage. Une déclaration d'achat constate que vous avez acquis le
+                                  véhicule : le mandat ne peut être établi qu'à votre nom, avec votre
+                                  signature et votre tampon.
+                                </p>
+                              ) : (
                               <RadioGroup
                                 value={mandantType}
                                 onValueChange={async (v) => {
@@ -1547,6 +1564,7 @@ export default function NouvelleDemarche() {
                                   </Label>
                                 </div>
                               </RadioGroup>
+                              )}
                             </div>
 
                             <MandatGenerator
