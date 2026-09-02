@@ -1434,35 +1434,29 @@ export default function NouvelleDemarche() {
                           </div>
                         </div>
 
-                        {/* Certificat de non-gage (CG/DA/DC uniquement) */}
+                        {/* Certificat de non-gage (CG/DA/DC uniquement).
+                            Le dépôt s'ouvre dans la carte « Je fournis le certificat ». */}
                         <NonGageChoice
                           demarcheType={formData.type}
                           audience="pro"
                           value={nonGageMode}
                           onChange={handleNonGageChange}
-                        />
-
-                        {nonGageMode === 'fourni' && isNonGageRequired(formData.type) && (
-                          <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
-                            <div className="flex items-center gap-4">
-                              <div className="flex-1">
-                                <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
-                                  {NON_GAGE_DOCUMENT_LABEL}
-                                  <span className="text-destructive text-base font-bold">*</span>
-                                </Label>
-                              </div>
-                              <div className="w-[400px]">
-                                <DocumentUpload
-                                  demarcheId={demarcheId}
-                                  documentType="non_gage"
-                                  customName={NON_GAGE_DOCUMENT_LABEL}
-                                  label=""
-                                  onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
-                                />
-                              </div>
+                          uploadSlot={
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                                {NON_GAGE_DOCUMENT_LABEL}
+                                <span className="text-destructive text-base font-bold">*</span>
+                              </Label>
+                              <DocumentUpload
+                                demarcheId={demarcheId}
+                                documentType="non_gage"
+                                customName={NON_GAGE_DOCUMENT_LABEL}
+                                label=""
+                                onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
+                              />
                             </div>
-                          </div>
-                        )}
+                          }
+                        />
 
                         {/* Autres pièces justificatives */}
                         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
