@@ -43,6 +43,11 @@ interface MandatGeneratorProps {
   // Chemin où déposer la signature tracée à l'instant, quand c'est le signataire
   // lui-même qui est devant l'écran.
   signatureUploadPath?: string;
+  // Renseigne uniquement quand le garage est lui-meme le mandant. Une signature
+  // ou un tampon manquant est alors saisi ici puis enregistre sur la fiche du
+  // garage : il ne lui sera plus jamais redemande, et celui qui les a deja
+  // enregistres ne voit rien.
+  garageId?: string;
   // Clé de la pièce « mandat » dans la liste de documents du tunnel appelant.
   documentType?: string;
   onGenerated?: (url: string) => void;
@@ -66,6 +71,7 @@ export const MandatGenerator = ({
   savedSignaturePath,
   savedTamponPath,
   signatureUploadPath,
+  garageId,
   documentType,
   onGenerated,
 }: MandatGeneratorProps) => {
@@ -92,6 +98,11 @@ export const MandatGenerator = ({
     immatriculation: reprise(saved?.vehicule_immatriculation, defaults.immatriculation ?? ""),
   });
   const [signature, setSignature] = useState<string | null>(null);
+  const [tampon, setTampon] = useState<string | null>(null);
+  // Chemins enregistres pendant cette session : la fiche garage recue en props
+  // reste perimee jusqu'au prochain chargement, sans quoi les pads
+  // reapparaitraient a la regeneration alors que tout vient d'etre sauvegarde.
+  const [dejaEnregistre, setDejaEnregistre] = useState<{ signature?: string; tampon?: string }>({});
   const [generating, setGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
 
@@ -99,8 +110,12 @@ export const MandatGenerator = ({
   const generable = mandatGenerable(flags);
   // Soit la signature est déjà enregistrée (garage), soit le signataire trace la
   // sienne maintenant.
-  const signatureConnue = savedSignaturePath ?? saved?.signature_path ?? null;
+  const signatureConnue = dejaEnregistre.signature ?? savedSignaturePath ?? saved?.signature_path ?? null;
+  const tamponConnu = dejaEnregistre.tampon ?? savedTamponPath ?? saved?.tampon_path ?? null;
   const doitSigner = !signatureConnue;
+  // Le Cerfa exige le cachet des qu'une societe est mandante : on le reclame
+  // en meme temps que la signature, plutot que de produire un mandat incomplet.
+  const doitTamponner = Boolean(garageId) && !tamponConnu;
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -113,6 +128,7 @@ export const MandatGenerator = ({
     if (!form.commune.trim()) manquants.push("la commune");
     if (!form.nature.trim()) manquants.push("la nature de l'opération");
     if (doitSigner && !signature) manquants.push("la signature");
+    if (doitTamponner && !tampon) manquants.push("le tampon de l'entreprise");
     return manquants;
   };
 
@@ -130,14 +146,39 @@ export const MandatGenerator = ({
     setGenerating(true);
     try {
       let signaturePath = signatureConnue ?? undefined;
+      let tamponPath = tamponConnu ?? undefined;
 
-      if (signature && signatureUploadPath) {
-        const blob = dataUrlToBlob(signature);
+      const deposer = async (dataUrl: string, chemin: string) => {
+        const blob = dataUrlToBlob(dataUrl);
         const { error } = await supabase.storage
           .from("signatures")
-          .upload(signatureUploadPath, blob, { upsert: true, contentType: blob.type });
+          .upload(chemin, blob, { upsert: true, contentType: blob.type });
         if (error) throw error;
-        signaturePath = signatureUploadPath;
+        return chemin;
+      };
+
+      if (garageId) {
+        // Enregistrement definitif sur la fiche du garage : la prochaine
+        // demarche reprendra ces chemins sans rien redemander.
+        const patch: { signature_path?: string; tampon_path?: string } = {};
+        if (signature) {
+          signaturePath = await deposer(signature, `${garageId}/signature.png`);
+          patch.signature_path = signaturePath;
+        }
+        if (tampon) {
+          tamponPath = await deposer(tampon, `${garageId}/tampon.png`);
+          patch.tampon_path = tamponPath;
+        }
+        if (Object.keys(patch).length) {
+          const { error } = await supabase.from("garages").update(patch).eq("id", garageId);
+          if (error) throw error;
+          setDejaEnregistre((d) => ({
+            signature: patch.signature_path ?? d.signature,
+            tampon: patch.tampon_path ?? d.tampon,
+          }));
+        }
+      } else if (signature && signatureUploadPath) {
+        signaturePath = await deposer(signature, signatureUploadPath);
       }
 
       const mandatData: MandatData = {
@@ -157,7 +198,7 @@ export const MandatGenerator = ({
         vehicule_immatriculation: form.immatriculation.trim().toUpperCase() || undefined,
         lieu_declaration: form.commune.trim(),
         signature_path: signaturePath,
-        tampon_path: savedTamponPath ?? undefined,
+        tampon_path: tamponPath,
       };
 
       const { data, error } = await supabase.functions.invoke("generate-mandat", {
@@ -301,10 +342,32 @@ export const MandatGenerator = ({
           </div>
         </div>
 
-        {doitSigner && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Signature du mandant</p>
-            <SignaturePad label="Signez ci-dessous" onChange={setSignature} />
+        {(doitSigner || doitTamponner) && (
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {garageId ? "Signature et tampon de votre garage" : "Signature du mandant"}
+            </p>
+
+            {garageId && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-sm">
+                  À enregistrer une seule fois : vos prochaines démarches les reprendront
+                  automatiquement, vous n'aurez plus rien à saisir.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {doitSigner && (
+              <SignaturePad
+                label={garageId ? "Signature du dirigeant" : "Signez ci-dessous"}
+                onChange={setSignature}
+              />
+            )}
+
+            {doitTamponner && (
+              <SignaturePad label="Tampon de l'entreprise" onChange={setTampon} />
+            )}
           </div>
         )}
 

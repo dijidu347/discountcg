@@ -1553,6 +1553,9 @@ export default function NouvelleDemarche() {
                               }
                               savedSignaturePath={mandantType === 'garage' ? garage?.signature_path : null}
                               savedTamponPath={mandantType === 'garage' ? garage?.tampon_path : null}
+                              // Garage mandant sans signature enregistree : il la saisit ici,
+                              // elle est conservee sur sa fiche et ne lui sera plus redemandee.
+                              garageId={mandantType === 'garage' ? garage?.id : undefined}
                               // Le client signe sur la tablette du garage : le fichier reste
                               // cloisonne sous l'identifiant du garage, seul chemin ou ses
                               // droits d'ecriture s'appliquent.
