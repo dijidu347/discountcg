@@ -91,7 +91,7 @@ export const NonGageChoice = ({
           <Label htmlFor="non_gage_facture" className="cursor-pointer font-normal w-full">
             <span className="font-medium flex items-center gap-2">
               Nous le commandons pour vous
-              <span className="ml-auto text-blue-500 font-semibold">+{prix},00 €</span>
+              <span className="ml-auto text-blue-500 font-semibold whitespace-nowrap">+{prix}&nbsp;€</span>
             </span>
             <span className="block text-sm text-muted-foreground mt-1">
               Nous nous chargeons de l'obtenir, vous n'avez rien à déposer.
