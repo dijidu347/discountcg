@@ -15,7 +15,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, Zap, CheckCircle } from "lucide-react";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
-import { VehicleInfoCard } from "@/components/simulateur/VehicleInfoCard";
 import { NON_GAGE_PRICE_PARTICULIER, NonGageMode, isNonGageRequired } from "@/lib/nonGage";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { Input } from "@/components/ui/input";
@@ -517,9 +516,8 @@ export default function ResultatCarteGrise() {
           Retour au simulateur
         </Button>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left side - Options and Payment */}
-          <div className="lg:col-span-2 space-y-8">
+        <div className="max-w-3xl mx-auto">
+          <div className="space-y-8">
             {/* Step 1: Vos informations (AVANT paiement) */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -586,7 +584,25 @@ export default function ResultatCarteGrise() {
             </div>
             )}
 
-            <VehicleInfoCard vehicleInfo={vehicleInfo || undefined} />
+            {/* Récapitulatif complet — véhicule et détail du prix — intercalé
+                entre les options et le paiement : le client voit ce qu'il paie
+                juste avant de payer, plutôt que dans une colonne annexe reléguée
+                en bas de page sur mobile. */}
+            <PriceSummary
+              calculation={calculation}
+              departement={departement}
+              vehicleInfo={vehicleInfo || undefined}
+              fraisDossier={fraisDossier}
+              demarcheType={demarcheType}
+              selectedOptions={{
+                smsNotifications: false,
+                emailNotifications: false,
+                packNotifications: false,
+                dossierPrioritaire: express,
+                certificatNonGage,
+              }}
+              isPaid={isPaid}
+            />
 
             {/* Step 3: Payment (seulement après infos complètes) */}
             <div className="space-y-4">
@@ -683,24 +699,6 @@ export default function ResultatCarteGrise() {
             </div>
           </div>
 
-          {/* Right side - Price Summary */}
-          <div className="space-y-6">
-            <PriceSummary
-              calculation={calculation}
-              departement={departement}
-              vehicleInfo={vehicleInfo || undefined}
-              fraisDossier={fraisDossier}
-              demarcheType={demarcheType}
-              selectedOptions={{
-                smsNotifications: false,
-                emailNotifications: false,
-                packNotifications: false,
-                dossierPrioritaire: express,
-                certificatNonGage,
-              }}
-              isPaid={isPaid}
-            />
-          </div>
         </div>
       </div>
 
