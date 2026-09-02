@@ -253,7 +253,7 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
           <div className="space-y-3">
             <h3 className="font-medium text-sm text-muted-foreground">Paiement sécurisé</h3>
             <p className="text-sm text-muted-foreground">Carte bancaire, Apple Pay, Google Pay…</p>
-            <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
+            <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver />
             <Button
               onClick={handleSogecommercePay}
               disabled={isProcessing || !cgvAccepted}
@@ -284,7 +284,7 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
   return (
     <Card>
       <CardContent className="pt-6 space-y-6">
-        <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
+        <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver />
 
         {stripePromise && cgvAccepted && (
           <div className="space-y-3">

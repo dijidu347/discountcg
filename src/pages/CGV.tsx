@@ -125,6 +125,12 @@ export default function CGV() {
               La validation de la commande vaut acceptation pleine et entière des présentes CGV et reconnaissance d'avoir
               reçu ces informations.
             </p>
+            <p>
+              Avant tout paiement, le Client accepte les présentes CGV au moyen d'une case à cocher dédiée. Le Client
+              consommateur coche en outre une <strong>seconde case, distincte</strong>, par laquelle il demande
+              l'exécution immédiate de la Prestation et renonce à son droit de rétractation dans les conditions de
+              l'article 10.3. Aucun paiement ne peut être effectué sans ces acceptations.
+            </p>
           </section>
 
           <section>
@@ -171,6 +177,12 @@ export default function CGV() {
               Le Prestataire se réserve le droit de modifier ses tarifs à tout moment ; le prix applicable est celui
               affiché au jour de la commande.
             </p>
+            <p>
+              Les Taxes sont avancées par le Prestataire <strong>au nom et pour le compte du Client</strong> puis
+              intégralement reversées à l'administration. Une fois ce reversement effectué, elles ne peuvent plus être
+              récupérées par le Prestataire et ne sont, en conséquence,{" "}
+              <strong>en aucun cas remboursables</strong> (article 10).
+            </p>
           </section>
 
           <section>
@@ -185,6 +197,9 @@ export default function CGV() {
               de paiement dans un environnement sécurisé.
             </p>
             <p>Aucune démarche n'est engagée tant que le paiement n'a pas été intégralement encaissé.</p>
+            <p>
+              Tout paiement est <strong>définitif</strong> dans les conditions et limites fixées à l'article 10.
+            </p>
           </section>
 
           <section>
@@ -232,37 +247,90 @@ export default function CGV() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-foreground">Article 10 — Droit de rétractation</h2>
+            <h2 className="text-xl font-semibold text-foreground">
+              Article 10 — Caractère définitif de la commande et droit de rétractation
+            </h2>
+
+            <h3 className="font-semibold text-foreground">10.1 — Principe : toute commande est définitive</h3>
             <p>
-              Conformément aux articles L. 221-18 et suivants du Code de la consommation, le Consommateur dispose d'un
-              délai de <strong>quatorze (14) jours</strong> à compter de la conclusion du contrat pour exercer son droit
-              de rétractation, sans avoir à motiver sa décision.
+              La Prestation consiste à constituer un dossier et à le transmettre à l'administration, en avançant au nom
+              et pour le compte du Client les Taxes dues à l'État et aux Régions. Ces sommes, une fois versées à
+              l'administration, ne sont <strong>ni restituables ni récupérables</strong> par le Prestataire, quelle que
+              soit la suite donnée au dossier.
+            </p>
+            <p>
+              En conséquence, <strong>toute commande est ferme et définitive</strong> et ne donne lieu à{" "}
+              <strong>aucun remboursement</strong> dès lors que la Prestation a été pleinement exécutée au sens de
+              l'article 10.4, sous la seule réserve des cas prévus à l'article 10.5.
+            </p>
+
+            <h3 className="font-semibold text-foreground">10.2 — Clients professionnels : absence de droit de rétractation</h3>
+            <p>
+              Le droit de rétractation prévu par le Code de la consommation est réservé aux consommateurs. Il ne
+              bénéficie pas au Client professionnel dont la commande entre dans le champ de son activité principale, ce
+              qui est le cas des démarches d'immatriculation commandées par un garage, un concessionnaire, un négociant
+              ou tout professionnel de l'automobile (art. L. 221-3 du Code de la consommation, a contrario).
+            </p>
+            <p>
+              Pour ces Clients, <strong>toute commande est définitive dès son paiement</strong> et ne peut donner lieu à
+              aucun remboursement.
+            </p>
+
+            <h3 className="font-semibold text-foreground">10.3 — Consommateurs : droit de rétractation et renonciation expresse</h3>
+            <p>
+              Conformément aux articles L. 221-18 et suivants du Code de la consommation, le Consommateur dispose en
+              principe d'un délai de <strong>quatorze (14) jours</strong> à compter de la conclusion du contrat pour
+              exercer son droit de rétractation, sans avoir à motiver sa décision.
+            </p>
+            <p>
+              Toutefois, la Prestation étant un service dont le Client attend une exécution rapide, celui-ci{" "}
+              <strong>demande expressément que son exécution commence immédiatement</strong>, avant l'expiration du délai
+              de quatorze jours, et <strong>renonce expressément à son droit de rétractation</strong> pour le cas où la
+              Prestation serait pleinement exécutée avant la fin de ce délai.
+            </p>
+            <p>
+              Cette demande et cette renonciation sont recueillies au moyen d'une{" "}
+              <strong>case à cocher dédiée, distincte de l'acceptation des présentes CGV</strong>, que le Client coche
+              obligatoirement avant tout paiement. En application de l'<strong>article L. 221-28, 1°</strong> du Code de
+              la consommation, le Consommateur <strong>perd son droit de rétractation</strong> dès que la Prestation est
+              pleinement exécutée.
+            </p>
+
+            <h3 className="font-semibold text-foreground">10.4 — Point à partir duquel la Prestation est pleinement exécutée</h3>
+            <p>
+              La Prestation est réputée <strong>pleinement exécutée</strong>, et la commande définitivement acquise au
+              Prestataire, dès la survenance du premier des événements suivants :
+            </p>
+            <ul>
+              <li>la transmission du dossier à l'administration via le SIV ;</li>
+              <li>l'édition ou la mise à disposition du Certificat Provisoire d'Immatriculation (CPI) ;</li>
+              <li>le versement des Taxes à l'administration pour le compte du Client.</li>
+            </ul>
+            <p>
+              À compter de cet instant, <strong>aucun remboursement ne peut intervenir</strong>, ni sur les Taxes, ni sur
+              les Frais de service.
+            </p>
+
+            <h3 className="font-semibold text-foreground">10.5 — Rétractation exercée avant exécution</h3>
+            <p>
+              Si le Consommateur notifie sa rétractation <strong>avant</strong> que la Prestation ne soit pleinement
+              exécutée au sens de l'article 10.4, il est redevable, conformément à l'article L. 221-25 du Code de la
+              consommation, d'un montant <strong>proportionnel à la Prestation déjà fournie</strong> à la date de la
+              rétractation. Seules les sommes correspondant aux diligences non encore engagées lui sont restituées.
             </p>
             <p>
               <strong>Exercice du droit :</strong> le Consommateur notifie sa décision au moyen du formulaire type
               figurant en Annexe, ou de toute autre déclaration dénuée d'ambiguïté, par e-mail à
               contact@discountcartegrise.fr ou par courrier à l'adresse du siège social.
             </p>
+
+            <h3 className="font-semibold text-foreground">10.6 — Absence de remboursement en cas de dossier incomplet ou erroné</h3>
             <p>
-              <strong>Renonciation et exécution immédiate :</strong> la Prestation portant sur un service, le
-              Consommateur peut demander expressément que son exécution commence avant la fin du délai de rétractation.
-              Dans ce cas, en application de l'article L. 221-25 du Code de la consommation :
-            </p>
-            <ul>
-              <li>
-                si la Prestation est <strong>pleinement exécutée</strong> avant la fin du délai, le Consommateur
-                reconnaît, par sa demande expresse et son renoncement exprès au droit de rétractation, qu'il{" "}
-                <strong>perd son droit de rétractation</strong> une fois la Prestation pleinement exécutée (art. L.
-                221-28, 1°) ;
-              </li>
-              <li>
-                si le Consommateur exerce sa rétractation alors que l'exécution a commencé à sa demande, il est redevable
-                d'un montant <strong>proportionnel à la Prestation déjà fournie</strong> à la date de la rétractation.
-              </li>
-            </ul>
-            <p>
-              Le Client est invité à cocher la case correspondante lors de la commande pour exprimer cette demande et ce
-              renoncement.
+              Le rejet, l'ajournement ou le retard d'un dossier imputable à des informations inexactes ou à des pièces
+              manquantes, illisibles, périmées ou non conformes fournies par le Client{" "}
+              <strong>n'ouvre droit à aucun remboursement</strong>, la Prestation d'assistance ayant été exécutée. Le
+              Prestataire accompagne le Client dans la régularisation du dossier, sans frais de service supplémentaires
+              lorsque la reprise relève de la même démarche.
             </p>
           </section>
 
@@ -374,8 +442,9 @@ export default function CGV() {
           <section>
             <h2 className="text-xl font-semibold text-foreground">Annexe — Formulaire type de rétractation</h2>
             <p>
-              <em>(À compléter et renvoyer uniquement si le Client souhaite se rétracter, dans les conditions de
-              l'article 10.)</em>
+              <em>(À compléter et renvoyer uniquement par un Consommateur souhaitant se rétracter{" "}
+              <strong>avant que la Prestation ne soit pleinement exécutée</strong>, dans les conditions restrictives de
+              l'article 10.5. Passé ce stade, la commande est définitive et le droit de rétractation est perdu.)</em>
             </p>
             <p>
               À l'attention de <strong>DISCOUNT AUTO / PAREBRISE</strong>, ZA de l'Avenir, 30600 Vestric-et-Candiac —

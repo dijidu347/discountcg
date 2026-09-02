@@ -193,7 +193,7 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
         </CardContent>
       </Card>
 
-      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} id="cgv_stripe" />
+      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver idPrefix="cgv_stripe" />
 
       <Button
         type="submit"
@@ -263,7 +263,7 @@ const SogecommerceCheckout = ({ order, formData }: { order: any; formData: any }
 
   return (
     <div className="space-y-4">
-    <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} id="cgv_soge" />
+    <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} withRetractationWaiver idPrefix="cgv_soge" />
 
     <Button
       onClick={handlePay}
