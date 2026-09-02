@@ -182,7 +182,7 @@ export default function NouvelleDemarche() {
         setExpressSelected(draft.express || false);
         setNonGageMode((draft.non_gage_mode as NonGageMode) || null);
         setMandantType((draft.mandant_type as 'garage' | 'client') || 'client');
-        setMandatSauvegarde((draft.mandat_data as MandatData) || null);
+        setMandatSauvegarde((draft.mandat_data as unknown as MandatData) || null);
         setDraftLoaded(true);
       }
     };
