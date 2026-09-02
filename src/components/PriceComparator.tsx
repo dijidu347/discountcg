@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const competitors = [
   {
-    name: "Garage Jimmy 2x",
+    name: "Discount Carte Grise",
     isUs: true,
     features: {
       price: "30€",
       processing: "24h",
       support: "Personnalisé",
-      garantie: "Satisfait ou remboursé",
+      garantie: "Dossier vérifié avant envoi",
       documents: "Aide gratuite",
       track: "Suivi en temps réel",
     }
@@ -44,7 +44,7 @@ const featureLabels = {
   price: "Frais de dossier",
   processing: "Délai de traitement",
   support: "Support client",
-  garantie: "Garantie",
+  garantie: "Contrôle du dossier",
   documents: "Aide documents",
   track: "Suivi dossier",
 };
@@ -55,7 +55,7 @@ export const PriceComparator = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-black text-primary mb-4">
-            Pourquoi choisir Garage Jimmy 2x ?
+            Pourquoi choisir Discount Carte Grise ?
           </h2>
           <p className="text-xl text-muted-foreground">
             Comparez notre service avec la concurrence

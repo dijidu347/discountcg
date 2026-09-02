@@ -33,7 +33,7 @@ const FAQ = () => {
     },
     {
       question: "Puis-je annuler ma demande ?",
-      answer: "Oui, vous pouvez annuler votre demande avant le début du traitement de votre dossier. Contactez-nous rapidement pour discuter des conditions de remboursement."
+      answer: "Une fois votre dossier transmis à l'administration, la commande est définitive et ne peut plus être remboursée : les taxes ont déjà été reversées à l'État, qui ne les restitue pas. Si votre demande n'a pas encore été prise en charge, contactez-nous au plus vite et nous verrons ensemble ce qui est possible."
     },
     {
       question: "Quelles régions couvrez-vous ?",

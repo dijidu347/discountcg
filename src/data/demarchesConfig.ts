@@ -808,7 +808,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "L'annulation d'un CPI WW donne-t-elle droit à un remboursement des taxes ?",
-        answer: "L'annulation d'un CPI WW peut donner lieu à un remboursement partiel des taxes payées lors de la demande initiale, sous certaines conditions. Cette possibilité dépend de la situation et du motif d'annulation. Discount Carte Grise vous renseigne sur vos droits à remboursement.",
+        answer: "Un éventuel remboursement partiel des taxes relève exclusivement de l'administration, qui l'accorde ou non selon la situation et le motif d'annulation. Nos frais de service, eux, ne sont pas remboursables, la démarche ayant été réalisée. Discount Carte Grise vous indique la marche à suivre pour adresser votre demande à l'administration.",
       },
       {
         question: "Quel est le délai pour annuler un CPI WW ?",
