@@ -234,9 +234,13 @@ serve(async (req) => {
     // version corrigee s'affiche bien au lieu de l'ancienne.
     const urlHorodatee = `${publicUrl.publicUrl}?v=${Date.now()}`;
 
+    // Le rattachement est vérifié : sans lui le mandat existe dans le stockage
+    // mais la pièce reste comptée manquante et bloque la suite du dossier.
+    // Renvoyer un succès dans ce cas laisserait le client devant une pièce
+    // obligatoire qu'il vient pourtant de produire, sans explication.
     if (demarcheId) {
       await supabase.from("documents").delete().eq("demarche_id", demarcheId).eq("type_document", typeDocument);
-      await supabase.from("documents").insert({
+      const { error } = await supabase.from("documents").insert({
         demarche_id: demarcheId,
         type_document: typeDocument,
         document_type: "Mandat (Cerfa 13757)",
@@ -244,16 +248,18 @@ serve(async (req) => {
         url: urlHorodatee,
         taille_octets: pdfBytes.length,
       });
+      if (error) throw new Error("Mandat généré mais non rattaché au dossier : " + error.message);
       await supabase.from("demarches").update({ mandat_data: mandatData }).eq("id", demarcheId);
     } else {
       await supabase.from("guest_order_documents").delete().eq("order_id", orderId).eq("type_document", typeDocument);
-      await supabase.from("guest_order_documents").insert({
+      const { error } = await supabase.from("guest_order_documents").insert({
         order_id: orderId,
         type_document: typeDocument,
         nom_fichier: NOM_FICHIER,
         url: urlHorodatee,
         taille_octets: pdfBytes.length,
       });
+      if (error) throw new Error("Mandat généré mais non rattaché au dossier : " + error.message);
       await supabase.from("guest_orders").update({ mandat_data: mandatData }).eq("id", orderId);
     }
 
