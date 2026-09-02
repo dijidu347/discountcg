@@ -9,8 +9,11 @@ interface SignaturePadProps {
   // Signature déjà enregistrée, affichée à l'ouverture.
   initialDataUrl?: string | null;
   label?: string;
-  // Autorise l'import d'une image à la place du tracé (signature scannée, tampon).
+  // Autorise l'import d'une image à la place du tracé (signature scannée).
   allowUpload?: boolean;
+  // "upload" retire la zone de tracé : un tampon d'entreprise se photographie ou
+  // se scanne, il ne se dessine pas au doigt.
+  mode?: "draw" | "upload";
   heightClass?: string;
 }
 
@@ -25,8 +28,10 @@ export const SignaturePad = ({
   initialDataUrl = null,
   label = "Signature",
   allowUpload = true,
+  mode = "draw",
   heightClass = "h-40",
 }: SignaturePadProps) => {
+  const uploadSeul = mode === "upload";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -166,7 +171,7 @@ export const SignaturePad = ({
       <div className="flex items-center justify-between">
         <span className="text-sm font-medium">{label}</span>
         <div className="flex gap-1">
-          {!uploaded && (
+          {!uploaded && !uploadSeul && (
             <Button type="button" variant="ghost" size="sm" onClick={undo} disabled={isEmpty} className="h-8">
               <Undo2 className="h-4 w-4 mr-1" />
               Annuler
@@ -182,6 +187,16 @@ export const SignaturePad = ({
       <div className={`relative rounded-lg border-2 border-dashed bg-background ${heightClass}`}>
         {uploaded ? (
           <img src={uploaded} alt={label} className="h-full w-full object-contain p-2" />
+        ) : uploadSeul ? (
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            className="h-full w-full flex flex-col items-center justify-center gap-1 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+          >
+            <Upload className="h-5 w-5" />
+            Importer l'image de votre tampon
+            <span className="text-xs">Photo ou scan, PNG ou JPEG</span>
+          </button>
         ) : (
           <>
             <canvas
@@ -203,7 +218,7 @@ export const SignaturePad = ({
         )}
       </div>
 
-      {allowUpload && (
+      {(allowUpload || uploadSeul) && (
         <>
           <input
             ref={fileRef}
@@ -216,10 +231,12 @@ export const SignaturePad = ({
               e.target.value = "";
             }}
           />
-          <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="w-full">
-            <Upload className="h-4 w-4 mr-2" />
-            Importer une image à la place
-          </Button>
+          {!uploadSeul && (
+            <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} className="w-full">
+              <Upload className="h-4 w-4 mr-2" />
+              Importer une image à la place
+            </Button>
+          )}
         </>
       )}
     </div>

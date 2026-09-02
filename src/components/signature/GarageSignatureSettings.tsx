@@ -182,6 +182,7 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
               )}
               <SignaturePad
                 label={existingTampon ? "Remplacer le tampon" : "Tampon de l'entreprise"}
+                mode="upload"
                 onChange={setTampon}
               />
             </div>

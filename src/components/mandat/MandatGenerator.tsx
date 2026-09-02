@@ -367,7 +367,7 @@ export const MandatGenerator = ({
             )}
 
             {doitTamponner && (
-              <SignaturePad label="Tampon de l'entreprise" onChange={setTampon} />
+              <SignaturePad label="Tampon de l'entreprise" mode="upload" onChange={setTampon} />
             )}
           </div>
         )}
