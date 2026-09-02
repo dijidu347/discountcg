@@ -45,6 +45,12 @@ interface GenerateMandatRequest {
   demarcheId?: string;
   orderId?: string;
   mandatData: MandatData;
+  // Clé sous laquelle le tunnel appelant reconnaît la pièce « mandat » dans sa
+  // liste de documents obligatoires. Elle diffère d'un parcours à l'autre
+  // (« doc_8 » côté pro, le libellé complet côté particulier), donc c'est
+  // l'appelant qui la fournit ; sans elle le mandat serait bien généré mais la
+  // pièce resterait marquée manquante.
+  documentType?: string;
 }
 
 // Identité du mandataire : c'est nous, toujours. Reprise des mentions légales.
@@ -97,7 +103,8 @@ serve(async (req) => {
   }
 
   try {
-    const { demarcheId, orderId, mandatData } = (await req.json()) as GenerateMandatRequest;
+    const { demarcheId, orderId, mandatData, documentType } = (await req.json()) as GenerateMandatRequest;
+    const typeDocument = documentType?.trim() || "mandat_13757";
 
     if (!mandatData) return jsonResponse({ error: "mandatData est requis" }, 400);
     if (!demarcheId && !orderId) return jsonResponse({ error: "demarcheId ou orderId est requis" }, 400);
@@ -228,10 +235,10 @@ serve(async (req) => {
     const urlHorodatee = `${publicUrl.publicUrl}?v=${Date.now()}`;
 
     if (demarcheId) {
-      await supabase.from("documents").delete().eq("demarche_id", demarcheId).eq("type_document", "mandat_13757");
+      await supabase.from("documents").delete().eq("demarche_id", demarcheId).eq("type_document", typeDocument);
       await supabase.from("documents").insert({
         demarche_id: demarcheId,
-        type_document: "mandat_13757",
+        type_document: typeDocument,
         document_type: "Mandat (Cerfa 13757)",
         nom_fichier: NOM_FICHIER,
         url: urlHorodatee,
@@ -239,10 +246,10 @@ serve(async (req) => {
       });
       await supabase.from("demarches").update({ mandat_data: mandatData }).eq("id", demarcheId);
     } else {
-      await supabase.from("guest_order_documents").delete().eq("order_id", orderId).eq("type_document", "mandat_13757");
+      await supabase.from("guest_order_documents").delete().eq("order_id", orderId).eq("type_document", typeDocument);
       await supabase.from("guest_order_documents").insert({
         order_id: orderId,
-        type_document: "mandat_13757",
+        type_document: typeDocument,
         nom_fichier: NOM_FICHIER,
         url: urlHorodatee,
         taille_octets: pdfBytes.length,

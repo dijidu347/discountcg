@@ -43,6 +43,8 @@ interface MandatGeneratorProps {
   // Chemin où déposer la signature tracée à l'instant, quand c'est le signataire
   // lui-même qui est devant l'écran.
   signatureUploadPath?: string;
+  // Clé de la pièce « mandat » dans la liste de documents du tunnel appelant.
+  documentType?: string;
   onGenerated?: (url: string) => void;
 }
 
@@ -64,6 +66,7 @@ export const MandatGenerator = ({
   savedSignaturePath,
   savedTamponPath,
   signatureUploadPath,
+  documentType,
   onGenerated,
 }: MandatGeneratorProps) => {
   const { toast } = useToast();
@@ -158,7 +161,7 @@ export const MandatGenerator = ({
       };
 
       const { data, error } = await supabase.functions.invoke("generate-mandat", {
-        body: { demarcheId, orderId, mandatData },
+        body: { demarcheId, orderId, mandatData, documentType },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);

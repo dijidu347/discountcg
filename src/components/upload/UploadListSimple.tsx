@@ -8,6 +8,8 @@ import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
+import { MandatGenerator } from "@/components/mandat/MandatGenerator";
+import type { MandatData } from "@/lib/mandat";
 
 interface UploadListSimpleProps {
   orderId: string;
@@ -68,16 +70,20 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   // Le client a choisi de fournir lui-même le certificat de non-gage : la pièce
   // s'ajoute à la liste et bloque l'envoi du dossier tant qu'elle manque.
   const [nonGageFourni, setNonGageFourni] = useState(false);
+  // Commande complète : sert à pré-remplir le mandat 13757.
+  const [commande, setCommande] = useState<Record<string, unknown> | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      // Mode non-gage choisi avant paiement, il conditionne la liste des pièces.
+      // La commande porte le mode non-gage, qui conditionne la liste des pièces,
+      // et les informations qui pré-remplissent le mandat.
       const { data: orderMode } = await supabase
         .from('guest_orders')
-        .select('non_gage_mode')
+        .select('*')
         .eq('id', orderId)
         .single();
+      setCommande(orderMode as Record<string, unknown> | null);
       const attendNonGage = orderMode?.non_gage_mode === 'fourni';
       setNonGageFourni(attendNonGage);
 
@@ -164,6 +170,11 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
       setIsLoading(false);
     }
   };
+
+  // Le mandat n'est plus un simple emplacement de dépôt : il est généré
+  // pré-rempli puis joint automatiquement, donc on l'extrait de la liste.
+  const mandatDoc = requiredDocuments.find((d) => /13757/.test(d.nom_document ?? ""));
+  const natureOperation = (commande?.demarche_type as string) ?? demarcheType;
 
   const handleAddDocument = () => {
     const name = newDocName.trim();
@@ -308,8 +319,34 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {mandatDoc && commande && (
+          <MandatGenerator
+            orderId={orderId}
+            documentType={mandatDoc.nom_document}
+            saved={(commande.mandat_data as MandatData) ?? null}
+            signatureUploadPath={`guest/${orderId}/signature.png`}
+            defaults={{
+              identite: [commande.prenom, commande.nom].filter(Boolean).join(" "),
+              adresse: (commande.adresse as string) ?? "",
+              codePostal: (commande.code_postal as string) ?? "",
+              commune: (commande.ville as string) ?? "",
+              natureOperation,
+              marque: (commande.marque as string) ?? "",
+              vin: (commande.vin as string) ?? "",
+              immatriculation: (commande.immatriculation as string) ?? "",
+            }}
+            flags={{
+              vehiculePro: Boolean(commande.vehicule_pro),
+              isMineur: Boolean(commande.is_mineur),
+              hasCotitulaire: Boolean(commande.has_cotitulaire),
+              vehiculeLeasing: Boolean(commande.vehicule_leasing),
+            }}
+            onGenerated={loadData}
+          />
+        )}
+
         {/* Required documents */}
-        {requiredDocuments.map((doc) => {
+        {requiredDocuments.filter((d) => d.id !== mandatDoc?.id).map((doc) => {
           const filesForDoc = uploadedFiles.filter(f => f.type_document === doc.nom_document);
 
           return (

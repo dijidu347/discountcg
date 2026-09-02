@@ -261,6 +261,20 @@ export default function NouvelleDemarche() {
     return noms.some((n: string) => /13757/.test(n ?? ""));
   }, [formData.type, questionnaireAnswerTexts, documentsRequis]);
 
+  // Clé sous laquelle la pièce « mandat » est comptabilisée dans ce tunnel :
+  // l'identifiant du document pour les démarches PRO, « doc_<rang> » pour les
+  // démarches classiques. Sans elle, le mandat serait généré mais la pièce
+  // resterait marquée manquante et bloquerait le paiement.
+  const mandatDocumentType = useMemo(() => {
+    if (PRO_DEMARCHE_TYPES.includes(formData.type)) {
+      const doc = getDocumentsConfig(formData.type, questionnaireAnswerTexts).documents
+        .find((d) => /13757/.test(d.nom ?? ""));
+      return doc?.id;
+    }
+    const idx = documentsRequis.findIndex((d) => /13757/.test(d.nom_document ?? ""));
+    return idx >= 0 ? `doc_${idx + 1}` : undefined;
+  }, [formData.type, questionnaireAnswerTexts, documentsRequis]);
+
   useEffect(() => {
     console.log("=== DEBUG DUPLICATA_CG_PRO ===");
     console.log("type démarche:", formData.type);
@@ -1547,7 +1561,10 @@ export default function NouvelleDemarche() {
                                   ? `${garage.id}/demarche_${demarcheId}.png`
                                   : undefined
                               }
-                              onGenerated={() => handleDocumentUploadComplete('mandat_13757')}
+                              documentType={mandatDocumentType}
+                              onGenerated={() =>
+                                mandatDocumentType && handleDocumentUploadComplete(mandatDocumentType)
+                              }
                             />
                           </div>
                         )}
