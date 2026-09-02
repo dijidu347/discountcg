@@ -33,7 +33,7 @@ import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
-import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, type MandatData } from "@/lib/mandat";
+import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, MANDAT_PREREMPLI_ACTIF, type MandatData } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -270,6 +270,7 @@ export default function NouvelleDemarche() {
   // Deduit de la liste de pieces plutot que d'une liste de types codee en dur :
   // si la configuration admin change, le mandat suit sans retoucher au code.
   const mandatRequis = useMemo(() => {
+    if (!MANDAT_PREREMPLI_ACTIF) return false;
     const noms = PRO_DEMARCHE_TYPES.includes(formData.type)
       ? getDocumentsConfig(formData.type, questionnaireAnswerTexts).documents.map((d) => d.nom)
       : documentsRequis.map((d) => d.nom_document as string);

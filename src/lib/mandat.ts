@@ -1,5 +1,21 @@
 // Mandat d'immatriculation (Cerfa 13757).
 //
+// ---------------------------------------------------------------------------
+// INTERRUPTEUR DU PRE-REMPLISSAGE
+//
+// A false, le mandat redevient une piece a telecharger, imprimer, signer et
+// deposer, exactement comme avant : le generateur disparait des deux tunnels et
+// la ligne "Mandat (cerfa 13757*03)" reprend sa place dans la liste des pieces.
+//
+// Coupe le 2 septembre 2026 au soir, faute de personnel le lendemain pour
+// repondre aux questions des clients sur le nouveau parcours. A repasser a true
+// le vendredi 4 septembre au matin.
+//
+// Rien n'est supprime : tout le dispositif reste en place derriere cet
+// interrupteur, la remise en service ne demande que ce booleen.
+// ---------------------------------------------------------------------------
+export const MANDAT_PREREMPLI_ACTIF = false;
+//
 // Le Cerfa éclate l'adresse en quatre champs distincts (n° de voie, extension,
 // type de voie, nom de voie) alors qu'elle est stockée en une seule chaîne. Le
 // découpage ci-dessous fait une proposition ; c'est le formulaire de
