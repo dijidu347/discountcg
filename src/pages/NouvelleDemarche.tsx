@@ -252,6 +252,15 @@ export default function NouvelleDemarche() {
     return { requiredIds, allRequiredUploaded, blockingMessage };
   }, [formData.type, questionnaireAnswerTexts, uploadedDocuments]);
 
+  // Deduit de la liste de pieces plutot que d'une liste de types codee en dur :
+  // si la configuration admin change, le mandat suit sans retoucher au code.
+  const mandatRequis = useMemo(() => {
+    const noms = PRO_DEMARCHE_TYPES.includes(formData.type)
+      ? getDocumentsConfig(formData.type, questionnaireAnswerTexts).documents.map((d) => d.nom)
+      : documentsRequis.map((d) => d.nom_document as string);
+    return noms.some((n: string) => /13757/.test(n ?? ""));
+  }, [formData.type, questionnaireAnswerTexts, documentsRequis]);
+
   useEffect(() => {
     console.log("=== DEBUG DUPLICATA_CG_PRO ===");
     console.log("type démarche:", formData.type);
@@ -1056,15 +1065,6 @@ export default function NouvelleDemarche() {
       </div>
     );
   }
-
-  // Deduit de la liste de pieces plutot que d'une liste de types codee en dur :
-  // si la configuration admin change, le mandat suit sans retoucher au code.
-  const mandatRequis = useMemo(() => {
-    const noms = PRO_DEMARCHE_TYPES.includes(formData.type)
-      ? getDocumentsConfig(formData.type, questionnaireAnswerTexts).documents.map((d) => d.nom)
-      : documentsRequis.map((d: any) => d.nom_document);
-    return noms.some((n: string) => /13757/.test(n ?? ""));
-  }, [formData.type, questionnaireAnswerTexts, documentsRequis]);
 
   const requiredDocsCount = documentsRequis.filter(doc => doc.obligatoire).length;
   const allDocsUploaded = uploadedDocuments.size >= requiredDocsCount;
