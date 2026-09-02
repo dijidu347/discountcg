@@ -111,20 +111,6 @@ export const PriceSummary = ({
             </div>
           )}
 
-          {/* Total - Visible only when collapsed */}
-          {!isOpen && (
-            <div className="flex justify-between items-center text-xl font-bold">
-              <span>Total</span>
-              <span className="text-primary">{formatPrice(total)} €</span>
-            </div>
-          )}
-
-          {!isOpen && calculation.abattement && (
-            <Badge variant="secondary" className="w-full justify-center py-2 text-xs">
-              👉 Abattement -50% appliqué
-            </Badge>
-          )}
-
           {/* Collapsible details */}
           <Collapsible open={isOpen} onOpenChange={setIsOpen}>
             <CollapsibleTrigger className="flex items-center justify-center gap-2 w-full text-sm text-primary hover:text-primary/80 transition-colors py-2">
@@ -140,6 +126,22 @@ export const PriceSummary = ({
                 </>
               )}
             </CollapsibleTrigger>
+
+            {/* Total, affiché seulement replié : déplié, il est repris en bas du
+                détail. Placé après le déclencheur pour que « Voir les détails »
+                se lise au-dessus du montant. */}
+            {!isOpen && (
+              <div className="flex justify-between items-center text-xl font-bold pt-2">
+                <span>Total</span>
+                <span className="text-primary">{formatPrice(total)} €</span>
+              </div>
+            )}
+
+            {!isOpen && calculation.abattement && (
+              <Badge variant="secondary" className="w-full justify-center py-2 text-xs mt-2">
+                👉 Abattement -50% appliqué
+              </Badge>
+            )}
             <CollapsibleContent className="space-y-4 pt-4">
               <Separator />
               
