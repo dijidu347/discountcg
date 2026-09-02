@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { GarageSignatureSettings } from "@/components/signature/GarageSignatureSettings";
 import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { passwordChangeSchema } from "@/lib/validations";
@@ -506,6 +507,11 @@ export default function GarageSettings() {
                 </form>
               </CardContent>
             </Card>
+
+            <GarageSignatureSettings
+              garage={garage}
+              onSaved={(patch) => setGarage((g: any) => (g ? { ...g, ...patch } : g))}
+            />
           </TabsContent>
           
           <TabsContent value="verification" className="mt-6">
