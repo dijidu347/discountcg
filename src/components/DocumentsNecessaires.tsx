@@ -641,8 +641,6 @@ export function DocumentsNecessaires({
           )}
         </div>
         <p className="text-sm text-muted-foreground">
-          <span className="text-destructive font-bold">*</span> = Document obligatoire
-          {" · "}
           <span className="font-medium">{uploadedRequiredCount}/{requiredDocs.length}</span> documents requis uploadés
         </p>
       </CardHeader>
@@ -796,6 +794,10 @@ export function DocumentsNecessaires({
             </AlertDescription>
           </Alert>
         )}
+
+        <p className="text-xs text-muted-foreground">
+          <span className="text-destructive font-bold">*</span> = Document obligatoire
+        </p>
       </CardContent>
     </Card>
   );

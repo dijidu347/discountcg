@@ -1318,10 +1318,6 @@ export default function NouvelleDemarche() {
                               <FileCheck className="h-5 w-5 text-success" />
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            <span className="text-destructive text-base font-bold">*</span> = Document obligatoire
-                          </p>
-                          
                           <div className="space-y-3">
                             {documentsRequis.map((doc, idx) => {
                               const docName = doc.nom_document.toLowerCase();
@@ -1432,6 +1428,10 @@ export default function NouvelleDemarche() {
                               );
                             })}
                           </div>
+
+                          <p className="text-xs text-muted-foreground pt-1">
+                            <span className="text-destructive font-bold">*</span> = Document obligatoire
+                          </p>
                         </div>
 
                         {/* Certificat de non-gage (CG/DA/DC uniquement).
