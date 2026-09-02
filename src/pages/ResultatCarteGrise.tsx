@@ -4,7 +4,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { PriceSummary } from "@/components/simulateur/PriceSummary";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
@@ -13,7 +12,7 @@ import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
 import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, CheckCircle, UserPlus, LogIn } from "lucide-react";
+import { Loader2, ChevronLeft, Zap, CheckCircle } from "lucide-react";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { NON_GAGE_PRICE_PARTICULIER, NonGageMode, isNonGageRequired } from "@/lib/nonGage";
@@ -517,12 +516,39 @@ export default function ResultatCarteGrise() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Left side - Options and Payment */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Step 1: Options - masqué après paiement */}
+            {/* Step 1: Vos informations (AVANT paiement) */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
+                  isInfoCompleted
+                    ? 'bg-green-500 text-white'
+                    : 'bg-primary text-primary-foreground'
+                }`}>
+                  {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '1'}
+                </div>
+                <h2 className="text-2xl font-bold">Vos informations</h2>
+              </div>
+
+              <GuestOrderInfoForm
+                orderId={orderId}
+                isEnabled={true}
+                onEmailSaved={(savedEmail) => {
+                  setEmail(savedEmail);
+                  setIsEmailSaved(true);
+                }}
+                onComplete={async () => {
+                  setIsInfoCompleted(true);
+                  setIsEmailSaved(true);
+                }}
+              />
+            </div>
+
+            {/* Step 2: Options - masqué après paiement */}
             {!isPaid && (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
-                  1
+                  2
                 </div>
                 <h2 className="text-2xl font-bold">Options</h2>
               </div>
@@ -549,67 +575,8 @@ export default function ResultatCarteGrise() {
                 </CardContent>
               </Card>
 
-              {/* Options de suivi */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="w-5 h-5" />
-                    Options de suivi
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Option "Suivi par email" (+5) supprimée du parcours guest. */}
-
-                  {/* SMS - Coming soon */}
-                  <div className="flex items-start space-x-3 p-4 rounded-lg border border-border bg-muted/50 opacity-60">
-                    <Checkbox
-                      id="sms_notif"
-                      checked={false}
-                      disabled={true}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="sms_notif" className="cursor-not-allowed flex items-center gap-2 font-medium text-muted-foreground">
-                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                        Suivi par SMS
-                        <span className="ml-2 text-xs bg-secondary text-secondary-foreground px-2 py-0.5 rounded-full">À venir</span>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Bientôt disponible
-                      </p>
-                    </div>
-                  </div>
-
-                </CardContent>
-              </Card>
             </div>
             )}
-
-            {/* Step 2: Vos informations (AVANT paiement) */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full font-bold text-lg ${
-                  isInfoCompleted
-                    ? 'bg-green-500 text-white'
-                    : 'bg-primary text-primary-foreground'
-                }`}>
-                  {isInfoCompleted ? <CheckCircle className="w-5 h-5" /> : '2'}
-                </div>
-                <h2 className="text-2xl font-bold">Vos informations</h2>
-              </div>
-
-              <GuestOrderInfoForm
-                orderId={orderId}
-                isEnabled={true}
-                onEmailSaved={(savedEmail) => {
-                  setEmail(savedEmail);
-                  setIsEmailSaved(true);
-                }}
-                onComplete={async () => {
-                  setIsInfoCompleted(true);
-                  setIsEmailSaved(true);
-                }}
-              />
-            </div>
 
             {/* Step 3: Payment (seulement après infos complètes) */}
             <div className="space-y-4">
@@ -679,7 +646,7 @@ export default function ResultatCarteGrise() {
               /> : (
                 <Card className="opacity-50">
                   <CardContent className="pt-6">
-                    <p className="text-muted-foreground text-center py-4">{!isInfoCompleted ? "Veuillez d'abord renseigner vos informations" : !nonGageChoisi ? "Choisissez comment obtenir le certificat de non-gage (étape 1)" : "Calcul du prix en cours..."}</p>
+                    <p className="text-muted-foreground text-center py-4">{!isInfoCompleted ? "Veuillez d'abord renseigner vos informations" : !nonGageChoisi ? "Choisissez comment obtenir le certificat de non-gage (étape 2)" : "Calcul du prix en cours..."}</p>
                   </CardContent>
                 </Card>
               )}
