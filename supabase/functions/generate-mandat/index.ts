@@ -213,7 +213,9 @@ serve(async (req) => {
     const NOM_FICHIER = "Mandat_13757.pdf";
     const bucket = demarcheId ? "demarche-documents" : "guest-order-documents";
     const dossierId = demarcheId ?? orderId!;
-    const chemin = `${dossierId}/mandat_13757_${Date.now()}.pdf`;
+    // Chemin stable : une correction ecrase le mandat precedent au lieu d'en
+    // laisser un orphelin dans le stockage a chaque regeneration.
+    const chemin = `${dossierId}/mandat_13757.pdf`;
 
     const { error: uploadError } = await supabase.storage
       .from(bucket)
@@ -221,6 +223,9 @@ serve(async (req) => {
     if (uploadError) throw new Error("Dépôt du mandat impossible : " + uploadError.message);
 
     const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(chemin);
+    // Le chemin ne changeant plus, on casse le cache navigateur pour que la
+    // version corrigee s'affiche bien au lieu de l'ancienne.
+    const urlHorodatee = `${publicUrl.publicUrl}?v=${Date.now()}`;
 
     if (demarcheId) {
       await supabase.from("documents").delete().eq("demarche_id", demarcheId).eq("type_document", "mandat_13757");
@@ -229,7 +234,7 @@ serve(async (req) => {
         type_document: "mandat_13757",
         document_type: "Mandat (Cerfa 13757)",
         nom_fichier: NOM_FICHIER,
-        url: publicUrl.publicUrl,
+        url: urlHorodatee,
         taille_octets: pdfBytes.length,
       });
       await supabase.from("demarches").update({ mandat_data: mandatData }).eq("id", demarcheId);
@@ -239,13 +244,13 @@ serve(async (req) => {
         order_id: orderId,
         type_document: "mandat_13757",
         nom_fichier: NOM_FICHIER,
-        url: publicUrl.publicUrl,
+        url: urlHorodatee,
         taille_octets: pdfBytes.length,
       });
       await supabase.from("guest_orders").update({ mandat_data: mandatData }).eq("id", orderId);
     }
 
-    return jsonResponse({ success: true, path: chemin, url: publicUrl.publicUrl, bucket });
+    return jsonResponse({ success: true, path: chemin, url: urlHorodatee, bucket });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("generate-mandat:", message);
