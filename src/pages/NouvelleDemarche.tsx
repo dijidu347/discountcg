@@ -32,6 +32,8 @@ import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils"
 import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
+import { MandatGenerator } from "@/components/mandat/MandatGenerator";
+import type { MandatData } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -42,6 +44,7 @@ import {
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 import type { PriceCalculation } from "@/utils/calculatePrice";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Types de démarches PRO qui nécessitent un traitement spécial
 const PRO_DEMARCHE_TYPES = [
@@ -98,6 +101,10 @@ export default function NouvelleDemarche() {
   const [expressSelected, setExpressSelected] = useState(false);
   // Certificat de non-gage (CG/DA/DC) : null tant que le garage n'a pas choisi.
   const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
+  // Mandat 13757 : qui est le mandant. Par defaut le client final, cas le plus
+  // frequent ; le garage ne se designe mandant que pour ses propres vehicules.
+  const [mandantType, setMandantType] = useState<'garage' | 'client'>('client');
+  const [mandatSauvegarde, setMandatSauvegarde] = useState<MandatData | null>(null);
   // trackingServicePrice supprimé - options SMS retirées
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -174,6 +181,8 @@ export default function NouvelleDemarche() {
         setCarteGrisePrice(draft.prix_carte_grise || 0);
         setExpressSelected(draft.express || false);
         setNonGageMode((draft.non_gage_mode as NonGageMode) || null);
+        setMandantType((draft.mandant_type as 'garage' | 'client') || 'client');
+        setMandatSauvegarde((draft.mandat_data as MandatData) || null);
         setDraftLoaded(true);
       }
     };
@@ -1048,6 +1057,15 @@ export default function NouvelleDemarche() {
     );
   }
 
+  // Deduit de la liste de pieces plutot que d'une liste de types codee en dur :
+  // si la configuration admin change, le mandat suit sans retoucher au code.
+  const mandatRequis = useMemo(() => {
+    const noms = PRO_DEMARCHE_TYPES.includes(formData.type)
+      ? getDocumentsConfig(formData.type, questionnaireAnswerTexts).documents.map((d) => d.nom)
+      : documentsRequis.map((d: any) => d.nom_document);
+    return noms.some((n: string) => /13757/.test(n ?? ""));
+  }, [formData.type, questionnaireAnswerTexts, documentsRequis]);
+
   const requiredDocsCount = documentsRequis.filter(doc => doc.obligatoire).length;
   const allDocsUploaded = uploadedDocuments.size >= requiredDocsCount;
 
@@ -1457,6 +1475,82 @@ export default function NouvelleDemarche() {
                             </div>
                           }
                         />
+
+                        {/* Mandat 13757, quand la liste de pièces l'exige */}
+                        {mandatRequis && demarcheId && (
+                          <div className="space-y-3">
+                            <div className="p-4 rounded-lg border-2 border-border bg-card space-y-3">
+                              <p className="font-medium text-sm">Qui donne le mandat ?</p>
+                              <RadioGroup
+                                value={mandantType}
+                                onValueChange={async (v) => {
+                                  const mode = v as 'garage' | 'client';
+                                  setMandantType(mode);
+                                  await supabase.from('demarches').update({ mandant_type: mode }).eq('id', demarcheId);
+                                }}
+                                className="space-y-2"
+                              >
+                                <div className="flex items-start space-x-3 p-3 rounded-lg border">
+                                  <RadioGroupItem value="client" id="mandant_client" className="mt-0.5" />
+                                  <Label htmlFor="mandant_client" className="cursor-pointer font-normal">
+                                    <span className="font-medium">Mon client</span>
+                                    <span className="block text-sm text-muted-foreground mt-1">
+                                      Le mandat est établi à son nom et c'est lui qui signe, sur cet écran.
+                                    </span>
+                                  </Label>
+                                </div>
+                                <div className="flex items-start space-x-3 p-3 rounded-lg border">
+                                  <RadioGroupItem value="garage" id="mandant_garage" className="mt-0.5" />
+                                  <Label htmlFor="mandant_garage" className="cursor-pointer font-normal">
+                                    <span className="font-medium">Mon garage</span>
+                                    <span className="block text-sm text-muted-foreground mt-1">
+                                      Véhicule qui vous appartient. Votre signature et votre tampon enregistrés sont
+                                      apposés automatiquement.
+                                    </span>
+                                  </Label>
+                                </div>
+                              </RadioGroup>
+                            </div>
+
+                            <MandatGenerator
+                              demarcheId={demarcheId}
+                              saved={mandatSauvegarde}
+                              defaults={
+                                mandantType === 'garage'
+                                  ? {
+                                      identite: garage?.raison_sociale ?? "",
+                                      siret: garage?.siret ?? "",
+                                      adresse: garage?.adresse ?? "",
+                                      codePostal: garage?.code_postal ?? "",
+                                      commune: garage?.ville ?? "",
+                                      natureOperation: actionDetails?.titre ?? "",
+                                      marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
+                                      vin: vehicleInfoPro?.vin ?? "",
+                                      immatriculation: selectedImmatriculation,
+                                    }
+                                  : {
+                                      identite: [clientPrenom, clientNom].filter(Boolean).join(" "),
+                                      adresse: clientAdresse ?? "",
+                                      natureOperation: actionDetails?.titre ?? "",
+                                      marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
+                                      vin: vehicleInfoPro?.vin ?? "",
+                                      immatriculation: selectedImmatriculation,
+                                    }
+                              }
+                              savedSignaturePath={mandantType === 'garage' ? garage?.signature_path : null}
+                              savedTamponPath={mandantType === 'garage' ? garage?.tampon_path : null}
+                              // Le client signe sur la tablette du garage : le fichier reste
+                              // cloisonne sous l'identifiant du garage, seul chemin ou ses
+                              // droits d'ecriture s'appliquent.
+                              signatureUploadPath={
+                                mandantType === 'client' && garage
+                                  ? `${garage.id}/demarche_${demarcheId}.png`
+                                  : undefined
+                              }
+                              onGenerated={() => handleDocumentUploadComplete('mandat_13757')}
+                            />
+                          </div>
+                        )}
 
                         {/* Autres pièces justificatives */}
                         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
