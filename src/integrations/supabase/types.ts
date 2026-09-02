@@ -429,6 +429,8 @@ export type Database = {
           immatriculation: string
           is_draft: boolean | null
           is_free_token: boolean | null
+          mandant_type: string | null
+          mandat_data: Json | null
           marque: string | null
           modele: string | null
           montant_ht: number | null
@@ -478,6 +480,8 @@ export type Database = {
           immatriculation: string
           is_draft?: boolean | null
           is_free_token?: boolean | null
+          mandant_type?: string | null
+          mandat_data?: Json | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number | null
@@ -527,6 +531,8 @@ export type Database = {
           immatriculation?: string
           is_draft?: boolean | null
           is_free_token?: boolean | null
+          mandant_type?: string | null
+          mandat_data?: Json | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number | null
@@ -935,7 +941,9 @@ export type Database = {
           raison_sociale: string
           referral_source: string | null
           reseau: string | null
+          signature_path: string | null
           siret: string
+          tampon_path: string | null
           telephone: string
           token_balance: number
           unlimited_free_tokens: boolean | null
@@ -957,7 +965,9 @@ export type Database = {
           raison_sociale: string
           referral_source?: string | null
           reseau?: string | null
+          signature_path?: string | null
           siret: string
+          tampon_path?: string | null
           telephone: string
           token_balance?: number
           unlimited_free_tokens?: boolean | null
@@ -979,7 +989,9 @@ export type Database = {
           raison_sociale?: string
           referral_source?: string | null
           reseau?: string | null
+          signature_path?: string | null
           siret?: string
+          tampon_path?: string | null
           telephone?: string
           token_balance?: number
           unlimited_free_tokens?: boolean | null
@@ -1229,6 +1241,7 @@ export type Database = {
           immatriculation: string
           is_heberge: boolean | null
           is_mineur: boolean | null
+          mandat_data: Json | null
           marque: string | null
           modele: string | null
           montant_ht: number
@@ -1246,6 +1259,7 @@ export type Database = {
           resubmission_paid: boolean | null
           resubmission_payment_amount: number | null
           resubmission_payment_intent_id: string | null
+          signature_path: string | null
           sms_notifications: boolean
           sous_total_arrondi: number | null
           status: string
@@ -1259,6 +1273,7 @@ export type Database = {
           vehicule_leasing: boolean | null
           vehicule_pro: boolean | null
           ville: string
+          vin: string | null
         }
         Insert: {
           admin_viewed?: boolean | null
@@ -1284,6 +1299,7 @@ export type Database = {
           immatriculation: string
           is_heberge?: boolean | null
           is_mineur?: boolean | null
+          mandat_data?: Json | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number
@@ -1301,6 +1317,7 @@ export type Database = {
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
           resubmission_payment_intent_id?: string | null
+          signature_path?: string | null
           sms_notifications?: boolean
           sous_total_arrondi?: number | null
           status?: string
@@ -1314,6 +1331,7 @@ export type Database = {
           vehicule_leasing?: boolean | null
           vehicule_pro?: boolean | null
           ville: string
+          vin?: string | null
         }
         Update: {
           admin_viewed?: boolean | null
@@ -1339,6 +1357,7 @@ export type Database = {
           immatriculation?: string
           is_heberge?: boolean | null
           is_mineur?: boolean | null
+          mandat_data?: Json | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number
@@ -1356,6 +1375,7 @@ export type Database = {
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
           resubmission_payment_intent_id?: string | null
+          signature_path?: string | null
           sms_notifications?: boolean
           sous_total_arrondi?: number | null
           status?: string
@@ -1369,6 +1389,7 @@ export type Database = {
           vehicule_leasing?: boolean | null
           vehicule_pro?: boolean | null
           ville?: string
+          vin?: string | null
         }
         Relationships: []
       }
@@ -1526,6 +1547,7 @@ export type Database = {
           id: string
           nom: string
           prenom: string
+          signature_path: string | null
           telephone: string
           updated_at: string
           user_id: string
@@ -1536,6 +1558,7 @@ export type Database = {
           id?: string
           nom?: string
           prenom?: string
+          signature_path?: string | null
           telephone?: string
           updated_at?: string
           user_id: string
@@ -1546,6 +1569,7 @@ export type Database = {
           id?: string
           nom?: string
           prenom?: string
+          signature_path?: string | null
           telephone?: string
           updated_at?: string
           user_id?: string
