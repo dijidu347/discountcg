@@ -30,6 +30,14 @@ import { formatPrice } from "@/lib/utils";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
+import { NonGageChoice } from "@/components/demarche/NonGageChoice";
+import {
+  isNonGageRequired,
+  getNonGageSurcharge,
+  getNonGagePrice,
+  NON_GAGE_DOCUMENT_LABEL,
+  NonGageMode,
+} from "@/lib/nonGage";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 import type { PriceCalculation } from "@/utils/calculatePrice";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -87,6 +95,8 @@ export default function NouvelleDemarche() {
   // Détail complet du calcul carte grise (snapshot), remonté par VehicleFormCG.
   const [carteGriseDetails, setCarteGriseDetails] = useState<PriceCalculation | null>(null);
   const [expressSelected, setExpressSelected] = useState(false);
+  // Certificat de non-gage (CG/DA/DC) : null tant que le garage n'a pas choisi.
+  const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
   // trackingServicePrice supprimé - options SMS retirées
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -159,6 +169,7 @@ export default function NouvelleDemarche() {
         setSelectedVehicleId(draft.vehicule_id);
         setCarteGrisePrice(draft.prix_carte_grise || 0);
         setExpressSelected(draft.express || false);
+        setNonGageMode(((draft as any).non_gage_mode as NonGageMode) || null);
         setDraftLoaded(true);
       }
     };
@@ -211,7 +222,7 @@ export default function NouvelleDemarche() {
         updateDemarcheMontant();
       }
     }
-  }, [carteGrisePrice, demarcheId, actionDetails, formData.type, expressSelected]);
+  }, [carteGrisePrice, demarcheId, actionDetails, formData.type, expressSelected, nonGageMode]);
 
   // Jeton gratuit uniquement pour DA et DC
   const isFreeTokenEligible = freeTokenAvailable && (formData.type === 'DA' || formData.type === 'DC');
@@ -266,8 +277,8 @@ export default function NouvelleDemarche() {
     // Total des services
     const totalServicesHT = fraisDossierHT;
 
-    // Total TTC = carte grise + services + surcoût express (pas de TVA)
-    const totalTTC = prixCarteGrise + totalServicesHT + getExpressSurchargePro();
+    // Total TTC = carte grise + services + surcoûts express et non-gage (pas de TVA)
+    const totalTTC = prixCarteGrise + totalServicesHT + getExpressSurchargePro() + getNonGageSurchargePro();
 
     await supabase
       .from('demarches')
@@ -277,9 +288,35 @@ export default function NouvelleDemarche() {
         montant_ht: totalServicesHT,
         montant_ttc: totalTTC,
         express: expressSelected,
+        non_gage_mode: nonGageMode,
         ...buildCarteGriseSnapshot(),
       } as any)
       .eq('id', demarcheId);
+  };
+
+  // Le surcoût non-gage est porté par une ligne `tracking_services`, comme les
+  // autres options : la facture pro (generate-facture) et la page de paiement
+  // client la reprennent alors sans code supplémentaire.
+  const handleNonGageChange = async (mode: NonGageMode) => {
+    setNonGageMode(mode);
+    if (!demarcheId) return;
+
+    if (mode === "facture") {
+      await supabase
+        .from('tracking_services')
+        .upsert({
+          demarche_id: demarcheId,
+          service_type: 'certificat_non_gage',
+          price: getNonGagePrice("pro"),
+          status: 'pending',
+        }, { onConflict: 'demarche_id,service_type' });
+    } else {
+      await supabase
+        .from('tracking_services')
+        .delete()
+        .eq('demarche_id', demarcheId)
+        .eq('service_type', 'certificat_non_gage');
+    }
   };
 
   const loadExistingDocuments = async () => {
@@ -552,17 +589,21 @@ export default function NouvelleDemarche() {
   const getExpressSurchargePro = () =>
     (expressSelected && isExpressEligible(formData.type)) ? getExpressSurcharge(formData.type) : 0;
 
+  // Surcoût du certificat de non-gage quand le garage nous en confie la commande.
+  const getNonGageSurchargePro = () =>
+    getNonGageSurcharge(formData.type, nonGageMode, "pro");
+
   const getTotalPrice = () => {
     const basePrice = getFraisDossier();
     // Pour DA, DC et démarches PRO, pas de prix carte grise
     const vehiclePrice = (formData.type === 'DA' || formData.type === 'DC' || PRO_DEMARCHE_TYPES.includes(formData.type)) ? 0 : carteGrisePrice;
-    return basePrice + vehiclePrice + getExpressSurchargePro();
+    return basePrice + vehiclePrice + getExpressSurchargePro() + getNonGageSurchargePro();
   };
 
   // En mode split: le pro paie uniquement les frais de dossier (+ options tracking)
   // Le client paie la carte grise (taxe régionale)
   const getProPrice = () => {
-    return getFraisDossier() + getExpressSurchargePro();
+    return getFraisDossier() + getExpressSurchargePro() + getNonGageSurchargePro();
   };
 
   const getClientPrice = () => {
@@ -572,8 +613,8 @@ export default function NouvelleDemarche() {
   // Coût en jetons. 1 jeton = 1 € : garages.token_balance est stocké EN EUROS
   // (cf. webhook-stripe, PaiementDemarche, Dashboard). Aucune conversion à faire.
   const getTokenCost = () => {
-    // Pour les CG, le calcul est basé sur les frais de dossier (+ express) uniquement (pas la carte grise)
-    return getFraisDossier() + getExpressSurchargePro();
+    // Pour les CG, le calcul est basé sur les frais de dossier (+ options) uniquement (pas la carte grise)
+    return getFraisDossier() + getExpressSurchargePro() + getNonGageSurchargePro();
   };
 
   const canPayWithTokens = () => {
@@ -729,6 +770,27 @@ export default function NouvelleDemarche() {
           title: "Documents obligatoires manquants",
           description: `Veuillez télécharger tous les documents obligatoires (${uploadedRequiredDocs.length}/${requiredDocs.length})`,
           variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // Certificat de non-gage (CG/DA/DC) : le choix est imposé, et s'il a été
+    // décidé de le fournir soi-même la pièce doit être déposée avant paiement.
+    if (isNonGageRequired(formData.type)) {
+      if (!nonGageMode) {
+        toast({
+          title: "Certificat de non-gage",
+          description: "Indiquez si vous fournissez le certificat ou si nous devons le commander.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (nonGageMode === 'fourni' && !uploadedDocuments.has('non_gage')) {
+        toast({
+          title: "Certificat de non-gage manquant",
+          description: "Déposez le certificat, ou choisissez que nous le commandions pour vous.",
+          variant: "destructive",
         });
         return;
       }
@@ -1367,6 +1429,36 @@ export default function NouvelleDemarche() {
                             })}
                           </div>
                         </div>
+
+                        {/* Certificat de non-gage (CG/DA/DC uniquement) */}
+                        <NonGageChoice
+                          demarcheType={formData.type}
+                          audience="pro"
+                          value={nonGageMode}
+                          onChange={handleNonGageChange}
+                        />
+
+                        {nonGageMode === 'fourni' && isNonGageRequired(formData.type) && (
+                          <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
+                            <div className="flex items-center gap-4">
+                              <div className="flex-1">
+                                <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                                  {NON_GAGE_DOCUMENT_LABEL}
+                                  <span className="text-destructive text-base font-bold">*</span>
+                                </Label>
+                              </div>
+                              <div className="w-[400px]">
+                                <DocumentUpload
+                                  demarcheId={demarcheId}
+                                  documentType="non_gage"
+                                  customName={NON_GAGE_DOCUMENT_LABEL}
+                                  label=""
+                                  onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Autres pièces justificatives */}
                         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">

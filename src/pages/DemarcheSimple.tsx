@@ -16,6 +16,8 @@ import { formatPrice } from "@/lib/utils";
 import { Helmet } from "react-helmet-async";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
+import { NonGageChoice } from "@/components/demarche/NonGageChoice";
+import { isNonGageRequired, getNonGageSurcharge, NonGageMode } from "@/lib/nonGage";
 
 interface DemarcheTypeInfo {
   id: string;
@@ -68,6 +70,8 @@ export default function DemarcheSimple() {
   const [isEmailSaved, setIsEmailSaved] = useState(false);
   const [authUser, setAuthUser] = useState<any>(null);
   const [express, setExpress] = useState(false);
+  // Certificat de non-gage (CG/DA/DC) : tranché avant paiement, le montant en dépend.
+  const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
   const paymentSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -91,7 +95,12 @@ export default function DemarcheSimple() {
   }, []);
 
   const fraisHT = demarcheTypeInfo?.prix_base || 0;
-  const totalTTC = fraisHT + ((express && isExpressEligible(demarcheType)) ? getExpressSurcharge(demarcheType) : 0); // Pas de TVA pour DA/DC
+  const totalTTC = fraisHT
+    + ((express && isExpressEligible(demarcheType)) ? getExpressSurcharge(demarcheType) : 0)
+    + getNonGageSurcharge(demarcheType, nonGageMode, "particulier"); // Pas de TVA pour DA/DC
+
+  // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché.
+  const nonGageChoisi = !isNonGageRequired(demarcheType) || nonGageMode !== null;
 
   useEffect(() => {
     const loadData = async () => {
@@ -128,13 +137,14 @@ export default function DemarcheSimple() {
         // Vérifier si la commande existe et son statut
         const { data: order, error } = await supabase
           .from('guest_orders')
-          .select('paye, nom, prenom, email, express')
+          .select('paye, nom, prenom, email, express, non_gage_mode')
           .eq('id', orderIdParam)
           .single();
 
         if (error) throw error;
 
         setExpress(order?.express || false);
+        setNonGageMode(((order as any)?.non_gage_mode as NonGageMode) || null);
 
         if (order?.paye) {
           setIsPaid(true);
@@ -267,6 +277,25 @@ export default function DemarcheSimple() {
                 await supabase.from('guest_orders').update({ express: checked }).eq('id', orderId);
               }}
             />
+            {isNonGageRequired(demarcheType) && (
+              <div className="mt-4">
+                <NonGageChoice
+                  demarcheType={demarcheType}
+                  audience="particulier"
+                  value={nonGageMode}
+                  onChange={async (mode) => {
+                    setNonGageMode(mode);
+                    // `certificat_non_gage` reste la colonne de facturation : elle
+                    // alimente déjà le calcul serveur, la facture et les e-mails.
+                    await supabase
+                      .from('guest_orders')
+                      .update({ non_gage_mode: mode, certificat_non_gage: mode === 'facture' } as any)
+                      .eq('id', orderId);
+                  }}
+                  disabled={isPaid}
+                />
+              </div>
+            )}
             {demarcheTypeInfo?.description && (
               <p className="text-sm text-muted-foreground mt-4">{demarcheTypeInfo.description}</p>
             )}
@@ -314,7 +343,7 @@ export default function DemarcheSimple() {
               </h2>
             </div>
 
-            {isInfoCompleted && !isPaid && (
+            {isInfoCompleted && nonGageChoisi && !isPaid && (
               <PaymentMethods
                 orderId={orderId}
                 amount={totalTTC}
@@ -322,10 +351,14 @@ export default function DemarcheSimple() {
               />
             )}
 
-            {!isInfoCompleted && (
+            {(!isInfoCompleted || !nonGageChoisi) && !isPaid && (
               <Card className="opacity-50">
                 <CardContent className="pt-6">
-                  <p className="text-muted-foreground text-center py-4">Veuillez d'abord renseigner vos informations</p>
+                  <p className="text-muted-foreground text-center py-4">
+                    {!isInfoCompleted
+                      ? "Veuillez d'abord renseigner vos informations"
+                      : "Choisissez comment obtenir le certificat de non-gage"}
+                  </p>
                 </CardContent>
               </Card>
             )}

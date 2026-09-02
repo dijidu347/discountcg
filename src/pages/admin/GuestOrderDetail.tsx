@@ -66,6 +66,7 @@ interface GuestOrder {
   email_notifications: boolean;
   dossier_prioritaire?: boolean;
   certificat_non_gage?: boolean;
+  non_gage_mode?: string | null;
   has_cotitulaire?: boolean;
   cotitulaire_nom?: string | null;
   cotitulaire_prenom?: string | null;
@@ -614,12 +615,13 @@ export default function GuestOrderDetail() {
             </Card>
 
             {/* Options & payment details */}
-            {(order.express || order.certificat_non_gage || order.sms_notifications) && (
+            {(order.express || order.certificat_non_gage || order.sms_notifications || order.non_gage_mode) && (
               <Card className="border-orange-300">
                 <CardHeader><CardTitle className="flex items-center gap-2"><AlertCircle className="h-5 w-5 text-orange-500" /> Options client</CardTitle></CardHeader>
                 <CardContent className="space-y-2">
                   {order.express && <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50 dark:bg-orange-950 border border-orange-300"><Badge className="bg-orange-500 text-white">PRIORITAIRE</Badge><span className="text-sm font-bold text-orange-600">+{getExpressSurcharge(order.demarche_type).toFixed(2)} €</span></div>}
-                  {order.certificat_non_gage && <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-300"><Badge className="bg-blue-500 text-white">NON-GAGE</Badge><span className="text-sm font-bold text-blue-600">+10 €</span></div>}
+                  {order.certificat_non_gage && <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-300"><Badge className="bg-blue-500 text-white">NON-GAGE À COMMANDER</Badge><span className="text-sm font-bold text-blue-600">+10 €</span></div>}
+                  {order.non_gage_mode === 'fourni' && <div className="flex items-center justify-between p-2 rounded-lg bg-muted border"><Badge variant="secondary">NON-GAGE FOURNI PAR LE CLIENT</Badge><span className="text-sm text-muted-foreground">rien à commander</span></div>}
                   {order.sms_notifications && <div className="flex items-center justify-between p-2 rounded-lg bg-purple-50 dark:bg-purple-950 border border-purple-300"><Badge className="bg-purple-500 text-white">SMS</Badge><span className="text-sm font-bold text-purple-600">+5 €</span></div>}
                 </CardContent>
               </Card>

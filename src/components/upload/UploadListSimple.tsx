@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
 
 interface UploadListSimpleProps {
   orderId: string;
@@ -64,19 +65,44 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   const [requiredDocuments, setRequiredDocuments] = useState<RequiredDocument[]>([]);
   const [additionalDocs, setAdditionalDocs] = useState<string[]>([]);
   const [newDocName, setNewDocName] = useState("");
+  // Le client a choisi de fournir lui-même le certificat de non-gage : la pièce
+  // s'ajoute à la liste et bloque l'envoi du dossier tant qu'elle manque.
+  const [nonGageFourni, setNonGageFourni] = useState(false);
 
   const loadData = async () => {
     setIsLoading(true);
     try {
+      // Mode non-gage choisi avant paiement, il conditionne la liste des pièces.
+      const { data: orderMode } = await supabase
+        .from('guest_orders')
+        .select('non_gage_mode')
+        .eq('id', orderId)
+        .single();
+      const attendNonGage = (orderMode as any)?.non_gage_mode === 'fourni';
+      setNonGageFourni(attendNonGage);
+
       // Load required documents from DB
-      const { data: docsConfig } = await supabase
+      const { data: dbDocs } = await supabase
         .from('guest_order_required_documents')
         .select('*')
         .eq('demarche_type_code', demarcheType)
         .eq('actif', true)
         .order('ordre');
 
-      if (docsConfig) {
+      // Liste effective = pièces configurées en base + le non-gage si le client
+      // s'est engagé à le fournir. Le certificat n'est PAS stocké en base : il
+      // dépend du choix de la commande, pas du type de démarche.
+      const docsConfig = [...(dbDocs || [])];
+      if (attendNonGage && !docsConfig.some(d => d.nom_document === NON_GAGE_DOCUMENT_LABEL)) {
+        docsConfig.push({
+          id: 'non_gage',
+          nom_document: NON_GAGE_DOCUMENT_LABEL,
+          obligatoire: true,
+          ordre: 999,
+        } as any);
+      }
+
+      if (docsConfig.length > 0) {
         // Deduplicate by nom_document to prevent showing same document type multiple times
         const seen = new Set<string>();
         const uniqueDocs = docsConfig.filter(doc => {
@@ -105,7 +131,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         })));
 
         // Detect additional docs already uploaded (not in required list)
-        if (docsConfig) {
+        if (docsConfig.length > 0) {
           const requiredNames = new Set(docsConfig.map((d: any) => d.nom_document));
           const extraTypes = [...new Set(
             existingDocs
@@ -173,6 +199,15 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
       toast({
         title: "Erreur",
         description: "Impossible de récupérer les informations de la commande",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (nonGageFourni && !uploadedFiles.some(f => f.type_document === NON_GAGE_DOCUMENT_LABEL)) {
+      toast({
+        title: "Certificat de non-gage manquant",
+        description: "Vous avez choisi de fournir le certificat vous-même : déposez-le pour envoyer le dossier.",
         variant: "destructive",
       });
       return;

@@ -15,6 +15,8 @@ import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, Mail, MessageSquare, Bell, Zap, FileSearch, CheckCircle, UserPlus, LogIn } from "lucide-react";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
+import { NonGageChoice } from "@/components/demarche/NonGageChoice";
+import { NON_GAGE_PRICE_PARTICULIER, NonGageMode, isNonGageRequired } from "@/lib/nonGage";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -60,11 +62,20 @@ export default function ResultatCarteGrise() {
 
   // Nouvelles options
   const [express, setExpress] = useState(false);
-  const [certificatNonGage, setCertificatNonGage] = useState(false);
+  // Le certificat de non-gage n'est plus une option facultative : sur CG/DA/DC
+  // le client choisit de le fournir ou de nous le confier. `certificatNonGage`
+  // reste dérivé du choix pour alimenter sans changement le prix, la commande,
+  // les e-mails et le récapitulatif.
+  const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
+  const certificatNonGage = nonGageMode === "facture";
 
-  const certificatNonGagePrix = 10;
+  const certificatNonGagePrix = NON_GAGE_PRICE_PARTICULIER;
 
   const fraisDossier = 30;
+
+  // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché :
+  // le montant à encaisser en dépend.
+  const nonGageChoisi = !isNonGageRequired(demarcheType) || nonGageMode !== null;
 
   // Calcul du total TTC (pas de TVA)
   const calculateTotalTTC = () => {
@@ -336,6 +347,7 @@ export default function ResultatCarteGrise() {
           dossier_prioritaire: false,
           express: express,
           certificat_non_gage: certificatNonGage,
+          non_gage_mode: nonGageMode,
           ...vehicleFields,
           // puiss_fisc vient de `calculation`, pas de vehicleInfo : il reste écrit
           // inconditionnellement, comme avant.
@@ -527,26 +539,13 @@ export default function ResultatCarteGrise() {
                   {/* Dossier Prioritaire (option express) */}
                   <ExpressOptionCard demarcheType={demarcheType} checked={express} onCheckedChange={setExpress} />
 
-                  {/* Certificat de non-gage */}
-                  <div className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-                    certificatNonGage ? 'border-blue-500 bg-blue-50 dark:bg-blue-950' : 'border-border bg-card hover:bg-muted/50'
-                  }`}>
-                    <Checkbox
-                      id="certificat_non_gage"
-                      checked={certificatNonGage}
-                      onCheckedChange={(checked) => setCertificatNonGage(checked as boolean)}
-                    />
-                    <div className="flex-1">
-                      <Label htmlFor="certificat_non_gage" className="cursor-pointer flex items-center gap-2 font-medium">
-                        <FileSearch className="w-4 h-4 text-blue-500" />
-                        Certificat de non-gage
-                        <span className="ml-auto text-blue-500 font-semibold">+{certificatNonGagePrix},00 €</span>
-                      </Label>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        Recommandé pour vérifier qu'aucun bloquant n'empêche la vente du véhicule
-                      </p>
-                    </div>
-                  </div>
+                  {/* Certificat de non-gage : choix imposé, pas une option */}
+                  <NonGageChoice
+                    demarcheType={demarcheType}
+                    audience="particulier"
+                    value={nonGageMode}
+                    onChange={setNonGageMode}
+                  />
                 </CardContent>
               </Card>
 
@@ -621,7 +620,7 @@ export default function ResultatCarteGrise() {
                 <h2 className={`text-2xl font-bold ${!isInfoCompleted ? 'text-muted-foreground' : ''}`}>Payer votre commande</h2>
               </div>
 
-              {isInfoCompleted && isPriceSaved ? <PaymentMethods
+              {isInfoCompleted && isPriceSaved && nonGageChoisi ? <PaymentMethods
                 amount={calculateTotalTTC()}
                 orderId={orderId}
                 onPaymentSuccess={async () => {
@@ -680,7 +679,7 @@ export default function ResultatCarteGrise() {
               /> : (
                 <Card className="opacity-50">
                   <CardContent className="pt-6">
-                    <p className="text-muted-foreground text-center py-4">{!isInfoCompleted ? "Veuillez d'abord renseigner vos informations" : "Calcul du prix en cours..."}</p>
+                    <p className="text-muted-foreground text-center py-4">{!isInfoCompleted ? "Veuillez d'abord renseigner vos informations" : !nonGageChoisi ? "Choisissez comment obtenir le certificat de non-gage (étape 1)" : "Calcul du prix en cours..."}</p>
                   </CardContent>
                 </Card>
               )}
