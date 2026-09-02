@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PriceCalculation } from "@/utils/calculatePrice";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Car, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { formatPrice } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
@@ -74,42 +74,8 @@ export const PriceSummary = ({
     <Card className="border-primary/20 sticky top-4">
       <CardContent className="pt-6">
         <div className="space-y-4">
-          {/* Vehicle Info - Always visible */}
-          {vehicleInfo && (vehicleInfo.marque || vehicleInfo.modele) && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-primary">
-                <Car className="w-5 h-5" />
-                <span className="font-semibold">Votre véhicule</span>
-              </div>
-              <div className="space-y-2 text-sm">
-                {vehicleInfo.marque && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Marque</span>
-                    <span className="font-medium">{vehicleInfo.marque}</span>
-                  </div>
-                )}
-                {vehicleInfo.modele && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Modèle</span>
-                    <span className="font-medium">{vehicleInfo.modele}</span>
-                  </div>
-                )}
-                {vehicleInfo.energie && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Énergie</span>
-                    <span className="font-medium">{vehicleInfo.energie}</span>
-                  </div>
-                )}
-                {vehicleInfo.date_mec && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Mise en circulation</span>
-                    <span className="font-medium">{vehicleInfo.date_mec}</span>
-                  </div>
-                )}
-              </div>
-              <Separator />
-            </div>
-          )}
+          {/* Le bloc "Votre véhicule" a été sorti d'ici : voir VehicleInfoCard,
+              place dans le fil des etapes plutot qu'en bas de la colonne. */}
 
           {/* Total - Visible only when collapsed */}
           {!isOpen && (

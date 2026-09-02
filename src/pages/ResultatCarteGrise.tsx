@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, ChevronLeft, Zap, CheckCircle } from "lucide-react";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
+import { VehicleInfoCard } from "@/components/simulateur/VehicleInfoCard";
 import { NON_GAGE_PRICE_PARTICULIER, NonGageMode, isNonGageRequired } from "@/lib/nonGage";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,9 @@ export default function ResultatCarteGrise() {
   // reste dérivé du choix pour alimenter sans changement le prix, la commande,
   // les e-mails et le récapitulatif.
   const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
+  // Cible du défilement : une fois ses informations saisies, le client est
+  // amené aux options, qui font varier le montant à payer.
+  const optionsRef = useRef<HTMLDivElement>(null);
   const certificatNonGage = nonGageMode === "facture";
 
   const certificatNonGagePrix = NON_GAGE_PRICE_PARTICULIER;
@@ -539,13 +543,17 @@ export default function ResultatCarteGrise() {
                 onComplete={async () => {
                   setIsInfoCompleted(true);
                   setIsEmailSaved(true);
+                  // Laisse le temps au bloc options de s'afficher avant de le viser.
+                  setTimeout(() => {
+                    optionsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }, 300);
                 }}
               />
             </div>
 
             {/* Step 2: Options - masqué après paiement */}
             {!isPaid && (
-            <div className="space-y-4">
+            <div ref={optionsRef} className="space-y-4 scroll-mt-24">
               <div className="flex items-center gap-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
                   2
@@ -577,6 +585,8 @@ export default function ResultatCarteGrise() {
 
             </div>
             )}
+
+            <VehicleInfoCard vehicleInfo={vehicleInfo || undefined} />
 
             {/* Step 3: Payment (seulement après infos complètes) */}
             <div className="space-y-4">
