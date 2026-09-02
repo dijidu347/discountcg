@@ -33,6 +33,10 @@ interface MandatGeneratorProps {
     immatriculation?: string;
   };
   flags?: MandantFlags;
+  // Corrections deja apportees et enregistrees lors d'un passage precedent.
+  // Elles priment sur `defaults` : sinon, revenir sur la page effacerait le
+  // travail de relecture du client.
+  saved?: MandatData | null;
   // Signature et tampon déjà enregistrés (garage mandant) : rien à tracer.
   savedSignaturePath?: string | null;
   savedTamponPath?: string | null;
@@ -56,6 +60,7 @@ export const MandatGenerator = ({
   orderId,
   defaults,
   flags = {},
+  saved,
   savedSignaturePath,
   savedTamponPath,
   signatureUploadPath,
@@ -64,20 +69,24 @@ export const MandatGenerator = ({
   const { toast } = useToast();
   const adresse = useMemo(() => splitAdresse(defaults.adresse), [defaults.adresse]);
 
+  // Une valeur relue prime toujours sur la proposition automatique, y compris
+  // quand le client a volontairement vide un champ.
+  const reprise = <T,>(sauve: T | undefined, propose: T): T => (sauve !== undefined ? sauve : propose);
+
   const [form, setForm] = useState({
-    identite: defaults.identite ?? "",
-    siret: defaults.siret ?? "",
-    signataire: "",
-    numero: adresse.numero,
-    extension: adresse.extension,
-    typeVoie: adresse.type_voie,
-    nomVoie: adresse.nom_voie,
-    codePostal: defaults.codePostal ?? "",
-    commune: defaults.commune ?? "",
-    nature: defaults.natureOperation ?? "",
-    marque: defaults.marque ?? "",
-    vin: defaults.vin ?? "",
-    immatriculation: defaults.immatriculation ?? "",
+    identite: reprise(saved?.mandant_identite, defaults.identite ?? ""),
+    siret: reprise(saved?.mandant_siret, defaults.siret ?? ""),
+    signataire: reprise(saved?.signataire_nom_qualite, ""),
+    numero: reprise(saved?.adresse_numero, adresse.numero),
+    extension: reprise(saved?.adresse_extension, adresse.extension),
+    typeVoie: reprise(saved?.adresse_type_voie, adresse.type_voie),
+    nomVoie: reprise(saved?.adresse_nom_voie, adresse.nom_voie),
+    codePostal: reprise(saved?.adresse_code_postal, defaults.codePostal ?? ""),
+    commune: reprise(saved?.adresse_commune, defaults.commune ?? ""),
+    nature: reprise(saved?.nature_operation, defaults.natureOperation ?? ""),
+    marque: reprise(saved?.vehicule_marque, defaults.marque ?? ""),
+    vin: reprise(saved?.vehicule_vin, defaults.vin ?? ""),
+    immatriculation: reprise(saved?.vehicule_immatriculation, defaults.immatriculation ?? ""),
   });
   const [signature, setSignature] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -87,7 +96,8 @@ export const MandatGenerator = ({
   const generable = mandatGenerable(flags);
   // Soit la signature est déjà enregistrée (garage), soit le signataire trace la
   // sienne maintenant.
-  const doitSigner = !savedSignaturePath;
+  const signatureConnue = savedSignaturePath ?? saved?.signature_path ?? null;
+  const doitSigner = !signatureConnue;
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -116,7 +126,7 @@ export const MandatGenerator = ({
 
     setGenerating(true);
     try {
-      let signaturePath = savedSignaturePath ?? undefined;
+      let signaturePath = signatureConnue ?? undefined;
 
       if (signature && signatureUploadPath) {
         const blob = dataUrlToBlob(signature);
