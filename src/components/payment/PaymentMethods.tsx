@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { CgvAcceptance } from "@/components/payment/CgvAcceptance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, CheckCircle, Loader2 } from "lucide-react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
@@ -217,6 +218,9 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
     onPaymentSuccess();
   };
 
+  // Acceptation des CGV : bloque chaque moyen de paiement tant qu'elle manque.
+  const [cgvAccepted, setCgvAccepted] = useState(false);
+
   const handleWalletError = (error: string) => {
     toast({
       title: "❌ Paiement refusé",
@@ -249,9 +253,10 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
           <div className="space-y-3">
             <h3 className="font-medium text-sm text-muted-foreground">Paiement sécurisé</h3>
             <p className="text-sm text-muted-foreground">Carte bancaire, Apple Pay, Google Pay…</p>
+            <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
             <Button
               onClick={handleSogecommercePay}
-              disabled={isProcessing}
+              disabled={isProcessing || !cgvAccepted}
               size="lg"
               className="w-full"
             >
@@ -279,7 +284,9 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
   return (
     <Card>
       <CardContent className="pt-6 space-y-6">
-        {stripePromise && (
+        <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
+
+        {stripePromise && cgvAccepted && (
           <div className="space-y-3">
             <h3 className="font-medium text-sm text-muted-foreground">Paiement rapide</h3>
             <Elements stripe={stripePromise}>
@@ -299,12 +306,13 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
 
         <div className="space-y-3">
           <h3 className="font-medium text-sm text-muted-foreground">Carte bancaire</h3>
-          {!showCardForm ? (
+          {(!showCardForm || !cgvAccepted) ? (
             <Button
               onClick={() => setShowCardForm(true)}
               variant="outline"
               className="w-full"
               size="lg"
+              disabled={!cgvAccepted}
             >
               <CreditCard className="w-5 h-5 mr-2" />
               Payer par carte ({formatPrice(amount)} €)

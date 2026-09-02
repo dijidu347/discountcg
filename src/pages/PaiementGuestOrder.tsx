@@ -12,6 +12,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
+import { CgvAcceptance } from "@/components/payment/CgvAcceptance";
 
 const CheckoutForm = ({ order }: { order: any }) => {
   const stripe = useStripe();
@@ -19,6 +20,7 @@ const CheckoutForm = ({ order }: { order: any }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cgvAccepted, setCgvAccepted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,9 +171,11 @@ const CheckoutForm = ({ order }: { order: any }) => {
         demarcheType={order.demarche_type}
       />
 
+      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} id="cgv_stripe" />
+
       <Button
         type="submit"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || isProcessing || !cgvAccepted}
         size="lg"
         className="w-full text-lg h-14"
       >
@@ -195,6 +199,7 @@ const CheckoutForm = ({ order }: { order: any }) => {
 const SogecommerceCheckout = ({ order }: { order: any }) => {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cgvAccepted, setCgvAccepted] = useState(false);
 
   const handlePay = async () => {
     setIsProcessing(true);
@@ -234,9 +239,11 @@ const SogecommerceCheckout = ({ order }: { order: any }) => {
         express={order.express}
         demarcheType={order.demarche_type}
       />
+      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} id="cgv_soge" />
+
       <Button
         onClick={handlePay}
-        disabled={isProcessing}
+        disabled={isProcessing || !cgvAccepted}
         size="lg"
         className="w-full text-lg h-14"
       >

@@ -22,6 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 import { compressFile, isFileTooLarge } from "@/lib/file-compression";
+import { CgvAcceptance } from "@/components/payment/CgvAcceptance";
 
 // Step indicator
 const StepIndicator = ({ currentStep, steps }: { currentStep: number; steps: string[] }) => (
@@ -65,6 +66,7 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
   const elements = useElements();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [cgvAccepted, setCgvAccepted] = useState(false);
 
   const totalAmount = calculateGuestOrderTTC(
     order.montant_ht || 0,
@@ -191,9 +193,11 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
         </CardContent>
       </Card>
 
+      <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} id="cgv_stripe" />
+
       <Button
         type="submit"
-        disabled={!stripe || isProcessing}
+        disabled={!stripe || isProcessing || !cgvAccepted}
         size="lg"
         className="w-full text-lg h-14"
       >
@@ -215,6 +219,7 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
 
 // Variante Sogecommerce (redirection page hébergée SG). Sans dépendance Stripe.
 const SogecommerceCheckout = ({ order, formData }: { order: any; formData: any }) => {
+  const [cgvAccepted, setCgvAccepted] = useState(false);
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -257,9 +262,12 @@ const SogecommerceCheckout = ({ order, formData }: { order: any; formData: any }
   };
 
   return (
+    <div className="space-y-4">
+    <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} id="cgv_soge" />
+
     <Button
       onClick={handlePay}
-      disabled={isProcessing}
+      disabled={isProcessing || !cgvAccepted}
       size="lg"
       className="w-full text-lg h-14"
     >
@@ -275,6 +283,7 @@ const SogecommerceCheckout = ({ order, formData }: { order: any; formData: any }
         </>
       )}
     </Button>
+    </div>
   );
 };
 

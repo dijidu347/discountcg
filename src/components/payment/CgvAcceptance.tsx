@@ -1,0 +1,42 @@
+import { Link } from "react-router-dom";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+
+interface CgvAcceptanceProps {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  id?: string;
+}
+
+// Acceptation des CGV, à placer juste au-dessus du bouton de paiement.
+//
+// La case est décochée par défaut : l'acceptation doit résulter d'un acte positif
+// du client (art. 1127-2 du Code civil, « double clic »). Une case pré-cochée ne
+// vaudrait pas acceptation et priverait la mention de tout effet.
+//
+// Le lien vers les CGV est volontairement HORS du <Label> : à l'intérieur, un clic
+// dessus cocherait aussi la case.
+export const CgvAcceptance = ({ checked, onCheckedChange, id = "cgv_acceptance" }: CgvAcceptanceProps) => (
+  <div className="flex items-start space-x-3 rounded-lg border p-3 bg-muted/30">
+    <Checkbox
+      id={id}
+      checked={checked}
+      onCheckedChange={(c) => onCheckedChange(c as boolean)}
+      className="mt-0.5"
+    />
+    <p className="text-sm leading-snug">
+      <Label htmlFor={id} className="font-normal cursor-pointer">
+        En finalisant cette démarche, vous acceptez nos{" "}
+      </Label>
+      <Link
+        to="/cgv"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2 hover:text-primary/80"
+      >
+        conditions générales de ventes
+      </Link>
+      .
+    </p>
+  </div>
+);

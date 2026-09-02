@@ -21,6 +21,7 @@ import { VehicleFormCG } from "@/components/VehicleFormCG";
 import { VehicleFormSimple } from "@/components/VehicleFormSimple";
 import { VehicleInfoFormPro, VehicleInfoPro } from "@/components/VehicleInfoFormPro";
 import { PaymentModeSelector, PaymentMode } from "@/components/demarche/PaymentModeSelector";
+import { CgvAcceptance } from "@/components/payment/CgvAcceptance";
 import { typeHasPaymentChoice } from "@/lib/demarchePayment";
 import { DocumentsNecessaires, getDocumentsConfig } from "@/components/DocumentsNecessaires";
 // TrackingServiceOption supprimé - options SMS retirées
@@ -133,6 +134,9 @@ export default function NouvelleDemarche() {
   const [clientPrenom, setClientPrenom] = useState<string | undefined>();
   const [clientAdresse, setClientAdresse] = useState<string | undefined>();
   const [paymentModeConfirmed, setPaymentModeConfirmed] = useState(false);
+  // Acceptation des CGV, exigée avant de finaliser la démarche quel que soit le
+  // moyen retenu (carte, jetons, jeton gratuit ou lien envoyé au client).
+  const [cgvAccepted, setCgvAccepted] = useState(false);
 
   // Keep refs in sync with state for cleanup
   useEffect(() => {
@@ -1538,10 +1542,13 @@ export default function NouvelleDemarche() {
                 }}
               />
 
+              <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
+
               <Button
                 type="submit"
                 size="lg"
                 disabled={
+                  !cgvAccepted ||
                   loading || 
                   isQuestionnaireBlocked ||
                   // Pour les démarches PRO avec véhicule, vérifier les infos véhicule
