@@ -131,6 +131,10 @@ export default function NouvelleDemarche() {
   const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false);
   // Ouverture/fermeture du bloc questionnaire (modifiable même après complétion)
   const [isQuestionnaireOpen, setIsQuestionnaireOpen] = useState(true);
+  // Nombre de questions configurees pour la demarche. Sur 18 demarches pro
+  // actives, 9 n'en ont aucune (dont CG, DA, DC) : sans ce compteur, le bandeau
+  // "Questions prealables" s'affichait vide sur celles-la.
+  const [nbQuestions, setNbQuestions] = useState<number | null>(null);
   // Textes des réponses au questionnaire (pour DocumentsNecessaires)
   const [questionnaireAnswerTexts, setQuestionnaireAnswerTexts] = useState<Record<string, string>>({});
   // Payment mode state
@@ -207,6 +211,7 @@ export default function NouvelleDemarche() {
 
   useEffect(() => {
     if (formData.type) {
+      setNbQuestions(null);
       loadActionDetails();
     }
   }, [formData.type]);
@@ -420,6 +425,15 @@ export default function NouvelleDemarche() {
 
     if (action) {
       setActionDetails(action);
+
+      // Compte des questions avant tout rendu : le bandeau "Questions
+      // prealables" ne doit pas apparaitre, meme brievement, sur les demarches
+      // qui n'en ont aucune (9 des 18 demarches pro actives, dont CG/DA/DC).
+      const { count } = await supabase
+        .from('action_questions')
+        .select('id', { count: 'exact', head: true })
+        .eq('action_id', action.id);
+      setNbQuestions(count ?? 0);
 
       const { data: docs } = await supabase
         .from('action_documents')
@@ -1241,8 +1255,10 @@ export default function NouvelleDemarche() {
                 />
               </div>
 
-              {/* Questions conditionnelles - Repliable (et modifiable) */}
-              {actionDetails?.id && (
+              {/* Questions conditionnelles - Repliable (et modifiable).
+                  Masque tant qu'on ne sait pas s'il y a des questions, et si
+                  la demarche n'en a aucune. */}
+              {actionDetails?.id && (nbQuestions ?? 0) > 0 && (
                 <Collapsible
                   open={isQuestionnaireOpen}
                   onOpenChange={setIsQuestionnaireOpen}
@@ -1352,6 +1368,13 @@ export default function NouvelleDemarche() {
                           </div>
                           <div className="space-y-3">
                             {documentsRequis.map((doc, idx) => {
+                              // Le mandat a sa propre carte, qui le genere pre-rempli.
+                              // On saute sa ligne ici pour ne pas proposer en meme temps
+                              // le Cerfa vierge a imprimer. On ne FILTRE pas le tableau :
+                              // les cles de documents valent "doc_<rang>", les decaler
+                              // casserait le suivi des pieces deja deposees.
+                              if (mandatRequis && /13757/.test(doc.nom_document ?? "")) return null;
+
                               const docName = doc.nom_document.toLowerCase();
                               const hasRectoVerso = docName.includes('recto/verso') || docName.includes('recto verso');
                               const cerfaNumber = extractCerfaNumber(doc.nom_document);
