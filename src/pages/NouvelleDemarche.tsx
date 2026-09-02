@@ -33,7 +33,7 @@ import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
-import { natureOperation, formatSignataire, mandantImposeGarage, type MandatData } from "@/lib/mandat";
+import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, type MandatData } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -1530,9 +1530,7 @@ export default function NouvelleDemarche() {
                               <p className="font-medium text-sm">Qui donne le mandat ?</p>
                               {mandantImposeGarage(formData.type) ? (
                                 <p className="text-sm text-muted-foreground">
-                                  Votre garage. Une déclaration d'achat constate que vous avez acquis le
-                                  véhicule : le mandat ne peut être établi qu'à votre nom, avec votre
-                                  signature et votre tampon.
+                                  {raisonMandantGarage(formData.type)}
                                 </p>
                               ) : (
                               <RadioGroup

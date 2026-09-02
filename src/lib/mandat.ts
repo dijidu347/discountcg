@@ -220,14 +220,32 @@ export function natureOperation(code: string | null | undefined, fallback?: stri
 // ---------------------------------------------------------------------------
 // Démarches où le mandant ne peut être que le professionnel.
 //
-// La déclaration d'achat constate qu'un professionnel a acquis un véhicule, le
-// plus souvent pour le revendre. Le mandant est donc necessairement le garage :
-// lui proposer de designer son client n'aurait aucun sens et produirait une
-// declaration au nom de quelqu'un qui n'a rien achete.
+// Deux cas, et seulement deux :
+//
+// DA — la declaration d'achat constate qu'un professionnel a acquis un vehicule,
+// le plus souvent pour le revendre. Proposer de designer le client produirait
+// une declaration au nom de quelqu'un qui n'a rien achete.
+//
+// W_GARAGE — le certificat W garage est delivre aux professionnels de
+// l'automobile pour faire circuler des vehicules non immatricules. Un
+// particulier ne peut pas en detenir : le titulaire est le garage.
+//
+// Toutes les autres demarches peuvent porter sur un vehicule du garage OU de son
+// client, y compris la DC et la carte grise : le choix doit y rester ouvert.
 // ---------------------------------------------------------------------------
-const MANDANT_TOUJOURS_GARAGE = ["DA"];
+const MANDANT_TOUJOURS_GARAGE = ["DA", "W_GARAGE"];
 
 export function mandantImposeGarage(type: string | null | undefined): boolean {
   if (!type) return false;
   return MANDANT_TOUJOURS_GARAGE.includes(type.replace(/_PRO$/, ""));
+}
+
+// Justification affichée à la place du choix, propre à chaque cas : une phrase
+// generique laisserait le garage se demander pourquoi on lui retire l'option.
+export function raisonMandantGarage(type: string | null | undefined): string {
+  const base = (type ?? "").replace(/_PRO$/, "");
+  if (base === "W_GARAGE") {
+    return "Votre garage. Le certificat W garage est délivré aux professionnels de l'automobile : il ne peut être demandé qu'à votre nom, avec votre signature et votre tampon.";
+  }
+  return "Votre garage. Une déclaration d'achat constate que vous avez acquis le véhicule : le mandat ne peut être établi qu'à votre nom, avec votre signature et votre tampon.";
 }
