@@ -6,6 +6,10 @@
 // vérification qui fait foi, le client corrige ce qui est mal coupé.
 
 export interface MandatData {
+  // Qui etait le mandant lors de la derniere generation. Permet de ne pas
+  // reappliquer des valeurs saisies pour le client quand le garage bascule sur
+  // lui-meme, et inversement.
+  mandant_type?: "garage" | "client";
   mandant_identite: string;
   mandant_siret?: string;
   // Exigé par le Cerfa pour les personnes morales : « nom et qualité du

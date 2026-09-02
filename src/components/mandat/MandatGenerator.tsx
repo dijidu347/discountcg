@@ -49,6 +49,8 @@ interface MandatGeneratorProps {
   // garage : il ne lui sera plus jamais redemande, et celui qui les a deja
   // enregistres ne voit rien.
   garageId?: string;
+  // Mandant retenu par l'appelant, memorise avec le mandat.
+  mandantType?: "garage" | "client";
   // Clé de la pièce « mandat » dans la liste de documents du tunnel appelant.
   documentType?: string;
   onGenerated?: (url: string) => void;
@@ -73,6 +75,7 @@ export const MandatGenerator = ({
   savedTamponPath,
   signatureUploadPath,
   garageId,
+  mandantType,
   documentType,
   onGenerated,
 }: MandatGeneratorProps) => {
@@ -183,6 +186,7 @@ export const MandatGenerator = ({
       }
 
       const mandatData: MandatData = {
+        mandant_type: mandantType,
         mandant_identite: form.identite.trim(),
         mandant_siret: form.siret.trim() || undefined,
         signataire_nom_qualite: form.signataire.trim() || undefined,

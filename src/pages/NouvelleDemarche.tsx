@@ -1550,8 +1550,17 @@ export default function NouvelleDemarche() {
                             </div>
 
                             <MandatGenerator
+                              // Changer de mandant remonte le formulaire : sans cela
+                              // les champs garderaient les valeurs de l'autre mandant,
+                              // React n'evaluant l'etat initial qu'au premier rendu.
+                              key={mandantType}
                               demarcheId={demarcheId}
-                              saved={mandatSauvegarde}
+                              mandantType={mandantType}
+                              saved={
+                                mandatSauvegarde?.mandant_type === mandantType
+                                  ? mandatSauvegarde
+                                  : null
+                              }
                               defaults={
                                 mandantType === 'garage'
                                   ? {
