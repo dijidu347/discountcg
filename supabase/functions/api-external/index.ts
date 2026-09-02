@@ -217,16 +217,16 @@ async function handlePayWithTokens(body: any) {
     return jsonResponse({ success: true, paid: true, method: "free_token" });
   }
 
-  // Token cost: 1 token = 5€
-  const tokenCost = Math.ceil((demarche.frais_dossier || 0) / 5);
+  // Coût en jetons. 1 jeton = 1 € : token_balance est stocké EN EUROS.
+  const tokenCost = Number(demarche.frais_dossier) || 0;
 
   if (garage.token_balance < tokenCost) {
-    return errorResponse(`Solde insuffisant. Requis: ${tokenCost} jetons, Disponible: ${garage.token_balance}`, 402);
+    return errorResponse(`Solde insuffisant. Requis: ${tokenCost} €, Disponible: ${garage.token_balance} €`, 402);
   }
 
-  // Deduct tokens
+  // Deduct tokens (arrondi au centime, comme les autres chemins de débit)
   await supabase.from("garages").update({
-    token_balance: garage.token_balance - tokenCost,
+    token_balance: Math.round((garage.token_balance - tokenCost) * 100) / 100,
   }).eq("id", garage_id);
 
   // Mark as paid
@@ -239,7 +239,7 @@ async function handlePayWithTokens(body: any) {
     paid: true,
     method: "tokens",
     tokens_used: tokenCost,
-    tokens_remaining: garage.token_balance - tokenCost,
+    tokens_remaining: Math.round((garage.token_balance - tokenCost) * 100) / 100,
   });
 }
 
