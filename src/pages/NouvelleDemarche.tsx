@@ -1360,10 +1360,10 @@ export default function NouvelleDemarche() {
                               const renderDocLabel = (labelText: string, isObligatoire: boolean) => {
                                 if (!hasCerfa || !cerfaNumber) {
                                   return (
-                                    <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                                    <Label className="text-sm font-medium">
                                       {labelText}
                                       {isObligatoire ? (
-                                        <span className="text-destructive text-base font-bold">*</span>
+                                        <span className="text-destructive text-base font-bold">&nbsp;*</span>
                                       ) : (
                                         <span className="text-muted-foreground text-xs">(optionnel)</span>
                                       )}
@@ -1375,7 +1375,7 @@ export default function NouvelleDemarche() {
                                 const parts = labelText.split(cerfaRegex);
                                 
                                 return (
-                                  <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                                  <Label className="text-sm font-medium">
                                     {parts.map((part, index) => {
                                       if (cerfaRegex.test(part)) {
                                         return (
@@ -1395,7 +1395,7 @@ export default function NouvelleDemarche() {
                                       return <span key={index}>{part}</span>;
                                     })}
                                     {isObligatoire ? (
-                                      <span className="text-destructive text-base font-bold">*</span>
+                                      <span className="text-destructive text-base font-bold">&nbsp;*</span>
                                     ) : (
                                       <span className="text-muted-foreground text-xs">(optionnel)</span>
                                     )}
@@ -1475,9 +1475,9 @@ export default function NouvelleDemarche() {
                           onChange={handleNonGageChange}
                           uploadSlot={
                             <div className="space-y-2">
-                              <Label className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                              <Label className="text-sm font-medium">
                                 {NON_GAGE_DOCUMENT_LABEL}
-                                <span className="text-destructive text-base font-bold">*</span>
+                                <span className="text-destructive text-base font-bold">&nbsp;*</span>
                               </Label>
                               <DocumentUpload
                                 demarcheId={demarcheId}
