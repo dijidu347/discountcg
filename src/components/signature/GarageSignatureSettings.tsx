@@ -3,13 +3,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, PenLine, Info } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SignaturePad } from "@/components/signature/SignaturePad";
 
 interface GarageSignatureSettingsProps {
-  garage: { id: string; signature_path?: string | null; tampon_path?: string | null } | null;
-  onSaved?: (patch: { signature_path?: string | null; tampon_path?: string | null }) => void;
+  garage: {
+    id: string;
+    signature_path?: string | null;
+    tampon_path?: string | null;
+    signataire_nom?: string | null;
+    signataire_qualite?: string | null;
+  } | null;
+  onSaved?: (patch: Record<string, string | null>) => void;
 }
 
 const BUCKET = "signatures";
@@ -35,6 +43,10 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
   const [existingTampon, setExistingTampon] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  // Le Cerfa exige « nom et qualité du signataire » en toutes lettres pour les
+  // sociétés, en plus du cachet. Saisis une fois, repris sur chaque mandat.
+  const [nom, setNom] = useState(garage?.signataire_nom ?? "");
+  const [qualite, setQualite] = useState(garage?.signataire_qualite ?? "");
 
   useEffect(() => {
     const load = async () => {
@@ -58,14 +70,18 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
 
   const save = async () => {
     if (!garage) return;
-    if (!signature && !tampon) {
-      toast({ title: "Rien à enregistrer", description: "Tracez ou importez au moins une image.", variant: "destructive" });
+    const nomChange = nom !== (garage.signataire_nom ?? "");
+    const qualiteChangee = qualite !== (garage.signataire_qualite ?? "");
+    if (!signature && !tampon && !nomChange && !qualiteChangee) {
+      toast({ title: "Rien à enregistrer", description: "Modifiez au moins un élément.", variant: "destructive" });
       return;
     }
 
     setSaving(true);
     try {
-      const patch: { signature_path?: string; tampon_path?: string } = {};
+      const patch: Record<string, string | null> = {};
+      if (nomChange) patch.signataire_nom = nom.trim() || null;
+      if (qualiteChangee) patch.signataire_qualite = qualite.trim() || null;
 
       for (const [dataUrl, nom, cle] of [
         [signature, "signature", "signature_path"],
@@ -95,7 +111,7 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
         ["signature_path", setExistingSignature],
         ["tampon_path", setExistingTampon],
       ] as const) {
-        const path = patch[cle];
+        const path = patch[cle] as string | undefined;
         if (!path) continue;
         const { data } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL);
         if (data?.signedUrl) setter(data.signedUrl);
@@ -172,7 +188,18 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
           </div>
         )}
 
-        <Button onClick={save} disabled={saving || (!signature && !tampon)} className="w-full md:w-auto">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="signataire_nom">Nom du signataire</Label>
+            <Input id="signataire_nom" value={nom} onChange={(e) => setNom(e.target.value)} placeholder="M. Dupont" />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="signataire_qualite">Qualité</Label>
+            <Input id="signataire_qualite" value={qualite} onChange={(e) => setQualite(e.target.value)} placeholder="gérant, président…" />
+          </div>
+        </div>
+
+        <Button onClick={save} className="w-full md:w-auto" disabled={saving}>
           {saving ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />

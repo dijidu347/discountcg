@@ -33,7 +33,7 @@ import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
-import type { MandatData } from "@/lib/mandat";
+import { natureOperation, formatSignataire, type MandatData } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -1534,10 +1534,11 @@ export default function NouvelleDemarche() {
                                   ? {
                                       identite: garage?.raison_sociale ?? "",
                                       siret: garage?.siret ?? "",
+                                      signataire: formatSignataire(garage?.signataire_nom, garage?.signataire_qualite),
                                       adresse: garage?.adresse ?? "",
                                       codePostal: garage?.code_postal ?? "",
                                       commune: garage?.ville ?? "",
-                                      natureOperation: actionDetails?.titre ?? "",
+                                      natureOperation: natureOperation(formData.type, actionDetails?.titre),
                                       marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
                                       vin: vehicleInfoPro?.vin ?? "",
                                       immatriculation: selectedImmatriculation,
@@ -1545,7 +1546,7 @@ export default function NouvelleDemarche() {
                                   : {
                                       identite: [clientPrenom, clientNom].filter(Boolean).join(" "),
                                       adresse: clientAdresse ?? "",
-                                      natureOperation: actionDetails?.titre ?? "",
+                                      natureOperation: natureOperation(formData.type, actionDetails?.titre),
                                       marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
                                       vin: vehicleInfoPro?.vin ?? "",
                                       immatriculation: selectedImmatriculation,

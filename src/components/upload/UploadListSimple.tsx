@@ -9,7 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
-import type { MandatData } from "@/lib/mandat";
+import { natureOperation, type MandatData } from "@/lib/mandat";
 
 interface UploadListSimpleProps {
   orderId: string;
@@ -174,7 +174,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   // Le mandat n'est plus un simple emplacement de dépôt : il est généré
   // pré-rempli puis joint automatiquement, donc on l'extrait de la liste.
   const mandatDoc = requiredDocuments.find((d) => /13757/.test(d.nom_document ?? ""));
-  const natureOperation = (commande?.demarche_type as string) ?? demarcheType;
+  const nature = natureOperation((commande?.demarche_type as string) ?? demarcheType);
 
   const handleAddDocument = () => {
     const name = newDocName.trim();
@@ -330,7 +330,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
               adresse: (commande.adresse as string) ?? "",
               codePostal: (commande.code_postal as string) ?? "",
               commune: (commande.ville as string) ?? "",
-              natureOperation,
+              natureOperation: nature,
               marque: (commande.marque as string) ?? "",
               vin: (commande.vin as string) ?? "",
               immatriculation: (commande.immatriculation as string) ?? "",

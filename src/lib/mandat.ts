@@ -163,3 +163,52 @@ export function consignesMandant(flags: MandantFlags): string[] {
 export function mandatGenerable(flags: MandantFlags): boolean {
   return !flags.vehiculeLeasing;
 }
+
+// ---------------------------------------------------------------------------
+// Nature de l'opération portée sur le mandat.
+//
+// Le Cerfa demande de décrire « l'opération d'immatriculation », pas de reprendre
+// le nom commercial de la prestation. « Carte Grise » ou « Demande de duplicata
+// CG » sont des libellés de catalogue ; sur un mandat officiel on attend
+// « Changement de titulaire du certificat d'immatriculation ».
+//
+// Les codes pro se terminent par _PRO mais désignent la même opération que leur
+// équivalent particulier : le suffixe est retiré avant la recherche.
+// ---------------------------------------------------------------------------
+const NATURE_OPERATION: Record<string, string> = {
+  CG: "Changement de titulaire du certificat d'immatriculation",
+  CG_NEUF: "Première immatriculation d'un véhicule neuf",
+  DA: "Déclaration d'achat d'un véhicule d'occasion",
+  DC: "Déclaration de cession d'un véhicule",
+  DUPLICATA: "Demande de duplicata du certificat d'immatriculation",
+  DUPLICATA_CG: "Demande de duplicata du certificat d'immatriculation",
+  CHGT_ADRESSE: "Changement d'adresse du titulaire",
+  CHANGEMENT_ADRESSE: "Changement d'adresse du titulaire",
+  CHGT_ADRESSE_LOCATAIRE: "Changement d'adresse du locataire du véhicule",
+  CHANGEMENT_ADRESSE_LOCATAIRE: "Changement d'adresse du locataire du véhicule",
+  COTITULAIRE: "Ajout ou retrait d'un co-titulaire",
+  MODIF_CG: "Modification du certificat d'immatriculation",
+  FIV: "Demande de fiche d'identification du véhicule",
+  SUCCESSION: "Changement de titulaire suite à succession",
+  SUCCESSION_HERITAGE: "Changement de titulaire suite à succession",
+  QUITUS_FISCAL: "Demande de quitus fiscal",
+  CPI_WW: "Immatriculation provisoire WW",
+  WW_PROVISOIRE: "Immatriculation provisoire WW",
+  ANNULER_CPI_WW: "Annulation du certificat provisoire d'immatriculation WW",
+  ANNULATION_CPI_WW: "Annulation du certificat provisoire d'immatriculation WW",
+  ANNULER_DC_DA: "Annulation d'une déclaration de cession ou d'achat",
+  ANNULER_CORRIGER_DC_DA: "Annulation ou correction d'une déclaration de cession ou d'achat",
+  IMMAT_CYCLO_ANCIEN: "Immatriculation d'un cyclomoteur ancien",
+  CYCLO_ANCIEN: "Immatriculation d'un cyclomoteur ancien",
+  IMMAT_DEFINITIVE: "Immatriculation définitive d'un véhicule importé",
+  DEMANDE_IMMAT: "Demande d'immatriculation d'un véhicule importé",
+  W_GARAGE: "Demande de certificat W garage",
+};
+
+// `fallback` sert quand un nouveau type est créé en admin sans qu'on ait pensé
+// à l'ajouter ici : le titre du catalogue vaut mieux qu'un code brut.
+export function natureOperation(code: string | null | undefined, fallback?: string | null): string {
+  if (!code) return fallback ?? "";
+  const base = code.replace(/_PRO$/, "");
+  return NATURE_OPERATION[base] ?? fallback ?? code;
+}

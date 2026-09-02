@@ -28,6 +28,7 @@ interface MandatGeneratorProps {
     codePostal?: string;
     commune?: string;
     natureOperation: string;
+    signataire?: string;
     marque?: string;
     vin?: string;
     immatriculation?: string;
@@ -85,7 +86,7 @@ export const MandatGenerator = ({
   const [form, setForm] = useState({
     identite: reprise(saved?.mandant_identite, defaults.identite ?? ""),
     siret: reprise(saved?.mandant_siret, defaults.siret ?? ""),
-    signataire: reprise(saved?.signataire_nom_qualite, ""),
+    signataire: reprise(saved?.signataire_nom_qualite, defaults.signataire ?? ""),
     numero: reprise(saved?.adresse_numero, adresse.numero),
     extension: reprise(saved?.adresse_extension, adresse.extension),
     typeVoie: reprise(saved?.adresse_type_voie, adresse.type_voie),

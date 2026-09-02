@@ -102,3 +102,10 @@ ALTER TABLE public.guest_orders
 -- conservé pour les démarches suivantes sur le même dossier.
 ALTER TABLE public.guest_orders
   ADD COLUMN IF NOT EXISTS vin text;
+
+-- Le Cerfa réclame « nom et qualité du signataire » en toutes lettres pour les
+-- personnes morales, en plus du cachet. Mémorisés sur la fiche garage pour ne
+-- pas être ressaisis à chaque mandat.
+ALTER TABLE public.garages
+  ADD COLUMN IF NOT EXISTS signataire_nom text,
+  ADD COLUMN IF NOT EXISTS signataire_qualite text;
