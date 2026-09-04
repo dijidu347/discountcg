@@ -17,12 +17,20 @@ interface VehicleInfoFormProProps {
   onVehicleInfoChange: (data: VehicleInfoPro, isValid: boolean) => void;
   requireVin?: boolean;
   requireDateMec?: boolean;
+  /** Longueur minimale du numero. 17 pour un VIN normalise ; un cyclomoteur
+   *  ancien porte un numero de serie plus court, souvent 5 a 12 caracteres. */
+  longueurVinMin?: number;
+  libelleVin?: string;
+  aideVin?: string;
 }
 
 export function VehicleInfoFormPro({ 
   onVehicleInfoChange, 
   requireVin = true,
-  requireDateMec = false 
+  requireDateMec = false,
+  longueurVinMin = 17,
+  libelleVin = "Numéro de châssis (VIN)",
+  aideVin = "Le numéro VIN est obligatoire pour cette démarche. Il se trouve sur le certificat d'immatriculation étranger ou sur la plaque du châssis.",
 }: VehicleInfoFormProProps) {
   const [vehicleInfo, setVehicleInfo] = useState<VehicleInfoPro>({
     marque: "",
@@ -56,10 +64,10 @@ export function VehicleInfoFormPro({
     const isValid = 
       vehicleInfo.marque.trim().length > 0 &&
       vehicleInfo.modele.trim().length > 0 &&
-      (!requireVin || vehicleInfo.vin.trim().length >= 17);
+      (!requireVin || vehicleInfo.vin.trim().length >= longueurVinMin);
     
     onVehicleInfoChange(vehicleInfo, isValid);
-  }, [vehicleInfo, requireVin, onVehicleInfoChange]);
+  }, [vehicleInfo, requireVin, longueurVinMin, onVehicleInfoChange]);
 
   const handleChange = (field: keyof VehicleInfoPro, value: string) => {
     if (field === "marque") {
@@ -73,7 +81,7 @@ export function VehicleInfoFormPro({
     }));
   };
 
-  const isVinValid = !requireVin || vehicleInfo.vin.trim().length >= 17;
+  const isVinValid = !requireVin || vehicleInfo.vin.trim().length >= longueurVinMin;
 
   return (
     <Card className="border-2 border-primary/20">
@@ -112,19 +120,19 @@ export function VehicleInfoFormPro({
 
         <div className="space-y-2">
           <Label htmlFor="vin">
-            Numéro de châssis (VIN) {requireVin && "*"}
+            {libelleVin} {requireVin && "*"}
           </Label>
           <Input
             id="vin"
             placeholder="Ex: VF1XXXXXXXXX12345"
             value={vehicleInfo.vin}
             onChange={(e) => handleChange("vin", e.target.value.toUpperCase())}
-            maxLength={17}
+            maxLength={Math.max(longueurVinMin, 17)}
             className={requireVin && vehicleInfo.vin.length > 0 && !isVinValid ? "border-destructive" : ""}
           />
           {requireVin && vehicleInfo.vin.length > 0 && !isVinValid && (
             <p className="text-xs text-destructive">
-              Le VIN doit contenir exactement 17 caractères ({vehicleInfo.vin.length}/17)
+              Le numéro doit contenir au moins {longueurVinMin} caractères ({vehicleInfo.vin.length}/{longueurVinMin})
             </p>
           )}
         </div>
@@ -146,7 +154,7 @@ export function VehicleInfoFormPro({
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Le numéro VIN est obligatoire pour cette démarche. Il se trouve sur le certificat d'immatriculation étranger ou sur la plaque du châssis.
+              {aideVin}
             </AlertDescription>
           </Alert>
         )}

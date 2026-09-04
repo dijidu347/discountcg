@@ -67,9 +67,14 @@ const PRO_DEMARCHE_TYPES = [
 // Types de démarches PRO qui nécessitent les infos véhicule manuelles (VIN, marque, modèle)
 const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO", "CG_NEUF_PRO"];
 // Types de démarches PRO qui utilisent la plaque d'immatriculation (lookup API)
-const PRO_TYPES_WITH_PLATE = ["DUPLICATA_CG_PRO", "FIV_PRO", "MODIF_CG_PRO", "ANNULATION_CPI_WW_PRO", "SUCCESSION_HERITAGE_PRO", "COTITULAIRE_PRO", "ANNULER_CORRIGER_DC_DA_PRO", "IMMAT_DEFINITIVE_PRO"];
-// Types de démarches PRO qui n'ont pas besoin de bloc véhicule
-const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO", "CHANGEMENT_ADRESSE_PRO", "CHANGEMENT_ADRESSE_LOCATAIRE_PRO", "CYCLO_ANCIEN_PRO"];
+const PRO_TYPES_WITH_PLATE = ["DUPLICATA_CG_PRO", "FIV_PRO", "MODIF_CG_PRO", "ANNULATION_CPI_WW_PRO", "SUCCESSION_HERITAGE_PRO", "COTITULAIRE_PRO", "ANNULER_CORRIGER_DC_DA_PRO", "IMMAT_DEFINITIVE_PRO", "CHANGEMENT_ADRESSE_PRO", "CHANGEMENT_ADRESSE_LOCATAIRE_PRO"];
+// Cyclomoteur ancien : aucune carte grise, donc aucune plaque. Il porte un
+// numero de serie plus court qu'un VIN normalise, et le mandat s'appuie dessus.
+const PRO_TYPES_CYCLO = ["CYCLO_ANCIEN_PRO"];
+// Types de démarches PRO sans véhicule identifiable. La plaque W Garage est
+// attribuée au professionnel lui-même, pas à un véhicule : le mandat n'a donc
+// aucune immatriculation à porter, et c'est normal.
+const PRO_TYPES_WITHOUT_VEHICLE = ["W_GARAGE_PRO"];
 
 export default function NouvelleDemarche() {
   const { user, loading: authLoading } = useAuth();
@@ -1244,6 +1249,16 @@ export default function NouvelleDemarche() {
                       garageId={garage.id}
                       onVehicleSelect={handleVehicleSelect}
                       selectedVehicleId={selectedVehicleId}
+                    />
+                  ) : PRO_TYPES_CYCLO.includes(formData.type) ? (
+                    <VehicleInfoFormPro
+                      longueurVinMin={5}
+                      libelleVin="Numéro de série (frappe à froid)"
+                      aideVin="Le cyclomoteur n'a pas de carte grise : relevez le numéro frappé sur le cadre ou le moteur. Il identifie le véhicule sur le mandat."
+                      onVehicleInfoChange={(data, isValid) => {
+                        setVehicleInfoPro(data);
+                        setVehicleInfoProValid(isValid);
+                      }}
                     />
                   ) : PRO_TYPES_WITH_VEHICLE.includes(formData.type) ? (
                     /* Formulaire véhicule PRO (VIN, marque, modèle sans immatriculation) */
