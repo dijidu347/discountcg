@@ -431,6 +431,7 @@ export type Database = {
           is_free_token: boolean | null
           mandant_type: string | null
           mandat_data: Json | null
+          mandat_mode: string | null
           marque: string | null
           modele: string | null
           montant_ht: number | null
@@ -482,6 +483,7 @@ export type Database = {
           is_free_token?: boolean | null
           mandant_type?: string | null
           mandat_data?: Json | null
+          mandat_mode?: string | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number | null
@@ -533,6 +535,7 @@ export type Database = {
           is_free_token?: boolean | null
           mandant_type?: string | null
           mandat_data?: Json | null
+          mandat_mode?: string | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number | null
@@ -941,6 +944,8 @@ export type Database = {
           raison_sociale: string
           referral_source: string | null
           reseau: string | null
+          signataire_nom: string | null
+          signataire_qualite: string | null
           signature_path: string | null
           siret: string
           tampon_path: string | null
@@ -965,6 +970,8 @@ export type Database = {
           raison_sociale: string
           referral_source?: string | null
           reseau?: string | null
+          signataire_nom?: string | null
+          signataire_qualite?: string | null
           signature_path?: string | null
           siret: string
           tampon_path?: string | null
@@ -989,6 +996,8 @@ export type Database = {
           raison_sociale?: string
           referral_source?: string | null
           reseau?: string | null
+          signataire_nom?: string | null
+          signataire_qualite?: string | null
           signature_path?: string | null
           siret?: string
           tampon_path?: string | null
@@ -1242,6 +1251,7 @@ export type Database = {
           is_heberge: boolean | null
           is_mineur: boolean | null
           mandat_data: Json | null
+          mandat_mode: string | null
           marque: string | null
           modele: string | null
           montant_ht: number
@@ -1300,6 +1310,7 @@ export type Database = {
           is_heberge?: boolean | null
           is_mineur?: boolean | null
           mandat_data?: Json | null
+          mandat_mode?: string | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number
@@ -1358,6 +1369,7 @@ export type Database = {
           is_heberge?: boolean | null
           is_mineur?: boolean | null
           mandat_data?: Json | null
+          mandat_mode?: string | null
           marque?: string | null
           modele?: string | null
           montant_ht?: number
