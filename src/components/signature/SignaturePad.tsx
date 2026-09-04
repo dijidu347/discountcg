@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Undo2, Trash2 } from "lucide-react";
+import { Upload, Undo2, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { compressFile, isAcceptedFileType, isFileTooLarge } from "@/lib/file-compression";
 
 interface SignaturePadProps {
   // Reçoit le PNG en dataURL, ou null quand la zone est vidée.
@@ -21,7 +22,11 @@ interface SignaturePadProps {
 // du mandat sans alourdir le stockage (~10 à 20 Ko).
 const EXPORT_WIDTH = 600;
 const EXPORT_HEIGHT = 200;
-const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
+// Au-dela de ce poids, l'image passe par la compression maison : conversion
+// HEIC comprise, elle ramene une photo de telephone a environ 1 Mo. En dessous,
+// le fichier est pris tel quel — un PNG leger garde ainsi sa transparence, ce
+// qui compte pour une signature scannee et detouree.
+const SEUIL_COMPRESSION = 1.5 * 1024 * 1024;
 
 export const SignaturePad = ({
   onChange,
@@ -41,6 +46,7 @@ export const SignaturePad = ({
   const strokesRef = useRef<Array<Array<{ x: number; y: number }>>>([]);
   const drawingRef = useRef(false);
   const [isEmpty, setIsEmpty] = useState(!initialDataUrl);
+  const [compression, setCompression] = useState(false);
   // Une image importée remplace le tracé : les deux modes ne se mélangent pas.
   const [uploaded, setUploaded] = useState<string | null>(initialDataUrl);
 
@@ -145,15 +151,42 @@ export const SignaturePad = ({
     onChange(png);
   };
 
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "Format non pris en charge", description: "Choisissez une image (PNG ou JPEG).", variant: "destructive" });
+  const handleFile = async (file: File) => {
+    if (!isAcceptedFileType(file) || file.type === "application/pdf") {
+      toast({
+        title: "Format non pris en charge",
+        description: "Choisissez une photo ou une image : JPEG, PNG ou HEIC.",
+        variant: "destructive",
+      });
       return;
     }
-    if (file.size > MAX_UPLOAD_BYTES) {
-      toast({ title: "Image trop lourde", description: "Choisissez une image de moins de 2 Mo.", variant: "destructive" });
+    if (isFileTooLarge(file)) {
+      toast({
+        title: "Fichier trop lourd",
+        description: "Choisissez une image de moins de 50 Mo.",
+        variant: "destructive",
+      });
       return;
     }
+
+    let aLire = file;
+    if (file.size > SEUIL_COMPRESSION) {
+      setCompression(true);
+      try {
+        aLire = (await compressFile(file)).file;
+      } catch (e) {
+        console.error("Compression de l'image échouée:", e);
+        toast({
+          title: "Image illisible",
+          description: "La compression a échoué. Réessayez avec une autre photo.",
+          variant: "destructive",
+        });
+        return;
+      } finally {
+        setCompression(false);
+      }
+    }
+
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = String(reader.result);
@@ -163,7 +196,7 @@ export const SignaturePad = ({
       setIsEmpty(false);
       onChange(dataUrl);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(aLire);
   };
 
   return (
@@ -187,15 +220,20 @@ export const SignaturePad = ({
       <div className={`relative rounded-lg border-2 border-dashed bg-background ${heightClass}`}>
         {uploaded ? (
           <img src={uploaded} alt={label} className="h-full w-full object-contain p-2" />
+        ) : compression ? (
+          <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            Optimisation de l'image...
+          </div>
         ) : uploadSeul ? (
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
-            className="h-full w-full flex flex-col items-center justify-center gap-1 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+            className="h-full w-full flex flex-col items-center justify-center gap-1 text-sm text-foreground/70 hover:bg-muted/50 transition-colors"
           >
             <Upload className="h-5 w-5" />
             Importer l'image de votre tampon
-            <span className="text-xs">Photo ou scan, PNG ou JPEG</span>
+            <span className="text-xs text-muted-foreground">Photo ou scan — les gros fichiers sont réduits automatiquement</span>
           </button>
         ) : (
           <>
@@ -223,7 +261,7 @@ export const SignaturePad = ({
           <input
             ref={fileRef}
             type="file"
-            accept="image/png,image/jpeg"
+            accept=".jpg,.jpeg,.png,.heic,.heif,image/*"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
