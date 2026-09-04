@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -101,6 +102,11 @@ export const MandatGenerator = ({
     vin: reprise(saved?.vehicule_vin, defaults.vin ?? ""),
     immatriculation: reprise(saved?.vehicule_immatriculation, defaults.immatriculation ?? ""),
   });
+  // L'attestation d'assurance est pre-cochee : elle constate une obligation
+  // legale que le mandat doit porter, et un dossier sans elle repart. Le client
+  // garde la main pour la decocher.
+  const [attesteAssurance, setAttesteAssurance] = useState(saved?.atteste_assurance ?? true);
+  const [opposeProspection, setOpposeProspection] = useState(saved?.oppose_prospection ?? false);
   const [signature, setSignature] = useState<string | null>(null);
   const [tampon, setTampon] = useState<string | null>(null);
   // Chemins enregistres pendant cette session : la fiche garage recue en props
@@ -202,6 +208,8 @@ export const MandatGenerator = ({
         vehicule_vin: form.vin.trim().toUpperCase() || undefined,
         vehicule_immatriculation: form.immatriculation.trim().toUpperCase() || undefined,
         lieu_declaration: form.commune.trim(),
+        atteste_assurance: attesteAssurance,
+        oppose_prospection: opposeProspection,
         signature_path: signaturePath,
         tampon_path: tamponPath,
       };
@@ -359,7 +367,35 @@ export const MandatGenerator = ({
               </Alert>
             )}
 
-            {doitSigner && (
+            <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Déclarations</p>
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="mandat_assurance"
+              checked={attesteAssurance}
+              onCheckedChange={(c) => setAttesteAssurance(c as boolean)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="mandat_assurance" className="text-sm font-normal cursor-pointer leading-snug">
+              Je suis informé(e) que pour circuler avec ce véhicule je suis dans l'obligation de
+              l'assurer préalablement.
+            </Label>
+          </div>
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="mandat_prospection"
+              checked={opposeProspection}
+              onCheckedChange={(c) => setOpposeProspection(c as boolean)}
+              className="mt-0.5"
+            />
+            <Label htmlFor="mandat_prospection" className="text-sm font-normal cursor-pointer leading-snug">
+              Je m'oppose à la réutilisation de mes données personnelles à des fins de prospection
+              commerciale.
+            </Label>
+          </div>
+        </div>
+
+        {doitSigner && (
               <SignaturePad
                 label={garageId ? "Signature du dirigeant" : "Signez ci-dessous"}
                 onChange={setSignature}

@@ -39,6 +39,8 @@ interface MandatData {
   lieu_declaration?: string;
   signature_path?: string;
   tampon_path?: string;
+  atteste_assurance?: boolean;
+  oppose_prospection?: boolean;
 }
 
 interface GenerateMandatRequest {
@@ -163,11 +165,28 @@ serve(async (req) => {
     setText("num_DateMoisDéclaration", String(now.getMonth() + 1).padStart(2, "0"));
     setText("num_DateAnnéeDéclaration", String(now.getFullYear()));
 
-    // Les deux cases du Cerfa portent des noms INVERSÉS par rapport à leur sens
-    // (vérifié en les cochant une par une) : ckb_ConfirmationInformation coche
-    // l'opposition à la prospection, et ckb_OppositionUtilisationDonnées coche
-    // l'obligation d'assurance. Aucune n'est cochée d'office : ce sont des
-    // déclarations du client, pas des valeurs par défaut.
+    // ATTENTION : les deux cases du Cerfa portent des noms INVERSÉS par rapport
+    // à leur sens, vérifié en les cochant une par une.
+    //   ckb_OppositionUtilisationDonnées -> obligation d'assurance
+    //   ckb_ConfirmationInformation      -> opposition à la prospection
+    // Elles ne sont cochées que si le client l'a fait dans le formulaire : ce
+    // sont ses déclarations, jamais des valeurs par défaut.
+    const cocher = (short: string, valeur: boolean | undefined) => {
+      if (!valeur) return;
+      const field = fields.get(short);
+      if (!field) {
+        console.warn("Case absente du Cerfa:", short);
+        return;
+      }
+      try {
+        // @ts-expect-error : check() n'existe que sur les cases à cocher.
+        field.check();
+      } catch (e) {
+        console.warn("Impossible de cocher", short, e instanceof Error ? e.message : e);
+      }
+    };
+    cocher("ckb_OppositionUtilisationDonnées", mandatData.atteste_assurance);
+    cocher("ckb_ConfirmationInformation", mandatData.oppose_prospection);
 
     // --- 2. Signature, tampon, nom et qualité ------------------------------
     const page = pdfDoc.getPage(0);

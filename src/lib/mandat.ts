@@ -45,6 +45,10 @@ export interface MandatData {
   lieu_declaration?: string;
   signature_path?: string;
   tampon_path?: string;
+  // Declarations du client, cochees sur le Cerfa. L'obligation d'assurance est
+  // indispensable au dossier ; l'opposition a la prospection reste facultative.
+  atteste_assurance?: boolean;
+  oppose_prospection?: boolean;
 }
 
 export interface AdresseDecoupee {
@@ -272,3 +276,14 @@ export function raisonMandantGarage(type: string | null | undefined): string {
 // client qui arrive avec son Cerfa deja rempli n'a rien a faire du formulaire.
 export type MandatMode = "upload" | "genere";
 export const MANDAT_MODE_DEFAUT: MandatMode = "upload";
+
+// Une immatriculation de la forme "VIN-302967" n'est pas une plaque : c'est
+// l'identifiant de substitution fabrique par le site quand un vehicule n'en a
+// pas encore, a partir des derniers caracteres du VIN. Le Cerfa demande le
+// numero d'immatriculation "le cas echeant" — mieux vaut laisser la case vide
+// que d'y imprimer un identifiant interne.
+export function plaqueReelle(immatriculation: string | null | undefined): string {
+  const valeur = (immatriculation ?? "").trim();
+  if (!valeur || /^VIN-/i.test(valeur)) return "";
+  return valeur;
+}

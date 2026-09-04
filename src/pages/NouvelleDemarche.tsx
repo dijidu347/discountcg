@@ -33,7 +33,7 @@ import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
 import { MandatChoice } from "@/components/mandat/MandatChoice";
-import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, MANDAT_PREREMPLI_ACTIF, MANDAT_MODE_DEFAUT, type MandatData, type MandatMode } from "@/lib/mandat";
+import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, plaqueReelle, MANDAT_PREREMPLI_ACTIF, MANDAT_MODE_DEFAUT, type MandatData, type MandatMode } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -109,6 +109,9 @@ export default function NouvelleDemarche() {
   // c'est le comportement historique, et l'imposer a tous avait bloque un client
   // qui arrivait avec son Cerfa deja rempli.
   const [mandatMode, setMandatMode] = useState<MandatMode>(MANDAT_MODE_DEFAUT);
+  // VIN et plaque du vehicule retenu. Le formulaire PRO ne les porte que pour
+  // quelques types ; la fiche vehicule, elle, les a toujours.
+  const [vehiculeMandat, setVehiculeMandat] = useState<{ vin: string | null; immatriculation: string | null } | null>(null);
   // trackingServicePrice supprimé - options SMS retirées
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -241,6 +244,19 @@ export default function NouvelleDemarche() {
       loadExistingDocuments();
     }
   }, [demarcheId]);
+
+  useEffect(() => {
+    if (!selectedVehicleId) {
+      setVehiculeMandat(null);
+      return;
+    }
+    supabase
+      .from('vehicules')
+      .select('vin, immatriculation')
+      .eq('id', selectedVehicleId)
+      .maybeSingle()
+      .then(({ data }) => setVehiculeMandat(data ?? null));
+  }, [selectedVehicleId]);
 
   useEffect(() => {
     // Update demarche montant when carteGrisePrice or trackingServicePrice changes
@@ -1623,16 +1639,16 @@ export default function NouvelleDemarche() {
                                           commune: garage?.ville ?? "",
                                           natureOperation: natureOperation(formData.type, actionDetails?.titre),
                                           marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
-                                          vin: vehicleInfoPro?.vin ?? "",
-                                          immatriculation: selectedImmatriculation,
+                                          vin: vehiculeMandat?.vin ?? vehicleInfoPro?.vin ?? "",
+                                          immatriculation: plaqueReelle(vehiculeMandat?.immatriculation ?? selectedImmatriculation),
                                         }
                                       : {
                                           identite: [clientPrenom, clientNom].filter(Boolean).join(" "),
                                           adresse: clientAdresse ?? "",
                                           natureOperation: natureOperation(formData.type, actionDetails?.titre),
                                           marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
-                                          vin: vehicleInfoPro?.vin ?? "",
-                                          immatriculation: selectedImmatriculation,
+                                          vin: vehiculeMandat?.vin ?? vehicleInfoPro?.vin ?? "",
+                                          immatriculation: plaqueReelle(vehiculeMandat?.immatriculation ?? selectedImmatriculation),
                                         }
                                   }
                                   savedSignaturePath={mandantType === 'garage' ? garage?.signature_path : null}
