@@ -39,7 +39,7 @@ export const NonGageChoice = ({
   return (
     <div className="space-y-3 p-4 rounded-lg border-2 border-border bg-card">
       <div className="flex items-center gap-2">
-        <FileSearch className="w-4 h-4 text-blue-500" />
+        <FileSearch className="w-4 h-4 text-primary" />
         <p className="font-medium">
           {NON_GAGE_LABEL}
           <span className="text-destructive text-base font-bold">&nbsp;*</span>
@@ -59,7 +59,7 @@ export const NonGageChoice = ({
         <div
           className={`p-3 rounded-lg border-2 transition-colors ${
             value === "fourni"
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
+              ? "border-primary bg-primary/5"
               : "border-border hover:bg-muted/50"
           }`}
         >
@@ -76,7 +76,7 @@ export const NonGageChoice = ({
           </div>
 
           {value === "fourni" && uploadSlot && (
-            <div className="mt-3 pt-3 border-t border-blue-200 dark:border-blue-900">
+            <div className="mt-3 pt-3 border-t border-border">
               {uploadSlot}
             </div>
           )}
@@ -85,7 +85,7 @@ export const NonGageChoice = ({
         <div
           className={`flex items-start space-x-3 p-3 rounded-lg border-2 transition-colors ${
             value === "facture"
-              ? "border-blue-500 bg-blue-50 dark:bg-blue-950"
+              ? "border-primary bg-primary/5"
               : "border-border hover:bg-muted/50"
           }`}
         >
@@ -93,7 +93,7 @@ export const NonGageChoice = ({
           <Label htmlFor="non_gage_facture" className="cursor-pointer font-normal w-full">
             <span className="font-medium flex items-center gap-2">
               Nous le commandons pour vous
-              <span className="ml-auto text-blue-500 font-semibold whitespace-nowrap">+{prix}&nbsp;€</span>
+              <span className="ml-auto text-primary font-semibold whitespace-nowrap">+{prix}&nbsp;€</span>
             </span>
             <span className="block text-sm text-muted-foreground mt-1">
               Nous nous chargeons de l'obtenir, vous n'avez rien à déposer.

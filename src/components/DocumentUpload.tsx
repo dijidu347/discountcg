@@ -424,10 +424,12 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           </>
         ) : (
           <>
-            <span className="text-sm text-muted-foreground flex-1">
-              {isDragOver ? "Déposez le fichier ici" : uploadedFiles.length > 0 ? "Sélectionner un fichier" : "Sélectionner un fichier"}
+            {/* Gris plus soutenu que muted-foreground : l'invite se lisait mal
+                sur le fond clair de la carte quand une option est selectionnee. */}
+            <span className="text-sm text-foreground/70 flex-1">
+              {isDragOver ? "Déposez le fichier ici" : "Sélectionner un fichier"}
             </span>
-            <Upload className="h-4 w-4 text-muted-foreground" />
+            <Upload className="h-4 w-4 text-foreground/70" />
           </>
         )}
       </div>
