@@ -275,7 +275,6 @@ export function raisonMandantGarage(type: string | null | undefined): string {
 // connait. Le pre-remplissage en ligne est propose a cote, jamais impose — un
 // client qui arrive avec son Cerfa deja rempli n'a rien a faire du formulaire.
 export type MandatMode = "upload" | "genere";
-export const MANDAT_MODE_DEFAUT: MandatMode = "upload";
 
 // Une immatriculation de la forme "VIN-302967" n'est pas une plaque : c'est
 // l'identifiant de substitution fabrique par le site quand un vehicule n'en a

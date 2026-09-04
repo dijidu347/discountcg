@@ -5,7 +5,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { MandatMode } from "@/lib/mandat";
 
 interface MandatChoiceProps {
-  value: MandatMode;
+  /** null tant que le client n'a rien choisi : aucune option n'est cochee. */
+  value: MandatMode | null;
   onChange: (mode: MandatMode) => void;
   // Rendu dans la carte retenue : l'emplacement de dépôt d'un côté, le
   // formulaire de pré-remplissage de l'autre.
@@ -35,7 +36,7 @@ export const MandatChoice = ({
     </div>
 
     <RadioGroup
-      value={value}
+      value={value ?? ""}
       onValueChange={(v) => onChange(v as MandatMode)}
       disabled={disabled}
       className="space-y-2 pt-1"

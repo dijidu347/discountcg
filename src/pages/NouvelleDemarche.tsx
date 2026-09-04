@@ -33,7 +33,7 @@ import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
 import { MandatChoice } from "@/components/mandat/MandatChoice";
-import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, plaqueReelle, MANDAT_PREREMPLI_ACTIF, MANDAT_MODE_DEFAUT, type MandatData, type MandatMode } from "@/lib/mandat";
+import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, plaqueReelle, MANDAT_PREREMPLI_ACTIF, type MandatData, type MandatMode } from "@/lib/mandat";
 import {
   isNonGageRequired,
   getNonGageSurcharge,
@@ -113,7 +113,10 @@ export default function NouvelleDemarche() {
   // Depot de son propre mandat, ou remplissage en ligne. Par defaut le depot :
   // c'est le comportement historique, et l'imposer a tous avait bloque un client
   // qui arrivait avec son Cerfa deja rempli.
-  const [mandatMode, setMandatMode] = useState<MandatMode>(MANDAT_MODE_DEFAUT);
+  // Aucun mode pre-selectionne : le client doit se prononcer, comme pour le
+  // certificat de non-gage. Une option cochee d'avance se fait accepter sans
+  // etre lue, et le dossier part avec un choix que personne n'a fait.
+  const [mandatMode, setMandatMode] = useState<MandatMode | null>(null);
   // VIN et plaque du vehicule retenu. Le formulaire PRO ne les porte que pour
   // quelques types ; la fiche vehicule, elle, les a toujours.
   const [vehiculeMandat, setVehiculeMandat] = useState<{ vin: string | null; immatriculation: string | null; marque: string | null } | null>(null);
@@ -199,7 +202,7 @@ export default function NouvelleDemarche() {
         setNonGageMode((draft.non_gage_mode as NonGageMode) || null);
         setMandantType((draft.mandant_type as 'garage' | 'client') || 'client');
         setMandatSauvegarde((draft.mandat_data as unknown as MandatData) || null);
-        setMandatMode(((draft as { mandat_mode?: MandatMode }).mandat_mode) || MANDAT_MODE_DEFAUT);
+        setMandatMode(((draft as { mandat_mode?: MandatMode }).mandat_mode) || null);
         setDraftLoaded(true);
       }
     };
@@ -888,6 +891,17 @@ export default function NouvelleDemarche() {
         });
         return;
       }
+    }
+
+    // Mandat 13757 : aucun mode n'etant coche d'avance, le client doit dire
+    // s'il depose le sien ou s'il le remplit en ligne.
+    if (mandatRequis && !mandatMode) {
+      toast({
+        title: "Mandat d'immatriculation",
+        description: "Indiquez si vous déposez votre propre mandat ou si vous le remplissez en ligne.",
+        variant: "destructive",
+      });
+      return;
     }
 
     // Certificat de non-gage (CG/DA/DC) : le choix est imposé, et s'il a été

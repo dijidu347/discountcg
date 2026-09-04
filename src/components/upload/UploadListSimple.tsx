@@ -11,7 +11,7 @@ import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
 import { getCerfaUrl } from "@/lib/cerfa-utils";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
 import { MandatChoice } from "@/components/mandat/MandatChoice";
-import { natureOperation, MANDAT_PREREMPLI_ACTIF, MANDAT_MODE_DEFAUT, type MandatData, type MandatMode } from "@/lib/mandat";
+import { natureOperation, MANDAT_PREREMPLI_ACTIF, type MandatData, type MandatMode } from "@/lib/mandat";
 
 interface UploadListSimpleProps {
   orderId: string;
@@ -75,7 +75,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   // Commande complète : sert à pré-remplir le mandat 13757.
   const [commande, setCommande] = useState<Record<string, unknown> | null>(null);
   // Depot de son propre mandat, ou remplissage en ligne. Par defaut le depot.
-  const [mandatMode, setMandatMode] = useState<MandatMode>(MANDAT_MODE_DEFAUT);
+  // Aucun mode pre-selectionne, comme dans le tunnel pro.
+  const [mandatMode, setMandatMode] = useState<MandatMode | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -88,7 +89,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         .eq('id', orderId)
         .single();
       setCommande(orderMode as Record<string, unknown> | null);
-      setMandatMode(((orderMode as { mandat_mode?: MandatMode } | null)?.mandat_mode) || MANDAT_MODE_DEFAUT);
+      setMandatMode(((orderMode as { mandat_mode?: MandatMode } | null)?.mandat_mode) || null);
       const attendNonGage = orderMode?.non_gage_mode === 'fourni';
       setNonGageFourni(attendNonGage);
 
