@@ -1521,125 +1521,125 @@ export default function NouvelleDemarche() {
                             }
                           />
 
+                          {/* Mandat 13757 : depot de son propre document, ou remplissage en ligne. */}
+                          {mandatRequis && demarcheId && (
+                            <div className="space-y-3">
+                              <MandatChoice
+                                value={mandatMode}
+                                onChange={async (mode) => {
+                                  setMandatMode(mode);
+                                  await supabase.from('demarches').update({ mandat_mode: mode }).eq('id', demarcheId);
+                                }}
+                                slotUpload={
+                                  <p className="text-sm text-muted-foreground">
+                                    L'emplacement de dépôt du mandat se trouve dans la liste des pièces
+                                    ci-dessus, avec le lien pour télécharger le Cerfa vierge.
+                                  </p>
+                                }
+                                slotGenere={
+                                  <div className="space-y-3">
+                                <div className="p-4 rounded-lg border-2 border-border bg-card space-y-3">
+                                  <p className="font-medium text-sm">Qui donne le mandat ?</p>
+                                  {mandantImposeGarage(formData.type) ? (
+                                    <p className="text-sm text-muted-foreground">
+                                      {raisonMandantGarage(formData.type)}
+                                    </p>
+                                  ) : (
+                                  <RadioGroup
+                                    value={mandantType}
+                                    onValueChange={async (v) => {
+                                      const mode = v as 'garage' | 'client';
+                                      setMandantType(mode);
+                                      await supabase.from('demarches').update({ mandant_type: mode }).eq('id', demarcheId);
+                                    }}
+                                    className="space-y-2"
+                                  >
+                                    <div className="flex items-start space-x-3 p-3 rounded-lg border">
+                                      <RadioGroupItem value="client" id="mandant_client" className="mt-0.5" />
+                                      <Label htmlFor="mandant_client" className="cursor-pointer font-normal">
+                                        <span className="font-medium">Mon client</span>
+                                        <span className="block text-sm text-muted-foreground mt-1">
+                                          Le mandat est établi à son nom et c'est lui qui signe, sur cet écran.
+                                        </span>
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-start space-x-3 p-3 rounded-lg border">
+                                      <RadioGroupItem value="garage" id="mandant_garage" className="mt-0.5" />
+                                      <Label htmlFor="mandant_garage" className="cursor-pointer font-normal">
+                                        <span className="font-medium">Mon garage</span>
+                                        <span className="block text-sm text-muted-foreground mt-1">
+                                          Véhicule qui vous appartient. Votre signature et votre tampon enregistrés sont
+                                          apposés automatiquement.
+                                        </span>
+                                      </Label>
+                                    </div>
+                                  </RadioGroup>
+                                  )}
+                                </div>
+
+                                <MandatGenerator
+                                  // Changer de mandant remonte le formulaire : sans cela
+                                  // les champs garderaient les valeurs de l'autre mandant,
+                                  // React n'evaluant l'etat initial qu'au premier rendu.
+                                  key={mandantType}
+                                  demarcheId={demarcheId}
+                                  mandantType={mandantType}
+                                  saved={
+                                    mandatSauvegarde?.mandant_type === mandantType
+                                      ? mandatSauvegarde
+                                      : null
+                                  }
+                                  defaults={
+                                    mandantType === 'garage'
+                                      ? {
+                                          identite: garage?.raison_sociale ?? "",
+                                          siret: garage?.siret ?? "",
+                                          signataire: formatSignataire(garage?.signataire_nom, garage?.signataire_qualite),
+                                          adresse: garage?.adresse ?? "",
+                                          codePostal: garage?.code_postal ?? "",
+                                          commune: garage?.ville ?? "",
+                                          natureOperation: natureOperation(formData.type, actionDetails?.titre),
+                                          marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
+                                          vin: vehicleInfoPro?.vin ?? "",
+                                          immatriculation: selectedImmatriculation,
+                                        }
+                                      : {
+                                          identite: [clientPrenom, clientNom].filter(Boolean).join(" "),
+                                          adresse: clientAdresse ?? "",
+                                          natureOperation: natureOperation(formData.type, actionDetails?.titre),
+                                          marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
+                                          vin: vehicleInfoPro?.vin ?? "",
+                                          immatriculation: selectedImmatriculation,
+                                        }
+                                  }
+                                  savedSignaturePath={mandantType === 'garage' ? garage?.signature_path : null}
+                                  savedTamponPath={mandantType === 'garage' ? garage?.tampon_path : null}
+                                  // Garage mandant sans signature enregistree : il la saisit ici,
+                                  // elle est conservee sur sa fiche et ne lui sera plus redemandee.
+                                  garageId={mandantType === 'garage' ? garage?.id : undefined}
+                                  // Le client signe sur la tablette du garage : le fichier reste
+                                  // cloisonne sous l'identifiant du garage, seul chemin ou ses
+                                  // droits d'ecriture s'appliquent.
+                                  signatureUploadPath={
+                                    mandantType === 'client' && garage
+                                      ? `${garage.id}/demarche_${demarcheId}.png`
+                                      : undefined
+                                  }
+                                  documentType={mandatDocumentType}
+                                  onGenerated={() =>
+                                    mandatDocumentType && handleDocumentUploadComplete(mandatDocumentType)
+                                  }
+                                />
+                                  </div>
+                                }
+                              />
+                            </div>
+                          )}
+
                           <p className="text-xs text-muted-foreground pt-1">
                             <span className="text-destructive font-bold">*</span> = Document obligatoire
                           </p>
                         </div>
-
-                        {/* Mandat 13757 : depot de son propre document, ou remplissage en ligne. */}
-                        {mandatRequis && demarcheId && (
-                          <div className="space-y-3">
-                            <MandatChoice
-                              value={mandatMode}
-                              onChange={async (mode) => {
-                                setMandatMode(mode);
-                                await supabase.from('demarches').update({ mandat_mode: mode }).eq('id', demarcheId);
-                              }}
-                              slotUpload={
-                                <p className="text-sm text-muted-foreground">
-                                  L'emplacement de dépôt du mandat se trouve dans la liste des pièces
-                                  ci-dessus, avec le lien pour télécharger le Cerfa vierge.
-                                </p>
-                              }
-                              slotGenere={
-                                <div className="space-y-3">
-                              <div className="p-4 rounded-lg border-2 border-border bg-card space-y-3">
-                                <p className="font-medium text-sm">Qui donne le mandat ?</p>
-                                {mandantImposeGarage(formData.type) ? (
-                                  <p className="text-sm text-muted-foreground">
-                                    {raisonMandantGarage(formData.type)}
-                                  </p>
-                                ) : (
-                                <RadioGroup
-                                  value={mandantType}
-                                  onValueChange={async (v) => {
-                                    const mode = v as 'garage' | 'client';
-                                    setMandantType(mode);
-                                    await supabase.from('demarches').update({ mandant_type: mode }).eq('id', demarcheId);
-                                  }}
-                                  className="space-y-2"
-                                >
-                                  <div className="flex items-start space-x-3 p-3 rounded-lg border">
-                                    <RadioGroupItem value="client" id="mandant_client" className="mt-0.5" />
-                                    <Label htmlFor="mandant_client" className="cursor-pointer font-normal">
-                                      <span className="font-medium">Mon client</span>
-                                      <span className="block text-sm text-muted-foreground mt-1">
-                                        Le mandat est établi à son nom et c'est lui qui signe, sur cet écran.
-                                      </span>
-                                    </Label>
-                                  </div>
-                                  <div className="flex items-start space-x-3 p-3 rounded-lg border">
-                                    <RadioGroupItem value="garage" id="mandant_garage" className="mt-0.5" />
-                                    <Label htmlFor="mandant_garage" className="cursor-pointer font-normal">
-                                      <span className="font-medium">Mon garage</span>
-                                      <span className="block text-sm text-muted-foreground mt-1">
-                                        Véhicule qui vous appartient. Votre signature et votre tampon enregistrés sont
-                                        apposés automatiquement.
-                                      </span>
-                                    </Label>
-                                  </div>
-                                </RadioGroup>
-                                )}
-                              </div>
-
-                              <MandatGenerator
-                                // Changer de mandant remonte le formulaire : sans cela
-                                // les champs garderaient les valeurs de l'autre mandant,
-                                // React n'evaluant l'etat initial qu'au premier rendu.
-                                key={mandantType}
-                                demarcheId={demarcheId}
-                                mandantType={mandantType}
-                                saved={
-                                  mandatSauvegarde?.mandant_type === mandantType
-                                    ? mandatSauvegarde
-                                    : null
-                                }
-                                defaults={
-                                  mandantType === 'garage'
-                                    ? {
-                                        identite: garage?.raison_sociale ?? "",
-                                        siret: garage?.siret ?? "",
-                                        signataire: formatSignataire(garage?.signataire_nom, garage?.signataire_qualite),
-                                        adresse: garage?.adresse ?? "",
-                                        codePostal: garage?.code_postal ?? "",
-                                        commune: garage?.ville ?? "",
-                                        natureOperation: natureOperation(formData.type, actionDetails?.titre),
-                                        marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
-                                        vin: vehicleInfoPro?.vin ?? "",
-                                        immatriculation: selectedImmatriculation,
-                                      }
-                                    : {
-                                        identite: [clientPrenom, clientNom].filter(Boolean).join(" "),
-                                        adresse: clientAdresse ?? "",
-                                        natureOperation: natureOperation(formData.type, actionDetails?.titre),
-                                        marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
-                                        vin: vehicleInfoPro?.vin ?? "",
-                                        immatriculation: selectedImmatriculation,
-                                      }
-                                }
-                                savedSignaturePath={mandantType === 'garage' ? garage?.signature_path : null}
-                                savedTamponPath={mandantType === 'garage' ? garage?.tampon_path : null}
-                                // Garage mandant sans signature enregistree : il la saisit ici,
-                                // elle est conservee sur sa fiche et ne lui sera plus redemandee.
-                                garageId={mandantType === 'garage' ? garage?.id : undefined}
-                                // Le client signe sur la tablette du garage : le fichier reste
-                                // cloisonne sous l'identifiant du garage, seul chemin ou ses
-                                // droits d'ecriture s'appliquent.
-                                signatureUploadPath={
-                                  mandantType === 'client' && garage
-                                    ? `${garage.id}/demarche_${demarcheId}.png`
-                                    : undefined
-                                }
-                                documentType={mandatDocumentType}
-                                onGenerated={() =>
-                                  mandatDocumentType && handleDocumentUploadComplete(mandatDocumentType)
-                                }
-                              />
-                                </div>
-                              }
-                            />
-                          </div>
-                        )}
 
                         {/* Autres pièces justificatives */}
                         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">

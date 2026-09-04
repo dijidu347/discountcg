@@ -27,7 +27,10 @@ export const MandatChoice = ({
   <div className="space-y-3 p-4 rounded-lg border-2 border-border bg-card">
     <div className="flex items-center gap-2">
       <FileSignature className="w-4 h-4 text-primary" />
-      <p className="font-medium">Mandat d'immatriculation</p>
+      <p className="font-medium">
+        Mandat d'immatriculation
+        <span className="text-destructive text-base font-bold">&nbsp;*</span>
+      </p>
       <span className="ml-auto text-xs text-muted-foreground">Cerfa 13757*03</span>
     </div>
 
