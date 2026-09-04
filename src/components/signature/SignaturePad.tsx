@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Undo2, Trash2, Loader2 } from "lucide-react";
+import { Upload, Undo2, Trash2, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { compressFile, isAcceptedFileType, isFileTooLarge } from "@/lib/file-compression";
 
@@ -49,6 +49,8 @@ export const SignaturePad = ({
   const [compression, setCompression] = useState(false);
   // Une image importée remplace le tracé : les deux modes ne se mélangent pas.
   const [uploaded, setUploaded] = useState<string | null>(initialDataUrl);
+  // Un PDF ne s'affiche pas dans une balise image : on montre son nom.
+  const [nomFichier, setNomFichier] = useState<string | null>(null);
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -138,6 +140,7 @@ export const SignaturePad = ({
   const clear = () => {
     strokesRef.current = [];
     setUploaded(null);
+    setNomFichier(null);
     setIsEmpty(true);
     redraw();
     onChange(null);
@@ -152,10 +155,10 @@ export const SignaturePad = ({
   };
 
   const handleFile = async (file: File) => {
-    if (!isAcceptedFileType(file) || file.type === "application/pdf") {
+    if (!isAcceptedFileType(file)) {
       toast({
         title: "Format non pris en charge",
-        description: "Choisissez une photo ou une image : JPEG, PNG ou HEIC.",
+        description: "Choisissez une photo, une image ou un PDF : JPEG, PNG, HEIC ou PDF.",
         variant: "destructive",
       });
       return;
@@ -169,8 +172,9 @@ export const SignaturePad = ({
       return;
     }
 
+    const estPdf = file.type === "application/pdf";
     let aLire = file;
-    if (file.size > SEUIL_COMPRESSION) {
+    if (!estPdf && file.size > SEUIL_COMPRESSION) {
       setCompression(true);
       try {
         aLire = (await compressFile(file)).file;
@@ -193,6 +197,7 @@ export const SignaturePad = ({
       strokesRef.current = [];
       redraw();
       setUploaded(dataUrl);
+      setNomFichier(estPdf ? file.name : null);
       setIsEmpty(false);
       onChange(dataUrl);
     };
@@ -218,7 +223,13 @@ export const SignaturePad = ({
       </div>
 
       <div className={`relative rounded-lg border-2 border-dashed bg-background ${heightClass}`}>
-        {uploaded ? (
+        {uploaded && nomFichier ? (
+          <div className="h-full w-full flex flex-col items-center justify-center gap-1 px-3 text-center">
+            <FileText className="h-6 w-6 text-primary" />
+            <span className="text-sm font-medium break-all">{nomFichier}</span>
+            <span className="text-xs text-muted-foreground">PDF importé — il sera repris tel quel</span>
+          </div>
+        ) : uploaded ? (
           <img src={uploaded} alt={label} className="h-full w-full object-contain p-2" />
         ) : compression ? (
           <div className="h-full w-full flex flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -233,7 +244,7 @@ export const SignaturePad = ({
           >
             <Upload className="h-5 w-5" />
             Importer l'image de votre tampon
-            <span className="text-xs text-muted-foreground">Photo ou scan — les gros fichiers sont réduits automatiquement</span>
+            <span className="text-xs text-muted-foreground">Photo, scan ou PDF — les gros fichiers sont réduits automatiquement</span>
           </button>
         ) : (
           <>
@@ -261,7 +272,7 @@ export const SignaturePad = ({
           <input
             ref={fileRef}
             type="file"
-            accept=".jpg,.jpeg,.png,.heic,.heif,image/*"
+            accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*,application/pdf"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];

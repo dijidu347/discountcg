@@ -92,11 +92,40 @@ async function downloadImage(
   return new Uint8Array(await data.arrayBuffer());
 }
 
-// Le pad produit du PNG, mais un client peut importer un JPEG. On tranche sur
-// les octets d'en-tête plutôt que sur le content-type déclaré, qui ment parfois.
-async function embedImage(pdfDoc: PDFDocument, bytes: Uint8Array) {
-  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
-  return isPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+// Signature et tampon arrivent en PNG, en JPEG ou en PDF — un cachet scanne
+// l'est souvent au format PDF. On tranche sur les octets d'en-tête plutot que
+// sur le content-type declare, qui ment parfois.
+//
+// Les trois cas se dessinent differemment (drawImage pour une image, drawPage
+// pour une page de PDF), d'ou cette petite abstraction : l'appelant n'a plus
+// qu'une largeur, une hauteur et une methode pour poser l'element.
+interface Dessinable {
+  width: number;
+  height: number;
+  poser: (page: ReturnType<PDFDocument["getPage"]>, o: { x: number; y: number; width: number; height: number }) => void;
+}
+
+async function preparer(pdfDoc: PDFDocument, bytes: Uint8Array): Promise<Dessinable | null> {
+  const estPng = bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47;
+  const estPdf = bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46; // %PDF
+
+  try {
+    if (estPdf) {
+      const [premierePage] = await pdfDoc.embedPdf(bytes);
+      return {
+        width: premierePage.width,
+        height: premierePage.height,
+        poser: (page, o) => page.drawPage(premierePage, o),
+      };
+    }
+    const img = estPng ? await pdfDoc.embedPng(bytes) : await pdfDoc.embedJpg(bytes);
+    return { width: img.width, height: img.height, poser: (page, o) => page.drawImage(img, o) };
+  } catch (e) {
+    // Un fichier illisible ne doit pas faire echouer tout le mandat : on le
+    // laisse de cote et le reste du document est produit normalement.
+    console.error("Élément illisible, ignoré:", e instanceof Error ? e.message : e);
+    return null;
+  }
 }
 
 serve(async (req) => {
@@ -211,24 +240,22 @@ serve(async (req) => {
 
     // Sans tampon la signature occupe toute la hauteur restante ; avec tampon,
     // les deux se partagent la zone.
-    const hasTampon = Boolean(tamponBytes);
     const disponible = cursorY - ZONE.y;
 
-    if (signatureBytes) {
-      const img = await embedImage(pdfDoc, signatureBytes);
-      const h = hasTampon ? Math.min(45, disponible * 0.5) : Math.min(60, disponible);
-      const ratio = img.width / img.height;
-      const w = Math.min(ZONE.w - 6, h * ratio);
-      page.drawImage(img, { x: ZONE.x + 3, y: cursorY - h, width: w, height: h });
+    const signatureEl = signatureBytes ? await preparer(pdfDoc, signatureBytes) : null;
+    const tamponEl = tamponBytes ? await preparer(pdfDoc, tamponBytes) : null;
+
+    if (signatureEl) {
+      const h = tamponEl ? Math.min(45, disponible * 0.5) : Math.min(60, disponible);
+      const w = Math.min(ZONE.w - 6, h * (signatureEl.width / signatureEl.height));
+      signatureEl.poser(page, { x: ZONE.x + 3, y: cursorY - h, width: w, height: h });
       cursorY -= h + 4;
     }
 
-    if (tamponBytes) {
-      const img = await embedImage(pdfDoc, tamponBytes);
+    if (tamponEl) {
       const h = Math.min(50, cursorY - ZONE.y);
-      const ratio = img.width / img.height;
-      const w = Math.min(ZONE.w - 6, h * ratio);
-      page.drawImage(img, { x: ZONE.x + 3, y: cursorY - h, width: w, height: h });
+      const w = Math.min(ZONE.w - 6, h * (tamponEl.width / tamponEl.height));
+      tamponEl.poser(page, { x: ZONE.x + 3, y: cursorY - h, width: w, height: h });
     }
 
     // Aplati : le mandat devient un document figé, plus un formulaire éditable.

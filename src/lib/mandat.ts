@@ -287,3 +287,13 @@ export function plaqueReelle(immatriculation: string | null | undefined): string
   if (!valeur || /^VIN-/i.test(valeur)) return "";
   return valeur;
 }
+
+// Extension coherente avec le contenu reel du fichier. Le pad produit du PNG,
+// une image importee peut etre un JPEG apres compression, et un cachet scanne
+// arrive souvent en PDF : nommer tout ".png" produisait des fichiers dont le
+// nom mentait sur le contenu.
+export function extensionPour(mimeType: string): string {
+  if (mimeType === "application/pdf") return "pdf";
+  if (mimeType === "image/jpeg") return "jpg";
+  return "png";
+}

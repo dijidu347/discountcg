@@ -6,7 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { FileSignature, Loader2, Download, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { FileSignature, Loader2, Download, Info, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SignaturePad } from "@/components/signature/SignaturePad";
@@ -15,6 +15,7 @@ import {
   consignesMandant,
   mandatGenerable,
   type MandantFlags,
+  extensionPour,
   type MandatData,
 } from "@/lib/mandat";
 import { getCerfaUrl } from "@/lib/cerfa-utils";
@@ -113,6 +114,9 @@ export const MandatGenerator = ({
   // reste perimee jusqu'au prochain chargement, sans quoi les pads
   // reapparaitraient a la regeneration alors que tout vient d'etre sauvegarde.
   const [dejaEnregistre, setDejaEnregistre] = useState<{ signature?: string; tampon?: string }>({});
+  // Remplacement demande explicitement : sans cela, une signature enregistree
+  // ne pouvait plus jamais etre changee depuis cet ecran.
+  const [remplacer, setRemplacer] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
 
@@ -122,10 +126,10 @@ export const MandatGenerator = ({
   // sienne maintenant.
   const signatureConnue = dejaEnregistre.signature ?? savedSignaturePath ?? saved?.signature_path ?? null;
   const tamponConnu = dejaEnregistre.tampon ?? savedTamponPath ?? saved?.tampon_path ?? null;
-  const doitSigner = !signatureConnue;
+  const doitSigner = !signatureConnue || remplacer;
   // Le Cerfa exige le cachet des qu'une societe est mandante : on le reclame
   // en meme temps que la signature, plutot que de produire un mandat incomplet.
-  const doitTamponner = Boolean(garageId) && !tamponConnu;
+  const doitTamponner = Boolean(garageId) && (!tamponConnu || remplacer);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -137,8 +141,8 @@ export const MandatGenerator = ({
     if (!form.codePostal.trim()) manquants.push("le code postal");
     if (!form.commune.trim()) manquants.push("la commune");
     if (!form.nature.trim()) manquants.push("la nature de l'opération");
-    if (doitSigner && !signature) manquants.push("la signature");
-    if (doitTamponner && !tampon) manquants.push("le tampon de l'entreprise");
+    if (doitSigner && !signature && !signatureConnue) manquants.push("la signature");
+    if (doitTamponner && !tampon && !tamponConnu) manquants.push("le tampon de l'entreprise");
     return manquants;
   };
 
@@ -158,8 +162,11 @@ export const MandatGenerator = ({
       let signaturePath = signatureConnue ?? undefined;
       let tamponPath = tamponConnu ?? undefined;
 
-      const deposer = async (dataUrl: string, chemin: string) => {
+      // Le chemin porte l'extension du contenu reel : un cachet en PDF ne doit
+      // pas etre enregistre sous un nom en .png.
+      const deposer = async (dataUrl: string, base: string) => {
         const blob = dataUrlToBlob(dataUrl);
+        const chemin = `${base}.${extensionPour(blob.type)}`;
         const { error } = await supabase.storage
           .from("signatures")
           .upload(chemin, blob, { upsert: true, contentType: blob.type });
@@ -172,11 +179,11 @@ export const MandatGenerator = ({
         // demarche reprendra ces chemins sans rien redemander.
         const patch: { signature_path?: string; tampon_path?: string } = {};
         if (signature) {
-          signaturePath = await deposer(signature, `${garageId}/signature.png`);
+          signaturePath = await deposer(signature, `${garageId}/signature`);
           patch.signature_path = signaturePath;
         }
         if (tampon) {
-          tamponPath = await deposer(tampon, `${garageId}/tampon.png`);
+          tamponPath = await deposer(tampon, `${garageId}/tampon`);
           patch.tampon_path = tamponPath;
         }
         if (Object.keys(patch).length) {
@@ -188,7 +195,7 @@ export const MandatGenerator = ({
           }));
         }
       } else if (signature && signatureUploadPath) {
-        signaturePath = await deposer(signature, signatureUploadPath);
+        signaturePath = await deposer(signature, signatureUploadPath.replace(/\.png$/, ""));
       }
 
       const mandatData: MandatData = {
@@ -350,6 +357,20 @@ export const MandatGenerator = ({
             </div>
           </div>
         </div>
+
+        {!doitSigner && !doitTamponner && (
+          <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/30 p-3">
+            <p className="text-sm text-muted-foreground flex-1">
+              {garageId
+                ? "Votre signature et votre tampon enregistrés seront apposés."
+                : "Votre signature enregistrée sera apposée."}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={() => setRemplacer(true)}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Les remplacer
+            </Button>
+          </div>
+        )}
 
         {(doitSigner || doitTamponner) && (
           <div className="space-y-3">

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { SignaturePad } from "@/components/signature/SignaturePad";
+import { extensionPour } from "@/lib/mandat";
 
 interface GarageSignatureSettingsProps {
   garage: {
@@ -92,8 +93,7 @@ export const GarageSignatureSettings = ({ garage, onSaved }: GarageSignatureSett
         // JPEG, et forcer image/png stockerait des octets JPEG sous une
         // etiquette mensongere.
         const blob = dataUrlToBlob(dataUrl);
-        const extension = blob.type === "image/jpeg" ? "jpg" : "png";
-        const path = `${garage.id}/${nom}.${extension}`;
+        const path = `${garage.id}/${nom}.${extensionPour(blob.type)}`;
         const { error } = await supabase.storage
           .from(BUCKET)
           .upload(path, blob, { upsert: true, contentType: blob.type });
