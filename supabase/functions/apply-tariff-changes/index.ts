@@ -60,6 +60,14 @@ serve(async (req) => {
       console.error("SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY manquant");
       return json(500, { error: "Configuration serveur incomplète" });
     }
+    // Appel réservé au cron (et à l'admin) : le déclencheur envoie la clé de
+    // service en Authorization. Sans ce contrôle, l'endpoint est public.
+    const porteur = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+    if (porteur !== serviceKey) {
+      console.warn("⛔ apply-tariff-changes : appel non autorisé");
+      return json(401, { error: "Non autorisé" });
+    }
+
     // Client service_role : lit/écrit malgré la RLS.
     const supabase = createClient(supabaseUrl, serviceKey);
 

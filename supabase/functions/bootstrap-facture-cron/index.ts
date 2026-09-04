@@ -13,6 +13,17 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    // Fonction d'administration : réservée aux appels porteurs de la clé de
+    // service. Sans ce contrôle, n'importe qui peut reprogrammer le cron.
+    const porteur = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '').trim();
+    if (porteur !== serviceKey) {
+      console.warn('⛔ bootstrap-facture-cron : appel non autorisé');
+      return new Response(JSON.stringify({ error: 'Non autorisé' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const { data, error } = await supabase.rpc('setup_facture_cron', {
