@@ -184,9 +184,19 @@ export const MandatGenerator = ({
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Le Cerfa reclame le SIRET et l'identite du signataire des que le mandant
+  // est une personne morale. Le garage mandant l'est toujours ; un particulier
+  // mandant ne l'est jamais.
+  const mandantSociete = mandantType === "garage";
+
+  // Meme convention que le reste du tunnel : asterisque rouge.
+  const Requis = () => <span className="text-destructive font-bold">&nbsp;*</span>;
+
   const champsManquants = () => {
     const manquants: string[] = [];
     if (!form.identite.trim()) manquants.push("l'identité du mandant");
+    if (mandantSociete && !form.siret.trim()) manquants.push("le SIRET");
+    if (mandantSociete && !form.signataire.trim()) manquants.push("le nom et la qualité du signataire");
     if (!form.nomVoie.trim()) manquants.push("le nom de la voie");
     if (!form.codePostal.trim()) manquants.push("le code postal");
     if (!form.commune.trim()) manquants.push("la commune");
@@ -340,17 +350,17 @@ export const MandatGenerator = ({
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mandant</p>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="mandat_identite">Nom, prénom ou raison sociale</Label>
+              <Label htmlFor="mandat_identite">Nom, prénom ou raison sociale<Requis /></Label>
               <Input id="mandat_identite" value={form.identite} onChange={set("identite")} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="mandat_siret">SIRET <span className="text-muted-foreground text-xs">(sociétés)</span></Label>
+              <Label htmlFor="mandat_siret">SIRET{mandantSociete ? <Requis /> : <span className="text-muted-foreground text-xs"> (sociétés)</span>}</Label>
               <Input id="mandat_siret" value={form.siret} onChange={set("siret")} maxLength={14} placeholder="14 chiffres" />
             </div>
           </div>
-          {(form.siret.trim() || flags.vehiculePro) && (
+          {(mandantSociete || form.siret.trim() || flags.vehiculePro) && (
             <div className="space-y-1.5">
-              <Label htmlFor="mandat_signataire">Nom et qualité du signataire</Label>
+              <Label htmlFor="mandat_signataire">Nom et qualité du signataire{mandantSociete && <Requis />}</Label>
               <Input id="mandat_signataire" value={form.signataire} onChange={set("signataire")} placeholder="M. Dupont, gérant" />
               <p className="text-xs text-muted-foreground">Exigé par le Cerfa pour les sociétés, en plus du cachet.</p>
             </div>
@@ -370,16 +380,16 @@ export const MandatGenerator = ({
             </div>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="mandat_nom_voie">Nom de la voie</Label>
+            <Label htmlFor="mandat_nom_voie">Nom de la voie<Requis /></Label>
             <Input id="mandat_nom_voie" value={form.nomVoie} onChange={set("nomVoie")} />
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="mandat_cp">Code postal</Label>
+              <Label htmlFor="mandat_cp">Code postal<Requis /></Label>
               <Input id="mandat_cp" value={form.codePostal} onChange={set("codePostal")} maxLength={5} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="mandat_commune">Commune</Label>
+              <Label htmlFor="mandat_commune">Commune<Requis /></Label>
               <Input id="mandat_commune" value={form.commune} onChange={set("commune")} />
             </div>
           </div>
@@ -388,7 +398,7 @@ export const MandatGenerator = ({
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Véhicule et opération</p>
           <div className="space-y-1.5">
-            <Label htmlFor="mandat_nature">Nature de l'opération</Label>
+            <Label htmlFor="mandat_nature">Nature de l'opération<Requis /></Label>
             <Input id="mandat_nature" value={form.nature} onChange={set("nature")} />
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
@@ -498,6 +508,10 @@ export const MandatGenerator = ({
             </AlertDescription>
           </Alert>
         ) : (
+          <>
+          <p className="text-xs text-muted-foreground">
+            <span className="text-destructive font-bold">*</span> = champ obligatoire
+          </p>
           <Button onClick={generer} disabled={generating} className="w-full">
             {generating ? (
               <>
@@ -511,6 +525,7 @@ export const MandatGenerator = ({
               </>
             )}
           </Button>
+          </>
         )}
       </CardContent>
     </Card>
