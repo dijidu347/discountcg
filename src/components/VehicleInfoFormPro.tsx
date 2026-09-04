@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Car, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { marqueDepuisVin } from "@/lib/vin";
 
 export interface VehicleInfoPro {
   marque: string;
@@ -30,6 +31,26 @@ export function VehicleInfoFormPro({
     date_mec: ""
   });
 
+  // Marque renseignee automatiquement depuis le VIN : memorisee pour savoir si
+  // le champ est encore "libre". Des que le client la corrige lui-meme, on
+  // cesse de la remplacer.
+  const marqueAutoRef = useRef<string>("");
+  const [marqueDeduite, setMarqueDeduite] = useState(false);
+
+  // Le VIN porte le code constructeur : la marque en decoule sans appel API.
+  // L'API plaque, elle, ne sait pas repondre sur un VIN.
+  useEffect(() => {
+    const deduite = marqueDepuisVin(vehicleInfo.vin);
+    if (!deduite) return;
+    const libre = vehicleInfo.marque === "" || vehicleInfo.marque === marqueAutoRef.current;
+    if (!libre || vehicleInfo.marque === deduite) return;
+    marqueAutoRef.current = deduite;
+    setMarqueDeduite(true);
+    setVehicleInfo((prev) => ({ ...prev, marque: deduite }));
+    // Seul le VIN doit relancer la deduction : ajouter marque bouclerait.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vehicleInfo.vin]);
+
   useEffect(() => {
     // Vérifier la validité
     const isValid = 
@@ -41,6 +62,11 @@ export function VehicleInfoFormPro({
   }, [vehicleInfo, requireVin, onVehicleInfoChange]);
 
   const handleChange = (field: keyof VehicleInfoPro, value: string) => {
+    if (field === "marque") {
+      // Correction manuelle : elle prime, et le VIN ne l'ecrasera plus.
+      marqueAutoRef.current = "";
+      setMarqueDeduite(false);
+    }
     setVehicleInfo(prev => ({
       ...prev,
       [field]: value
@@ -67,6 +93,11 @@ export function VehicleInfoFormPro({
               value={vehicleInfo.marque}
               onChange={(e) => handleChange("marque", e.target.value)}
             />
+            {marqueDeduite && (
+              <p className="text-xs text-muted-foreground">
+                Marque reconnue depuis le VIN. Corrigez-la si elle est inexacte.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="modele">Modèle *</Label>
