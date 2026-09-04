@@ -265,3 +265,10 @@ export function raisonMandantGarage(type: string | null | undefined): string {
   }
   return "Votre garage. Une déclaration d'achat constate que vous avez acquis le véhicule : le mandat ne peut être établi qu'à votre nom, avec votre signature et votre tampon.";
 }
+
+// Comment le client obtient son mandat. Par defaut 'upload' : le depot de son
+// propre document est le comportement historique, celui que tout le monde
+// connait. Le pre-remplissage en ligne est propose a cote, jamais impose — un
+// client qui arrive avec son Cerfa deja rempli n'a rien a faire du formulaire.
+export type MandatMode = "upload" | "genere";
+export const MANDAT_MODE_DEFAUT: MandatMode = "upload";

@@ -109,3 +109,19 @@ ALTER TABLE public.guest_orders
 ALTER TABLE public.garages
   ADD COLUMN IF NOT EXISTS signataire_nom text,
   ADD COLUMN IF NOT EXISTS signataire_qualite text;
+
+-- Le pre-remplissage devient un choix, pas une obligation. Un client qui a deja
+-- son mandat rempli a la main doit pouvoir le deposer directement, sans passer
+-- par le formulaire. Ajoute apres qu'un client s'est retrouve bloque.
+--   'upload' -> il depose son propre document (comportement d'origine)
+--   'genere' -> il le remplit en ligne et nous le generons
+ALTER TABLE public.demarches   ADD COLUMN IF NOT EXISTS mandat_mode text;
+ALTER TABLE public.guest_orders ADD COLUMN IF NOT EXISTS mandat_mode text;
+
+ALTER TABLE public.demarches DROP CONSTRAINT IF EXISTS demarches_mandat_mode_check;
+ALTER TABLE public.demarches ADD CONSTRAINT demarches_mandat_mode_check
+  CHECK (mandat_mode IS NULL OR mandat_mode IN ('upload', 'genere'));
+
+ALTER TABLE public.guest_orders DROP CONSTRAINT IF EXISTS guest_orders_mandat_mode_check;
+ALTER TABLE public.guest_orders ADD CONSTRAINT guest_orders_mandat_mode_check
+  CHECK (mandat_mode IS NULL OR mandat_mode IN ('upload', 'genere'));

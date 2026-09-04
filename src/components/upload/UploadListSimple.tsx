@@ -9,7 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
-import { natureOperation, MANDAT_PREREMPLI_ACTIF, type MandatData } from "@/lib/mandat";
+import { MandatChoice } from "@/components/mandat/MandatChoice";
+import { natureOperation, MANDAT_PREREMPLI_ACTIF, MANDAT_MODE_DEFAUT, type MandatData, type MandatMode } from "@/lib/mandat";
 
 interface UploadListSimpleProps {
   orderId: string;
@@ -72,6 +73,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   const [nonGageFourni, setNonGageFourni] = useState(false);
   // Commande complète : sert à pré-remplir le mandat 13757.
   const [commande, setCommande] = useState<Record<string, unknown> | null>(null);
+  // Depot de son propre mandat, ou remplissage en ligne. Par defaut le depot.
+  const [mandatMode, setMandatMode] = useState<MandatMode>(MANDAT_MODE_DEFAUT);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -84,6 +87,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         .eq('id', orderId)
         .single();
       setCommande(orderMode as Record<string, unknown> | null);
+      setMandatMode(((orderMode as { mandat_mode?: MandatMode } | null)?.mandat_mode) || MANDAT_MODE_DEFAUT);
       const attendNonGage = orderMode?.non_gage_mode === 'fourni';
       setNonGageFourni(attendNonGage);
 
@@ -322,6 +326,18 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
       </CardHeader>
       <CardContent className="space-y-4">
         {mandatDoc && commande && (
+          <MandatChoice
+            value={mandatMode}
+            onChange={async (mode) => {
+              setMandatMode(mode);
+              await supabase.from('guest_orders').update({ mandat_mode: mode }).eq('id', orderId);
+            }}
+            slotUpload={
+              <p className="text-sm text-muted-foreground">
+                L'emplacement de dépôt du mandat se trouve avec les autres pièces ci-dessous.
+              </p>
+            }
+            slotGenere={
           <MandatGenerator
             orderId={orderId}
             documentType={mandatDoc.nom_document}
@@ -345,10 +361,13 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
             }}
             onGenerated={loadData}
           />
+            }
+          />
         )}
 
-        {/* Required documents */}
-        {requiredDocuments.filter((d) => d.id !== mandatDoc?.id).map((doc) => {
+        {/* La piece "mandat" sort de la liste seulement si le client la remplit
+            en ligne ; s'il depose le sien, elle y reprend sa place. */}
+        {requiredDocuments.filter((d) => mandatMode !== 'genere' || d.id !== mandatDoc?.id).map((doc) => {
           const filesForDoc = uploadedFiles.filter(f => f.type_document === doc.nom_document);
 
           return (
