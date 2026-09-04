@@ -89,13 +89,15 @@ export const getSignedUrl = async (
  * UNIQUE function to download a facture (tokens or demarches)
  * Uses window.location.href for native browser download
  * @param path - The file path within the factures bucket (e.g., "garage_id/2025-00001.pdf")
+ * @param trackingNumber - Numero de suivi, pour une commande invitee : c'est lui
+ *   qui prouve le droit d'acces quand personne n'est connecte.
  */
-export const downloadFacture = async (path: string): Promise<void> => {
+export const downloadFacture = async (path: string, trackingNumber?: string): Promise<void> => {
   try {
     console.log("📥 downloadFacture called with path:", path);
 
     const { data, error } = await supabase.functions.invoke("download-facture", {
-      body: { path }
+      body: trackingNumber ? { path, tracking_number: trackingNumber } : { path }
     });
 
     if (error) {

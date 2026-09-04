@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { pushAchatValide } from "@/lib/gtm";
 import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
+import { downloadFacture, extractPathFromUrl } from "@/lib/storage-utils";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
@@ -49,7 +50,9 @@ const SuiviCommande = () => {
   const [carteGriseUrl, setCarteGriseUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [requiredDocuments, setRequiredDocuments] = useState<any[]>([]);
-  const [factureUrl, setFactureUrl] = useState<string | null>(null);
+  // Chemin de la facture, et non son URL publique : le telechargement passe
+  // par une URL signee, demandee au moment du clic.
+  const [facturePath, setFacturePath] = useState<string | null>(null);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [reuploadedDocs, setReuploadedDocs] = useState<Set<string>>(new Set());
   const [isSubmittingReupload, setIsSubmittingReupload] = useState(false);
@@ -126,7 +129,7 @@ const SuiviCommande = () => {
         .single();
       
       if (facture?.pdf_url) {
-        setFactureUrl(facture.pdf_url);
+        setFacturePath(extractPathFromUrl(facture.pdf_url));
       }
     } catch (err) {
       console.error('Error loading order:', err);
@@ -644,7 +647,7 @@ const SuiviCommande = () => {
           )}
 
           {/* Facture */}
-          {factureUrl && (
+          {facturePath && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -653,15 +656,14 @@ const SuiviCommande = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <a
-                  href={factureUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => downloadFacture(facturePath, trackingNumber)}
                   className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
                 >
                   <Download className="w-4 h-4" />
                   Télécharger ma facture
-                </a>
+                </button>
               </CardContent>
             </Card>
           )}

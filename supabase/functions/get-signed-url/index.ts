@@ -9,6 +9,12 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// "uuid/2026-00001.pdf" ou "facture_2026-00001.pdf" -> "2026-00001"
+function numeroDepuisChemin(chemin: string): string {
+  const base = chemin.split("/").pop() ?? chemin;
+  return base.replace(/\.[a-z0-9]+$/i, "").replace(/^facture_/i, "");
+}
+
 interface SignedUrlRequest {
   bucket: string;
   path: string;
@@ -130,7 +136,27 @@ serve(async (req) => {
             .eq("user_id", user.id)
             .single();
 
-          if (garageData) {
+          if (garageData && bucket === "factures") {
+            // Une facture appartient a UN garage. Sans cette egalite, tout
+            // garage connecte pouvait lire les factures de ses confreres :
+            // il suffisait d'appeler cette fonction avec leur chemin.
+            let proprietaire: string | null = null;
+            const { data: parUrl } = await supabase
+              .from("factures").select("garage_id").like("pdf_url", `%${path}`).maybeSingle();
+            if (parUrl) {
+              proprietaire = parUrl.garage_id;
+            } else {
+              const { data: parNumero } = await supabase
+                .from("factures").select("garage_id").eq("numero", numeroDepuisChemin(path)).maybeSingle();
+              proprietaire = parNumero?.garage_id ?? null;
+            }
+            if (proprietaire && proprietaire === garageData.id) {
+              isAuthorized = true;
+              console.log("✅ Garage owner authorized for its own facture");
+            } else {
+              console.warn("⛔ Facture demandee par un autre garage:", path);
+            }
+          } else if (garageData) {
             isAuthorized = true;
             console.log("✅ Garage owner authorized for bucket:", bucket);
           }
