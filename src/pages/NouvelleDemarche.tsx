@@ -1386,7 +1386,7 @@ export default function NouvelleDemarche() {
                               // le Cerfa vierge a imprimer. On ne FILTRE pas le tableau :
                               // les cles de documents valent "doc_<rang>", les decaler
                               // casserait le suivi des pieces deja deposees.
-                              if (mandatRequis && mandatMode === 'genere' && /13757/.test(doc.nom_document ?? "")) return null;
+                              if (mandatRequis && /13757/.test(doc.nom_document ?? "")) return null;
 
                               const docName = doc.nom_document.toLowerCase();
                               const hasRectoVerso = docName.includes('recto/verso') || docName.includes('recto verso');
@@ -1531,10 +1531,33 @@ export default function NouvelleDemarche() {
                                   await supabase.from('demarches').update({ mandat_mode: mode }).eq('id', demarcheId);
                                 }}
                                 slotUpload={
-                                  <p className="text-sm text-muted-foreground">
-                                    L'emplacement de dépôt du mandat se trouve dans la liste des pièces
-                                    ci-dessus, avec le lien pour télécharger le Cerfa vierge.
-                                  </p>
+                                  <div className="space-y-2">
+                                    <Label className="text-sm font-medium">
+                                      Mandat rempli et signé
+                                      <span className="text-destructive text-base font-bold">&nbsp;*</span>
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                      Pas encore de mandat ?{" "}
+                                      <a
+                                        href={getCerfaUrl("13757_03")}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-primary underline underline-offset-2 inline-flex items-center gap-1"
+                                      >
+                                        Télécharger le Cerfa vierge
+                                        <Download className="h-3 w-3" />
+                                      </a>
+                                    </p>
+                                    {mandatDocumentType && (
+                                      <DocumentUpload
+                                        demarcheId={demarcheId}
+                                        documentType={mandatDocumentType}
+                                        customName="Mandat (cerfa 13757*03)"
+                                        label=""
+                                        onUploadComplete={() => handleDocumentUploadComplete(mandatDocumentType)}
+                                      />
+                                    )}
+                                  </div>
                                 }
                                 slotGenere={
                                   <div className="space-y-3">

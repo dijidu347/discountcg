@@ -8,6 +8,7 @@ import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
+import { getCerfaUrl } from "@/lib/cerfa-utils";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
 import { MandatChoice } from "@/components/mandat/MandatChoice";
 import { natureOperation, MANDAT_PREREMPLI_ACTIF, MANDAT_MODE_DEFAUT, type MandatData, type MandatMode } from "@/lib/mandat";
@@ -333,9 +334,27 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
               await supabase.from('guest_orders').update({ mandat_mode: mode }).eq('id', orderId);
             }}
             slotUpload={
-              <p className="text-sm text-muted-foreground">
-                L'emplacement de dépôt du mandat se trouve avec les autres pièces ci-dessous.
-              </p>
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground">
+                  Pas encore de mandat ?{" "}
+                  <a
+                    href={getCerfaUrl("13757_03")}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary underline underline-offset-2"
+                  >
+                    Télécharger le Cerfa vierge
+                  </a>
+                </p>
+                <GuestDocumentUpload
+                  orderId={orderId}
+                  documentType={mandatDoc.nom_document}
+                  label="Mandat rempli et signé"
+                  existingFiles={uploadedFiles.filter((f) => f.type_document === mandatDoc.nom_document)}
+                  onUploadComplete={loadData}
+                  rectoOnly
+                />
+              </div>
             }
             slotGenere={
           <MandatGenerator
@@ -365,9 +384,9 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
           />
         )}
 
-        {/* La piece "mandat" sort de la liste seulement si le client la remplit
-            en ligne ; s'il depose le sien, elle y reprend sa place. */}
-        {requiredDocuments.filter((d) => mandatMode !== 'genere' || d.id !== mandatDoc?.id).map((doc) => {
+        {/* La piece "mandat" sort de la liste dans les deux cas : son depot comme
+            son pre-remplissage vivent dans la carte de choix ci-dessus. */}
+        {requiredDocuments.filter((d) => d.id !== mandatDoc?.id).map((doc) => {
           const filesForDoc = uploadedFiles.filter(f => f.type_document === doc.nom_document);
 
           return (
