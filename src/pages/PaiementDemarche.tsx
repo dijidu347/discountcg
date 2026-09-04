@@ -17,7 +17,6 @@ import { PaymentDetailsSummary, type PaymentCalculationResult } from "@/componen
 import { carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { formatPrice } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
-import { CgvAcceptance } from "@/components/payment/CgvAcceptance";
 
 const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
   const stripe = useStripe();
@@ -124,9 +123,6 @@ const PaiementDemarche = () => {
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [garage, setGarage] = useState<any>(null);
   const [showBalanceConfirm, setShowBalanceConfirm] = useState(false);
-  // Une seule acceptation des CGV pour toute la carte : elle conditionne le
-  // paiement par solde comme le paiement par carte.
-  const [cgvAccepted, setCgvAccepted] = useState(false);
   const [isProcessingBalance, setIsProcessingBalance] = useState(false);
   
   // Montant calculé (sans TVA)
@@ -809,8 +805,6 @@ const PaiementDemarche = () => {
                 <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <CgvAcceptance checked={cgvAccepted} onCheckedChange={setCgvAccepted} />
-
                 {/* 0. Paiement par solde */}
                 {garage && garage.token_balance > 0 && (
                   <div className={`border-2 rounded-lg p-6 space-y-4 ${canPayWithBalance ? 'border-green-500 bg-green-50 dark:bg-green-950/30' : 'border-muted'}`}>
@@ -840,7 +834,7 @@ const PaiementDemarche = () => {
                           <div className="flex gap-3">
                             <Button 
                               onClick={handleBalancePayment}
-                              disabled={isProcessingBalance || !cgvAccepted}
+                              disabled={isProcessingBalance}
                               className="flex-1 bg-green-600 hover:bg-green-700"
                             >
                               {isProcessingBalance ? (
@@ -869,7 +863,6 @@ const PaiementDemarche = () => {
                           onClick={() => setShowBalanceConfirm(true)}
                           className="w-full bg-green-600 hover:bg-green-700"
                           size="lg"
-                          disabled={!cgvAccepted}
                         >
                           <CheckCircle className="w-5 h-5 mr-2" />
                           Utiliser mon solde ({formatPrice(finalAmount)}€)
@@ -905,7 +898,6 @@ const PaiementDemarche = () => {
                       onClick={handleSogecommercePay}
                       size="lg"
                       className="w-full text-lg h-12"
-                      disabled={!cgvAccepted}
                     >
                       <CheckCircle className="w-5 h-5 mr-2" />
                       Payer {formatPrice(finalAmount)} €
@@ -918,15 +910,9 @@ const PaiementDemarche = () => {
                       <p className="text-sm text-muted-foreground">
                         Visa, Mastercard, American Express
                       </p>
-                      {cgvAccepted ? (
-                        <Elements stripe={stripePromise}>
-                          <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
-                        </Elements>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          Acceptez les conditions générales de ventes pour payer par carte.
-                        </p>
-                      )}
+                      <Elements stripe={stripePromise}>
+                        <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
+                      </Elements>
                     </div>
 
                     <div className="relative">
