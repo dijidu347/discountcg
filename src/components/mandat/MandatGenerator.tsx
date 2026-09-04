@@ -294,14 +294,10 @@ export const MandatGenerator = ({
 
         <div className="space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Adresse</p>
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-4">
+          <div className="grid gap-3 grid-cols-3">
             <div className="space-y-1.5">
               <Label htmlFor="mandat_numero">N°</Label>
               <Input id="mandat_numero" value={form.numero} onChange={set("numero")} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="mandat_extension">Bis / ter</Label>
-              <Input id="mandat_extension" value={form.extension} onChange={set("extension")} />
             </div>
             <div className="space-y-1.5 col-span-2">
               <Label htmlFor="mandat_type_voie">Type de voie</Label>

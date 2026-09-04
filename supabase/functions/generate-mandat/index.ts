@@ -229,10 +229,22 @@ serve(async (req) => {
       .upload(chemin, pdfBytes, { contentType: "application/pdf", upsert: true });
     if (uploadError) throw new Error("Dépôt du mandat impossible : " + uploadError.message);
 
-    const { data: publicUrl } = supabase.storage.from(bucket).getPublicUrl(chemin);
-    // Le chemin ne changeant plus, on casse le cache navigateur pour que la
-    // version corrigee s'affiche bien au lieu de l'ancienne.
-    const urlHorodatee = `${publicUrl.publicUrl}?v=${Date.now()}`;
+    // demarche-documents est PRIVE : son point d'acces public renvoie
+    // "Bucket not found". On stocke donc l'URL objet, comme le fait le reste du
+    // site pour ce bucket, et on renvoie une URL signee pour l'affichage
+    // immediat. guest-order-documents est public, l'URL publique y convient.
+    const bucketPrive = bucket === "demarche-documents";
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
+
+    const urlStockee = bucketPrive
+      ? `${SUPABASE_URL}/storage/v1/object/${bucket}/${chemin}`
+      : supabase.storage.from(bucket).getPublicUrl(chemin).data.publicUrl;
+
+    let urlAffichage = `${urlStockee}?v=${Date.now()}`;
+    if (bucketPrive) {
+      const { data: signee } = await supabase.storage.from(bucket).createSignedUrl(chemin, 60 * 60);
+      if (signee?.signedUrl) urlAffichage = signee.signedUrl;
+    }
 
     // Le rattachement est vérifié : sans lui le mandat existe dans le stockage
     // mais la pièce reste comptée manquante et bloque la suite du dossier.
@@ -245,7 +257,7 @@ serve(async (req) => {
         type_document: typeDocument,
         document_type: "Mandat (Cerfa 13757)",
         nom_fichier: NOM_FICHIER,
-        url: urlHorodatee,
+        url: urlStockee,
         taille_octets: pdfBytes.length,
       });
       if (error) throw new Error("Mandat généré mais non rattaché au dossier : " + error.message);
@@ -256,14 +268,14 @@ serve(async (req) => {
         order_id: orderId,
         type_document: typeDocument,
         nom_fichier: NOM_FICHIER,
-        url: urlHorodatee,
+        url: urlStockee,
         taille_octets: pdfBytes.length,
       });
       if (error) throw new Error("Mandat généré mais non rattaché au dossier : " + error.message);
       await supabase.from("guest_orders").update({ mandat_data: mandatData }).eq("id", orderId);
     }
 
-    return jsonResponse({ success: true, path: chemin, url: urlHorodatee, bucket });
+    return jsonResponse({ success: true, path: chemin, url: urlAffichage, bucket });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error("generate-mandat:", message);
