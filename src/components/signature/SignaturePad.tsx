@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, Undo2, Trash2, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { compressFile, isAcceptedFileType, isFileTooLarge } from "@/lib/file-compression";
+import { compressFile, isAcceptedFileType, isFileTooLarge, isHeicFile } from "@/lib/file-compression";
 
 interface SignaturePadProps {
   // Reçoit le PNG en dataURL, ou null quand la zone est vidée.
@@ -173,8 +173,12 @@ export const SignaturePad = ({
     }
 
     const estPdf = file.type === "application/pdf";
+    // Une HEIC passe toujours par la conversion, meme legere : ni le navigateur
+    // ni le PDF ne savent l'afficher. Sans cela une photo iPhone d'un mega
+    // disparaissait silencieusement du mandat.
+    const aConvertir = !estPdf && (isHeicFile(file) || file.size > SEUIL_COMPRESSION);
     let aLire = file;
-    if (!estPdf && file.size > SEUIL_COMPRESSION) {
+    if (aConvertir) {
       setCompression(true);
       try {
         aLire = (await compressFile(file)).file;

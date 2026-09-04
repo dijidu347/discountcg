@@ -38,6 +38,24 @@ export function isAcceptedFileType(file: File): boolean {
   return ACCEPTED_TYPES.includes(file.type);
 }
 
+/**
+ * HEIC/HEIF, le format des photos iPhone. Certains navigateurs annoncent un type
+ * MIME vide pour ces fichiers, d'ou le test sur l'extension en complement.
+ *
+ * Ces images doivent TOUJOURS etre converties, quelle que soit leur taille : ni
+ * les navigateurs ni pdf-lib ne savent les lire. Une HEIC laissee telle quelle
+ * ne s'affiche pas a l'ecran et disparait du PDF genere.
+ */
+export function isHeicFile(file: File): boolean {
+  const lowerName = file.name.toLowerCase();
+  return (
+    file.type === "image/heic" ||
+    file.type === "image/heif" ||
+    lowerName.endsWith(".heic") ||
+    lowerName.endsWith(".heif")
+  );
+}
+
 export function isFileTooLarge(file: File): boolean {
   return file.size > MAX_FILE_SIZE;
 }
