@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,6 +119,15 @@ export const MandatGenerator = ({
   const [remplacer, setRemplacer] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+
+  // Toute modification apres generation perime le PDF affiche : le lien
+  // "Le verifier" pointait sur le document precedent, sans que rien ne signale
+  // qu'il ne reflétait plus les cases cochées ni les champs corrigés. On revient
+  // donc au bouton "Generer", pour que ce qui est montre corresponde toujours a
+  // ce qui est saisi.
+  useEffect(() => {
+    setGeneratedUrl(null);
+  }, [form, attesteAssurance, opposeProspection, signature, tampon]);
 
   const consignes = consignesMandant(flags);
   const generable = mandatGenerable(flags);
