@@ -545,7 +545,10 @@ export function DocumentsNecessaires({
     const renderBadges = () => (
       <>
         {doc.obligatoire ? (
-          <Badge variant="destructive" className="text-xs">Obligatoire</Badge>
+          // Asterisque plutot qu'un badge : la legende du bas annonce deja
+          // "* = Document obligatoire", et un badge rouge par ligne saturait
+          // visuellement les listes longues.
+          <span className="text-destructive font-bold -ml-1.5" aria-label="Document obligatoire">*</span>
         ) : doc.recommended ? (
           <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50">Recommandé</Badge>
         ) : (
