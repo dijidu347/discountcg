@@ -1497,34 +1497,34 @@ export default function NouvelleDemarche() {
                             })}
                           </div>
 
+                          {/* Certificat de non-gage (CG/DA/DC uniquement).
+                              Le dépôt s'ouvre dans la carte « Je fournis le certificat ». */}
+                          <NonGageChoice
+                            demarcheType={formData.type}
+                            audience="pro"
+                            value={nonGageMode}
+                            onChange={handleNonGageChange}
+                            uploadSlot={
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium">
+                                  {NON_GAGE_DOCUMENT_LABEL}
+                                  <span className="text-destructive text-base font-bold">&nbsp;*</span>
+                                </Label>
+                                <DocumentUpload
+                                  demarcheId={demarcheId}
+                                  documentType="non_gage"
+                                  customName={NON_GAGE_DOCUMENT_LABEL}
+                                  label=""
+                                  onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
+                                />
+                              </div>
+                            }
+                          />
+
                           <p className="text-xs text-muted-foreground pt-1">
                             <span className="text-destructive font-bold">*</span> = Document obligatoire
                           </p>
                         </div>
-
-                        {/* Certificat de non-gage (CG/DA/DC uniquement).
-                            Le dépôt s'ouvre dans la carte « Je fournis le certificat ». */}
-                        <NonGageChoice
-                          demarcheType={formData.type}
-                          audience="pro"
-                          value={nonGageMode}
-                          onChange={handleNonGageChange}
-                          uploadSlot={
-                            <div className="space-y-2">
-                              <Label className="text-sm font-medium">
-                                {NON_GAGE_DOCUMENT_LABEL}
-                                <span className="text-destructive text-base font-bold">&nbsp;*</span>
-                              </Label>
-                              <DocumentUpload
-                                demarcheId={demarcheId}
-                                documentType="non_gage"
-                                customName={NON_GAGE_DOCUMENT_LABEL}
-                                label=""
-                                onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
-                              />
-                            </div>
-                          }
-                        />
 
                         {/* Mandat 13757 : depot de son propre document, ou remplissage en ligne. */}
                         {mandatRequis && demarcheId && (

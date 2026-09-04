@@ -40,8 +40,10 @@ export const NonGageChoice = ({
     <div className="space-y-3 p-4 rounded-lg border-2 border-border bg-card">
       <div className="flex items-center gap-2">
         <FileSearch className="w-4 h-4 text-blue-500" />
-        <p className="font-medium">{NON_GAGE_LABEL}</p>
-        <span className="ml-auto text-xs text-muted-foreground">Obligatoire</span>
+        <p className="font-medium">
+          {NON_GAGE_LABEL}
+          <span className="text-destructive text-base font-bold">&nbsp;*</span>
+        </p>
       </div>
       <p className="text-sm text-muted-foreground">
         Ce certificat atteste qu'aucun gage ni opposition n'empêche le changement de
