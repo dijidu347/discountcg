@@ -111,7 +111,10 @@ export default function NouvelleDemarche() {
   const [mandatMode, setMandatMode] = useState<MandatMode>(MANDAT_MODE_DEFAUT);
   // VIN et plaque du vehicule retenu. Le formulaire PRO ne les porte que pour
   // quelques types ; la fiche vehicule, elle, les a toujours.
-  const [vehiculeMandat, setVehiculeMandat] = useState<{ vin: string | null; immatriculation: string | null } | null>(null);
+  const [vehiculeMandat, setVehiculeMandat] = useState<{ vin: string | null; immatriculation: string | null; marque: string | null } | null>(null);
+  // Marque retenue par le formulaire vehicule pour la plaque en cours. En
+  // etat (et non dans un ref) : le mandat doit se reafficher des qu'elle change.
+  const [marqueConnue, setMarqueConnue] = useState<string | null>(null);
   // trackingServicePrice supprimé - options SMS retirées
   const [freeTokenAvailable, setFreeTokenAvailable] = useState<boolean>(false);
   const [paymentCompleted, setPaymentCompleted] = useState(false);
@@ -252,7 +255,7 @@ export default function NouvelleDemarche() {
     }
     supabase
       .from('vehicules')
-      .select('vin, immatriculation')
+      .select('vin, immatriculation, marque')
       .eq('id', selectedVehicleId)
       .maybeSingle()
       .then(({ data }) => setVehiculeMandat(data ?? null));
@@ -625,6 +628,9 @@ export default function NouvelleDemarche() {
     const modele: string | null = vehicleData?.modele ?? null;
     vehiculeConnuRef.current =
       immatriculation && (marque || modele) ? { plate: immatriculation, marque, modele } : null;
+    // Le ref ne declenche aucun rendu : sans cet etat, un mandat deja affiche
+    // garderait une marque vide alors que la plaque vient d'etre saisie.
+    setMarqueConnue(marque);
 
     // Update the draft demarche immatriculation in DB if it exists
     if (demarcheId && immatriculation) {
@@ -1638,7 +1644,7 @@ export default function NouvelleDemarche() {
                                           codePostal: garage?.code_postal ?? "",
                                           commune: garage?.ville ?? "",
                                           natureOperation: natureOperation(formData.type, actionDetails?.titre),
-                                          marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
+                                          marque: marqueConnue ?? vehiculeMandat?.marque ?? vehicleInfoPro?.marque ?? "",
                                           vin: vehiculeMandat?.vin ?? vehicleInfoPro?.vin ?? "",
                                           immatriculation: plaqueReelle(vehiculeMandat?.immatriculation ?? selectedImmatriculation),
                                         }
@@ -1646,7 +1652,7 @@ export default function NouvelleDemarche() {
                                           identite: [clientPrenom, clientNom].filter(Boolean).join(" "),
                                           adresse: clientAdresse ?? "",
                                           natureOperation: natureOperation(formData.type, actionDetails?.titre),
-                                          marque: vehiculeConnuRef.current?.marque ?? vehicleInfoPro?.marque ?? "",
+                                          marque: marqueConnue ?? vehiculeMandat?.marque ?? vehicleInfoPro?.marque ?? "",
                                           vin: vehiculeMandat?.vin ?? vehicleInfoPro?.vin ?? "",
                                           immatriculation: plaqueReelle(vehiculeMandat?.immatriculation ?? selectedImmatriculation),
                                         }

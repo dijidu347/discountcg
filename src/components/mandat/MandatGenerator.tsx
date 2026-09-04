@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -119,6 +119,47 @@ export const MandatGenerator = ({
   const [remplacer, setRemplacer] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null);
+
+  // Les donnees vehicule arrivent souvent APRES l'affichage du mandat : le
+  // client depose ses pieces, puis saisit la plaque. L'etat initial d'un
+  // useState ne rejouant qu'au montage, les champs restaient vides et le Cerfa
+  // sortait sans marque ni immatriculation.
+  //
+  // On resynchronise donc ces trois champs quand ils changent en amont, mais
+  // uniquement tant que personne ne les a corriges a la main : une saisie du
+  // client (ou une relecture deja enregistree) prime toujours sur la proposition.
+  const dernierePropositionVehicule = useRef({
+    marque: defaults.marque ?? "",
+    vin: defaults.vin ?? "",
+    immatriculation: defaults.immatriculation ?? "",
+  });
+
+  useEffect(() => {
+    const propositions = {
+      marque: defaults.marque ?? "",
+      vin: defaults.vin ?? "",
+      immatriculation: defaults.immatriculation ?? "",
+    };
+    setForm((actuel) => {
+      let modifie = false;
+      const suivant = { ...actuel };
+      for (const champ of ["marque", "vin", "immatriculation"] as const) {
+        const propose = propositions[champ];
+        if (!propose) continue;
+        const saisi = actuel[champ];
+        // Champ encore vide, ou portant exactement ce qu'on avait propose :
+        // personne n'y a touche, on peut le mettre a jour.
+        const libre = saisi === "" || saisi === dernierePropositionVehicule.current[champ];
+        if (!libre) continue;
+        dernierePropositionVehicule.current[champ] = propose;
+        if (saisi !== propose) {
+          suivant[champ] = propose;
+          modifie = true;
+        }
+      }
+      return modifie ? suivant : actuel;
+    });
+  }, [defaults.marque, defaults.vin, defaults.immatriculation]);
 
   // Toute modification apres generation perime le PDF affiche : le lien
   // "Le verifier" pointait sur le document precedent, sans que rien ne signale
