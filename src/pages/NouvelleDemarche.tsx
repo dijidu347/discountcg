@@ -317,6 +317,21 @@ export default function NouvelleDemarche() {
     return idx >= 0 ? `doc_${idx + 1}` : undefined;
   }, [formData.type, questionnaireAnswerTexts, documentsRequis]);
 
+  // Le mandat Cerfa 13757 doit porter un identifiant de vehicule. La plaque ou
+  // le VIN suffit, indifferemment : un garage n'a pas toujours la plaque au
+  // moment de creer le dossier (vehicule importe, neuf, cyclomoteur ancien),
+  // mais il a alors le numero de chassis. Exiger la plaque seule bloquerait
+  // ces dossiers ; n'en exiger aucun laissait partir des mandats vides.
+  //
+  // W Garage fait exception : la plaque est attribuee au professionnel et non
+  // a un vehicule, il n'y a donc rien a identifier.
+  const vehiculeIdentifie = useMemo(() => {
+    if (PRO_TYPES_WITHOUT_VEHICLE.includes(formData.type)) return true;
+    const plaque = plaqueReelle(vehiculeMandat?.immatriculation ?? selectedImmatriculation);
+    const vin = (vehiculeMandat?.vin ?? vehicleInfoPro?.vin ?? "").trim();
+    return Boolean(plaque || vin);
+  }, [formData.type, vehiculeMandat, selectedImmatriculation, vehicleInfoPro]);
+
   useEffect(() => {
     console.log("=== DEBUG DUPLICATA_CG_PRO ===");
     console.log("type démarche:", formData.type);
@@ -786,6 +801,16 @@ export default function NouvelleDemarche() {
       }
 
       // Note: Pour les PRO_TYPES_WITH_VEHICLE, la validation est faite plus bas avec vehicleInfoProValid
+
+      // Sans plaque ni VIN, le mandat partirait sans identifier le vehicule.
+      if (!vehiculeIdentifie) {
+        toast({
+          title: "Véhicule non identifié",
+          description: "Renseignez la plaque d'immatriculation ou le numéro VIN : le mandat doit porter l'un des deux.",
+          variant: "destructive"
+        });
+        return;
+      }
 
       // Vérifier les infos véhicule pour les démarches qui les requièrent
       if (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) {
@@ -1789,6 +1814,8 @@ export default function NouvelleDemarche() {
                   (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) ||
                   // Pour les démarches PRO, vérifier que le questionnaire est complété
                   (PRO_DEMARCHE_TYPES.includes(formData.type) && !questionnaireCompleted) ||
+                  // Pour les démarches PRO, exiger la plaque OU le VIN (mandat 13757)
+                  (PRO_DEMARCHE_TYPES.includes(formData.type) && !vehiculeIdentifie) ||
                   // Pour les démarches PRO, vérifier que les documents obligatoires sont uploadés
                   (PRO_DEMARCHE_TYPES.includes(formData.type) && !proDocsState.allRequiredUploaded) ||
                   // Pour les démarches classiques, vérifier l'immatriculation
