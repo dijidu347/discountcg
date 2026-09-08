@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
+import { AdminGuard } from "@/components/admin/AdminGuard";
 
 const Index = React.lazy(() => import("./pages/Index"));
 const Login = React.lazy(() => import("./pages/Login"));
@@ -114,25 +115,25 @@ const App = () => (
             <Route path="/register-particulier" element={<RegisterParticulier />} />
             <Route path="/mon-espace" element={<MonEspace />} />
             <Route path="/support" element={<Support />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/demarches" element={<AllDemarches />} />
-          <Route path="/admin/demarche/:id" element={<AdminDemarcheDetail />} />
-          <Route path="/admin/users" element={<ManageUsers />} />
-          <Route path="/admin/actions" element={<ManageActions />} />
-          <Route path="/admin/manage-users" element={<ManageUsers />} />
-          <Route path="/admin/manage-garages" element={<ManageGarages />} />
-          <Route path="/admin/garages/:id" element={<GarageDetail />} />
-          <Route path="/admin/manage-accounts" element={<ManageAccounts />} />
-          <Route path="/admin/notifications" element={<AdminNotifications />} />
-          <Route path="/admin/historique-paiements" element={<HistoriquePaiements />} />
-          <Route path="/admin/token-purchases" element={<TokenPurchases />} />
-          <Route path="/admin/email-templates" element={<ManageEmailTemplates />} />
-          <Route path="/admin/pricing-config" element={<ManagePricingConfig />} />
-          <Route path="/admin/test-email" element={<TestEmail />} />
-          <Route path="/admin/revenus" element={<AdminRevenus />} />
-          <Route path="/admin/guest-orders" element={<GuestOrders />} />
-           <Route path="/admin/guest-order/:id" element={<GuestOrderDetail />} />
-           <Route path="/admin/guest-actions" element={<ManageGuestActions />} />
+            <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
+          <Route path="/admin/demarches" element={<AdminGuard><AllDemarches /></AdminGuard>} />
+          <Route path="/admin/demarche/:id" element={<AdminGuard><AdminDemarcheDetail /></AdminGuard>} />
+          <Route path="/admin/users" element={<AdminGuard><ManageUsers /></AdminGuard>} />
+          <Route path="/admin/actions" element={<AdminGuard><ManageActions /></AdminGuard>} />
+          <Route path="/admin/manage-users" element={<AdminGuard><ManageUsers /></AdminGuard>} />
+          <Route path="/admin/manage-garages" element={<AdminGuard><ManageGarages /></AdminGuard>} />
+          <Route path="/admin/garages/:id" element={<AdminGuard><GarageDetail /></AdminGuard>} />
+          <Route path="/admin/manage-accounts" element={<AdminGuard><ManageAccounts /></AdminGuard>} />
+          <Route path="/admin/notifications" element={<AdminGuard><AdminNotifications /></AdminGuard>} />
+          <Route path="/admin/historique-paiements" element={<AdminGuard><HistoriquePaiements /></AdminGuard>} />
+          <Route path="/admin/token-purchases" element={<AdminGuard><TokenPurchases /></AdminGuard>} />
+          <Route path="/admin/email-templates" element={<AdminGuard><ManageEmailTemplates /></AdminGuard>} />
+          <Route path="/admin/pricing-config" element={<AdminGuard><ManagePricingConfig /></AdminGuard>} />
+          <Route path="/admin/test-email" element={<AdminGuard><TestEmail /></AdminGuard>} />
+          <Route path="/admin/revenus" element={<AdminGuard><AdminRevenus /></AdminGuard>} />
+          <Route path="/admin/guest-orders" element={<AdminGuard><GuestOrders /></AdminGuard>} />
+           <Route path="/admin/guest-order/:id" element={<AdminGuard><GuestOrderDetail /></AdminGuard>} />
+           <Route path="/admin/guest-actions" element={<AdminGuard><ManageGuestActions /></AdminGuard>} />
             <Route path="/prix-carte-grise" element={<PrixCarteGrise />} />
             <Route path="/a-propos" element={<APropos />} />
             <Route path="/mentions-legales" element={<MentionsLegales />} />
