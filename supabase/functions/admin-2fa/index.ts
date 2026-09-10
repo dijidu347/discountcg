@@ -177,39 +177,47 @@ Deno.serve(async (req) => {
         return json(400, { error: "Code à 6 chiffres attendu" });
       }
 
-      const { data: enAttente } = await supabase
+      // Tous les codes encore valides sont acceptes, pas seulement le dernier
+      // emis : si plusieurs mails sont partis, celui que l'utilisateur a sous
+      // les yeux doit fonctionner, quel qu'il soit.
+      const { data: candidats } = await supabase
         .from("admin_login_codes")
-        .select("id, code_hash, attempts, expires_at, consumed_at")
+        .select("id, code_hash, attempts, expires_at")
         .eq("user_id", user.id)
         .is("consumed_at", null)
+        .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(10);
 
-      if (!enAttente) return json(400, { error: "Aucun code en attente. Demandez-en un nouveau." });
-      if (new Date(enAttente.expires_at) < new Date()) {
-        return json(400, { error: "Code expiré. Demandez-en un nouveau." });
+      if (!candidats?.length) {
+        return json(400, { error: "Aucun code valide en attente. Demandez-en un nouveau." });
       }
-      if (enAttente.attempts >= TENTATIVES_MAX) {
+      if (candidats.every((c) => c.attempts >= TENTATIVES_MAX)) {
         return json(429, { error: "Trop de tentatives. Demandez un nouveau code." });
       }
 
-      if (enAttente.code_hash !== (await empreinte(code.trim()))) {
+      const saisi = await empreinte(code.trim());
+      const bon = candidats.find((c) => c.code_hash === saisi && c.attempts < TENTATIVES_MAX);
+
+      if (!bon) {
+        const recent = candidats[0];
         await supabase
           .from("admin_login_codes")
-          .update({ attempts: enAttente.attempts + 1 })
-          .eq("id", enAttente.id);
-        const restantes = TENTATIVES_MAX - (enAttente.attempts + 1);
+          .update({ attempts: recent.attempts + 1 })
+          .eq("id", recent.id);
+        const restantes = TENTATIVES_MAX - (recent.attempts + 1);
         return json(400, {
           error: restantes > 0 ? `Code incorrect. ${restantes} tentative(s) restante(s).` : "Code incorrect.",
         });
       }
 
-      // Code bon : il est consomme, et l'appareil devient un appareil connu.
+      // Code bon : tous les codes en attente sont consommes d'un coup, pour
+      // qu'un ancien mail ne reste pas utilisable.
       await supabase
         .from("admin_login_codes")
         .update({ consumed_at: new Date().toISOString() })
-        .eq("id", enAttente.id);
+        .eq("user_id", user.id)
+        .is("consumed_at", null);
 
       const jeton = jetonAleatoire();
       const { error: erreurAppareil } = await supabase.from("admin_trusted_devices").insert({

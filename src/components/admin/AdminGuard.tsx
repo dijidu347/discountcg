@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +33,11 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
   const [verificationEnCours, setVerificationEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Supabase remplace l'objet user a chaque rafraichissement de session. Sans
+  // ce garde-fou, l'effet se rejouait et renvoyait un code a chaque fois :
+  // l'utilisateur recevait plusieurs mails et seul le dernier code etait
+  // valide, donc celui qu'il lisait ne marchait jamais.
+  const codeDejaDemande = useRef(false);
 
   const appeler = useCallback(async (payload: Record<string, unknown>) => {
     const { data, error } = await supabase.functions.invoke("admin-2fa", { body: payload });
@@ -80,7 +85,10 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
           return;
         }
         setEtape("code");
-        demanderCode();
+        if (!codeDejaDemande.current) {
+          codeDejaDemande.current = true;
+          demanderCode();
+        }
       } catch {
         if (!annule) {
           // En cas d'indisponibilite du service, on demande le code plutot que
@@ -94,7 +102,8 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
     return () => {
       annule = true;
     };
-  }, [user, loading, appeler, demanderCode]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, loading]);
 
   const valider = async (e: React.FormEvent) => {
     e.preventDefault();
