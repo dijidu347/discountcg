@@ -203,10 +203,17 @@ export default function AdminRevenus() {
     if (period === "7") return { start: subDays(now, 7), end: now };
     if (period === "30") return { start: subDays(now, 30), end: now };
     if (period === "90") return { start: subDays(now, 90), end: now };
+    if (period === "180") return { start: subMonths(now, 6), end: now };
     if (period === "365") return { start: subDays(now, 365), end: now };
-    // All time
-    return { start: new Date("2024-01-01"), end: now };
-  }, [period, customDateRange]);
+    // "Depuis le debut" : la date de la premiere transaction reellement
+    // enregistree. Une date en dur ecarterait tout ce qui la precede, sans que
+    // rien ne le signale a l'ecran.
+    const premiere = paiements.reduce<Date | null>((min, p) => {
+      const d = new Date(p.created_at);
+      return !min || d < min ? d : min;
+    }, null);
+    return { start: premiere ?? new Date("2024-01-01"), end: now };
+  }, [period, customDateRange, paiements]);
 
   const getRevenueAmount = (p: RawPaiement): number => {
     if (p.demarches?.paid_with_tokens || p.demarches?.is_free_token) return 0;
@@ -494,7 +501,7 @@ export default function AdminRevenus() {
         </Button>
 
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8 gap-4">
+        <div className="sticky top-0 z-30 -mx-4 px-4 py-4 mb-8 bg-background/95 backdrop-blur-sm border-b flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-3">
               <BarChart3 className="h-8 w-8 text-emerald-600" />
@@ -522,8 +529,9 @@ export default function AdminRevenus() {
                 <SelectItem value="7">7 derniers jours</SelectItem>
                 <SelectItem value="30">30 derniers jours</SelectItem>
                 <SelectItem value="90">3 derniers mois</SelectItem>
+                <SelectItem value="180">6 derniers mois</SelectItem>
                 <SelectItem value="365">12 derniers mois</SelectItem>
-                <SelectItem value="all">Tout</SelectItem>
+                <SelectItem value="all">Depuis le début</SelectItem>
                 <SelectItem value="custom">Personnalisé</SelectItem>
               </SelectContent>
             </Select>
