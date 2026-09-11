@@ -28,6 +28,10 @@ import { cn } from "@/lib/utils";
 // utilisee n'etait pas conservee et la commission ne peut pas etre calculee.
 const FRAIS_BANCAIRES_DEPUIS = "11/09/2026";
 
+// Le coffre-fort n'est pas encore ouvert aux garages : ses cartes restent
+// masquees tant que ce n'est pas le cas.
+const COFFRE_FORT_OUVERT = false;
+
 interface RawPaiement {
   id: string;
   demarche_id: string;
@@ -315,10 +319,11 @@ export default function AdminRevenus() {
     return d >= dateRange.start && d <= dateRange.end;
   });
   const fraisParticuliers = filteredGuestOrders.reduce((s, o) => s + Number(o.frais_bancaires || 0), 0);
-  const totalFraisBancaires =
+  const fraisPros =
     paiementsPeriode.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
-    filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0) +
-    fraisParticuliers;
+    filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0);
+  const totalFraisBancaires = fraisPros + fraisParticuliers;
+  const revenuPros = totalServiceFees + totalTokenRevenue;
   const revenuNet = totalRevenue - totalFraisBancaires;
   const totalDemarches = filteredDemarches.length;
   const cbPaidDemarches = filteredDemarches.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length;
@@ -651,19 +656,14 @@ export default function AdminRevenus() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4 mb-8`}>
           <Card className="border-l-4 border-l-emerald-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Revenu total net</p>
                   <p className="text-3xl font-bold text-emerald-600 mt-1">{revenuNet.toFixed(2)} €</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Brut {totalRevenue.toFixed(2)} € · Frais bancaires −{totalFraisBancaires.toFixed(2)} €
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Pros et particuliers, après frais bancaires</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                   <Euro className="h-6 w-6 text-emerald-600" />
@@ -724,6 +724,7 @@ export default function AdminRevenus() {
             </CardContent>
           </Card>
 
+          {COFFRE_FORT_OUVERT && (
           <Card className="border-l-4 border-l-indigo-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -743,7 +744,36 @@ export default function AdminRevenus() {
               </div>
             </CardContent>
           </Card>
+          )}
         </div>
+
+        {/* Pros : garages et professionnels, frais de service et jetons */}
+        <Card className="mb-4 border-l-4 border-l-blue-500">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground font-medium mb-3">Pros</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Revenu (frais de service et jetons)</p>
+                <p className="text-2xl font-bold text-blue-600">{revenuPros.toFixed(2)} €</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Paiements encaissés</p>
+                <p className="text-2xl font-bold">{paiementsPeriode.length + filteredTokens.length}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Frais bancaires</p>
+                <p className="text-2xl font-bold">−{fraisPros.toFixed(2)} €</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Revenu net</p>
+                <p className="text-2xl font-bold text-blue-600">{(revenuPros - fraisPros).toFixed(2)} €</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Inclus dans le revenu total ci-dessus. La taxe de carte grise reversée à l'État n'en fait pas partie. Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Particuliers : commandes passees sans compte, distinguees des pros */}
         <Card className="mb-8 border-l-4 border-l-teal-500">
@@ -774,6 +804,7 @@ export default function AdminRevenus() {
         </Card>
 
         {/* Coffre-fort Subscriptions Detail */}
+        {COFFRE_FORT_OUVERT && (
         <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -861,6 +892,7 @@ export default function AdminRevenus() {
             </Table>
           </CardContent>
         </Card>
+        )}
 
         {/* Token Usage Stats */}
         <Card className="mb-8">
