@@ -657,14 +657,17 @@ export default function AdminRevenus() {
         </div>
 
         {/* KPI Cards */}
-        <div className={`grid grid-cols-1 sm:grid-cols-3 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-4" : ""} gap-4 mb-8`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4 mb-8`}>
           <Card className="border-l-4 border-l-emerald-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Revenu total net</p>
                   <p className="text-3xl font-bold text-emerald-600 mt-1">{revenuNet.toFixed(2)} €</p>
-                  <p className="text-xs text-muted-foreground mt-1">Pros et particuliers, après frais bancaires</p>
+                  <p className="text-xs text-muted-foreground mt-1">Brut {totalRevenue.toFixed(2)} €</p>
+                  <p className="text-xs text-muted-foreground">
+                    Pros {(revenuPros - fraisPros).toFixed(2)} € · Particuliers {(totalParticuliers - fraisParticuliers).toFixed(2)} €
+                  </p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                   <Euro className="h-6 w-6 text-emerald-600" />
@@ -679,7 +682,7 @@ export default function AdminRevenus() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Frais bancaires totaux</p>
-                  <p className="text-3xl font-bold text-rose-600 mt-1">−{totalFraisBancaires.toFixed(2)} €</p>
+                  <p className="text-3xl font-bold text-foreground mt-1">−{totalFraisBancaires.toFixed(2)} €</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     Pros −{fraisPros.toFixed(2)} € · Particuliers −{fraisParticuliers.toFixed(2)} €
                   </p>
@@ -689,6 +692,21 @@ export default function AdminRevenus() {
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-3">Comptés depuis le {FRAIS_BANCAIRES_DEPUIS}</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-l-4 border-l-purple-500">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground font-medium">Ventes jetons</p>
+                  <p className="text-3xl font-bold text-purple-600 mt-1">{totalTokenRevenue.toFixed(2)} €</p>
+                </div>
+                <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Coins className="h-6 w-6 text-purple-600" />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-3">{filteredTokens.length} achats</p>
             </CardContent>
           </Card>
 
