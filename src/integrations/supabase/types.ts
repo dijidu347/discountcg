@@ -298,6 +298,24 @@ export type Database = {
         }
         Relationships: []
       }
+      bilan_stripe: {
+        Row: {
+          calcule_le: string
+          id: string
+          resultat: Json
+        }
+        Insert: {
+          calcule_le?: string
+          id: string
+          resultat: Json
+        }
+        Update: {
+          calcule_le?: string
+          id?: string
+          resultat?: Json
+        }
+        Relationships: []
+      }
       coffre_documents: {
         Row: {
           amount: number | null
