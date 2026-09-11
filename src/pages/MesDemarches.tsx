@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, FileText, CheckCircle, XCircle, Clock, AlertCircle, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, FileText, CheckCircle, XCircle, Clock, AlertCircle, Edit, Trash2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const getStatusLabel = (demarche: any): string => {
@@ -530,6 +530,24 @@ export default function MesDemarches() {
                                 )}</p>
                               ) : (
                                 <p className="text-red-600">Lien non envoyé</p>
+                              )}
+                              {/* Lien expire et non paye : acces direct a la regeneration,
+                                  faute de quoi le garage n'avait aucun moyen de revenir
+                                  sur la page de paiement d'une ancienne demarche. */}
+                              {demarche.client_payment_token_expires_at && !demarche.client_paid &&
+                                new Date(demarche.client_payment_token_expires_at) < new Date() && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 mt-1 text-xs"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/paiement-demarche/${demarche.id}?mode=${demarche.payment_mode || 'client_pays_all'}`);
+                                  }}
+                                >
+                                  <RefreshCw className="h-3 w-3 mr-1" />
+                                  Renouveler le lien
+                                </Button>
                               )}
                               {demarche.client_paid ? (
                                 <p className="text-green-600 font-semibold">Client a payé le {new Date(demarche.client_paid_at).toLocaleDateString('fr-FR')}</p>

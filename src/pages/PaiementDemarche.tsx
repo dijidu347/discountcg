@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2 } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2, AlertTriangle, RefreshCw } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
@@ -318,6 +318,8 @@ const PaiementDemarche = () => {
   // Envoyer le lien de paiement au client
   const handleSendPaymentLink = async () => {
     if (!demarcheId) return;
+    // Un lien existe deja : c'est une regeneration (lien expire).
+    const regeneration = linkSent;
     setIsSendingLink(true);
 
     // Resolve paymentMode the same way as rest of the page
@@ -343,7 +345,7 @@ const PaiementDemarche = () => {
       if (updated) setDemarche(updated);
 
       toast({
-        title: "✅ Lien envoyé !",
+        title: regeneration ? "✅ Nouveau lien envoyé !" : "✅ Lien envoyé !",
         description: `Un email a été envoyé à ${demarche?.client_email}`,
         variant: "success" as any,
       });
@@ -664,6 +666,12 @@ const PaiementDemarche = () => {
 
   // Client payment link UI (client_pays_all, or split after pro has paid)
   const proPaidParam = searchParams.get('pro_paid') === 'true';
+  // Un lien expire ne permet plus au client de payer. On le dit, et on propose
+  // d'en generer un nouveau, au lieu d'afficher "envoye" indefiniment.
+  const expirationLien = demarche?.client_payment_token_expires_at
+    ? new Date(demarche.client_payment_token_expires_at)
+    : null;
+  const lienExpire = Boolean(linkSent && expirationLien && expirationLien < new Date());
   if (demarche && (paymentMode === 'client_pays_all' || (paymentMode === 'split' && (linkSent || proPaidParam)))) {
     return (
       <div className="min-h-screen bg-background">
@@ -677,7 +685,7 @@ const PaiementDemarche = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Send className="w-5 h-5 text-blue-600" />
-                {linkSent ? "Lien de paiement envoyé" : "Envoyer le lien de paiement"}
+                {lienExpire ? "Lien de paiement expiré" : linkSent ? "Lien de paiement envoyé" : "Envoyer le lien de paiement"}
               </CardTitle>
               <CardDescription>
                 {paymentMode === 'client_pays_all'
@@ -725,6 +733,33 @@ const PaiementDemarche = () => {
                     <><Send className="w-5 h-5 mr-2" /> Envoyer le lien au client</>
                   )}
                 </Button>
+              ) : lienExpire ? (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-2 text-red-700 bg-red-50 dark:bg-red-950/30 p-3 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 mt-0.5 shrink-0" />
+                    <span className="text-sm">
+                      Ce lien a expiré le {expirationLien?.toLocaleDateString("fr-FR")}. Votre client ne peut plus
+                      l'utiliser pour payer.
+                    </span>
+                  </div>
+                  <Button
+                    onClick={handleSendPaymentLink}
+                    disabled={isSendingLink}
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    size="lg"
+                  >
+                    {isSendingLink ? (
+                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Génération en cours...</>
+                    ) : (
+                      <><RefreshCw className="w-5 h-5 mr-2" /> Générer un nouveau lien</>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {demarche.client_email
+                      ? `Un nouveau lien, valable 30 jours, sera envoyé à ${demarche.client_email}.`
+                      : "Un nouveau lien, valable 30 jours, sera créé : partagez-le ensuite à votre client."}
+                  </p>
+                </div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-950/30 p-3 rounded-lg">
@@ -747,7 +782,10 @@ const PaiementDemarche = () => {
 
                   <div className="flex items-center gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
                     <Clock className="w-5 h-5" />
-                    <span className="text-sm">Ce lien est valable 30 jours. Des relances seront envoyées automatiquement.</span>
+                    <span className="text-sm">
+                      Ce lien est valable jusqu'au {expirationLien ? expirationLien.toLocaleDateString("fr-FR") : "30 jours après son envoi"}.
+                      Des relances seront envoyées automatiquement.
+                    </span>
                   </div>
                 </div>
               )}

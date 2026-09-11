@@ -97,6 +97,16 @@ serve(async (req) => {
       });
     }
 
+    // Generer un lien remet la demarche "en attente de paiement client". Sur
+    // une demarche deja reglee par le client, cela effacerait ce statut : on
+    // refuse, maintenant que le lien peut etre regenere depuis le site.
+    if (demarche.client_paid) {
+      return new Response(JSON.stringify({ error: 'Le client a déjà payé cette démarche' }), {
+        status: 409,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Generate client payment token
     const clientPaymentToken = crypto.randomUUID();
     const expiresAt = new Date();
