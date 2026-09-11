@@ -74,6 +74,9 @@ interface RawGuestOrder {
 const revenuParticulier = (o: RawGuestOrder) =>
   Math.max(0, Number(o.montant_ttc || 0) - Number(o.montant_ht || 0));
 
+const eur = (n: number) =>
+  `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
 // Une demarche CG en paiement partage donne deux paiements : les frais du
 // garage, puis la taxe payee par le client. Les frais de dossier ne se
 // comptent qu'une fois, sur le premier paiement de la demarche.
@@ -656,81 +659,33 @@ export default function AdminRevenus() {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4 mb-8`}>
-          <Card className="border-l-4 border-l-emerald-500">
+        {/* Chiffres cles : revenu net, frais bancaires, demarches */}
+        <div className={`grid grid-cols-1 sm:grid-cols-3 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-4" : ""} gap-4 mb-4`}>
+          <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Revenu total net</p>
-                  <p className="text-3xl font-bold text-emerald-600 mt-1">{revenuNet.toFixed(2)} €</p>
-                  <p className="text-xs text-muted-foreground mt-1">Brut {totalRevenue.toFixed(2)} €</p>
-                  <p className="text-xs text-muted-foreground">
-                    Pros {(revenuPros - fraisPros).toFixed(2)} € · Particuliers {(totalParticuliers - fraisParticuliers).toFixed(2)} €
-                  </p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                  <Euro className="h-6 w-6 text-emerald-600" />
-                </div>
-              </div>
-              <div className="mt-3">{renderTrend(trendPct)}</div>
+              <p className="text-sm text-muted-foreground font-medium">Revenu net</p>
+              <p className="text-3xl font-bold text-emerald-600 mt-1">{eur(revenuNet)}</p>
+              <div className="mt-2">{renderTrend(trendPct)}</div>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-rose-500">
+          <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Frais bancaires totaux</p>
-                  <p className="text-3xl font-bold text-foreground mt-1">−{totalFraisBancaires.toFixed(2)} €</p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Pros −{fraisPros.toFixed(2)} € · Particuliers −{fraisParticuliers.toFixed(2)} €
-                  </p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
-                  <CreditCard className="h-6 w-6 text-rose-600" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">Comptés depuis le {FRAIS_BANCAIRES_DEPUIS}</p>
+              <p className="text-sm text-muted-foreground font-medium">Frais bancaires</p>
+              <p className="text-3xl font-bold mt-1">−{eur(totalFraisBancaires)}</p>
+              <p className="text-xs text-muted-foreground mt-2">
+                {totalRevenue > 0 ? `${((totalFraisBancaires / totalRevenue) * 100).toFixed(1).replace(".", ",")} % du brut` : "—"}
+              </p>
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-purple-500">
+          <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Ventes jetons</p>
-                  <p className="text-3xl font-bold text-purple-600 mt-1">{totalTokenRevenue.toFixed(2)} €</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <Coins className="h-6 w-6 text-purple-600" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">{filteredTokens.length} achats</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-amber-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Nombre de démarches</p>
-                  <p className="text-3xl font-bold text-amber-600 mt-1">{filteredDemarches.length + filteredGuestOrders.length}</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-amber-600" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">
+              <p className="text-sm text-muted-foreground font-medium">Démarches</p>
+              <p className="text-3xl font-bold mt-1">{filteredDemarches.length + filteredGuestOrders.length}</p>
+              <p className="text-xs text-muted-foreground mt-2">
                 {filteredDemarches.length} pros · {filteredGuestOrders.length} particuliers
               </p>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                <span>Pros : {cbPaidDemarches} par €</span>
-                <span>·</span>
-                <span>{tokenPaidDemarches.length} par jetons</span>
-                <span>·</span>
-                <span>{freeTokenDemarches.length} gratuits</span>
-              </div>
             </CardContent>
           </Card>
 
@@ -757,64 +712,59 @@ export default function AdminRevenus() {
           )}
         </div>
 
-        {/* Pros : garages et professionnels, frais de service et jetons */}
-        <Card className="mb-4 border-l-4 border-l-blue-500">
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground font-medium mb-3">Pros</p>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Frais de service</p>
-                <p className="text-2xl font-bold text-blue-600">{totalServiceFees.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{filteredPaiements.length} paiements</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Ventes jetons</p>
-                <p className="text-2xl font-bold text-purple-600">{totalTokenRevenue.toFixed(2)} €</p>
-                <p className="text-xs text-muted-foreground">{filteredTokens.length} achats</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Paiements encaissés</p>
-                <p className="text-2xl font-bold">{paiementsPeriode.length + filteredTokens.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Frais bancaires</p>
-                <p className="text-2xl font-bold">−{fraisPros.toFixed(2)} €</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Revenu net</p>
-                <p className="text-2xl font-bold text-blue-600">{(revenuPros - fraisPros).toFixed(2)} €</p>
-              </div>
-            </div>
+        {/* Detail : une ligne par clientele, les memes colonnes partout */}
+        <Card className="mb-8">
+          <CardContent className="pt-4 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm tabular-nums">
+              <thead>
+                <tr className="text-xs text-muted-foreground">
+                  <th className="py-2 text-left font-normal"></th>
+                  <th className="py-2 text-right font-normal">Brut</th>
+                  <th className="py-2 text-right font-normal">Frais bancaires</th>
+                  <th className="py-2 text-right font-normal">Net</th>
+                  <th className="py-2 text-right font-normal">Volume</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t">
+                  <td className="py-2.5 font-semibold">Pros</td>
+                  <td className="text-right font-semibold">{eur(revenuPros)}</td>
+                  <td className="text-right">−{eur(fraisPros)}</td>
+                  <td className="text-right font-semibold">{eur(revenuPros - fraisPros)}</td>
+                  <td className="text-right text-muted-foreground">{filteredDemarches.length} démarches</td>
+                </tr>
+                <tr className="text-muted-foreground">
+                  <td className="py-1 pl-4">Frais de service</td>
+                  <td className="text-right">{eur(totalServiceFees)}</td>
+                  <td></td>
+                  <td></td>
+                  <td className="text-right">{filteredPaiements.length} paiements</td>
+                </tr>
+                <tr className="text-muted-foreground">
+                  <td className="pt-1 pb-2.5 pl-4">Ventes jetons</td>
+                  <td className="text-right">{eur(totalTokenRevenue)}</td>
+                  <td></td>
+                  <td></td>
+                  <td className="text-right">{filteredTokens.length} achats</td>
+                </tr>
+                <tr className="border-t">
+                  <td className="py-2.5 font-semibold">Particuliers</td>
+                  <td className="text-right font-semibold">{eur(totalParticuliers)}</td>
+                  <td className="text-right">−{eur(fraisParticuliers)}</td>
+                  <td className="text-right font-semibold">{eur(totalParticuliers - fraisParticuliers)}</td>
+                  <td className="text-right text-muted-foreground">{filteredGuestOrders.length} commandes</td>
+                </tr>
+                <tr className="border-t-2">
+                  <td className="py-2.5 font-semibold">Total</td>
+                  <td className="text-right font-semibold">{eur(totalRevenue)}</td>
+                  <td className="text-right font-semibold">−{eur(totalFraisBancaires)}</td>
+                  <td className="text-right font-semibold text-emerald-600">{eur(revenuNet)}</td>
+                  <td className="text-right text-muted-foreground">{filteredDemarches.length + filteredGuestOrders.length}</td>
+                </tr>
+              </tbody>
+            </table>
             <p className="text-xs text-muted-foreground mt-3">
-              Inclus dans le revenu total ci-dessus. La taxe de carte grise reversée à l'État n'en fait pas partie.
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Particuliers : commandes passees sans compte, distinguees des pros */}
-        <Card className="mb-8 border-l-4 border-l-teal-500">
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground font-medium mb-3">Particuliers</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Revenu (frais et options)</p>
-                <p className="text-2xl font-bold text-teal-600">{totalParticuliers.toFixed(2)} €</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Commandes payées</p>
-                <p className="text-2xl font-bold">{filteredGuestOrders.length}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Frais bancaires</p>
-                <p className="text-2xl font-bold">−{fraisParticuliers.toFixed(2)} €</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Revenu net</p>
-                <p className="text-2xl font-bold text-teal-600">{(totalParticuliers - fraisParticuliers).toFixed(2)} €</p>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              Inclus dans le revenu total ci-dessus. Revenu = montant TTC moins les taxes de carte grise reversées à l'État.
+              Revenu = frais de service, jetons, frais et options des particuliers. La taxe de carte grise reversée à l'État n'est jamais comptée. Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}.
             </p>
           </CardContent>
         </Card>
