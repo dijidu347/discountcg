@@ -18,6 +18,14 @@ interface Virement {
 interface BilanCompte {
   compte: string;
   erreur?: string;
+  ventes_jetons?: {
+    nombre: number;
+    encaisse: number;
+    rembourse: number;
+    frais_stripe: number;
+    net: number;
+    absentes_du_site: string[];
+  };
   paiements?: { nombre: number; montant: number };
   remboursements?: { nombre: number; montant: number };
   frais_stripe?: number;
@@ -98,6 +106,36 @@ export default function AdminBilanStripe() {
               <p className="text-sm text-destructive">{c.erreur}</p>
             ) : (
               <>
+                {c.ventes_jetons && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-2">
+                    <p className="text-sm font-semibold">Ventes de jetons DiscountCarteGrise</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm tabular-nums">
+                      <div>
+                        <p className="text-muted-foreground">Encaissé</p>
+                        <p className="text-xl font-bold">{eur(c.ventes_jetons.encaisse)}</p>
+                        <p className="text-xs text-muted-foreground">{c.ventes_jetons.nombre} ventes</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Remboursé</p>
+                        <p className="text-xl font-bold">{eur(c.ventes_jetons.rembourse)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Frais Stripe</p>
+                        <p className="text-xl font-bold">−{eur(c.ventes_jetons.frais_stripe)}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Net</p>
+                        <p className="text-xl font-bold">{eur(c.ventes_jetons.net)}</p>
+                      </div>
+                    </div>
+                    {c.ventes_jetons.absentes_du_site.length > 0 && (
+                      <p className="text-xs text-destructive">
+                        {c.ventes_jetons.absentes_du_site.length} vente(s) payée(s) chez Stripe mais absente(s) du site.
+                      </p>
+                    )}
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">Tout le compte, toutes activités confondues :</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm tabular-nums">
                   <div>
                     <p className="text-muted-foreground">Encaissé</p>

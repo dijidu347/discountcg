@@ -31,7 +31,7 @@ function reponse(corps: unknown, status = 200): Response {
 
 const euros = (centimes: number) => Math.round(centimes) / 100;
 
-async function bilanCompte(nom: string, cle: string) {
+async function bilanCompte(nom: string, cle: string, supabase: ReturnType<typeof createClient>) {
   const stripe = new Stripe(cle, { apiVersion: "2025-08-27.basil" });
 
   let compte = nom;
@@ -62,6 +62,37 @@ async function bilanCompte(nom: string, cle: string) {
     });
   }
 
+  // Ventes de jetons DiscountCarteGrise : les paiements crees par
+  // create-token-payment-intent portent metadata.type = "token_purchase". Le
+  // reste du compte peut concerner d'autres activites.
+  const jetons = { nombre: 0, encaisse: 0, rembourse: 0, frais: 0 };
+  const references: string[] = [];
+  for await (const pi of stripe.paymentIntents.list({
+    created: { gte: DEPUIS },
+    limit: 100,
+    expand: ["data.latest_charge.balance_transaction"],
+  })) {
+    if (pi.metadata?.type !== "token_purchase" || pi.status !== "succeeded") continue;
+    jetons.nombre += 1;
+    jetons.encaisse += pi.amount_received;
+    const charge = pi.latest_charge;
+    if (charge && typeof charge === "object") {
+      jetons.rembourse += charge.amount_refunded || 0;
+      const bt = charge.balance_transaction;
+      if (bt && typeof bt === "object") jetons.frais += bt.fee;
+    }
+    references.push(pi.id);
+  }
+  let absentesDuSite: string[] = [];
+  if (references.length > 0) {
+    const { data: connues } = await supabase
+      .from("token_purchases")
+      .select("stripe_payment_id")
+      .in("stripe_payment_id", references);
+    const vues = new Set((connues || []).map((l: { stripe_payment_id: string }) => l.stripe_payment_id));
+    absentesDuSite = references.filter((r) => !vues.has(r));
+  }
+
   const solde = await stripe.balance.retrieve();
   const somme = (liste: Array<{ amount: number }>) => euros(liste.reduce((s, x) => s + x.amount, 0));
 
@@ -71,6 +102,14 @@ async function bilanCompte(nom: string, cle: string) {
 
   return {
     compte,
+    ventes_jetons: {
+      nombre: jetons.nombre,
+      encaisse: euros(jetons.encaisse),
+      rembourse: euros(jetons.rembourse),
+      frais_stripe: euros(jetons.frais),
+      net: euros(jetons.encaisse - jetons.rembourse - jetons.frais),
+      absentes_du_site: absentesDuSite,
+    },
     paiements: { nombre: nombre(["charge", "payment"]), montant: montant(["charge", "payment"]) },
     remboursements: { nombre: nombre(["refund", "payment_refund"]), montant: montant(["refund", "payment_refund"]) },
     frais_stripe: fraisTotal,
@@ -115,7 +154,7 @@ serve(async (req) => {
         continue;
       }
       try {
-        resultats.push(await bilanCompte(nom, cle));
+        resultats.push(await bilanCompte(nom, cle, supabase));
       } catch (e: any) {
         resultats.push({ compte: nom, erreur: e?.message || "lecture impossible" });
       }
