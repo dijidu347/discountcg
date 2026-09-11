@@ -70,7 +70,17 @@ export async function compressFile(file: File): Promise<CompressedFile> {
   const isHeic = file.type === "image/heic" || file.type === "image/heif" ||
     lowerName.endsWith(".heic") || lowerName.endsWith(".heif");
 
-  // Non-image files (PDF, doc, xls, csv, txt…): pass through untouched.
+  // PDF scannes : pages redessinees en JPEG (voir pdf-compression.ts). Les PDF
+  // texte et ceux qui ne gagnent pas au moins 25 % restent tels quels.
+  if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
+    const { compresserPdf } = await import("./pdf-compression");
+    const pdf = await compresserPdf(file);
+    if (!pdf) return { file, originalSize, compressedSize: file.size };
+    const compressedPdf = new File([pdf], file.name, { type: "application/pdf" });
+    return { file: compressedPdf, originalSize, compressedSize: compressedPdf.size };
+  }
+
+  // Other non-image files (doc, xls, csv, txt…): pass through untouched.
   // Only images are compressed — anything else would make imageCompression throw.
   // HEIC is tested separately because some browsers report an empty MIME type.
   const isImage = file.type.startsWith("image/") || isHeic;
