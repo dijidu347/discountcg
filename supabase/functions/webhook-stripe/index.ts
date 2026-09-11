@@ -1346,6 +1346,44 @@ async function handleResubmissionPayment(
 // WEBHOOK SERVER
 // -----------------------------
 
+// Frais bancaires Stripe : montant exact, lu sur la transaction de solde du
+// paiement, avec le client Stripe du compte qui a encaisse. Jamais bloquant.
+async function enregistrerFraisStripe(
+  supabase: SupabaseClient,
+  client: Stripe,
+  paymentIntentId: string,
+) {
+  try {
+    const pi = await client.paymentIntents.retrieve(paymentIntentId, {
+      expand: ["latest_charge.balance_transaction"],
+    });
+    const charge = pi.latest_charge as Stripe.Charge | null;
+    const transaction = charge?.balance_transaction;
+    if (!transaction || typeof transaction === "string") {
+      console.warn("⚠️ Transaction de solde indisponible pour", paymentIntentId);
+      return;
+    }
+    const carte = charge?.payment_method_details?.card;
+    const valeurs = {
+      frais_bancaires: transaction.fee / 100,
+      frais_origine: "stripe",
+      carte_marque: carte?.brand ?? null,
+      carte_pays: carte?.country ?? null,
+    };
+    for (const table of ["paiements", "token_purchases"]) {
+      const { error } = await supabase
+        .from(table)
+        .update(valeurs)
+        .eq("stripe_payment_id", paymentIntentId)
+        .is("frais_bancaires", null);
+      if (error) console.error(`⚠️ Frais Stripe non enregistres (${table}):`, error.message);
+    }
+    console.log(`💶 Frais Stripe : ${transaction.fee / 100} €`);
+  } catch (e) {
+    console.error("⚠️ Frais Stripe non enregistres:", e);
+  }
+}
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -1427,6 +1465,8 @@ serve(async (req: Request): Promise<Response> => {
         } else {
           console.log("⚠️ Payment intent has no recognized metadata");
         }
+        // Commission exacte, une fois le paiement enregistre par son gestionnaire.
+        await enregistrerFraisStripe(supabase, verifiedWith === "stripe2" ? stripe2 : stripe1, paymentIntent.id);
         break;
       }
 

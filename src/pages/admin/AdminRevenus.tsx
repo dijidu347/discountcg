@@ -24,10 +24,15 @@ import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOf
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+// Frais bancaires enregistres a partir de cette date : avant, la carte
+// utilisee n'etait pas conservee et la commission ne peut pas etre calculee.
+const FRAIS_BANCAIRES_DEPUIS = "11/09/2026";
+
 interface RawPaiement {
   montant: number;
   status: string;
   created_at: string;
+  frais_bancaires: number | null;
   demarches: {
     paid_with_tokens: boolean | null;
     is_free_token: boolean | null;
@@ -40,6 +45,7 @@ interface RawPaiement {
 interface RawTokenPurchase {
   amount: number;
   created_at: string;
+  frais_bancaires: number | null;
   garage_id: string;
   quantity: number;
 }
@@ -141,12 +147,12 @@ export default function AdminRevenus() {
     const [pData, tData, dData, gRes, cRes] = await Promise.all([
       fetchAll<RawPaiement>(() => supabase
         .from("paiements")
-        .select("montant, status, created_at, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
+        .select("montant, status, created_at, frais_bancaires, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
         .eq("status", "valide")
         .order("created_at", { ascending: false })),
       fetchAll<RawTokenPurchase>(() => supabase
         .from("token_purchases")
-        .select("amount, created_at, garage_id, quantity")
+        .select("amount, created_at, garage_id, quantity, frais_bancaires")
         .order("created_at", { ascending: false })),
       fetchAll<RawDemarche>(() => supabase
         .from("demarches")
@@ -252,6 +258,12 @@ export default function AdminRevenus() {
   const totalServiceFees = filteredPaiements.reduce((s, p) => s + getRevenueAmount(p), 0);
   const totalTokenRevenue = filteredTokens.reduce((s, t) => s + Number(t.amount), 0);
   const totalRevenue = totalServiceFees + totalTokenRevenue;
+  // Commissions bancaires sur les encaissements de la periode : Stripe au
+  // centime, Sogecommerce selon la grille et la carte utilisee.
+  const totalFraisBancaires =
+    filteredPaiements.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
+    filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0);
+  const revenuNet = totalRevenue - totalFraisBancaires;
   const totalDemarches = filteredDemarches.length;
   const cbPaidDemarches = filteredDemarches.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length;
   const avgRevenuePerDemarche = cbPaidDemarches > 0 ? totalServiceFees / cbPaidDemarches : 0;
@@ -580,8 +592,14 @@ export default function AdminRevenus() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium">Revenu total</p>
-                  <p className="text-3xl font-bold text-emerald-600 mt-1">{totalRevenue.toFixed(2)} €</p>
+                  <p className="text-sm text-muted-foreground font-medium">Revenu total net</p>
+                  <p className="text-3xl font-bold text-emerald-600 mt-1">{revenuNet.toFixed(2)} €</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Brut {totalRevenue.toFixed(2)} € · Frais bancaires −{totalFraisBancaires.toFixed(2)} €
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}
+                  </p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                   <Euro className="h-6 w-6 text-emerald-600" />

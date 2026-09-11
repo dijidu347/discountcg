@@ -419,6 +419,90 @@ async function generateGuestFacturePDF(
 
 // Lit le corps de l'IPN (form-urlencoded en prod, JSON accepté pour les tests
 // manuels) et renvoie une map plate de tous les champs.
+// ---------------------------------------------------------------------------
+// Frais bancaires (commission Sogecommerce) — estimes a partir de la carte.
+//
+// La grille contractuelle depend de la categorie de carte : particulier a
+// interchange regule, commerciale, ou emise hors UE. La notification transmet
+// le pays d'emission (vads_card_country) et le code produit (vads_bank_product),
+// qui suffisent a classer la plupart des cartes. Les champs bruts sont conserves
+// avec le paiement : si les regles de classement evoluent, on pourra reclasser.
+// ---------------------------------------------------------------------------
+
+// Espace economique europeen, plus les departements d'outre-mer (en UE).
+const PAYS_EEE = new Set([
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU",
+  "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES",
+  "SE", "IS", "LI", "NO", "GP", "MQ", "GF", "RE", "YT", "MF",
+]);
+
+// Codes produit des cartes commerciales connus : Visa Business / Corporate /
+// Purchasing, Mastercard Business / Corporate / Purchasing / Fleet. Liste a
+// affiner sur les paiements reels, grace au code brut conserve.
+const PRODUITS_COMMERCIAUX = new Set([
+  "G", "G1", "G2", "G3", "G4", "K", "K1", "S", "S1", "S2", "S3", "S4", "S5", "S6",
+  "MCB", "MCO", "MCP", "MCF", "MWB", "MWO", "MDB", "MEB", "MPB",
+]);
+
+type CategorieCarte = "reguliere" | "commerciale" | "hors_ue" | "inconnue";
+
+function categorieCarte(fields: Record<string, string>): CategorieCarte {
+  const pays = (fields["vads_card_country"] || "").toUpperCase();
+  const produit = (fields["vads_bank_product"] || "").toUpperCase();
+  if (pays && !PAYS_EEE.has(pays)) return "hors_ue";
+  if (produit && PRODUITS_COMMERCIAUX.has(produit)) return "commerciale";
+  if (pays && produit) return "reguliere";
+  return "inconnue";
+}
+
+// Taux par defaut si la grille est absente de pricing_config (en %).
+const TAUX_PAR_DEFAUT: Record<CategorieCarte, number> = {
+  reguliere: 0.45,
+  commerciale: 1.9979,
+  hors_ue: 2.932,
+  inconnue: 1.20,
+};
+
+// Enregistre la commission estimee sur le paiement. Jamais bloquant : une
+// erreur ici ne doit pas faire rejouer l'IPN ni casser l'encaissement.
+async function enregistrerFraisBancaires(
+  supabase: SupabaseClient,
+  fields: Record<string, string>,
+  transUuid: string,
+  amount: number,
+) {
+  if (!transUuid || !(amount > 0)) return;
+  try {
+    const categorie = categorieCarte(fields);
+    const { data: grille } = await supabase
+      .from("pricing_config")
+      .select("config_key, config_value")
+      .like("config_key", "frais_soge_%");
+    const taux = Number(
+      grille?.find((l: { config_key: string }) => l.config_key === `frais_soge_${categorie}`)?.config_value
+        ?? TAUX_PAR_DEFAUT[categorie],
+    );
+    const frais = Math.round(amount * taux) / 100;
+
+    const { error } = await supabase
+      .from("paiements")
+      .update({
+        frais_bancaires: frais,
+        frais_origine: "sogecommerce",
+        carte_categorie: categorie,
+        carte_marque: fields["vads_card_brand"] || null,
+        carte_pays: fields["vads_card_country"] || null,
+        carte_produit: fields["vads_bank_product"] || null,
+      })
+      .eq("stripe_payment_id", transUuid)
+      .is("frais_bancaires", null);
+    if (error) console.error("⚠️ Frais bancaires non enregistres:", error.message);
+    else console.log(`💶 Frais bancaires : ${frais} € (${categorie}, ${taux} %)`);
+  } catch (e) {
+    console.error("⚠️ Frais bancaires non enregistres:", e);
+  }
+}
+
 async function parseIpnFields(req: Request): Promise<Record<string, string>> {
   const contentType = req.headers.get("content-type") || "";
   const fields: Record<string, string> = {};
@@ -1312,6 +1396,13 @@ serve(async (req) => {
         amount,
         transUuid,
       );
+    }
+
+    // Frais bancaires : calcules apres l'enregistrement du paiement, sans
+    // jamais bloquer. Les commandes particulier ne figurent pas dans la page
+    // Revenus et n'ont pas de ligne dans paiements.
+    if (flowType !== "guest_order") {
+      await enregistrerFraisBancaires(supabase, fields, transUuid, amount);
     }
 
     // Toujours 200 quand on a reconnu et traité (ou volontairement ignoré)
