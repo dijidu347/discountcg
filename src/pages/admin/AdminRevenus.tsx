@@ -50,6 +50,21 @@ interface RawTokenPurchase {
   quantity: number;
 }
 
+// Commande particulier : ce que l'entreprise garde est la difference entre le
+// TTC et le HT, le HT portant les taxes de carte grise reversees a l'Etat
+// (cheval fiscal, taxe fixe, acheminement). Compter le TTC ferait passer ces
+// taxes pour du revenu.
+interface RawGuestOrder {
+  montant_ht: number | null;
+  montant_ttc: number | null;
+  paid_at: string | null;
+  created_at: string;
+  frais_bancaires: number | null;
+}
+
+const revenuParticulier = (o: RawGuestOrder) =>
+  Math.max(0, Number(o.montant_ttc || 0) - Number(o.montant_ht || 0));
+
 interface RawDemarche {
   type: string;
   created_at: string;
@@ -102,6 +117,7 @@ export default function AdminRevenus() {
   const [paiements, setPaiements] = useState<RawPaiement[]>([]);
   const [tokenPurchases, setTokenPurchases] = useState<RawTokenPurchase[]>([]);
   const [demarches, setDemarches] = useState<RawDemarche[]>([]);
+  const [guestOrders, setGuestOrders] = useState<RawGuestOrder[]>([]);
   const [garageNames, setGarageNames] = useState<Record<string, string>>({});
   const [coffreStats, setCoffreStats] = useState({ total: 0, stripe: 0, tokens: 0, beta: 0, paying: 0, trialing: 0 });
   const [coffreSubs, setCoffreSubs] = useState<any[]>([]);
@@ -144,7 +160,7 @@ export default function AdminRevenus() {
   };
 
   const loadData = async () => {
-    const [pData, tData, dData, gRes, cRes] = await Promise.all([
+    const [pData, tData, dData, gRes, cRes, goData] = await Promise.all([
       fetchAll<RawPaiement>(() => supabase
         .from("paiements")
         .select("montant, status, created_at, frais_bancaires, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
@@ -165,11 +181,17 @@ export default function AdminRevenus() {
       supabase
         .from("coffre_subscriptions")
         .select("id, status, payment_mode, cancel_at_period_end, retention_discount_applied, current_period_start, current_period_end, trial_start, trial_end, garage_id, created_at"),
+      fetchAll<RawGuestOrder>(() => supabase
+        .from("guest_orders")
+        .select("montant_ht, montant_ttc, paid_at, created_at, frais_bancaires")
+        .eq("paye", true)
+        .order("created_at", { ascending: false })),
     ]);
 
     setPaiements(pData);
     setTokenPurchases(tData);
     setDemarches(dData);
+    setGuestOrders(goData);
     
     const names: Record<string, string> = {};
     (gRes.data || []).forEach((g: any) => {
@@ -254,15 +276,27 @@ export default function AdminRevenus() {
     [demarches, dateRange]
   );
 
+  // Commandes particulier, datees au paiement.
+  const filteredGuestOrders = useMemo(() =>
+    guestOrders.filter(o => {
+      const d = new Date(o.paid_at || o.created_at);
+      return d >= dateRange.start && d <= dateRange.end;
+    }),
+    [guestOrders, dateRange]
+  );
+
   // KPIs
   const totalServiceFees = filteredPaiements.reduce((s, p) => s + getRevenueAmount(p), 0);
   const totalTokenRevenue = filteredTokens.reduce((s, t) => s + Number(t.amount), 0);
-  const totalRevenue = totalServiceFees + totalTokenRevenue;
+  const totalParticuliers = filteredGuestOrders.reduce((s, o) => s + revenuParticulier(o), 0);
+  const totalRevenue = totalServiceFees + totalTokenRevenue + totalParticuliers;
   // Commissions bancaires sur les encaissements de la periode : Stripe au
   // centime, Sogecommerce selon la grille et la carte utilisee.
+  const fraisParticuliers = filteredGuestOrders.reduce((s, o) => s + Number(o.frais_bancaires || 0), 0);
   const totalFraisBancaires =
     filteredPaiements.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
-    filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0);
+    filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0) +
+    fraisParticuliers;
   const revenuNet = totalRevenue - totalFraisBancaires;
   const totalDemarches = filteredDemarches.length;
   const cbPaidDemarches = filteredDemarches.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length;
@@ -288,7 +322,15 @@ export default function AdminRevenus() {
     const d = new Date(t.created_at);
     return d >= prevRange.start && d < prevRange.end;
   });
-  const prevTotal = prevPaiements.reduce((s, p) => s + getRevenueAmount(p), 0) + prevTokens.reduce((s, t) => s + Number(t.amount), 0);
+  // Les particuliers entrent aussi dans la periode de comparaison : sans cela
+  // la tendance comparerait un total avec particuliers a un total sans.
+  const prevParticuliers = guestOrders
+    .filter(o => {
+      const d = new Date(o.paid_at || o.created_at);
+      return d >= prevRange.start && d < prevRange.end;
+    })
+    .reduce((s, o) => s + revenuParticulier(o), 0);
+  const prevTotal = prevPaiements.reduce((s, p) => s + getRevenueAmount(p), 0) + prevTokens.reduce((s, t) => s + Number(t.amount), 0) + prevParticuliers;
   const trendPct = prevTotal > 0 ? ((totalRevenue - prevTotal) / prevTotal) * 100 : 0;
 
   // Daily/Monthly chart data
@@ -613,7 +655,7 @@ export default function AdminRevenus() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium">Frais de service</p>
+                  <p className="text-sm text-muted-foreground font-medium">Frais de service (pros)</p>
                   <p className="text-3xl font-bold text-blue-600 mt-1">{totalServiceFees.toFixed(2)} €</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
@@ -680,6 +722,34 @@ export default function AdminRevenus() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Particuliers : commandes passees sans compte, distinguees des pros */}
+        <Card className="mb-8 border-l-4 border-l-teal-500">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground font-medium mb-3">Particuliers</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div>
+                <p className="text-xs text-muted-foreground">Revenu (frais et options)</p>
+                <p className="text-2xl font-bold text-teal-600">{totalParticuliers.toFixed(2)} €</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Commandes payées</p>
+                <p className="text-2xl font-bold">{filteredGuestOrders.length}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Frais bancaires</p>
+                <p className="text-2xl font-bold">−{fraisParticuliers.toFixed(2)} €</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Revenu net</p>
+                <p className="text-2xl font-bold text-teal-600">{(totalParticuliers - fraisParticuliers).toFixed(2)} €</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              Inclus dans le revenu total ci-dessus. Revenu = montant TTC moins les taxes de carte grise reversées à l'État.
+            </p>
+          </CardContent>
+        </Card>
 
         {/* Coffre-fort Subscriptions Detail */}
         <Card className="mb-8">

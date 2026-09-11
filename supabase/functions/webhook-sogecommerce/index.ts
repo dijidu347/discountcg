@@ -470,6 +470,10 @@ async function enregistrerFraisBancaires(
   fields: Record<string, string>,
   transUuid: string,
   amount: number,
+  // Paiement pro : ligne dans paiements. Commande particulier : la reference
+  // Sogecommerce est gardee sur la commande elle-meme.
+  table: "paiements" | "guest_orders",
+  colonne: "stripe_payment_id" | "payment_intent_id",
 ) {
   if (!transUuid || !(amount > 0)) return;
   try {
@@ -485,7 +489,7 @@ async function enregistrerFraisBancaires(
     const frais = Math.round(amount * taux) / 100;
 
     const { error } = await supabase
-      .from("paiements")
+      .from(table)
       .update({
         frais_bancaires: frais,
         frais_origine: "sogecommerce",
@@ -494,7 +498,7 @@ async function enregistrerFraisBancaires(
         carte_pays: fields["vads_card_country"] || null,
         carte_produit: fields["vads_bank_product"] || null,
       })
-      .eq("stripe_payment_id", transUuid)
+      .eq(colonne, transUuid)
       .is("frais_bancaires", null);
     if (error) console.error("⚠️ Frais bancaires non enregistres:", error.message);
     else console.log(`💶 Frais bancaires : ${frais} € (${categorie}, ${taux} %)`);
@@ -1399,10 +1403,11 @@ serve(async (req) => {
     }
 
     // Frais bancaires : calcules apres l'enregistrement du paiement, sans
-    // jamais bloquer. Les commandes particulier ne figurent pas dans la page
-    // Revenus et n'ont pas de ligne dans paiements.
-    if (flowType !== "guest_order") {
-      await enregistrerFraisBancaires(supabase, fields, transUuid, amount);
+    // jamais bloquer, pour les garages comme pour les particuliers.
+    if (flowType === "guest_order") {
+      await enregistrerFraisBancaires(supabase, fields, transUuid, amount, "guest_orders", "payment_intent_id");
+    } else {
+      await enregistrerFraisBancaires(supabase, fields, transUuid, amount, "paiements", "stripe_payment_id");
     }
 
     // Toujours 200 quand on a reconnu et traité (ou volontairement ignoré)

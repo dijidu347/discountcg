@@ -1370,11 +1370,18 @@ async function enregistrerFraisStripe(
       carte_marque: carte?.brand ?? null,
       carte_pays: carte?.country ?? null,
     };
-    for (const table of ["paiements", "token_purchases"]) {
+    // Le paiement est dans l'une de ces tables ; les autres mises a jour ne
+    // touchent aucune ligne. Commande particulier : reference sur la commande.
+    const cibles: Array<[string, string]> = [
+      ["paiements", "stripe_payment_id"],
+      ["token_purchases", "stripe_payment_id"],
+      ["guest_orders", "payment_intent_id"],
+    ];
+    for (const [table, colonne] of cibles) {
       const { error } = await supabase
         .from(table)
         .update(valeurs)
-        .eq("stripe_payment_id", paymentIntentId)
+        .eq(colonne, paymentIntentId)
         .is("frais_bancaires", null);
       if (error) console.error(`⚠️ Frais Stripe non enregistres (${table}):`, error.message);
     }
