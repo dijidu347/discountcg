@@ -1289,6 +1289,10 @@ export type Database = {
         Row: {
           admin_viewed: boolean | null
           adresse: string
+          carte_categorie: string | null
+          carte_marque: string | null
+          carte_pays: string | null
+          carte_produit: string | null
           certificat_non_gage: boolean | null
           code_postal: string
           commentaire: string | null
@@ -1303,7 +1307,9 @@ export type Database = {
           email_notifications: boolean
           energie: string | null
           express: boolean
+          frais_bancaires: number | null
           frais_dossier: number
+          frais_origine: string | null
           genre: string | null
           has_cotitulaire: boolean | null
           id: string
@@ -1348,6 +1354,10 @@ export type Database = {
         Insert: {
           admin_viewed?: boolean | null
           adresse: string
+          carte_categorie?: string | null
+          carte_marque?: string | null
+          carte_pays?: string | null
+          carte_produit?: string | null
           certificat_non_gage?: boolean | null
           code_postal: string
           commentaire?: string | null
@@ -1362,7 +1372,9 @@ export type Database = {
           email_notifications?: boolean
           energie?: string | null
           express?: boolean
+          frais_bancaires?: number | null
           frais_dossier?: number
+          frais_origine?: string | null
           genre?: string | null
           has_cotitulaire?: boolean | null
           id?: string
@@ -1407,6 +1419,10 @@ export type Database = {
         Update: {
           admin_viewed?: boolean | null
           adresse?: string
+          carte_categorie?: string | null
+          carte_marque?: string | null
+          carte_pays?: string | null
+          carte_produit?: string | null
           certificat_non_gage?: boolean | null
           code_postal?: string
           commentaire?: string | null
@@ -1421,7 +1437,9 @@ export type Database = {
           email_notifications?: boolean
           energie?: string | null
           express?: boolean
+          frais_bancaires?: number | null
           frais_dossier?: number
+          frais_origine?: string | null
           genre?: string | null
           has_cotitulaire?: boolean | null
           id?: string
