@@ -25,32 +25,45 @@ export default function RevenueStats() {
 
   const loadRevenueData = async () => {
     try {
-      // Fetch paiements with dates
-      const { data: paiements } = await supabase
-        .from('paiements')
-        .select(`
-          montant, 
-          status,
-          created_at,
-          demarches!inner(
-            paid_with_tokens, 
-            is_free_token, 
-            frais_dossier,
-            type
-          )
-        `)
-        .eq('status', 'valide');
+      // Lecture par pages : une requete seule s'arrete a 1000 lignes.
+      const lireTout = async <T,>(page: (de: number, a: number) => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> => {
+        const lignes: T[] = [];
+        for (let de = 0; ; de += 1000) {
+          const { data, error } = await page(de, de + 999);
+          if (error) throw error;
+          lignes.push(...(data || []));
+          if (!data || data.length < 1000) return lignes;
+        }
+      };
 
-      // Fetch token purchases with dates
-      const { data: tokenPurchases } = await supabase
+      const paiements = await lireTout((de, a) => supabase
+        .from('paiements')
+        .select('id, demarche_id, montant, status, created_at, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type)')
+        .eq('status', 'valide')
+        .order('created_at')
+        .order('id')
+        .range(de, a));
+
+      const tokenPurchases = await lireTout((de, a) => supabase
         .from('token_purchases')
-        .select('amount, created_at');
+        .select('amount, created_at')
+        .order('created_at')
+        .order('id')
+        .range(de, a));
+
+      // Paiement partage : frais du garage puis taxe du client sur la meme
+      // demarche. Les frais de dossier ne se comptent qu'une fois.
+      const premiers = new Map<string, { id: string; created_at: string }>();
+      paiements.forEach(p => {
+        const actuel = premiers.get(p.demarche_id);
+        if (!actuel || p.created_at < actuel.created_at) premiers.set(p.demarche_id, p);
+      });
 
       // Group by month
       const monthlyMap = new Map<string, { paiements: number; tokens: number }>();
 
       // Process paiements
-      paiements?.forEach(p => {
+      paiements.forEach(p => {
         if (p.demarches?.paid_with_tokens || p.demarches?.is_free_token) return;
         
         const date = new Date(p.created_at);
@@ -58,6 +71,7 @@ export default function RevenueStats() {
         
         let amount = 0;
         if (p.demarches?.type === 'CG' || p.demarches?.type === 'CG_DA' || p.demarches?.type === 'CG_IMPORT') {
+          if (premiers.get(p.demarche_id)?.id !== p.id) return;
           amount = Number(p.demarches.frais_dossier || 20);
         } else {
           amount = Number(p.montant);
@@ -69,7 +83,7 @@ export default function RevenueStats() {
       });
 
       // Process token purchases
-      tokenPurchases?.forEach(t => {
+      tokenPurchases.forEach(t => {
         const date = new Date(t.created_at);
         const monthKey = format(date, 'yyyy-MM');
         

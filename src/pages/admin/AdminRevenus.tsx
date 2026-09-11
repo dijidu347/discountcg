@@ -29,6 +29,10 @@ import { cn } from "@/lib/utils";
 const FRAIS_BANCAIRES_DEPUIS = "11/09/2026";
 
 interface RawPaiement {
+  id: string;
+  demarche_id: string;
+  // Vrai sur le premier paiement de la demarche (voir marquerPremiersPaiements)
+  premierDeLaDemarche?: boolean;
   montant: number;
   status: string;
   created_at: string;
@@ -64,6 +68,18 @@ interface RawGuestOrder {
 
 const revenuParticulier = (o: RawGuestOrder) =>
   Math.max(0, Number(o.montant_ttc || 0) - Number(o.montant_ht || 0));
+
+// Une demarche CG en paiement partage donne deux paiements : les frais du
+// garage, puis la taxe payee par le client. Les frais de dossier ne se
+// comptent qu'une fois, sur le premier paiement de la demarche.
+const marquerPremiersPaiements = (liste: RawPaiement[]): RawPaiement[] => {
+  const premiers = new Map<string, RawPaiement>();
+  for (const p of liste) {
+    const actuel = premiers.get(p.demarche_id);
+    if (!actuel || p.created_at < actuel.created_at) premiers.set(p.demarche_id, p);
+  }
+  return liste.map(p => ({ ...p, premierDeLaDemarche: premiers.get(p.demarche_id) === p }));
+};
 
 interface RawDemarche {
   type: string;
@@ -163,7 +179,7 @@ export default function AdminRevenus() {
     const [pData, tData, dData, gRes, cRes, goData] = await Promise.all([
       fetchAll<RawPaiement>(() => supabase
         .from("paiements")
-        .select("montant, status, created_at, frais_bancaires, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
+        .select("id, demarche_id, montant, status, created_at, frais_bancaires, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
         .eq("status", "valide")
         .order("created_at", { ascending: false })),
       fetchAll<RawTokenPurchase>(() => supabase
@@ -188,7 +204,7 @@ export default function AdminRevenus() {
         .order("created_at", { ascending: false })),
     ]);
 
-    setPaiements(pData);
+    setPaiements(marquerPremiersPaiements(pData));
     setTokenPurchases(tData);
     setDemarches(dData);
     setGuestOrders(goData);
@@ -246,7 +262,7 @@ export default function AdminRevenus() {
   const getRevenueAmount = (p: RawPaiement): number => {
     if (p.demarches?.paid_with_tokens || p.demarches?.is_free_token) return 0;
     if (["CG", "CG_DA", "CG_IMPORT"].includes(p.demarches?.type || "")) {
-      return Number(p.demarches?.frais_dossier || 20);
+      return p.premierDeLaDemarche ? Number(p.demarches?.frais_dossier || 20) : 0;
     }
     return Number(p.montant);
   };
@@ -292,9 +308,15 @@ export default function AdminRevenus() {
   const totalRevenue = totalServiceFees + totalTokenRevenue + totalParticuliers;
   // Commissions bancaires sur les encaissements de la periode : Stripe au
   // centime, Sogecommerce selon la grille et la carte utilisee.
+  // Tous les encaissements comptent, meme ceux qui ne rapportent rien (la taxe
+  // payee par le client en paiement partage) : la banque preleve sur le tout.
+  const paiementsPeriode = paiements.filter(p => {
+    const d = new Date(p.created_at);
+    return d >= dateRange.start && d <= dateRange.end;
+  });
   const fraisParticuliers = filteredGuestOrders.reduce((s, o) => s + Number(o.frais_bancaires || 0), 0);
   const totalFraisBancaires =
-    filteredPaiements.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
+    paiementsPeriode.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
     filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0) +
     fraisParticuliers;
   const revenuNet = totalRevenue - totalFraisBancaires;
