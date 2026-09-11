@@ -1,3 +1,17 @@
+// Telechargement d'un document de commande invitee.
+//
+// Seul appelant : le bouton de telechargement de la page de suivi, qui
+// transmet toujours le numero de suivi.
+//
+// Avant correction, ce serveur ne verifiait les droits QUE si un numero de
+// suivi etait fourni. Sans numero, il servait n'importe quel fichier de
+// n'importe quel espace de stockage, l'appelant choisissant le bucket : les
+// factures et les pieces d'identite etaient lisibles par tous, stockage prive
+// ou non. Et avec un numero, il verifiait seulement que la commande possedait
+// UN document, pas que le fichier demande lui appartenait.
+//
+// Il exige desormais le numero de suivi, se limite aux documents invites, et
+// verifie que le fichier appartient a la commande.
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
@@ -9,6 +23,16 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Seul espace servi ici. Les factures passent par download-facture, les
+// documents des garages par get-signed-url.
+const BUCKET = "guest-order-documents";
+
+const json = (status: number, body: unknown) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -17,89 +41,76 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const bucket = url.searchParams.get("bucket");
-    const path = url.searchParams.get("path");
-    const trackingNumber = url.searchParams.get("tracking") || req.headers.get("x-tracking-number");
+    const cheminBrut = url.searchParams.get("path");
+    const trackingNumber = (url.searchParams.get("tracking") || req.headers.get("x-tracking-number") || "").trim();
 
-    if (!bucket || !path) {
-      return new Response(JSON.stringify({ error: "Missing bucket or path" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    if (!bucket || !cheminBrut) return json(400, { error: "Missing bucket or path" });
+    if (bucket !== BUCKET) return json(403, { error: "Espace de stockage non autorise" });
+    if (!trackingNumber) return json(401, { error: "Numero de suivi requis" });
 
-    console.log(`📁 Download request - bucket: ${bucket}, path: ${path}, tracking: ${trackingNumber}`);
+    const path = decodeURIComponent(cheminBrut);
+    if (path.includes("..")) return json(400, { error: "Chemin invalide" });
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify access for guest orders
-    if (bucket === "guest-order-documents" && trackingNumber) {
-      const { data: orderData } = await supabase
-        .from("guest_orders")
-        .select("id")
-        .eq("tracking_number", trackingNumber)
-        .single();
+    const { data: commande } = await supabase
+      .from("guest_orders")
+      .select("id")
+      .eq("tracking_number", trackingNumber)
+      .maybeSingle();
 
-      if (!orderData) {
-        console.error("❌ Order not found for tracking:", trackingNumber);
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        });
-      }
-
-      // Check if document belongs to this order
-      const decodedPath = decodeURIComponent(path);
-      const { data: docData } = await supabase
-        .from("guest_order_admin_documents")
-        .select("id")
-        .eq("order_id", orderData.id)
-        .limit(1);
-
-      const { data: guestDocData } = await supabase
-        .from("guest_order_documents")
-        .select("id")
-        .eq("order_id", orderData.id)
-        .limit(1);
-
-      if ((!docData || docData.length === 0) && (!guestDocData || guestDocData.length === 0)) {
-        // Check if path contains the order ID (admin uploads are in orderId/admin_xxx format)
-        if (!path.includes(orderData.id) && !decodedPath.includes(orderData.id)) {
-          console.error("❌ Document not found for order");
-          return new Response(JSON.stringify({ error: "Unauthorized" }), {
-            status: 401,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          });
-        }
-      }
-      
-      console.log("✅ Guest authorized via tracking number");
+    if (!commande) {
+      console.warn("⛔ download-file : numero de suivi inconnu");
+      return json(401, { error: "Unauthorized" });
     }
 
-    // Download the file
+    // Appartenance : le fichier est range sous l'identifiant de la commande, ou
+    // il est reference par un document de cette commande (client ou envoye par
+    // l'administration). 94 fichiers anciens ne suivent pas la premiere regle.
+    let autorise = path.split("/")[0] === commande.id;
+    if (!autorise) {
+      for (const forme of [...new Set([path, encodeURI(path)])]) {
+        const motif = `%${forme}%`;
+        const { data: docClient } = await supabase
+          .from("guest_order_documents")
+          .select("id")
+          .eq("order_id", commande.id)
+          .ilike("url", motif)
+          .limit(1);
+        const { data: docAdmin } = await supabase
+          .from("guest_order_admin_documents")
+          .select("id")
+          .eq("order_id", commande.id)
+          .ilike("url", motif)
+          .limit(1);
+        if (docClient?.length || docAdmin?.length) {
+          autorise = true;
+          break;
+        }
+      }
+    }
+
+    if (!autorise) {
+      console.warn("⛔ download-file : document hors commande demande");
+      return json(403, { error: "Accès non autorisé à ce document" });
+    }
+
     const { data: fileData, error: downloadError } = await supabase.storage
-      .from(bucket)
+      .from(BUCKET)
       .download(path);
 
     if (downloadError || !fileData) {
       console.error("❌ Download error:", downloadError);
-      return new Response(JSON.stringify({ error: "File not found" }), {
-        status: 404,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      return json(404, { error: "File not found" });
     }
 
-    // Get filename from path
     const filename = path.split("/").pop() || "document";
-    
-    // Determine content type
     const ext = filename.split(".").pop()?.toLowerCase();
     let contentType = "application/octet-stream";
     if (ext === "pdf") contentType = "application/pdf";
     else if (ext === "jpg" || ext === "jpeg") contentType = "image/jpeg";
     else if (ext === "png") contentType = "image/png";
     else if (ext === "webp") contentType = "image/webp";
-
-    console.log("✅ File downloaded successfully:", filename);
 
     return new Response(fileData, {
       status: 200,
@@ -109,11 +120,8 @@ serve(async (req) => {
         "Content-Disposition": `attachment; filename="${encodeURIComponent(filename)}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("❌ Error in download-file:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
+    return json(500, { error: "Erreur interne" });
   }
 });

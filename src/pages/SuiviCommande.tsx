@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { pushAchatValide } from "@/lib/gtm";
 import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
-import { downloadFacture, extractPathFromUrl } from "@/lib/storage-utils";
+import { downloadFacture, extractPathFromUrl, getSignedUrl } from "@/lib/storage-utils";
 
 const SuiviCommande = () => {
   const { trackingNumber } = useParams();
@@ -696,6 +696,7 @@ const SuiviCommande = () => {
                       </div>
                       <SimpleDownloadButton
                         url={doc.url}
+                        trackingNumber={order.tracking_number}
                         filename={doc.nom_fichier}
                         trackingNumber={trackingNumber}
                         variant="default"
@@ -718,6 +719,7 @@ const SuiviCommande = () => {
                       </div>
                       <SimpleDownloadButton
                         url={doc.url}
+                        trackingNumber={order.tracking_number}
                         filename={doc.nom_fichier || doc.type_document}
                         trackingNumber={trackingNumber}
                         variant="default"
@@ -749,15 +751,17 @@ const SuiviCommande = () => {
                 <p className="text-muted-foreground text-lg">
                   Félicitations ! Votre carte grise a été traitée et est maintenant disponible au téléchargement.
                 </p>
-                <a
-                  href={carteGriseUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-3 px-8 py-4 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 font-semibold text-lg shadow-lg"
+                {/* Stockage prive : le fichier est servi par le serveur de
+                    telechargement, sur presentation du numero de suivi. */}
+                <SimpleDownloadButton
+                  url={carteGriseUrl}
+                  filename={`carte-grise-${order.immatriculation || order.tracking_number}.pdf`}
+                  trackingNumber={order.tracking_number}
+                  className="inline-flex items-center gap-3 px-8 py-4 h-auto bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all transform hover:scale-105 font-semibold text-lg shadow-lg"
                 >
                   <Download className="w-6 h-6" />
                   Télécharger ma carte grise
-                </a>
+                </SimpleDownloadButton>
                 <p className="text-sm text-muted-foreground mt-4">
                   Conservez précieusement ce document. Il vous sera demandé en cas de contrôle.
                 </p>
@@ -816,13 +820,21 @@ const SuiviCommande = () => {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => { setPreviewUrl(doc.url); setPreviewName(doc.type_document + (doc.side ? ` (${doc.side})` : '')); }}
+                            onClick={async () => {
+                              // Stockage prive : l'apercu passe par un lien signe,
+                              // obtenu avec le numero de suivi.
+                              setPreviewName(doc.type_document + (doc.side ? ` (${doc.side})` : ''));
+                              const signe = await getSignedUrl("guest-order-documents", extractPathFromUrl(doc.url), order.tracking_number);
+                              if (signe) setPreviewUrl(signe);
+                              else toast({ title: "Aperçu indisponible", description: "Réessayez dans un instant.", variant: "destructive" });
+                            }}
                             title="Aperçu"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
                           <SimpleDownloadButton
                             url={doc.url}
+                        trackingNumber={order.tracking_number}
                             filename={doc.nom_fichier || doc.type_document}
                             trackingNumber={order.tracking_number}
                             variant="ghost"

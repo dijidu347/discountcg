@@ -79,13 +79,26 @@ serve(async (req) => {
       throw new Error('Order not found');
     }
 
-    // Fetch carte grise file
-    const carteGriseResponse = await fetch(carteGriseUrl);
-    const carteGriseBlob = await carteGriseResponse.blob();
-    const carteGriseBuffer = await carteGriseBlob.arrayBuffer();
-    const carteGriseBase64 = btoa(
-      String.fromCharCode(...new Uint8Array(carteGriseBuffer))
-    );
+    // Le stockage des documents invites est prive : son adresse publique ne
+    // sert plus. On lit le fichier directement avec la cle de service, a partir
+    // du chemin contenu dans l'URL enregistree.
+    const correspondance = carteGriseUrl.match(/\/storage\/v1\/object\/(?:public\/|sign\/)?([^/]+)\/([^?]+)/);
+    if (!correspondance) throw new Error('Adresse de carte grise invalide');
+    const [, bucketCarteGrise, cheminCarteGrise] = correspondance;
+    const { data: fichierCarteGrise, error: erreurLecture } = await supabase.storage
+      .from(bucketCarteGrise)
+      .download(decodeURIComponent(cheminCarteGrise));
+    if (erreurLecture || !fichierCarteGrise) {
+      throw new Error('Carte grise introuvable dans le stockage : ' + (erreurLecture?.message ?? ''));
+    }
+    const octets = new Uint8Array(await fichierCarteGrise.arrayBuffer());
+    // Conversion par blocs : etaler tout le fichier dans String.fromCharCode
+    // depasse la pile d'appels des quelques centaines de Ko.
+    let binaire = '';
+    for (let i = 0; i < octets.length; i += 0x8000) {
+      binaire += String.fromCharCode(...octets.subarray(i, i + 0x8000));
+    }
+    const carteGriseBase64 = btoa(binaire);
 
     const { data, error } = await resend.emails.send({
       from: 'DiscountCarteGrise <noreply@discountcartegrise.fr>',

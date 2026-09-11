@@ -275,22 +275,21 @@ serve(async (req) => {
       .upload(chemin, pdfBytes, { contentType: "application/pdf", upsert: true });
     if (uploadError) throw new Error("Dépôt du mandat impossible : " + uploadError.message);
 
-    // demarche-documents est PRIVE : son point d'acces public renvoie
-    // "Bucket not found". On stocke donc l'URL objet, comme le fait le reste du
-    // site pour ce bucket, et on renvoie une URL signee pour l'affichage
-    // immediat. guest-order-documents est public, l'URL publique y convient.
-    const bucketPrive = bucket === "demarche-documents";
+    // Les deux espaces de stockage sont prives. Pour demarche-documents on
+    // stocke l'URL objet, comme le reste du site pour ce bucket ; pour
+    // guest-order-documents on garde l'adresse au format public, dont les
+    // lecteurs du site extraient le chemin. Dans les deux cas l'affichage
+    // immediat passe par un lien signe : une adresse publique ne sert plus.
+    const bucketDemarches = bucket === "demarche-documents";
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 
-    const urlStockee = bucketPrive
+    const urlStockee = bucketDemarches
       ? `${SUPABASE_URL}/storage/v1/object/${bucket}/${chemin}`
       : supabase.storage.from(bucket).getPublicUrl(chemin).data.publicUrl;
 
     let urlAffichage = `${urlStockee}?v=${Date.now()}`;
-    if (bucketPrive) {
-      const { data: signee } = await supabase.storage.from(bucket).createSignedUrl(chemin, 60 * 60);
-      if (signee?.signedUrl) urlAffichage = signee.signedUrl;
-    }
+    const { data: signee } = await supabase.storage.from(bucket).createSignedUrl(chemin, 60 * 60);
+    if (signee?.signedUrl) urlAffichage = signee.signedUrl;
 
     // Le rattachement est vérifié : sans lui le mandat existe dans le stockage
     // mais la pièce reste comptée manquante et bloque la suite du dossier.
