@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2, AlertTriangle } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import Navbar from "@/components/Navbar";
@@ -318,8 +318,6 @@ const PaiementDemarche = () => {
   // Envoyer le lien de paiement au client
   const handleSendPaymentLink = async () => {
     if (!demarcheId) return;
-    // Un lien existe deja : c'est une regeneration (lien expire).
-    const regeneration = linkSent;
     setIsSendingLink(true);
 
     // Resolve paymentMode the same way as rest of the page
@@ -345,7 +343,7 @@ const PaiementDemarche = () => {
       if (updated) setDemarche(updated);
 
       toast({
-        title: regeneration ? "✅ Nouveau lien envoyé !" : "✅ Lien envoyé !",
+        title: "✅ Lien envoyé !",
         description: `Un email a été envoyé à ${demarche?.client_email}`,
         variant: "success" as any,
       });
@@ -742,22 +740,9 @@ const PaiementDemarche = () => {
                       l'utiliser pour payer.
                     </span>
                   </div>
-                  <Button
-                    onClick={handleSendPaymentLink}
-                    disabled={isSendingLink}
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    size="lg"
-                  >
-                    {isSendingLink ? (
-                      <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Génération en cours...</>
-                    ) : (
-                      <><RefreshCw className="w-5 h-5 mr-2" /> Générer un nouveau lien</>
-                    )}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {demarche.client_email
-                      ? `Un nouveau lien, valable 30 jours, sera envoyé à ${demarche.client_email}.`
-                      : "Un nouveau lien, valable 30 jours, sera créé : partagez-le ensuite à votre client."}
+                  <p className="text-sm text-muted-foreground">
+                    Pour obtenir un nouveau lien, contactez DiscountCarteGrise : le renouvellement
+                    d'un lien expiré est effectué par notre équipe.
                   </p>
                 </div>
               ) : (

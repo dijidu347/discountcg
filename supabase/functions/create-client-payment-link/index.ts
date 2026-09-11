@@ -75,11 +75,42 @@ serve(async (req) => {
       ? demarche.vehicules.immatriculation
       : demarche.immatriculation;
 
-    // Check user owns this garage
-    if (demarche.garages.user_id !== user.id) {
+    // Administrateur : autorise sur toute demarche. Garage : autorise sur les
+    // siennes pour l'envoi du lien, mais le RENOUVELLEMENT d'un lien expire est
+    // reserve a l'administration.
+    const { data: roleAdmin } = await supabaseClient
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+    const estAdmin = Boolean(roleAdmin);
+    const estProprietaire = demarche.garages.user_id === user.id;
+
+    if (!estAdmin && !estProprietaire) {
       console.error('Ownership check failed');
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const lienExpire = Boolean(
+      demarche.client_payment_token_expires_at &&
+      new Date(demarche.client_payment_token_expires_at) < new Date()
+    );
+    if (lienExpire && !estAdmin) {
+      return new Response(JSON.stringify({ error: "Le renouvellement d'un lien expiré est réservé à l'administration" }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Generer un lien remet la demarche "en attente de paiement client" : sur
+    // un dossier refuse ou finalise, cela effacerait son statut.
+    if (['refuse', 'finalise'].includes(demarche.status)) {
+      return new Response(JSON.stringify({ error: 'Démarche refusée ou finalisée : aucun lien de paiement à émettre' }), {
+        status: 409,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

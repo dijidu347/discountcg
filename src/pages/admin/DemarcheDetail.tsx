@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check, RefreshCw, Loader2 } from "lucide-react";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import { SITE_URL } from "@/lib/siteUrl";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, downloadPrivateFileFromUrl, StorageBucket } from "@/lib/storage-utils";
@@ -209,6 +209,7 @@ export default function DemarcheDetail() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [documentPreviews, setDocumentPreviews] = useState<Record<string, string>>({});
   const [paymentLinkCopied, setPaymentLinkCopied] = useState(false);
+  const [regenerationLienEnCours, setRegenerationLienEnCours] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -875,6 +876,33 @@ export default function DemarcheDetail() {
       title: "Lien copié !",
       description: "Le lien a été copié dans le presse-papier",
     });
+  };
+
+  // Renouvellement d'un lien expire, reserve a l'administration : nouveau
+  // jeton valable 30 jours, envoye par e-mail au client (garage en copie).
+  const handleRegeneratePaymentLink = async () => {
+    setRegenerationLienEnCours(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-client-payment-link", {
+        body: { demarcheId: demarche.id, paymentMode: demarche.payment_mode },
+      });
+      if (error || !data?.paymentUrl) throw new Error("Impossible de générer un nouveau lien");
+      toast({
+        title: "Nouveau lien envoyé",
+        description: demarche.client_email
+          ? `Un e-mail a été envoyé à ${demarche.client_email}, garage en copie.`
+          : "Le lien a été créé : copiez-le pour le transmettre au client.",
+      });
+      await loadDemarcheData();
+    } catch (e) {
+      toast({
+        title: "Erreur",
+        description: e instanceof Error ? e.message : "Impossible de générer un nouveau lien",
+        variant: "destructive",
+      });
+    } finally {
+      setRegenerationLienEnCours(false);
+    }
   };
 
   // Détail du calcul carte grise depuis le snapshot persisté (null si absent).
@@ -1617,6 +1645,23 @@ export default function DemarcheDetail() {
                         {clientPaymentState === "expired" ? "A expiré le " : "Expire le "}
                         {formatDateTimeParis(demarche.client_payment_token_expires_at)}
                       </p>
+                      {/* Seules les demarches qui attendent encore le paiement du
+                          client se renouvellent : un dossier refuse ou finalise
+                          perdrait son statut. */}
+                      {clientPaymentState === "expired" && demarche.status === "en_attente_paiement_client" && (
+                        <Button
+                          size="sm"
+                          onClick={handleRegeneratePaymentLink}
+                          disabled={regenerationLienEnCours}
+                          className="w-full"
+                        >
+                          {regenerationLienEnCours ? (
+                            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Génération…</>
+                          ) : (
+                            <><RefreshCw className="h-4 w-4 mr-2" /> Générer un nouveau lien</>
+                          )}
+                        </Button>
+                      )}
                     </>
                   )}
                 </CardContent>
