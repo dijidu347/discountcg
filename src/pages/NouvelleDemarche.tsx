@@ -894,8 +894,11 @@ export default function NouvelleDemarche() {
     }
 
     // Mandat 13757 : aucun mode n'etant coche d'avance, le client doit dire
-    // s'il depose le sien ou s'il le remplit en ligne.
-    if (mandatRequis && !mandatMode) {
+    // s'il depose le sien ou s'il le remplit en ligne. Uniquement la ou ce
+    // choix est affiche : sur les demarches PRO il n'existe pas encore, le
+    // mandat y est une piece a deposer comme les autres. Exiger un choix
+    // introuvable bloquait toute demarche PRO a la soumission.
+    if (mandatRequis && !mandatMode && !PRO_DEMARCHE_TYPES.includes(formData.type)) {
       toast({
         title: "Mandat d'immatriculation",
         description: "Indiquez si vous déposez votre propre mandat ou si vous le remplissez en ligne.",
