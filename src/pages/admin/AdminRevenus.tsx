@@ -24,9 +24,10 @@ import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOf
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// Frais bancaires enregistres a partir de cette date : avant, la carte
-// utilisee n'etait pas conservee et la commission ne peut pas etre calculee.
-const FRAIS_BANCAIRES_DEPUIS = "11/09/2026";
+// Frais bancaires connus a partir de cette date : du 30/06 au 10/09/2026,
+// commissions reelles du releve bancaire reparties par remise ; depuis le
+// 11/09, calculees a chaque paiement. Les paiements Stripe anterieurs n'en ont pas.
+const FRAIS_BANCAIRES_DEPUIS = "30/06/2026";
 
 // Le coffre-fort n'est pas encore ouvert aux garages : ses cartes restent
 // masquees tant que ce n'est pas le cas.
