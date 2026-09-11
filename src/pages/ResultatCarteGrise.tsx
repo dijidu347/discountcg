@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PriceSummary } from "@/components/simulateur/PriceSummary";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
-import { UploadList } from "@/components/upload/UploadList";
+import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
 import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
@@ -691,10 +691,15 @@ export default function ResultatCarteGrise() {
                 <h2 className={`text-2xl font-bold ${!isPaid ? 'text-muted-foreground' : ''}`}>Envoyer vos documents</h2>
               </div>
 
-              <UploadList
+              {/* Meme liste que les autres demarches particulier : le mandat 13757
+                  y ouvre la carte avec son choix depot / remplissage en ligne, et
+                  le certificat de non-gage y a son emplacement. Les pieces propres
+                  a la carte grise (hebergement, co-titulaire) restent demandees. */}
+              <UploadListSimple
                 orderId={orderId}
                 isPaid={isPaid}
                 demarcheType={demarcheType}
+                includeSituationDocs
               />
             </div>
           </div>

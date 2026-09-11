@@ -17,7 +17,16 @@ interface UploadListSimpleProps {
   orderId: string;
   isPaid: boolean;
   demarcheType: string;
+  /** Ajoute les pieces dependant de la situation du client (hebergement,
+   *  co-titulaire). Active par la page carte grise, qui les demandait deja
+   *  avec l'ancienne liste ; les autres pages restent inchangees. */
+  includeSituationDocs?: boolean;
 }
+
+// Noms repris a l'identique de l'ancienne liste : les fichiers deja deposes
+// sont ranges sous ces libelles et doivent rester rattaches.
+const DOC_HEBERGEMENT = "Attestation de domicile (hébergement)";
+const DOC_COTITULAIRE = "Pièce d'identité du co-titulaire";
 
 interface UploadedFile {
   id: string;
@@ -35,6 +44,8 @@ interface OrderInfo {
   prenom: string;
   immatriculation: string;
   montant_ttc: number;
+  marque?: string | null;
+  modele?: string | null;
 }
 
 interface RequiredDocument {
@@ -52,6 +63,9 @@ const RECTO_VERSO_KEYWORDS = [
   "permis du titulaire",
   "permis du co-titulaire",
   "identité et permis",
+  "carte grise barrée",
+  "recto/verso",
+  "recto verso",
 ];
 
 const isRectoOnly = (docName: string): boolean => {
@@ -59,7 +73,7 @@ const isRectoOnly = (docName: string): boolean => {
   return !RECTO_VERSO_KEYWORDS.some(keyword => lower.includes(keyword));
 };
 
-export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSimpleProps) => {
+export const UploadListSimple = ({ orderId, isPaid, demarcheType, includeSituationDocs = false }: UploadListSimpleProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -77,6 +91,10 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
   // Depot de son propre mandat, ou remplissage en ligne. Par defaut le depot.
   // Aucun mode pre-selectionne, comme dans le tunnel pro.
   const [mandatMode, setMandatMode] = useState<MandatMode | null>(null);
+  // Documents refuses : tant que le paiement de renvoi n'est pas regle, aucun
+  // nouveau depot n'est accepte.
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [blockedMessage, setBlockedMessage] = useState("");
 
   const loadData = async () => {
     setIsLoading(true);
@@ -92,6 +110,9 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
       setMandatMode(((orderMode as { mandat_mode?: MandatMode } | null)?.mandat_mode) || null);
       const attendNonGage = orderMode?.non_gage_mode === 'fourni';
       setNonGageFourni(attendNonGage);
+      const renvoiAPayer = Boolean(orderMode?.requires_resubmission_payment && !orderMode?.resubmission_paid);
+      setIsBlocked(renvoiAPayer);
+      setBlockedMessage(renvoiAPayer ? "Un paiement de 10€ est requis avant de pouvoir renvoyer des documents." : "");
 
       // Load required documents from DB
       const { data: dbDocs } = await supabase
@@ -112,6 +133,12 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
           obligatoire: true,
           ordre: 999,
         } as any);
+      }
+      if (includeSituationDocs && orderMode?.is_heberge && !docsConfig.some(d => d.nom_document === DOC_HEBERGEMENT)) {
+        docsConfig.push({ id: 'attestation_domicile', nom_document: DOC_HEBERGEMENT, obligatoire: true, ordre: 997 } as (typeof docsConfig)[number]);
+      }
+      if (includeSituationDocs && orderMode?.has_cotitulaire && !docsConfig.some(d => d.nom_document === DOC_COTITULAIRE)) {
+        docsConfig.push({ id: 'cotitulaire_id', nom_document: DOC_COTITULAIRE, obligatoire: true, ordre: 998 } as (typeof docsConfig)[number]);
       }
 
       if (docsConfig.length > 0) {
@@ -147,7 +174,9 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
           const requiredNames = new Set(docsConfig.map((d: any) => d.nom_document));
           const extraTypes = [...new Set(
             existingDocs
-              .filter(d => !requiredNames.has(d.type_document))
+              .filter(d => !requiredNames.has(d.type_document) &&
+                           d.type_document !== 'carte_grise_finale' &&
+                           !d.type_document.startsWith('admin_'))
               .map(d => d.type_document)
           )];
           if (extraTypes.length > 0) {
@@ -163,7 +192,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
       // Get order info
       const { data: order } = await supabase
         .from('guest_orders')
-        .select('tracking_number, email, nom, prenom, immatriculation, montant_ttc')
+        .select('tracking_number, email, nom, prenom, immatriculation, montant_ttc, marque, modele')
         .eq('id', orderId)
         .single();
 
@@ -250,6 +279,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
               prenom: orderInfo.prenom,
               immatriculation: orderInfo.immatriculation,
               montant_ttc: orderInfo.montant_ttc,
+              marque: orderInfo.marque,
+              modele: orderInfo.modele,
             }
           }
         });
@@ -282,7 +313,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
     } else {
       setIsLoading(false);
     }
-  }, [orderId, isPaid]);
+  }, [orderId, isPaid, includeSituationDocs]);
 
   if (!isPaid) {
     return (
@@ -290,7 +321,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
-            Documents requis
+            Pièces justificatives
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -308,7 +339,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Upload className="w-5 h-5" />
-            Déposez vos documents
+            Pièces justificatives
           </CardTitle>
         </CardHeader>
         <CardContent className="flex justify-center py-8">
@@ -323,7 +354,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Upload className="w-5 h-5" />
-          Déposez vos documents
+          Pièces justificatives
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -354,6 +385,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
                   existingFiles={uploadedFiles.filter((f) => f.type_document === mandatDoc.nom_document)}
                   onUploadComplete={loadData}
                   rectoOnly
+                  isBlocked={isBlocked}
+                  blockedMessage={blockedMessage}
                 />
               </div>
             }
@@ -402,6 +435,8 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType }: UploadListSi
                 existingFiles={filesForDoc}
                 onUploadComplete={loadData}
                 rectoOnly={isRectoOnly(doc.nom_document)}
+                isBlocked={isBlocked}
+                blockedMessage={blockedMessage}
               />
             </div>
           );
