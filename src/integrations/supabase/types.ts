@@ -1563,8 +1563,14 @@ export type Database = {
       }
       paiements: {
         Row: {
+          carte_categorie: string | null
+          carte_marque: string | null
+          carte_pays: string | null
+          carte_produit: string | null
           created_at: string
           demarche_id: string
+          frais_bancaires: number | null
+          frais_origine: string | null
           garage_id: string
           id: string
           montant: number
@@ -1574,8 +1580,14 @@ export type Database = {
           validated_at: string | null
         }
         Insert: {
+          carte_categorie?: string | null
+          carte_marque?: string | null
+          carte_pays?: string | null
+          carte_produit?: string | null
           created_at?: string
           demarche_id: string
+          frais_bancaires?: number | null
+          frais_origine?: string | null
           garage_id: string
           id?: string
           montant: number
@@ -1585,8 +1597,14 @@ export type Database = {
           validated_at?: string | null
         }
         Update: {
+          carte_categorie?: string | null
+          carte_marque?: string | null
+          carte_pays?: string | null
+          carte_produit?: string | null
           created_at?: string
           demarche_id?: string
+          frais_bancaires?: number | null
+          frais_origine?: string | null
           garage_id?: string
           id?: string
           montant?: number
@@ -1847,7 +1865,13 @@ export type Database = {
       token_purchases: {
         Row: {
           amount: number
+          carte_categorie: string | null
+          carte_marque: string | null
+          carte_pays: string | null
+          carte_produit: string | null
           created_at: string
+          frais_bancaires: number | null
+          frais_origine: string | null
           garage_id: string
           id: string
           quantity: number
@@ -1855,7 +1879,13 @@ export type Database = {
         }
         Insert: {
           amount: number
+          carte_categorie?: string | null
+          carte_marque?: string | null
+          carte_pays?: string | null
+          carte_produit?: string | null
           created_at?: string
+          frais_bancaires?: number | null
+          frais_origine?: string | null
           garage_id: string
           id?: string
           quantity: number
@@ -1863,7 +1893,13 @@ export type Database = {
         }
         Update: {
           amount?: number
+          carte_categorie?: string | null
+          carte_marque?: string | null
+          carte_pays?: string | null
+          carte_produit?: string | null
           created_at?: string
+          frais_bancaires?: number | null
+          frais_origine?: string | null
           garage_id?: string
           id?: string
           quantity?: number
