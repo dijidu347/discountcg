@@ -472,7 +472,7 @@ async function enregistrerFraisBancaires(
   amount: number,
   // Paiement pro : ligne dans paiements. Commande particulier : la reference
   // Sogecommerce est gardee sur la commande elle-meme.
-  table: "paiements" | "guest_orders",
+  table: "paiements" | "guest_orders" | "token_purchases",
   colonne: "stripe_payment_id" | "payment_intent_id",
 ) {
   if (!transUuid || !(amount > 0)) return;
@@ -1287,6 +1287,201 @@ async function handleClientPayment(
 // ---------------------------------------------------------------------------
 // Point d'entrée
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// RECHARGE DE SOLDE (jetons) d'un garage — remplace le parcours Stripe
+// (webhook-stripe, handleTokenPurchase). PDF de facture recopie a l'identique.
+// ---------------------------------------------------------------------------
+async function generateTokenFacturePDF(
+  facture: Facture,
+  garage: Garage,
+  creditAmount: number,
+  pricePaid: number
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+  const page = pdfDoc.addPage([595.28, 841.89]);
+  const { width, height } = page.getSize();
+  const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+  const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+  const blue = rgb(0.145, 0.388, 0.922);
+  const black = rgb(0, 0, 0);
+  const gray = rgb(0.4, 0.4, 0.4);
+  const margin = 50;
+  let y = height - margin;
+
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 24, font: fontBold, color: blue });
+  const date = new Date(facture.created_at).toLocaleDateString("fr-FR");
+  page.drawText(`Facture N° ${facture.numero}`, { x: width - margin - 180, y, size: 16, font: fontBold, color: blue });
+  y -= 20;
+  page.drawText(`Date : ${date}`, { x: width - margin - 180, y, size: 10, font: fontRegular, color: gray });
+  y -= 30;
+  page.drawRectangle({ x: margin, y, width: width - 2 * margin, height: 3, color: blue });
+
+  y -= 40;
+  page.drawText("ÉMETTEUR", { x: margin, y, size: 10, font: fontBold, color: gray });
+  page.drawText("CLIENT", { x: width / 2, y, size: 10, font: fontBold, color: gray });
+  y -= 20;
+  page.drawText("DISCOUNT DRIVER", { x: margin, y, size: 12, font: fontBold, color: black });
+  page.drawText(garage.raison_sociale || "Garage", { x: width / 2, y, size: 12, font: fontBold, color: black });
+  y -= 18;
+  page.drawText("Service de cartes grises en ligne", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  page.drawText(garage.email, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  if (garage.siret) {
+    y -= 15;
+    page.drawText(`SIRET : ${garage.siret}`, { x: width / 2, y, size: 10, font: fontRegular, color: gray });
+  }
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 28, color: blue });
+  page.drawText("DÉSIGNATION", { x: margin + 10, y: y + 8, size: 10, font: fontBold, color: rgb(1,1,1) });
+  page.drawText("MONTANT", { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: rgb(1,1,1) });
+
+  y -= 35;
+  page.drawText(`Recharge de solde — ${creditAmount} €`, { x: margin + 10, y: y + 8, size: 10, font: fontRegular, color: black });
+  page.drawText("Crédit utilisable pour démarches carte grise", { x: margin + 10, y: y - 8, size: 9, font: fontRegular, color: gray });
+  page.drawText(`${pricePaid.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 10, font: fontBold, color: blue });
+
+  y -= 50;
+  page.drawRectangle({ x: margin, y: y - 5, width: width - 2 * margin, height: 2, color: gray });
+  y -= 25;
+  page.drawText("TOTAL TTC", { x: width / 2, y: y + 8, size: 12, font: fontBold, color: black });
+  page.drawText(`${pricePaid.toFixed(2)} €`, { x: width - margin - 80, y: y + 8, size: 14, font: fontBold, color: blue });
+
+  y -= 60;
+  page.drawText("Merci pour votre confiance !", { x: margin, y, size: 10, font: fontRegular, color: gray });
+  y -= 15;
+  page.drawText("DISCOUNT DRIVER - SAS - Service de cartes grises en ligne", { x: margin, y, size: 9, font: fontRegular, color: gray });
+
+  return await pdfDoc.save();
+}
+
+async function handleTokenPurchase(
+  supabase: SupabaseClient,
+  garageId: string,
+  packId: string,
+  amount: number,
+  transUuid: string,
+): Promise<string> {
+  if (!transUuid) {
+    console.error("❌ Référence de transaction absente — recharge non créditée");
+    return "missing_reference";
+  }
+
+  const { data: deja } = await supabase
+    .from("token_purchases")
+    .select("id")
+    .eq("stripe_payment_id", transUuid)
+    .maybeSingle();
+  if (deja) {
+    console.log("↩️ Recharge déjà enregistrée — IPN ignorée (idempotence)");
+    return "already_processed";
+  }
+
+  const { data: garage, error: garageError } = await supabase
+    .from("garages")
+    .select("*")
+    .eq("id", garageId)
+    .single();
+  if (garageError || !garage) {
+    console.error("❌ Garage introuvable pour la recharge:", garageError);
+    return "garage_not_found";
+  }
+
+  // Le credit vient du pack en base. Si le montant paye ne correspond pas a
+  // son prix, on credite ce qui a ete paye, sans bonus, et on le signale.
+  const { data: pack } = await supabase
+    .from("token_pricing")
+    .select("quantity, price")
+    .eq("id", packId)
+    .maybeSingle();
+  const prixConforme = !!pack && Math.round(Number(pack.price) * 100) === Math.round(amount * 100);
+  const credit = prixConforme ? Number(pack!.quantity) : Math.round(amount);
+  if (!prixConforme) {
+    console.warn(`⚠️ Montant payé ${amount} € différent du pack ${packId} : crédit de ${credit} € sans bonus`);
+  }
+
+  // L'achat est enregistre avant le credit et sa reference est unique : un
+  // rejeu de l'IPN s'arrete ici au lieu de crediter une deuxieme fois.
+  const { data: achat, error: achatError } = await supabase
+    .from("token_purchases")
+    .insert({ garage_id: garageId, quantity: credit, amount, stripe_payment_id: transUuid })
+    .select()
+    .single();
+  if (achatError) {
+    if (achatError.code === "23505") {
+      console.log("↩️ Recharge déjà enregistrée — IPN ignorée (idempotence)");
+      return "already_processed";
+    }
+    throw new Error(`Achat de jetons non enregistré : ${achatError.message}`);
+  }
+
+  const { data: solde, error: creditError } = await supabase.rpc("crediter_solde_jetons", {
+    p_garage_id: garageId,
+    p_montant: credit,
+  });
+  if (creditError) {
+    // Rien n'a ete credite : on retire l'achat pour que le rejeu de l'IPN
+    // (reponse 500) recommence proprement.
+    await supabase.from("token_purchases").delete().eq("id", achat.id);
+    throw new Error(`Solde non crédité : ${creditError.message}`);
+  }
+  const newBalance = Number(solde);
+  console.log(`✅ Recharge de ${credit} € créditée — nouveau solde ${newBalance} €`);
+
+  let tokenPdfAttachment: Array<{ filename: string; content: string }> | undefined;
+  try {
+    const { data: factureNumero } = await supabase.rpc("generate_facture_numero");
+    const { data: tokenFacture } = await supabase
+      .from("factures")
+      .insert({
+        numero: factureNumero,
+        garage_id: garageId,
+        token_purchase_id: achat.id,
+        montant_ht: amount,
+        montant_ttc: amount,
+        tva: 0,
+      })
+      .select()
+      .single();
+
+    if (tokenFacture) {
+      const pdfBytes = await generateTokenFacturePDF(tokenFacture, garage, credit, amount);
+      const pdfFileName = `facture_${tokenFacture.numero}.pdf`;
+      tokenPdfAttachment = [{ filename: pdfFileName, content: pdfToBase64(pdfBytes) }];
+
+      const { error: uploadError } = await supabase.storage
+        .from("factures")
+        .upload(pdfFileName, pdfBytes, { contentType: "application/pdf", upsert: true });
+      if (!uploadError) {
+        const { data: { publicUrl } } = supabase.storage.from("factures").getPublicUrl(pdfFileName);
+        await supabase.from("factures").update({ pdf_url: publicUrl }).eq("id", tokenFacture.id);
+      }
+    }
+  } catch (pdfError) {
+    console.error("❌ Facture de recharge non générée:", pdfError);
+  }
+
+  if (garage.email) {
+    await sendEmail("recharge_confirmed", garage.email, {
+      garage_name: garage.raison_sociale,
+      amount: credit,
+      price: amount,
+      new_balance: newBalance,
+    }, tokenPdfAttachment);
+  }
+  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
+    await delay(1000);
+    await sendEmail("admin_balance_recharge", ADMIN_EMAILS[i], {
+      garage_name: garage.raison_sociale,
+      garage_email: garage.email,
+      amount: credit,
+      price: amount,
+      new_balance: newBalance,
+    });
+  }
+
+  return "token_purchase";
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -1380,6 +1575,20 @@ serve(async (req) => {
         amount,
         transUuid,
       );
+    } else if (flowType === "token_purchase") {
+      // --- Parcours RECHARGE DE SOLDE (jetons) d'un garage --------------
+      const garageId = fields["vads_ext_info_garage_id"];
+      if (!garageId) {
+        console.error("❌ vads_ext_info_garage_id manquant dans l'IPN (recharge)");
+        return new Response("missing garage id", { status: 400, headers: corsHeaders });
+      }
+      outcome = await handleTokenPurchase(
+        supabase,
+        garageId,
+        fields["vads_ext_info_pack_id"] || "",
+        amount,
+        transUuid,
+      );
     } else {
       // --- Parcours DÉMARCHE PRO (comportement existant) ----------------
       const demarcheId = fields["vads_ext_info_demarche_id"];
@@ -1406,6 +1615,8 @@ serve(async (req) => {
     // jamais bloquer, pour les garages comme pour les particuliers.
     if (flowType === "guest_order") {
       await enregistrerFraisBancaires(supabase, fields, transUuid, amount, "guest_orders", "payment_intent_id");
+    } else if (flowType === "token_purchase") {
+      await enregistrerFraisBancaires(supabase, fields, transUuid, amount, "token_purchases", "stripe_payment_id");
     } else {
       await enregistrerFraisBancaires(supabase, fields, transUuid, amount, "paiements", "stripe_payment_id");
     }

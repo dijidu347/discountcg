@@ -1,109 +1,15 @@
 import { Helmet } from "react-helmet-async";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, ArrowLeft, CheckCircle, CreditCard, Euro, Percent, LogOut, Settings, Receipt } from "lucide-react";
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
-import { PayPalButton } from "@/components/PayPalButton";
-import { StripeWalletPayment } from "@/components/StripeWalletPayment";
+import { Loader2, ArrowLeft, CreditCard, Euro, Percent, LogOut, Settings, Receipt, Lock } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationBell } from "@/components/NotificationBell";
-
-const StripeCardForm = ({ clientSecret, onSuccess }: { clientSecret: string; onSuccess: () => void }) => {
-  const stripe = useStripe();
-  const elements = useElements();
-  const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      return;
-    }
-
-    setIsProcessing(true);
-
-    try {
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) throw new Error("Élément de carte introuvable");
-
-      const { error, paymentIntent } = await stripe.confirmCardPayment(
-        clientSecret,
-        {
-          payment_method: {
-            card: cardElement,
-          },
-        }
-      );
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (paymentIntent?.status === "succeeded") {
-        toast({
-          title: "✅ Paiement accepté !",
-          description: "Votre solde a été rechargé avec succès.",
-          variant: "success" as any,
-        });
-        onSuccess();
-      }
-    } catch (error: any) {
-      console.error("Payment error:", error);
-      toast({
-        title: "❌ Paiement refusé",
-        description: error.message || "Votre paiement n'a pas pu être traité. Veuillez réessayer.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="p-4 border rounded-lg bg-background">
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: "16px",
-                color: "hsl(var(--foreground))",
-                "::placeholder": {
-                  color: "hsl(var(--muted-foreground))",
-                },
-              },
-            },
-          }}
-        />
-      </div>
-      <Button
-        type="submit"
-        disabled={!stripe || isProcessing}
-        size="lg"
-        className="w-full text-lg h-12"
-      >
-        {isProcessing ? (
-          <>
-            <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Traitement en cours...
-          </>
-        ) : (
-          <>
-            <CheckCircle className="w-5 h-5 mr-2" />
-            Payer par carte
-          </>
-        )}
-      </Button>
-    </form>
-  );
-};
+import { redirectToSogecommerce } from "@/lib/sogecommerce";
 
 interface CreditPack {
   id: string;
@@ -112,23 +18,25 @@ interface CreditPack {
   description: string | null;
 }
 
+// Recharge de solde : paiement par carte sur la page hebergee Societe Generale
+// (Sogecommerce), comme les demarches. Le solde est credite par le webhook
+// Sogecommerce a la confirmation du paiement.
 export default function PaiementRecharge() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, signOut, loading: authLoading } = useAuth();
-  
-  // SECURITY FIX: Only use pack ID from URL, price comes from database
+
+  // Seul l'identifiant du pack vient de l'adresse : le prix est lu en base.
   const packId = searchParams.get("packId");
-  
+  const retourPaiement = searchParams.get("paiement");
+
   const [pack, setPack] = useState<CreditPack | null>(null);
   const [garage, setGarage] = useState<any>(null);
-  const [clientSecret, setClientSecret] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
-  const [stripePromise, setStripePromise] = useState<any>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
-  // Derived values from validated pack
   const creditAmount = pack?.quantity || 0;
   const price = pack?.price || 0;
 
@@ -152,7 +60,6 @@ export default function PaiementRecharge() {
     if (!user || !packId) return;
 
     try {
-      // SECURITY: Load pack details from database to validate price
       const { data: packData, error: packError } = await supabase
         .from("token_pricing")
         .select("*")
@@ -169,19 +76,16 @@ export default function PaiementRecharge() {
         navigate("/acheter-jetons");
         return;
       }
-
       setPack(packData);
 
-      // Check admin
       const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "admin")
         .maybeSingle();
       setIsAdmin(!!roleData);
 
-      // Load garage
       const { data: garageData, error: garageError } = await supabase
         .from("garages")
         .select("*")
@@ -197,35 +101,7 @@ export default function PaiementRecharge() {
         navigate("/dashboard");
         return;
       }
-
       setGarage(garageData);
-
-      // Get Stripe key
-      const { data: keyData, error: keyError } = await supabase.functions.invoke("get-stripe-key");
-
-      if (keyError || !keyData?.publishableKey) {
-        throw new Error("Impossible de charger la clé Stripe");
-      }
-
-      const stripe = await loadStripe(keyData.publishableKey);
-      setStripePromise(stripe);
-
-      // SECURITY: Create payment intent with pack ID only - server validates price
-      const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
-        "create-token-payment-intent",
-        {
-          body: {
-            packId: packId,
-            garage_id: garageData.id,
-          },
-        }
-      );
-
-      if (paymentError || !paymentData?.clientSecret) {
-        throw new Error(paymentData?.error || "Impossible de créer le paiement");
-      }
-
-      setClientSecret(paymentData.clientSecret);
       setIsLoading(false);
     } catch (error: any) {
       console.error("Payment initialization error:", error);
@@ -238,35 +114,24 @@ export default function PaiementRecharge() {
     }
   };
 
-  const handlePaymentSuccess = async () => {
-    // Envoyer l'email de confirmation
+  const handlePay = async () => {
+    if (!packId) return;
+    setIsRedirecting(true);
     try {
-      const newBalance = (garage?.token_balance || 0) + creditAmount;
-      
-      await supabase.functions.invoke("send-email", {
-        body: {
-          type: "recharge_confirmed",
-          to: garage?.email,
-          data: {
-            garage_name: garage?.raison_sociale,
-            amount: creditAmount,
-            price: price,
-            new_balance: newBalance,
-          },
-        },
+      const { data, error } = await supabase.functions.invoke("create-sogecommerce-token-payment", {
+        body: { packId, origin: window.location.origin },
       });
-    } catch (error) {
-      console.error("Error sending recharge email:", error);
+      if (error || data?.error) throw new Error(data?.error || error?.message);
+      redirectToSogecommerce(data); // quitte le site vers la page Societe Generale
+    } catch (e: any) {
+      console.error("Payment error:", e);
+      setIsRedirecting(false);
+      toast({
+        title: "Erreur",
+        description: e.message || "Impossible de démarrer le paiement. Veuillez réessayer.",
+        variant: "destructive",
+      });
     }
-
-    toast({
-      title: "✅ Recharge effectuée !",
-      description: `${creditAmount}€ ont été ajoutés à votre solde.`,
-      variant: "success" as any,
-    });
-    
-    const newBalance = (garage?.token_balance || 0) + creditAmount;
-    navigate(`/paiement-recharge-succes?amount=${creditAmount}&balance=${newBalance}`);
   };
 
   const handleLogout = async () => {
@@ -274,8 +139,7 @@ export default function PaiementRecharge() {
     navigate("/");
   };
 
-  const discount = Math.round(((creditAmount - price) / creditAmount) * 100);
-  const canUsePayPal4x = price >= 30;
+  const discount = creditAmount > 0 ? Math.round(((creditAmount - price) / creditAmount) * 100) : 0;
 
   if (authLoading || isLoading) {
     return (
@@ -285,7 +149,7 @@ export default function PaiementRecharge() {
     );
   }
 
-  if (!garage || !clientSecret || !stripePromise) return null;
+  if (!garage || !pack) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
@@ -345,126 +209,46 @@ export default function PaiementRecharge() {
         </Button>
 
         <div className="grid lg:grid-cols-[1fr,400px] gap-6 max-w-7xl mx-auto">
-          {/* Colonne gauche : Moyens de paiement */}
           <div>
             <Card>
               <CardHeader>
-                <CardTitle>Choisissez votre moyen de paiement</CardTitle>
-                <CardDescription>Tous les paiements sont sécurisés et cryptés</CardDescription>
+                <CardTitle>Paiement par carte bancaire</CardTitle>
+                <CardDescription>
+                  Vous allez être redirigé vers la page de paiement sécurisée de la Société Générale.
+                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* 1. Formulaire de carte Stripe */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-base">Carte bancaire</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Visa, Mastercard, American Express
-                  </p>
-                  <Elements stripe={stripePromise}>
-                    <StripeCardForm clientSecret={clientSecret} onSuccess={handlePaymentSuccess} />
-                  </Elements>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
-                  </div>
-                </div>
-
-                {/* 2. Apple Pay & Google Pay */}
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-base">Paiement rapide</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Apple Pay, Google Pay et autres portefeuilles électroniques
-                  </p>
-                  <Elements stripe={stripePromise}>
-                    <StripeWalletPayment 
-                      amount={price} 
-                      clientSecret={clientSecret}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        toast({
-                          title: "❌ Paiement refusé",
-                          description: error,
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                  </Elements>
-                </div>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Ou</span>
-                  </div>
-                </div>
-
-                {/* 3. PayPal */}
-                {canUsePayPal4x ? (
-                  <div className="bg-gradient-to-br from-primary/10 to-primary/5 border-2 border-primary rounded-lg p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground mb-1">Paiement recommandé</p>
-                        <h3 className="text-xl font-bold">Payez en 4x sans frais</h3>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{formatPrice(price / 4)} €</p>
-                        <p className="text-sm text-muted-foreground">par mois</p>
-                      </div>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground">
-                      soit 4 mensualités de <span className="font-semibold text-foreground">{formatPrice(price / 4)} €</span>
-                    </p>
-                    
-                    <PayPalButton
-                      amount={price}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        console.error("PayPal error:", error);
-                        toast({
-                          title: "Erreur PayPal",
-                          description: "Impossible de charger PayPal",
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div className="border rounded-lg p-6 space-y-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">PayPal</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Paiement sécurisé via PayPal
-                      </p>
-                    </div>
-                    
-                    <PayPalButton
-                      amount={price}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(error) => {
-                        console.error("PayPal error:", error);
-                        toast({
-                          title: "Erreur PayPal",
-                          description: "Impossible de charger PayPal",
-                          variant: "destructive",
-                        });
-                      }}
-                    />
-                    
-                    <p className="text-xs text-muted-foreground">
-                      Le paiement en 4x est disponible à partir de 30€
-                    </p>
+                {retourPaiement && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm">
+                    {retourPaiement === "annule"
+                      ? "Le paiement a été annulé. Aucun montant n'a été débité."
+                      : "Le paiement n'a pas abouti. Aucun montant n'a été débité : vous pouvez réessayer."}
                   </div>
                 )}
-
-                <p className="text-xs text-muted-foreground text-center pt-2">
-                  🔒 Tous les paiements sont sécurisés et cryptés
+                <p className="text-sm text-muted-foreground">
+                  Visa, Mastercard, CB. Votre solde est crédité dès que la banque confirme le paiement.
+                </p>
+                <Button
+                  onClick={handlePay}
+                  disabled={isRedirecting}
+                  size="lg"
+                  className="w-full text-lg h-12"
+                >
+                  {isRedirecting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                      Redirection vers la page de paiement…
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-5 h-5 mr-2" />
+                      Payer {formatPrice(price)} € par carte
+                    </>
+                  )}
+                </Button>
+                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                  <Lock className="w-3 h-3" />
+                  Paiement sécurisé par la Société Générale
                 </p>
               </CardContent>
             </Card>

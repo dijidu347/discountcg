@@ -6,14 +6,30 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatPrice } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function PaiementRechargeSucces() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [countdown, setCountdown] = useState(5);
-  
+  const [countdown, setCountdown] = useState(8);
+
   const amount = parseInt(searchParams.get("amount") || "0");
-  const newBalance = parseInt(searchParams.get("balance") || "0");
+  const soldeDansAdresse = searchParams.get("balance");
+  const [newBalance, setNewBalance] = useState<number | null>(soldeDansAdresse ? parseInt(soldeDansAdresse) : null);
+
+  // Retour de la page de paiement Sogecommerce : le solde est credite par le
+  // webhook, on le relit en base apres quelques secondes.
+  useEffect(() => {
+    if (soldeDansAdresse) return;
+    const lire = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase.from("garages").select("token_balance").eq("user_id", user.id).maybeSingle();
+      if (data) setNewBalance(Number(data.token_balance));
+    };
+    const minuteur = setTimeout(lire, 2500);
+    return () => clearTimeout(minuteur);
+  }, [soldeDansAdresse]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -80,7 +96,7 @@ export default function PaiementRechargeSucces() {
                   Nouveau solde
                 </span>
                 <span className="font-bold text-xl text-primary">
-                  {formatPrice(newBalance)}€
+                  {newBalance === null ? "…" : `${formatPrice(newBalance)}€`}
                 </span>
               </div>
             </div>
