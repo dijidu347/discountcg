@@ -657,7 +657,7 @@ export default function AdminRevenus() {
         </div>
 
         {/* KPI Cards */}
-        <div className={`grid grid-cols-1 sm:grid-cols-2 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-5" : "lg:grid-cols-4"} gap-4 mb-8`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-3 ${COFFRE_FORT_OUVERT ? "lg:grid-cols-4" : ""} gap-4 mb-8`}>
           <Card className="border-l-4 border-l-emerald-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -674,33 +674,21 @@ export default function AdminRevenus() {
             </CardContent>
           </Card>
 
-          <Card className="border-l-4 border-l-blue-500">
+          <Card className="border-l-4 border-l-rose-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground font-medium">Frais de service (pros)</p>
-                  <p className="text-3xl font-bold text-blue-600 mt-1">{totalServiceFees.toFixed(2)} €</p>
+                  <p className="text-sm text-muted-foreground font-medium">Frais bancaires totaux</p>
+                  <p className="text-3xl font-bold text-rose-600 mt-1">−{totalFraisBancaires.toFixed(2)} €</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Pros −{fraisPros.toFixed(2)} € · Particuliers −{fraisParticuliers.toFixed(2)} €
+                  </p>
                 </div>
-                <div className="h-12 w-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                  <CreditCard className="h-6 w-6 text-blue-600" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground mt-3">{filteredPaiements.length} paiements</p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground font-medium">Ventes jetons</p>
-                  <p className="text-3xl font-bold text-purple-600 mt-1">{totalTokenRevenue.toFixed(2)} €</p>
-                </div>
-                <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                  <Coins className="h-6 w-6 text-purple-600" />
+                <div className="h-12 w-12 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                  <CreditCard className="h-6 w-6 text-rose-600" />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground mt-3">{filteredTokens.length} achats</p>
+              <p className="text-xs text-muted-foreground mt-3">Comptés depuis le {FRAIS_BANCAIRES_DEPUIS}</p>
             </CardContent>
           </Card>
 
@@ -709,14 +697,17 @@ export default function AdminRevenus() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground font-medium">Nombre de démarches</p>
-                  <p className="text-3xl font-bold text-amber-600 mt-1">{filteredDemarches.length}</p>
+                  <p className="text-3xl font-bold text-amber-600 mt-1">{filteredDemarches.length + filteredGuestOrders.length}</p>
                 </div>
                 <div className="h-12 w-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                   <FileText className="h-6 w-6 text-amber-600" />
                 </div>
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-3">
-                <span>{cbPaidDemarches} par €</span>
+              <p className="text-xs text-muted-foreground mt-3">
+                {filteredDemarches.length} pros · {filteredGuestOrders.length} particuliers
+              </p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                <span>Pros : {cbPaidDemarches} par €</span>
                 <span>·</span>
                 <span>{tokenPaidDemarches.length} par jetons</span>
                 <span>·</span>
@@ -752,10 +743,16 @@ export default function AdminRevenus() {
         <Card className="mb-4 border-l-4 border-l-blue-500">
           <CardContent className="pt-6">
             <p className="text-sm text-muted-foreground font-medium mb-3">Pros</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <div>
-                <p className="text-xs text-muted-foreground">Revenu (frais de service et jetons)</p>
-                <p className="text-2xl font-bold text-blue-600">{revenuPros.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground">Frais de service</p>
+                <p className="text-2xl font-bold text-blue-600">{totalServiceFees.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground">{filteredPaiements.length} paiements</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Ventes jetons</p>
+                <p className="text-2xl font-bold text-purple-600">{totalTokenRevenue.toFixed(2)} €</p>
+                <p className="text-xs text-muted-foreground">{filteredTokens.length} achats</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Paiements encaissés</p>
@@ -771,7 +768,7 @@ export default function AdminRevenus() {
               </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              Inclus dans le revenu total ci-dessus. La taxe de carte grise reversée à l'État n'en fait pas partie. Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}.
+              Inclus dans le revenu total ci-dessus. La taxe de carte grise reversée à l'État n'en fait pas partie.
             </p>
           </CardContent>
         </Card>
