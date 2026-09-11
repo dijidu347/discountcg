@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,8 @@ interface DocumentsNecessairesProps {
    *  mandat 13757 et son choix depot / remplissage en ligne). Elles restent
    *  comptees dans le total des pieces requises. */
   masquerIds?: string[];
+  /** Contenu affiche en tete de la carte, avant la liste des pieces. */
+  enTete?: ReactNode;
 }
 
 // Configuration des documents par type de démarche
@@ -504,6 +506,7 @@ export function DocumentsNecessaires({
   onDocumentUpload,
   uploadedDocuments,
   masquerIds = [],
+  enTete,
 }: DocumentsNecessairesProps) {
   const { documents, blockingMessage } = useMemo(
     () => getDocumentsConfig(demarcheType, questionnaireAnswers),
@@ -662,6 +665,10 @@ export function DocumentsNecessaires({
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Le mandat 13757 ouvre la liste : c'est la premiere piece a traiter,
+            et son mode (depot ou remplissage en ligne) conditionne la suite. */}
+        {enTete}
 
         {documents.length === 0 ? (
           <p className="text-muted-foreground text-center py-4">

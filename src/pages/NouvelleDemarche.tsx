@@ -1572,22 +1572,20 @@ export default function NouvelleDemarche() {
 
                       {/* ÉTAPE 3 - Documents (visible seulement si questionnaire complété ET pas de blocage) */}
                       {!isQuestionnaireBlocked && questionnaireCompleted && (
-                        <div className="space-y-4">
-                          <DocumentsNecessaires
-                            demarcheType={formData.type}
-                            demarcheId={demarcheId}
-                            questionnaireAnswers={questionnaireAnswerTexts}
-                            onDocumentUpload={(docType) => {
-                              setUploadedDocuments((prev) => new Set(prev).add(docType));
-                              loadExistingDocuments();
-                            }}
-                            uploadedDocuments={uploadedDocuments}
-                            // La ligne 13757 est remplacee par le bloc de choix juste
-                            // dessous ; elle reste comptee parmi les pieces requises.
-                            masquerIds={blocMandat && mandatDocumentType ? [mandatDocumentType] : []}
-                          />
-                          {blocMandat}
-                        </div>
+                        <DocumentsNecessaires
+                          demarcheType={formData.type}
+                          demarcheId={demarcheId}
+                          questionnaireAnswers={questionnaireAnswerTexts}
+                          onDocumentUpload={(docType) => {
+                            setUploadedDocuments((prev) => new Set(prev).add(docType));
+                            loadExistingDocuments();
+                          }}
+                          uploadedDocuments={uploadedDocuments}
+                          // La ligne 13757 cede la place au bloc de choix, affiche en
+                          // tete de la carte ; elle reste comptee parmi les pieces requises.
+                          masquerIds={blocMandat && mandatDocumentType ? [mandatDocumentType] : []}
+                          enTete={blocMandat}
+                        />
                       )}
                     </div>
                   )}
@@ -1606,6 +1604,9 @@ export default function NouvelleDemarche() {
                             )}
                           </div>
                           <div className="space-y-3">
+                            {/* Mandat 13757 en premier : c'est la premiere piece a
+                                traiter, et son mode conditionne la suite. */}
+                            {blocMandat}
                             {documentsRequis.map((doc, idx) => {
                               // Le mandat a sa propre carte, qui le genere pre-rempli.
                               // On saute sa ligne ici pour ne pas proposer en meme temps
@@ -1747,8 +1748,6 @@ export default function NouvelleDemarche() {
                             }
                           />
 
-                          {/* Mandat 13757 : depot de son propre document, ou remplissage en ligne. */}
-                          {blocMandat}
 
                           <p className="text-xs text-muted-foreground pt-1">
                             <span className="text-destructive font-bold">*</span> = Document obligatoire
