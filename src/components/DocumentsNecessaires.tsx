@@ -25,6 +25,10 @@ interface DocumentsNecessairesProps {
   questionnaireAnswers: Record<string, string>;
   onDocumentUpload: (docType: string) => void;
   uploadedDocuments: Set<string>;
+  /** Pieces a ne pas afficher ici parce qu'un autre bloc s'en charge (le
+   *  mandat 13757 et son choix depot / remplissage en ligne). Elles restent
+   *  comptees dans le total des pieces requises. */
+  masquerIds?: string[];
 }
 
 // Configuration des documents par type de démarche
@@ -498,7 +502,8 @@ export function DocumentsNecessaires({
   demarcheId,
   questionnaireAnswers,
   onDocumentUpload,
-  uploadedDocuments
+  uploadedDocuments,
+  masquerIds = [],
 }: DocumentsNecessairesProps) {
   const { documents, blockingMessage } = useMemo(
     () => getDocumentsConfig(demarcheType, questionnaireAnswers),
@@ -665,6 +670,7 @@ export function DocumentsNecessaires({
         ) : (
           <div className="space-y-3">
             {documents.map((doc) => {
+              if (masquerIds.includes(doc.id)) return null;
               // Warning léger si document recommandé non uploadé
               const showRecommendedWarning = doc.recommended && !uploadedDocuments.has(doc.id);
               // Vérifier si le document nécessite recto/verso
