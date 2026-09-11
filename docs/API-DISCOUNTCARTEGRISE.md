@@ -246,7 +246,7 @@ x-api-key: VOTRE_CLE_API
     "numero": "F-2026-000789",
     "montant_ht": 29.00,
     "montant_ttc": 279.00,
-    "pdf_url": "https://...",
+    "pdf_url": "https://... (lien signé, valable 1 heure)",
     "created_at": "..."
   }
 }
@@ -606,5 +606,5 @@ curl -X POST $API_URL \
 2. **Le `garage_id`** est l'UUID du garage dans Supabase. Le garage doit d'abord avoir un compte sur discountcartegrise.fr
 3. **Les documents sont uploadés sur discountcartegrise.fr** — l'API crée la démarche, le garage upload ses docs via le site
 4. **Le prix carte grise** pour les CG dépend du département et de la puissance fiscale. Si non fourni, il sera 0 et devra être complété sur le site
-5. **Les factures sont générées automatiquement** après paiement (PDF disponible via `get_demarche`)
+5. **Les factures sont générées automatiquement** après paiement (PDF disponible via `get_demarche`) — le lien est temporaire (1 heure) : redemandez-le via `get_demarche` plutôt que de le conserver
 6. **Les emails sont envoyés automatiquement** à chaque étape (confirmation, paiement, validation)

@@ -272,11 +272,24 @@ async function handleGetDemarche(body: any) {
     .order("created_at");
 
   // Get facture
-  const { data: facture } = await supabase
+  const { data: factureBrute } = await supabase
     .from("factures")
     .select("id, numero, montant_ht, montant_ttc, pdf_url, created_at")
     .eq("demarche_id", demarche.id)
     .single();
+
+  // Le stockage des factures est prive : l'adresse publique enregistree ne
+  // sert plus. On renvoie a la place un lien signe valable une heure, sous le
+  // meme nom de champ pour ne rien changer chez les integrateurs. Un lien
+  // expire se redemande par un nouvel appel a get_demarche.
+  let facture = factureBrute ?? null;
+  if (facture?.pdf_url) {
+    const chemin = decodeURIComponent(
+      (facture.pdf_url.split("/factures/")[1] ?? facture.pdf_url).split("?")[0],
+    );
+    const { data: signe } = await supabase.storage.from("factures").createSignedUrl(chemin, 3600);
+    facture = { ...facture, pdf_url: signe?.signedUrl ?? null };
+  }
 
   return jsonResponse({
     success: true,
@@ -303,7 +316,7 @@ async function handleGetDemarche(body: any) {
       updated_at: demarche.updated_at,
     },
     documents: documents || [],
-    facture: facture || null,
+    facture,
   });
 }
 
