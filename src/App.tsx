@@ -50,6 +50,7 @@ const ManagePricingConfig = React.lazy(() => import("./pages/admin/ManagePricing
 const TestEmail = React.lazy(() => import("./pages/admin/TestEmail"));
 const AdminRevenus = React.lazy(() => import("./pages/admin/AdminRevenus"));
 const AdminCompressionFichiers = React.lazy(() => import("./pages/admin/AdminCompressionFichiers"));
+const AdminBilanStripe = React.lazy(() => import("./pages/admin/AdminBilanStripe"));
 const ManageGuestActions = React.lazy(() => import("./pages/admin/ManageGuestActions"));
 const AcheterJetons = React.lazy(() => import("./pages/AcheterJetons"));
 const PaiementRecharge = React.lazy(() => import("./pages/PaiementRecharge"));
@@ -133,6 +134,7 @@ const App = () => (
           <Route path="/admin/test-email" element={<AdminGuard><TestEmail /></AdminGuard>} />
           <Route path="/admin/revenus" element={<AdminGuard><AdminRevenus /></AdminGuard>} />
           <Route path="/admin/compression-fichiers" element={<AdminGuard><AdminCompressionFichiers /></AdminGuard>} />
+          <Route path="/admin/bilan-stripe" element={<AdminGuard><AdminBilanStripe /></AdminGuard>} />
           <Route path="/admin/guest-orders" element={<AdminGuard><GuestOrders /></AdminGuard>} />
            <Route path="/admin/guest-order/:id" element={<AdminGuard><GuestOrderDetail /></AdminGuard>} />
            <Route path="/admin/guest-actions" element={<AdminGuard><ManageGuestActions /></AdminGuard>} />

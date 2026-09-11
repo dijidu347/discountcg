@@ -21,6 +21,8 @@ project_id = "oiotlgkfwuwshpwraneb"
     verify_jwt = true
   [functions.create-sogecommerce-token-payment]
     verify_jwt = true
+  [functions.bilan-stripe]
+    verify_jwt = true
   [functions.download-facture]
     verify_jwt = false
   [functions.download-file]
