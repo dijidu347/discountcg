@@ -46,6 +46,8 @@ interface RawPaiement {
     paid_with_tokens: boolean | null;
     is_free_token: boolean | null;
     frais_dossier: number | null;
+    montant_ttc: number | null;
+    prix_carte_grise: number | null;
     type: string;
     garage_id: string;
   } | null;
@@ -187,7 +189,7 @@ export default function AdminRevenus() {
     const [pData, tData, dData, gRes, cRes, goData] = await Promise.all([
       fetchAll<RawPaiement>(() => supabase
         .from("paiements")
-        .select("id, demarche_id, montant, status, created_at, frais_bancaires, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, type, garage_id)")
+        .select("id, demarche_id, montant, status, created_at, frais_bancaires, demarches!inner(paid_with_tokens, is_free_token, frais_dossier, montant_ttc, prix_carte_grise, type, garage_id)")
         .eq("status", "valide")
         .order("created_at", { ascending: false })),
       fetchAll<RawTokenPurchase>(() => supabase
@@ -270,7 +272,12 @@ export default function AdminRevenus() {
   const getRevenueAmount = (p: RawPaiement): number => {
     if (p.demarches?.paid_with_tokens || p.demarches?.is_free_token) return 0;
     if (["CG", "CG_DA", "CG_IMPORT"].includes(p.demarches?.type || "")) {
-      return p.premierDeLaDemarche ? Number(p.demarches?.frais_dossier || 20) : 0;
+      if (!p.premierDeLaDemarche) return 0;
+      // Frais de dossier et options (non-gage, express...) : tout ce qui n'est
+      // pas la taxe reversee a l'Etat, comme pour les particuliers.
+      const ttc = Number(p.demarches?.montant_ttc || 0);
+      if (ttc > 0) return Math.max(0, ttc - Number(p.demarches?.prix_carte_grise || 0));
+      return Number(p.demarches?.frais_dossier || 20);
     }
     return Number(p.montant);
   };
@@ -764,7 +771,7 @@ export default function AdminRevenus() {
               </tbody>
             </table>
             <p className="text-xs text-muted-foreground mt-3">
-              Revenu = frais de service, jetons, frais et options des particuliers. La taxe de carte grise reversée à l'État n'est jamais comptée. Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}.
+              Revenu = frais de service et options (pros et particuliers) et ventes de jetons. La taxe de carte grise reversée à l'État n'est jamais comptée. Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}.
             </p>
           </CardContent>
         </Card>
