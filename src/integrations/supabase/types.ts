@@ -413,6 +413,36 @@ export type Database = {
           },
         ]
       }
+      compression_fichiers: {
+        Row: {
+          bucket: string
+          chemin: string
+          detail: string | null
+          statut: string
+          taille_apres: number | null
+          taille_avant: number
+          traite_le: string
+        }
+        Insert: {
+          bucket: string
+          chemin: string
+          detail?: string | null
+          statut: string
+          taille_apres?: number | null
+          taille_avant: number
+          traite_le?: string
+        }
+        Update: {
+          bucket?: string
+          chemin?: string
+          detail?: string | null
+          statut?: string
+          taille_apres?: number | null
+          taille_avant?: number
+          traite_le?: string
+        }
+        Relationships: []
+      }
       demarche_questionnaire_responses: {
         Row: {
           answer_text: string
@@ -2157,6 +2187,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bilan_compression: {
+        Args: never
+        Returns: {
+          compresses: number
+          erreurs: number
+          gardes: number
+          octets_economises: number
+          octets_restants: number
+          restants: number
+        }[]
+      }
+      crediter_solde_jetons: {
+        Args: { p_garage_id: string; p_montant: number }
+        Returns: number
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2165,6 +2210,26 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      enregistrer_compression: {
+        Args: {
+          p_bucket: string
+          p_chemin: string
+          p_detail?: string
+          p_statut: string
+          p_taille_apres: number
+          p_taille_avant: number
+        }
+        Returns: undefined
+      }
+      fichiers_a_compresser: {
+        Args: { p_limite?: number }
+        Returns: {
+          bucket: string
+          chemin: string
+          taille: number
+          type_mime: string
+        }[]
       }
       generate_demarche_numero: { Args: never; Returns: string }
       generate_facture_numero: { Args: never; Returns: string }
