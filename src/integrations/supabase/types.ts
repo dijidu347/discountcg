@@ -2216,6 +2216,14 @@ export type Database = {
           restants: number
         }[]
       }
+      consommer_jeton_gratuit: {
+        Args: { p_garage_id: string }
+        Returns: boolean
+      }
+      crediter_solde_admin: {
+        Args: { p_garage_id: string; p_montant: number }
+        Returns: number
+      }
       crediter_solde_jetons: {
         Args: { p_garage_id: string; p_montant: number }
         Returns: number
@@ -2284,6 +2292,15 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      payer_demarche_avec_solde: {
+        Args: {
+          p_demarche_id: string
+          p_documents_complets?: boolean
+          p_mode?: string
+          p_statut?: string
+        }
+        Returns: Json
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
