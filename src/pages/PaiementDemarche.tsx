@@ -12,6 +12,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
+
+// Les mouvements de solde passent par le serveur : le site ne peut plus
+// modifier lui-meme token_balance (voir migration 20260915100000).
+type AppelServeur = (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+const appelServeur = supabase.rpc.bind(supabase) as unknown as AppelServeur;
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { PaymentDetailsSummary, type PaymentCalculationResult } from "@/components/payment/PaymentDetailsSummary";
 import { carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
@@ -395,30 +400,17 @@ const PaiementDemarche = () => {
     setIsProcessingBalance(true);
 
     try {
-      const newBalance = Math.round((garage.token_balance - amountToPay) * 100) / 100;
-
-      // Déduire du solde
-      const { error: balanceError } = await supabase
-        .from("garages")
-        .update({ token_balance: newBalance })
-        .eq("id", garage.id);
-
-      if (balanceError) throw balanceError;
+      // Le serveur recalcule le montant, verifie le solde et le deduit : le
+      // navigateur ne touche plus au solde ni au statut de la demarche.
+      const { data: paiement, error: balanceError } = await appelServeur("payer_demarche_avec_solde", {
+        p_demarche_id: demarcheId,
+        p_mode: currentPaymentMode,
+        p_statut: currentPaymentMode === 'split' ? 'en_attente_paiement_client' : 'en_attente',
+      });
+      if (balanceError) throw new Error(balanceError.message);
+      const newBalance = Number((paiement as { nouveau_solde: number })?.nouveau_solde ?? 0);
 
       if (currentPaymentMode === 'split') {
-        // Split mode: pro paid their part via balance, now send client link
-        const { error: demarcheError } = await supabase
-          .from("demarches")
-          .update({
-            paye: false,
-            paid_with_tokens: true,
-            status: 'en_attente_paiement_client',
-            is_draft: false
-          })
-          .eq("id", demarcheId);
-
-        if (demarcheError) throw demarcheError;
-
         // Auto-create and send client payment link
         const { data: linkData, error: linkError } = await supabase.functions.invoke("create-client-payment-link", {
           body: {
@@ -451,19 +443,6 @@ const PaiementDemarche = () => {
         setShowBalanceConfirm(false);
         return;
       }
-
-      // Pro pays all: mark as fully paid
-      const { error: demarcheError } = await supabase
-        .from("demarches")
-        .update({
-          paye: true,
-          paid_with_tokens: true,
-          status: 'en_attente',
-          is_draft: false
-        })
-        .eq("id", demarcheId);
-
-      if (demarcheError) throw demarcheError;
 
       // Envoyer les emails
       try {

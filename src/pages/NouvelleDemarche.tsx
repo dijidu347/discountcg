@@ -3,6 +3,11 @@ import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+
+// Les mouvements de solde passent par le serveur : le site ne peut plus
+// modifier lui-meme token_balance (voir migration 20260915100000).
+type AppelServeur = (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+const appelServeur = supabase.rpc.bind(supabase) as unknown as AppelServeur;
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -747,25 +752,14 @@ export default function NouvelleDemarche() {
     setPayingWithTokens(true);
 
     try {
-      // Déduire les jetons du solde
-      const newBalance = Math.round((tokenBalance - tokenCost) * 100) / 100;
-      const { error: updateError } = await supabase
-        .from('garages')
-        .update({ token_balance: newBalance })
-        .eq('id', garage.id);
-
-      if (updateError) throw updateError;
-
-      // Marquer la démarche comme payée avec jetons
-      await supabase
-        .from('demarches')
-        .update({
-          paye: true,
-          paid_with_tokens: true,
-          is_draft: false,
-          documents_complets: true,
-        })
-        .eq('id', demarcheId);
+      // Le serveur recalcule le montant, verifie le solde, le deduit et marque
+      // la demarche payee : le navigateur ne touche plus au solde.
+      const { data: paiement, error: updateError } = await appelServeur("payer_demarche_avec_solde", {
+        p_demarche_id: demarcheId,
+        p_documents_complets: true,
+      });
+      if (updateError) throw new Error(updateError.message);
+      const newBalance = Number((paiement as { nouveau_solde: number })?.nouveau_solde ?? 0);
 
       // Mettre à jour le solde local
       setTokenBalance(newBalance);
@@ -1077,11 +1071,8 @@ export default function NouvelleDemarche() {
     if (isFreeTokenEligible && garage) {
       // Marquer le jeton comme consommé seulement si ce n'est pas un compte avec jetons illimités
       if (!garage.unlimited_free_tokens) {
-        await supabase
-          .from('garages')
-          .update({ free_token_available: false })
-          .eq('id', garage.id);
-        
+        const { error: jetonError } = await appelServeur("consommer_jeton_gratuit", { p_garage_id: garage.id });
+        if (jetonError) console.error("Jeton gratuit non consommé:", jetonError.message);
         setFreeTokenAvailable(false);
       }
 

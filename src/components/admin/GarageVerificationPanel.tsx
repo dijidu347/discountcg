@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+// Les mouvements de solde passent par le serveur : le site ne peut plus
+// modifier lui-meme token_balance (voir migration 20260915100000).
+type AppelServeur = (fn: string, args?: Record<string, unknown>) => PromiseLike<{ data: unknown; error: { message: string } | null }>;
+const appelServeur = supabase.rpc.bind(supabase) as unknown as AppelServeur;
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -489,23 +494,14 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
       // 1 jeton = 1 € ; token_balance est stocké EN EUROS.
       const creditEuros = nbTokens;
 
-      // Relire le solde actuel pour éviter d'écraser une valeur périmée
-      const { data: current, error: readError } = await supabase
-        .from("garages")
-        .select("token_balance")
-        .eq("id", garage.id)
-        .single();
-
-      if (readError) throw readError;
-
-      const newBalance = (current?.token_balance || 0) + creditEuros;
-
-      const { error: updateError } = await supabase
-        .from("garages")
-        .update({ token_balance: newBalance })
-        .eq("id", garage.id);
-
-      if (updateError) throw updateError;
+      // Le serveur ajoute le credit et renvoie le nouveau solde : le
+      // navigateur ne modifie plus le solde directement.
+      const { data: solde, error: updateError } = await appelServeur("crediter_solde_admin", {
+        p_garage_id: garage.id,
+        p_montant: creditEuros,
+      });
+      if (updateError) throw new Error(updateError.message);
+      const newBalance = Number(solde ?? 0);
 
       toast({
         title: "Jetons offerts",
