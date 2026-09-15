@@ -101,5 +101,18 @@ grant execute on function public.crediter_solde_admin(uuid, numeric) to authenti
 grant execute on function public.consommer_jeton_gratuit(uuid) to authenticated;
 
 -- Colonnes que plus aucun compte connecte ne peut ecrire directement.
-revoke update (token_balance, free_token_available, unlimited_free_tokens)
-  on public.garages from authenticated, anon;
+-- Le droit d'ecriture etait donne sur toute la table : retirer trois colonnes
+-- ne suffit pas, il faut retirer le droit global puis le redonner sur les
+-- autres colonnes. Les fonctions ci-dessus (SECURITY DEFINER) et la cle de
+-- service ne sont pas concernees.
+do $$
+declare colonnes text;
+begin
+  select string_agg(quote_ident(column_name), ', ' order by ordinal_position) into colonnes
+    from information_schema.columns
+   where table_schema = 'public' and table_name = 'garages'
+     and column_name not in ('token_balance', 'free_token_available', 'unlimited_free_tokens');
+  execute 'revoke update on public.garages from authenticated';
+  execute 'revoke update on public.garages from anon';
+  execute format('grant update (%s) on public.garages to authenticated', colonnes);
+end $$;
