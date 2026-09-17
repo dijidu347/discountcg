@@ -350,6 +350,22 @@ export default function NouvelleDemarche() {
     console.log("actionDetails:", actionDetails?.code);
   }, [formData.type, questionnaireCompleted, demarcheId, isQuestionnaireBlocked, garage, actionDetails]);
 
+  // Demarche sans question prealable : aucun questionnaire n'est affiche, donc
+  // personne ne vient dire qu'il est complete. Sans cela, les pieces
+  // justificatives ne s'affichaient jamais et l'envoi restait bloque
+  // (annulation CPI WW, changement d'adresse, immatriculation definitive,
+  // cyclo ancien, modification de CG).
+  useEffect(() => {
+    if (nbQuestions === null) return;
+    if (nbQuestions === 0) {
+      setQuestionnaireCompleted(true);
+      setIsQuestionnaireBlocked(false);
+      setConditionalDocuments([]);
+    } else {
+      setQuestionnaireCompleted(false);
+    }
+  }, [nbQuestions]);
+
   // Snapshot du détail carte grise (figé au calcul). Renvoyé UNIQUEMENT quand le
   // détail est en main ET qu'il y a une taxe carte grise (jamais DA/DC). Sinon
   // objet vide → ces colonnes ne sont pas incluses dans l'écriture, pour ne pas
