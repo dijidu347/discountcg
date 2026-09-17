@@ -41,7 +41,14 @@ const codeMap: Record<string, string> = {
   ANNULER_DC_DA: "ANNULER_DC_DA",
 };
 
+// Demarches reservees aux professionnels de l'automobile : le certificat W
+// garage n'est delivre qu'aux reparateurs, vendeurs, transporteurs,
+// carrossiers, importateurs et constructeurs. Un particulier ne peut pas en
+// obtenir : on l'envoie vers l'inscription pro plutot que vers la commande.
+const RESERVE_AUX_PROS = ["W_GARAGE_PRO", "W_GARAGE"];
+
 const getDemarcheLink = (code: string): string => {
+  if (RESERVE_AUX_PROS.includes(code)) return "/register";
   if (code === "CG") return "/simulateur";
   const mapped = codeMap[code] || code;
   const demarche = getDemarcheByCode(mapped);

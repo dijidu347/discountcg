@@ -57,11 +57,22 @@ const DemarchePage = () => {
     try {
       const { data: typeData } = await supabase
         .from("guest_demarche_types")
-        .select("prix_base")
+        .select("prix_base, actif")
         .eq("code", demarche.code)
-        .single();
+        .maybeSingle();
 
-      const prixHT = typeData?.prix_base || 30;
+      // Demarche retiree du catalogue particulier (ex : W garage, reserve aux
+      // professionnels) : on n'ouvre pas de commande, on oriente vers l'espace pro.
+      if (!typeData || typeData.actif === false) {
+        toast({
+          title: "Démarche réservée aux professionnels",
+          description: "Cette démarche s'effectue depuis un compte professionnel. Créez votre compte pour y accéder.",
+        });
+        navigate("/register");
+        return;
+      }
+
+      const prixHT = typeData.prix_base || 30;
 
       const { data, error } = await supabase
         .from("guest_orders")
