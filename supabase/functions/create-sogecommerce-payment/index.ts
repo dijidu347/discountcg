@@ -197,6 +197,20 @@ serve(async (req) => {
       });
     }
 
+    // --- 4 bis. Certificat de non-gage (CG, DA, DC) ------------------------
+    // Le choix n'etait controle que dans le navigateur du garage : des dossiers
+    // ont ete payes sans. Pour « vous le commandez », la fonction pose aussi la
+    // ligne de facturation si elle manque, avant le calcul du montant.
+    const { data: nonGage, error: nonGageError } = await supabaseClient
+      .rpc("verifier_non_gage", { p_demarche_id: demarcheId });
+    if (nonGageError) throw new Error(`Contrôle non-gage impossible : ${nonGageError.message}`);
+    if (nonGage) {
+      return new Response(JSON.stringify({ error: nonGage }), {
+        status: 409,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // --- 5. Détermination du mode de paiement -----------------------------
     // (même logique que create-payment-intent)
     const paymentMode = requestedMode || demarche.payment_mode || "pro_pays_all";

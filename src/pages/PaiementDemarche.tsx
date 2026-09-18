@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { messageServeur } from "@/lib/erreurServeur";
 import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2, AlertTriangle } from "lucide-react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -337,7 +338,7 @@ const PaiementDemarche = () => {
       });
 
       if (error || !data?.paymentUrl) {
-        throw new Error("Impossible de créer le lien de paiement");
+        throw new Error(await messageServeur(error, "Impossible de créer le lien de paiement"));
       }
 
       setClientPaymentUrl(data.paymentUrl);
@@ -522,7 +523,7 @@ const PaiementDemarche = () => {
       const { data, error } = await supabase.functions.invoke("create-sogecommerce-payment", {
         body: { demarcheId, paymentMode: currentPaymentMode, returnUrl },
       });
-      if (error) throw error;
+      if (error) throw new Error(await messageServeur(error, "Impossible de démarrer le paiement. Veuillez réessayer."));
       redirectToSogecommerce(data); // quitte le site vers la page SG
     } catch (e: any) {
       console.error("Payment error:", e);

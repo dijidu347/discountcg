@@ -801,7 +801,8 @@ export default function NouvelleDemarche() {
       console.error("Error processing token payment:", error);
       toast({
         title: "Erreur",
-        description: "Une erreur est survenue lors du paiement par jetons",
+        // Le serveur explique son refus (non-gage, solde insuffisant...).
+        description: (error as Error)?.message || "Une erreur est survenue lors du paiement par jetons",
         variant: "destructive"
       });
     } finally {
@@ -1011,6 +1012,8 @@ export default function NouvelleDemarche() {
           client_prenom: clientPrenom || null,
           client_adresse: clientAdresse || null,
           express: expressSelected,
+          // Enregistre le choix juste avant le paiement : le serveur le controle.
+          non_gage_mode: nonGageMode,
       };
       console.log("=== UPDATE DEMARCHE ===", { demarcheId, paymentMode, clientEmail, updateData });
       const { error: updateError } = await supabase

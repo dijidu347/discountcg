@@ -117,6 +117,21 @@ serve(async (req) => {
 
     console.log('Ownership check passed');
 
+    // Certificat de non-gage (CG, DA, DC) : le garage doit avoir choisi avant
+    // d'envoyer le lien. L'administration (renouvellement d'un lien) n'est pas
+    // bloquee sur les anciens dossiers.
+    if (!estAdmin) {
+      const { data: nonGage, error: nonGageError } = await supabaseClient
+        .rpc('verifier_non_gage', { p_demarche_id: demarcheId });
+      if (nonGageError) throw new Error(`Contrôle non-gage impossible : ${nonGageError.message}`);
+      if (nonGage) {
+        return new Response(JSON.stringify({ error: nonGage }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
     // Use requested mode from body as override (workaround for DB save issue)
     const effectiveMode = requestedMode || demarche.payment_mode;
     console.log('Effective payment mode:', effectiveMode, '(db:', demarche.payment_mode, ', requested:', requestedMode, ')');
