@@ -1,3 +1,4 @@
+import { libelleOption } from "@/lib/libelleOption";
 import { useEffect, useRef } from "react";
 import { Separator } from "@/components/ui/separator";
 import { formatPrice } from "@/lib/utils";
@@ -12,13 +13,6 @@ export interface TrackingService {
 }
 
 // Labels pour les types de services
-export const SERVICE_LABELS: Record<string, string> = {
-  priority: "Dossier prioritaire",
-  non_gage: "Certificat de non-gage",
-  email: "Suivi email",
-  sms: "Suivi SMS",
-  complete: "Suivi complet",
-};
 
 interface PaymentDetailsSummaryProps {
   demarcheType: string;
@@ -145,7 +139,7 @@ export const PaymentDetailsSummary = ({
             {trackingServices.map((service) => (
               <div key={service.id} className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">
-                  {SERVICE_LABELS[service.service_type] || service.service_type}
+                  {libelleOption(service.service_type)}
                 </span>
                 <span>{formatPrice(service.price)} €</span>
               </div>
@@ -208,7 +202,7 @@ export const PaymentDetailsSummary = ({
         {trackingServices.map((service) => (
           <div key={service.id} className="flex justify-between items-center text-sm">
             <span className="text-muted-foreground">
-              {SERVICE_LABELS[service.service_type] || service.service_type}
+              {libelleOption(service.service_type)}
             </span>
             <span>{formatPrice(service.price)} €</span>
           </div>

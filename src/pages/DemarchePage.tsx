@@ -203,14 +203,16 @@ const DemarchePage = () => {
             {demarche.h1}
           </h1>
           <p className="text-lg text-muted-foreground mb-8">{demarche.description}</p>
-          {reserveePro && (
-            <Badge className="bg-amber-100 text-amber-800 border border-amber-300 mb-4">Réservé aux professionnels</Badge>
-          )}
-          <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
-            {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            {libelleBouton}
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="flex flex-col items-start gap-3">
+            <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
+              {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+              {libelleBouton}
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            {reserveePro && (
+              <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Réservé aux professionnels</Badge>
+            )}
+          </div>
         </div>
       </section>
 

@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import { formatPrice } from "@/lib/utils";
 import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
+import { libelleOption } from "@/lib/libelleOption";
 
 // ---------------------------------------------------------------------------
 // Stripe card form (inline, same pattern as PaiementDemarche)
@@ -468,7 +469,7 @@ const PaiementClient = () => {
                       </div>
                       {trackingServices.length > 0 && trackingServices.map((s: any, i: number) => (
                         <div key={i} className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">{s.service_type === 'email' ? 'Suivi email' : s.service_type === 'email_phone' ? 'Suivi email + tel' : s.service_type}</span>
+                          <span className="text-muted-foreground">{libelleOption(s.service_type)}</span>
                           <span>{formatPrice(Number(s.price || 0))} EUR</span>
                         </div>
                       ))}

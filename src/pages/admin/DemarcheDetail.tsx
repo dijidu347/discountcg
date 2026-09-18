@@ -45,6 +45,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { libelleOption } from "@/lib/libelleOption";
 
 // Bulk Reject Dialog Component
 function BulkRejectDialog({ 
@@ -1682,12 +1683,12 @@ export default function DemarcheDetail() {
                     {trackingServices.map((service) => {
                       const serviceLabels: Record<string, { name: string; icon: any }> = {
                         'dossier_prioritaire': { name: 'Dossier prioritaire', icon: Zap },
-                        'certificat_non_gage': { name: 'Certificat de non gage', icon: FileCheckIcon },
+                        'certificat_non_gage': { name: 'Certificat de non-gage', icon: FileCheckIcon },
                         'email': { name: 'Suivi par email', icon: Mail },
                         'phone': { name: 'Suivi par SMS', icon: Phone },
                         'email_phone': { name: 'Suivi complet', icon: CheckCircle },
                       };
-                      const serviceInfo = serviceLabels[service.service_type] || { name: service.service_type, icon: CheckCircle };
+                      const serviceInfo = serviceLabels[service.service_type] || { name: libelleOption(service.service_type), icon: CheckCircle };
                       const Icon = serviceInfo.icon;
                       return (
                         <Badge key={service.id} variant="secondary" className="flex items-center gap-1.5 px-3 py-1.5 text-sm w-fit">
