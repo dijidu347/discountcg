@@ -30,6 +30,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
 import { DEMARCHES_AVEC_TAXE } from "@/lib/taxeCarteGrise";
 
+// Demarches reservees aux professionnels : la page oriente vers l'inscription pro.
+const RESERVEES_AUX_PROS = ["DA", "W_GARAGE"];
+
 // Demarches dont le prix comprend la taxe : elles passent par le simulateur.
 const CG_TYPES = [...DEMARCHES_AVEC_TAXE, "CG_DA", "CG_IMPORT"];
 
@@ -41,12 +44,14 @@ const DemarchePage = () => {
   const [starting, setStarting] = useState(false);
 
   const isCG = demarche ? CG_TYPES.includes(demarche.code) : false;
+  const reserveePro = demarche ? RESERVEES_AUX_PROS.includes(demarche.code) : false;
+  const libelleBouton = reserveePro ? "Créer mon compte pro" : isCG ? "Simuler mon tarif" : "Commander maintenant";
 
   const handleStartDemarche = async () => {
     if (!demarche) return;
 
-    // DA réservé aux pros → rediriger vers inscription
-    if (demarche.code === 'DA') {
+    // Démarche réservée aux pros → rediriger vers inscription
+    if (reserveePro) {
       navigate('/register');
       return;
     }
@@ -64,10 +69,10 @@ const DemarchePage = () => {
         .eq("code", demarche.code)
         .maybeSingle();
 
-      // Demarche retiree du catalogue particulier (ex : W garage, reserve aux
-      // professionnels) : on n'ouvre pas de commande, on oriente vers l'espace pro.
-      // Une demarche absente du catalogue garde le tarif par defaut.
-      if (typeData?.actif === false) {
+      // Demarche absente du catalogue particulier : un visiteur ne lit que les
+      // demarches actives, une demarche desactivee revient donc vide. On n'ouvre
+      // pas de commande (elle partirait a 0 EUR affiche), on oriente vers l'espace pro.
+      if (!typeData || typeData.actif === false) {
         toast({
           title: "Démarche réservée aux professionnels",
           description: "Cette démarche s'effectue depuis un compte professionnel. Créez votre compte pour y accéder.",
@@ -76,7 +81,7 @@ const DemarchePage = () => {
         return;
       }
 
-      const prixHT = typeData?.prix_base || 30;
+      const prixHT = typeData.prix_base || 30;
 
       const nouvelId = nouvelIdCommande();
       const { data, error } = await supabase
@@ -198,12 +203,12 @@ const DemarchePage = () => {
             {demarche.h1}
           </h1>
           <p className="text-lg text-muted-foreground mb-8">{demarche.description}</p>
-          {demarche.code === 'DA' && (
+          {reserveePro && (
             <Badge className="bg-amber-100 text-amber-800 border border-amber-300 mb-4">Réservé aux professionnels</Badge>
           )}
           <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
             {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            {demarche.code === 'DA' ? "Créer mon compte pro" : isCG ? "Simuler mon tarif" : "Commander maintenant"}
+            {libelleBouton}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -485,7 +490,7 @@ const DemarchePage = () => {
           </p>
           <Button size="lg" variant="secondary" className="text-base" onClick={handleStartDemarche} disabled={starting}>
             {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            {isCG ? "Simuler mon tarif" : "Commander maintenant"}
+            {libelleBouton}
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
@@ -500,7 +505,7 @@ const DemarchePage = () => {
           disabled={starting}
         >
           {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-          {isCG ? "Simuler mon tarif" : "Commander maintenant"}
+          {libelleBouton}
           <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
       </div>

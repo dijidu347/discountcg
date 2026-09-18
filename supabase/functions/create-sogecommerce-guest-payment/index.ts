@@ -180,9 +180,13 @@ async function calculerCommande(
 ): Promise<{ taxe: number; frais: number }> {
   const { data: type } = await supabase
     .from("guest_demarche_types")
-    .select("prix_base")
+    .select("prix_base, actif")
     .eq("code", order.demarche_type)
     .maybeSingle();
+  // Démarche retirée du catalogue particulier (W garage, DA...) : pas de paiement.
+  if (type && type.actif === false) {
+    throw new PrixARecalculer("Cette démarche n'est plus proposée aux particuliers : elle s'effectue depuis un compte professionnel.");
+  }
   const frais = type?.prix_base != null
     ? Number(type.prix_base)
     : (order.frais_dossier == null ? 30 : Number(order.frais_dossier));

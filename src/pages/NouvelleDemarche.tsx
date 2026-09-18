@@ -200,7 +200,8 @@ export default function NouvelleDemarche() {
           type: draft.type,
           commentaire: draft.commentaire || ""
         });
-        setSelectedImmatriculation(draft.immatriculation || "");
+        // 'TEMP' marque un brouillon cree avant la saisie de la plaque.
+        setSelectedImmatriculation(draft.immatriculation === 'TEMP' ? "" : (draft.immatriculation || ""));
         setSelectedVehicleId(draft.vehicule_id);
         setCarteGrisePrice(draft.prix_carte_grise || 0);
         setExpressSelected(draft.express || false);
@@ -646,6 +647,7 @@ export default function NouvelleDemarche() {
           .single();
         if (!retryError && retryData) {
           setDemarcheId(retryData.id);
+          ancrerBrouillonDansAdresse(retryData.id);
           enrichDemarcheWithVehicle(retryData.id, selectedImmatriculation, vehiculeConnuRef.current);
         } else {
           console.error("Retry also failed:", retryError);
@@ -653,8 +655,19 @@ export default function NouvelleDemarche() {
       }
     } else if (data) {
       setDemarcheId(data.id);
+      ancrerBrouillonDansAdresse(data.id);
       enrichDemarcheWithVehicle(data.id, selectedImmatriculation, vehiculeConnuRef.current);
     }
+  };
+
+  // Le brouillon vient d'etre cree : son identifiant passe dans l'adresse.
+  // Sans lui, un rechargement ou un retour arriere (depuis la page de paiement
+  // par exemple) rouvrait /nouvelle-demarche?type=... et creait un brouillon
+  // vierge : le garage perdait ses pieces et recommencait tout (vu en base,
+  // jusqu'a trois fois pour un meme dossier).
+  const ancrerBrouillonDansAdresse = (id: string) => {
+    setDraftLoaded(true); // l'etat courant fait foi, inutile de relire le brouillon
+    navigate(`/nouvelle-demarche/${id}`, { replace: true });
   };
 
   const handleVehicleSelect = async (vehicleId: string, immatriculation: string, vehicleData?: any) => {
