@@ -7,7 +7,7 @@ import { FileText, CheckCircle, Loader2, X, Upload, Download, FileCheck } from "
 import { useToast } from "@/hooks/use-toast";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
 import { cn } from "@/lib/utils";
-import { validatePdfOnlyFile } from "@/lib/documentRestrictions";
+import { preparerPdfSousLimite } from "@/lib/pdf-sous-limite";
 import { compressFile, isFileTooLarge } from "@/lib/file-compression";
 
 interface UploadedFile {
@@ -126,25 +126,23 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
       return;
     }
 
-    // Restriction PDF < 1 Mo pour certaines démarches
-    if (pdfOnly) {
-      const validationError = validatePdfOnlyFile(originalFile);
-      if (validationError) {
-        toast({
-          title: "Fichier refusé",
-          description: validationError,
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
-    // Compress images before upload — PDFs and other formats pass through.
+    // Démarches qui exigent un PDF de moins de 1 Mo : on ne refuse plus la
+    // photo ou le scan trop lourd, on le convertit et on le compresse ici.
     setIsCompressing(true);
     let file: File;
     try {
-      const result = await compressFile(originalFile);
-      file = result.file;
+      if (pdfOnly) {
+        const prepare = await preparerPdfSousLimite(originalFile);
+        if ("erreur" in prepare) {
+          toast({ title: "Fichier refusé", description: prepare.erreur, variant: "destructive" });
+          return;
+        }
+        file = prepare.fichier;
+      } else {
+        // Compress images before upload — PDFs and other formats pass through.
+        const result = await compressFile(originalFile);
+        file = result.file;
+      }
     } catch (compressionError) {
       toast({
         title: "Erreur",
@@ -407,7 +405,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           ref={fileInputRef}
           type="file"
           onChange={handleFileChange}
-          accept={pdfOnly ? "application/pdf,.pdf" : ".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"}
+          accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
           disabled={uploading || isCompressing}
           className="hidden"
         />
@@ -415,7 +413,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
         {isCompressing ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground flex-1">Optimisation de l'image...</span>
+            <span className="text-sm text-muted-foreground flex-1">{pdfOnly ? "Conversion en PDF..." : "Optimisation de l'image..."}</span>
           </>
         ) : uploading ? (
           <>
@@ -435,7 +433,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
       </div>
         {pdfOnly && (
           <p className="text-xs text-muted-foreground mt-1">
-            Format PDF uniquement, moins de 1 Mo.
+            PDF, photo ou scan : converti automatiquement en PDF de moins de 1 Mo.
           </p>
         )}
         </>

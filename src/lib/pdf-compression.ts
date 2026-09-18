@@ -29,7 +29,7 @@ function chargerPdfjs() {
   return pdfjsCharge;
 }
 
-function canvasEnJpeg(canvas: HTMLCanvasElement): Promise<Uint8Array> {
+export function canvasEnJpeg(canvas: HTMLCanvasElement, qualite = QUALITE_JPEG): Promise<Uint8Array> {
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
@@ -37,18 +37,24 @@ function canvasEnJpeg(canvas: HTMLCanvasElement): Promise<Uint8Array> {
         blob.arrayBuffer().then((b) => resolve(new Uint8Array(b)), reject);
       },
       "image/jpeg",
-      QUALITE_JPEG,
+      qualite,
     );
   });
 }
 
-/**
- * Renvoie une version compressee du PDF, ou null s'il faut garder l'original
- * (petit fichier, PDF texte, trop de pages, illisible, ou gain insuffisant).
- */
-export async function compresserPdf(source: Blob): Promise<Blob | null> {
-  if (source.size < TAILLE_MINIMALE) return null;
+export interface ReglagesRaster {
+  ppp: number;
+  qualite: number;
+  coteMax: number;
+  /** Rasteriser meme les pages qui portent du texte (conversion forcee). */
+  ignorerTexte?: boolean;
+}
 
+/**
+ * Redessine chaque page du PDF en JPEG. Renvoie null si le PDF est illisible,
+ * a trop de pages, ou (sans ignorerTexte) porte du vrai texte.
+ */
+export async function rasteriserPdf(source: Blob, reglages: ReglagesRaster): Promise<Blob | null> {
   try {
     const pdfjs = await chargerPdfjs();
     const { PDFDocument } = await import("pdf-lib");
@@ -66,10 +72,10 @@ export async function compresserPdf(source: Blob): Promise<Blob | null> {
           (total, item) => total + ("str" in item ? item.str.trim().length : 0),
           0,
         );
-        if (caracteres > TEXTE_MAX_PAR_PAGE) return null;
+        if (caracteres > TEXTE_MAX_PAR_PAGE && !reglages.ignorerTexte) return null;
 
         const format = page.getViewport({ scale: 1 }); // en points
-        const echelle = Math.min(PPP / 72, COTE_MAX / Math.max(format.width, format.height));
+        const echelle = Math.min(reglages.ppp / 72, reglages.coteMax / Math.max(format.width, format.height));
         const vue = page.getViewport({ scale: echelle });
 
         const canvas = document.createElement("canvas");
@@ -83,15 +89,14 @@ export async function compresserPdf(source: Blob): Promise<Blob | null> {
         // l'ecran, qui est suspendu quand l'onglet est en arriere-plan.
         await page.render({ canvasContext: contexte, viewport: vue, intent: "print" }).promise;
 
-        const image = await sortie.embedJpg(await canvasEnJpeg(canvas));
+        const image = await sortie.embedJpg(await canvasEnJpeg(canvas, reglages.qualite));
         const nouvelle = sortie.addPage([format.width, format.height]);
         nouvelle.drawImage(image, { x: 0, y: 0, width: format.width, height: format.height });
         page.cleanup();
       }
 
       const octets = await sortie.save();
-      const resultat = new Blob([octets], { type: "application/pdf" });
-      return resultat.size <= source.size * (1 - GAIN_MINIMUM) ? resultat : null;
+      return new Blob([octets], { type: "application/pdf" });
     } finally {
       await doc.destroy();
     }
@@ -99,4 +104,14 @@ export async function compresserPdf(source: Blob): Promise<Blob | null> {
     console.warn("Compression PDF impossible, original conserve :", erreur);
     return null;
   }
+}
+
+/**
+ * Renvoie une version compressee du PDF, ou null s'il faut garder l'original
+ * (petit fichier, PDF texte, trop de pages, illisible, ou gain insuffisant).
+ */
+export async function compresserPdf(source: Blob): Promise<Blob | null> {
+  if (source.size < TAILLE_MINIMALE) return null;
+  const resultat = await rasteriserPdf(source, { ppp: PPP, qualite: QUALITE_JPEG, coteMax: COTE_MAX });
+  return resultat && resultat.size <= source.size * (1 - GAIN_MINIMUM) ? resultat : null;
 }

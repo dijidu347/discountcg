@@ -556,14 +556,14 @@ export function DocumentsNecessaires({
           // Asterisque plutot qu'un badge : la legende du bas annonce deja
           // "* = Document obligatoire", et un badge rouge par ligne saturait
           // visuellement les listes longues.
-          <span className="text-destructive font-bold -ml-1.5" aria-label="Document obligatoire">*</span>
+          <span className="text-destructive font-bold ml-0.5" aria-label="Document obligatoire">*</span>
         ) : doc.recommended ? (
-          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50">Recommandé</Badge>
+          <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50 ml-2 align-middle">Recommandé</Badge>
         ) : (
-          <span className="text-muted-foreground text-xs">(optionnel)</span>
+          <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
         )}
         {doc.conditionKey && (
-          <span className="text-xs text-muted-foreground italic">Requis selon votre situation</span>
+          <span className="text-xs text-muted-foreground italic ml-2">Requis selon votre situation</span>
         )}
       </>
     );
@@ -576,7 +576,7 @@ export function DocumentsNecessaires({
     if (!hasCerfa || !cerfaNumber) {
       return (
         <div className="flex-1">
-          <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+          <div className="text-sm font-medium">
             {doc.nom}
             {renderBadges()}
           </div>
@@ -595,7 +595,7 @@ export function DocumentsNecessaires({
 
     return (
       <div className="flex-1">
-        <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+        <div className="text-sm font-medium">
           {hasCerfaInName ? (
             // If cerfa is directly in the name (like "Cerfa 13752*02 – Demande W Garage")
             <>
@@ -708,9 +708,9 @@ export function DocumentsNecessaires({
                   {hasRectoVerso && (
                     <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/20 ml-6">
                       <div className="flex-1">
-                        <div className="text-sm font-medium flex items-center gap-2 flex-wrap">
+                        <div className="text-sm font-medium">
                           {doc.nom.replace(/\(recto\/verso\)/i, '').replace(/recto\/verso/i, '').trim()} (verso)
-                          <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                          <span className="text-muted-foreground text-xs ml-1">(Optionnel)</span>
                         </div>
                       </div>
                       <div className="w-[350px]">
