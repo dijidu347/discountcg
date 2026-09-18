@@ -656,7 +656,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     keywords: ["modification carte grise", "changement caractéristiques véhicule", "carte grise collection", "modification carte grise pas cher"],
   },
   {
-    code: "IMMAT_CYCLO",
+    code: "IMMAT_CYCLO_ANCIEN",
     slug: "immatriculation-cyclomoteur",
     title: "Immatriculation Cyclomoteur",
     shortTitle: "carte grise cyclomoteur",

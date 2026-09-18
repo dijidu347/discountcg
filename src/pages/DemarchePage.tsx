@@ -63,7 +63,7 @@ const DemarchePage = () => {
 
       // Demarche retiree du catalogue particulier (ex : W garage, reserve aux
       // professionnels) : on n'ouvre pas de commande, on oriente vers l'espace pro.
-      // Une demarche absente du catalogue (ex : IMMAT_CYCLO) garde le tarif par defaut.
+      // Une demarche absente du catalogue garde le tarif par defaut.
       if (typeData?.actif === false) {
         toast({
           title: "Démarche réservée aux professionnels",
