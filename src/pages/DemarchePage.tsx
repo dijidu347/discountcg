@@ -338,12 +338,12 @@ const DemarchePage = () => {
               <>
                 <p className="text-muted-foreground mb-6">
                   Pour connaître le prix exact de votre démarche,{" "}
-                  <Link to="/simulateur" className="text-primary font-medium hover:underline">
+                  <Link to={`/simulateur?type=${demarche.code}`} className="text-primary font-medium hover:underline">
                     simulez votre tarif en quelques clics
                   </Link>
                   .
                 </p>
-                <Link to="/simulateur">
+                <Link to={`/simulateur?type=${demarche.code}`}>
                   <Button variant="outline">
                     Simuler mon tarif
                     <ArrowRight className="ml-2 h-4 w-4" />
@@ -353,7 +353,7 @@ const DemarchePage = () => {
             ) : (
               <Button variant="outline" onClick={handleStartDemarche} disabled={starting}>
                 {starting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Commander maintenant
+                {libelleBouton}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             )}
