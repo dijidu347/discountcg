@@ -224,12 +224,16 @@ export const MandatGenerator = ({
 
       // Le chemin porte l'extension du contenu reel : un cachet en PDF ne doit
       // pas etre enregistre sous un nom en .png.
+      // Un particulier (dossier guest/) peut deposer mais pas remplacer un
+      // fichier : chaque signature y recoit son propre nom, sans ecrasement.
+      // Avec upsert, le stockage refusait toute signature en ligne d'un particulier.
       const deposer = async (dataUrl: string, base: string) => {
         const blob = dataUrlToBlob(dataUrl);
-        const chemin = `${base}.${extensionPour(blob.type)}`;
+        const invite = base.startsWith("guest/");
+        const chemin = `${base}${invite ? `_${Date.now()}` : ""}.${extensionPour(blob.type)}`;
         const { error } = await supabase.storage
           .from("signatures")
-          .upload(chemin, blob, { upsert: true, contentType: blob.type });
+          .upload(chemin, blob, { upsert: !invite, contentType: blob.type });
         if (error) throw error;
         return chemin;
       };
