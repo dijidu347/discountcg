@@ -1349,6 +1349,7 @@ export type Database = {
           created_at: string
           date_mec: string | null
           demarche_type: string | null
+          departement: string | null
           documents_complets: boolean
           dossier_prioritaire: boolean | null
           email: string
@@ -1414,6 +1415,7 @@ export type Database = {
           created_at?: string
           date_mec?: string | null
           demarche_type?: string | null
+          departement?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email: string
@@ -1479,6 +1481,7 @@ export type Database = {
           created_at?: string
           date_mec?: string | null
           demarche_type?: string | null
+          departement?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email?: string
@@ -2216,6 +2219,7 @@ export type Database = {
           restants: number
         }[]
       }
+      commande_demandee: { Args: never; Returns: string }
       consommer_jeton_gratuit: {
         Args: { p_garage_id: string }
         Returns: boolean
@@ -2302,6 +2306,7 @@ export type Database = {
         }
         Returns: Json
       }
+      rattacher_mes_commandes: { Args: never; Returns: number }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
