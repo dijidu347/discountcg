@@ -2,10 +2,8 @@ import { ReactNode } from "react";
 import { FileSearch } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   isNonGageRequired,
-  isNonGageOptional,
   getNonGagePrice,
   NON_GAGE_LABEL,
   NonGageMode,
@@ -16,9 +14,6 @@ interface NonGageChoiceProps {
   audience: "pro" | "particulier";
   value: NonGageMode | null;
   onChange: (mode: NonGageMode) => void;
-  // Démarche où le certificat est facultatif (DC particulier) : appelé quand le
-  // client décoche l'option.
-  onRetirer?: () => void;
   disabled?: boolean;
   // Emplacement de dépôt du certificat, rendu DANS la carte « Je fournis le
   // certificat » une fois celle-ci sélectionnée. Laissé vide sur les parcours où
@@ -34,44 +29,12 @@ export const NonGageChoice = ({
   audience,
   value,
   onChange,
-  onRetirer,
   disabled = false,
   uploadSlot,
 }: NonGageChoiceProps) => {
   if (!isNonGageRequired(demarcheType)) return null;
 
   const prix = getNonGagePrice(audience);
-
-  // Facultatif : une simple option à cocher, rien n'est exigé pour continuer.
-  if (isNonGageOptional(demarcheType, audience)) {
-    const coche = value === "facture";
-    return (
-      <div
-        className={`flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors ${
-          coche ? "border-primary bg-primary/5" : "border-border bg-card"
-        }`}
-      >
-        <Checkbox
-          id="non_gage_option"
-          checked={coche}
-          disabled={disabled}
-          onCheckedChange={(c) => (c === true ? onChange("facture") : onRetirer?.())}
-          className="mt-0.5"
-        />
-        <Label htmlFor="non_gage_option" className="cursor-pointer font-normal w-full">
-          <span className="font-medium flex items-center gap-2">
-            <FileSearch className="w-4 h-4 text-primary" />
-            {NON_GAGE_LABEL} (facultatif)
-            <span className="ml-auto text-primary font-semibold whitespace-nowrap">+{prix}&nbsp;€</span>
-          </span>
-          <span className="block text-sm text-muted-foreground mt-1">
-            Vous devez remettre à l'acheteur un certificat de moins de 15 jours. Nous pouvons
-            l'obtenir pour vous.
-          </span>
-        </Label>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-3 p-4 rounded-lg border-2 border-border bg-card">
