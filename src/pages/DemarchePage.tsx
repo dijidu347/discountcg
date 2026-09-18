@@ -63,7 +63,8 @@ const DemarchePage = () => {
 
       // Demarche retiree du catalogue particulier (ex : W garage, reserve aux
       // professionnels) : on n'ouvre pas de commande, on oriente vers l'espace pro.
-      if (!typeData || typeData.actif === false) {
+      // Une demarche absente du catalogue (ex : IMMAT_CYCLO) garde le tarif par defaut.
+      if (typeData?.actif === false) {
         toast({
           title: "Démarche réservée aux professionnels",
           description: "Cette démarche s'effectue depuis un compte professionnel. Créez votre compte pour y accéder.",
@@ -72,7 +73,7 @@ const DemarchePage = () => {
         return;
       }
 
-      const prixHT = typeData.prix_base || 30;
+      const prixHT = typeData?.prix_base || 30;
 
       const { data, error } = await supabase
         .from("guest_orders")
