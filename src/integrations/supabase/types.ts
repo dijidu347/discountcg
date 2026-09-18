@@ -2320,6 +2320,7 @@ export type Database = {
         Args: { p_service_role_key: string }
         Returns: Json
       }
+      verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "staff" | "garage" | "particulier"
