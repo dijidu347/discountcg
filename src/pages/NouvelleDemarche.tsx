@@ -137,6 +137,7 @@ export default function NouvelleDemarche() {
   const [isQuestionnaireBlocked, setIsQuestionnaireBlocked] = useState(false);
   const [conditionalDocuments, setConditionalDocuments] = useState<any[]>([]);
   const demarcheIdRef = useRef<string | null>(null);
+  const creationBrouillonRef = useRef(false);
   const paymentCompletedRef = useRef(false);
   // Marque/modèle déjà obtenus par le formulaire véhicule pour la plaque en
   // cours. VehicleFormCG appelle l'API plaque (payante) pour calculer la taxe :
@@ -568,6 +569,11 @@ export default function NouvelleDemarche() {
 
   const handleAutoCreateDraft = async () => {
     if (!garage || demarcheId || !actionDetails) return;
+    // L'effet qui appelle cette fonction peut se relancer avant la fin de
+    // l'insertion (chargement du garage puis de la demarche) : sans ce verrou,
+    // deux brouillons naissaient a quelques millisecondes d'intervalle.
+    if (creationBrouillonRef.current) return;
+    creationBrouillonRef.current = true;
 
     // Le jeton gratuit ne s'applique qu'aux démarches DA et DC
     const isFreeTokenApplicable = freeTokenAvailable && (formData.type === 'DA' || formData.type === 'DC');
@@ -651,7 +657,10 @@ export default function NouvelleDemarche() {
           enrichDemarcheWithVehicle(retryData.id, selectedImmatriculation, vehiculeConnuRef.current);
         } else {
           console.error("Retry also failed:", retryError);
+          creationBrouillonRef.current = false; // nouvel essai possible
         }
+      } else {
+        creationBrouillonRef.current = false; // nouvel essai possible
       }
     } else if (data) {
       setDemarcheId(data.id);
