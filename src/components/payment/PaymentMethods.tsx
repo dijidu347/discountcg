@@ -13,6 +13,8 @@ import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 
 interface PaymentMethodsProps {
   amount: number;
+  /** Département du simulateur : le serveur recalcule la taxe de carte grise avec. */
+  departement?: string;
   orderId: string;
   trackingNumber?: string;
   onPaymentSuccess: () => void;
@@ -138,7 +140,7 @@ const StripeCardForm = ({ amount, orderId, onSuccess }: { amount: number; orderI
   );
 };
 
-export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSuccess }: PaymentMethodsProps) => {
+export const PaymentMethods = ({ amount, orderId, trackingNumber, departement, onPaymentSuccess }: PaymentMethodsProps) => {
   const [isPaid, setIsPaid] = useState(false);
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null);
   const [showCardForm, setShowCardForm] = useState(false);
@@ -168,9 +170,14 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, onPaymentSucce
     try {
       const { data, error } = await supabase.functions.invoke(
         "create-sogecommerce-guest-payment",
-        { body: { orderId, returnUrl: window.location.href } }
+        { body: { orderId, departement, returnUrl: window.location.href } }
       );
-      if (error) throw error;
+      if (error) {
+        // Le serveur explique pourquoi il refuse (prix à recalculer...) :
+        // on affiche son message plutôt que l'erreur technique générique.
+        const detail = await (error as { context?: Response }).context?.json?.().catch(() => null);
+        throw new Error(detail?.error || error.message);
+      }
       redirectToSogecommerce(data); // quitte le site vers la page SG
     } catch (error: any) {
       console.error("Payment error:", error);

@@ -6,6 +6,7 @@ import { Loader2, Calculator, FileText, Car, FileCheck, MapPin, PlusCircle, Copy
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
+import { avecTaxe, sansPlaque } from "@/lib/taxeCarteGrise";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -76,8 +77,11 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
       const filteredData = (data || []).filter(t => t.code !== 'DA');
       setDemarcheTypes(filteredData);
       if (filteredData.length > 0) {
-        // Always force CG - simulator is only for carte grise
-        const typeToSelect = filteredData.find(t => t.code === 'CG') ? 'CG' : filteredData[0].code;
+        // Carte grise par defaut ; une page demarche soumise a taxe (succession,
+        // vehicule neuf, WW) arrive avec son type et le garde.
+        const typeToSelect = avecTaxe(initialType) && filteredData.some(t => t.code === initialType)
+          ? initialType
+          : filteredData.find(t => t.code === 'CG') ? 'CG' : filteredData[0].code;
         setSelectedTypeCode(typeToSelect);
       }
     } catch (error) {
@@ -88,6 +92,10 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
   };
 
   const currentDemarche = demarcheTypes.find(t => t.code === selectedTypeCode);
+  // Prix avec taxe de carte grise, calcule ici avant paiement.
+  const calculTaxe = !!currentDemarche && (currentDemarche.require_carte_grise_price || avecTaxe(currentDemarche.code));
+  // Vehicule sans plaque francaise : caracteristiques saisies a l'etape suivante.
+  const saisieManuelle = sansPlaque(selectedTypeCode);
 
   const validatePlate = (plate: string) => {
     const newFormat = /^[A-Z]{2}-?\d{3}-?[A-Z]{2}$/i;
@@ -96,8 +104,9 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
   };
 
   const isFormValid = () => {
+    if (saisieManuelle) return !!departement;
     const plateValid = plaque && validatePlate(plaque);
-    if (currentDemarche?.require_carte_grise_price) {
+    if (calculTaxe) {
       return plateValid && departement;
     }
     return plateValid;
@@ -138,29 +147,34 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
 
     setLoading(true);
     try {
-      if (currentDemarche.require_carte_grise_price) {
-        // Parcours carte grise - besoin de l'API véhicule
-        const apiResponse = await getVehicleByPlate(plaque);
+      if (calculTaxe) {
+        // Vehicule sans plaque francaise : rien a lire au SIV, le client saisit
+        // puissance, date et genre sur la page suivante.
+        let vehicleData: { dateMiseEnCirculation?: string; chevauxFiscaux?: number; genre?: string } = {};
+        if (!saisieManuelle) {
+          // Parcours carte grise - besoin de l'API véhicule
+          const apiResponse = await getVehicleByPlate(plaque);
 
-        if (!apiResponse.success || !apiResponse.data) {
-          throw new Error(apiResponse.error || 'Impossible de récupérer les informations du véhicule');
-        }
+          if (!apiResponse.success || !apiResponse.data) {
+            throw new Error(apiResponse.error || 'Impossible de récupérer les informations du véhicule');
+          }
 
-        const vehicleData = {
-          dateMiseEnCirculation: apiResponse.data.date_mec,
-          chevauxFiscaux: apiResponse.data.puissance_fiscale,
-          genre: apiResponse.data.genre,
-        };
-        
-        if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {
-          throw new Error('Données du véhicule incomplètes');
+          vehicleData = {
+            dateMiseEnCirculation: apiResponse.data.date_mec,
+            chevauxFiscaux: apiResponse.data.puissance_fiscale,
+            genre: apiResponse.data.genre,
+          };
+
+          if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {
+            throw new Error('Données du véhicule incomplètes');
+          }
         }
 
         const { data: order, error } = await supabase
           .from('guest_orders')
           .insert({
             tracking_number: '',
-            immatriculation: plaque,
+            immatriculation: saisieManuelle ? '' : plaque,
             email: '',
             telephone: '',
             nom: '',
@@ -180,11 +194,12 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
 
         if (error) throw error;
 
-        navigate(`/resultat-carte-grise?orderId=${order.id}&departement=${departement}&plaque=${plaque}`, {
+        const plaqueUrl = saisieManuelle ? '' : plaque;
+        navigate(`/resultat-carte-grise?orderId=${order.id}&departement=${departement}&plaque=${plaqueUrl}`, {
           state: {
             vehicleData,
             departement,
-            plaque,
+            plaque: plaqueUrl,
           },
         });
       } else {
@@ -250,7 +265,18 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
           {embedded && (
             <h2 className="text-xl font-bold text-foreground text-center mb-6">Simulateur prix de carte grise</h2>
           )}
+          {selectedTypeCode !== 'CG' && currentDemarche && (
+            <p className="text-center font-semibold text-foreground mb-2">{currentDemarche.titre}</p>
+          )}
+          {saisieManuelle && (
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              Votre véhicule n'a pas encore de plaque française : choisissez votre département,
+              vous renseignerez ensuite ses caractéristiques (puissance fiscale,{" "}
+              {selectedTypeCode === 'CG_NEUF' ? "genre" : "date de 1re mise en circulation, genre"}).
+            </p>
+          )}
           {/* Plaque d'immatriculation visuelle */}
+          {!saisieManuelle && (
           <div className="mb-10 flex justify-center">
             {showOldPlate ? (
               // Ancienne plaque (format FNI: 123 ABC 35) - fond jaune
@@ -330,11 +356,13 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
               </div>
             )}
           </div>
+          )}
 
           {/* Formulaire */}
           <div className="space-y-4">
             {/* Type de démarche hidden - CG always forced */}
 
+            {!saisieManuelle && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-foreground">Immatriculation</label>
               <Input
@@ -346,8 +374,9 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
                 maxLength={12}
               />
             </div>
+            )}
 
-            {currentDemarche?.require_carte_grise_price && (
+            {calculTaxe && (
               <DepartmentSelect
                 value={departement}
                 onChange={setDepartement}
@@ -363,12 +392,12 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                  {currentDemarche?.require_carte_grise_price ? "Calcul en cours..." : "Traitement..."}
+                  {calculTaxe ? "Calcul en cours..." : "Traitement..."}
                 </>
               ) : (
                 <>
                   <Calculator className="w-5 h-5 mr-2" />
-                  {currentDemarche?.require_carte_grise_price ? "Calculer le prix" : "Continuer"}
+                  {calculTaxe ? "Calculer le prix" : "Continuer"}
                 </>
               )}
             </Button>

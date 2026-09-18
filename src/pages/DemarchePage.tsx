@@ -27,8 +27,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
+import { DEMARCHES_AVEC_TAXE } from "@/lib/taxeCarteGrise";
 
-const CG_TYPES = ["CG", "CG_DA", "CG_IMPORT", "CG_NEUF"];
+// Demarches dont le prix comprend la taxe : elles passent par le simulateur.
+const CG_TYPES = [...DEMARCHES_AVEC_TAXE, "CG_DA", "CG_IMPORT"];
 
 const DemarchePage = () => {
   const { slug } = useParams<{ slug: string }>();

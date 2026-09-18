@@ -17,6 +17,7 @@ import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { NON_GAGE_PRICE_PARTICULIER, NonGageMode, isNonGageRequired } from "@/lib/nonGage";
 import { getExpressSurcharge } from "@/lib/expressOption";
+import { sansPlaque, malusPossible } from "@/lib/taxeCarteGrise";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
@@ -73,7 +74,9 @@ export default function ResultatCarteGrise() {
 
   const certificatNonGagePrix = NON_GAGE_PRICE_PARTICULIER;
 
-  const fraisDossier = 30;
+  // Frais de la démarche (catalogue particulier) : 30 € pour la carte grise,
+  // davantage pour une succession, un véhicule neuf ou un WW.
+  const [fraisDossier, setFraisDossier] = useState<number>(30);
 
   // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché :
   // le montant à encaisser en dépend.
@@ -188,6 +191,12 @@ export default function ResultatCarteGrise() {
           .single();
         if (orderData?.demarche_type) {
           setDemarcheType(orderData.demarche_type);
+          const { data: typeData } = await supabase
+            .from("guest_demarche_types")
+            .select("prix_base")
+            .eq("code", orderData.demarche_type)
+            .maybeSingle();
+          if (typeData?.prix_base) setFraisDossier(Number(typeData.prix_base));
         }
         setExpress(orderData?.express || false);
         if (orderData?.email) {
@@ -265,7 +274,9 @@ export default function ResultatCarteGrise() {
           freshVehicle?.puissance_fiscale && freshVehicle.puissance_fiscale > 0
             ? freshVehicle.puissance_fiscale
             : vehicleData.chevauxFiscaux;
-        const dateEffective = freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation;
+        // Véhicule neuf : mis en circulation aujourd'hui, la date n'est pas demandée.
+        const dateEffective = freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation
+          ?? (orderData?.demarche_type === "CG_NEUF" ? new Date().toISOString().slice(0, 10) : undefined);
         const genreEffective = freshVehicle?.genre ?? vehicleData.genre;
 
         // Mémoriser le tarif (recalcul via formulaire) + les valeurs connues.
@@ -422,8 +433,9 @@ export default function ResultatCarteGrise() {
             </CardHeader>
             <CardContent className="space-y-6">
               <p className="text-sm text-muted-foreground">
-                Certaines informations n'ont pas pu être lues automatiquement. Renseignez-les
-                pour calculer le prix exact de votre carte grise.
+                {sansPlaque(demarcheType)
+                  ? "Renseignez les caractéristiques de votre véhicule pour calculer le prix exact de votre carte grise. Vous les trouverez sur le certificat de conformité (COC) ou la carte grise étrangère."
+                  : "Certaines informations n'ont pas pu être lues automatiquement. Renseignez-les pour calculer le prix exact de votre carte grise."}
               </p>
 
               {missingPuissance && (
@@ -604,6 +616,19 @@ export default function ResultatCarteGrise() {
               isPaid={isPaid}
             />
 
+            {malusPossible(demarcheType) && (
+              <Card className="border-amber-300 bg-amber-50 dark:bg-amber-950/30">
+                <CardContent className="pt-6 text-sm space-y-1">
+                  <p className="font-semibold">Malus écologique non inclus</p>
+                  <p className="text-muted-foreground">
+                    Pour une première immatriculation en France, un malus peut s'ajouter selon les
+                    émissions de CO2 et le poids du véhicule. S'il s'applique, nous vous communiquons
+                    son montant exact avant l'envoi de votre dossier.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Step 3: Payment (seulement après infos complètes) */}
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -616,6 +641,7 @@ export default function ResultatCarteGrise() {
               {isInfoCompleted && isPriceSaved && nonGageChoisi ? <PaymentMethods
                 amount={calculateTotalTTC()}
                 orderId={orderId}
+                departement={departement}
                 onPaymentSuccess={async () => {
                   setIsPaid(true);
                   // Send admin notification + client confirmation with full order data

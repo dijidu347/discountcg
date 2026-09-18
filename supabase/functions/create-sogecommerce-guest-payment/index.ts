@@ -122,6 +122,106 @@ function computeGuestTotal(order: any): number {
 }
 
 // ---------------------------------------------------------------------------
+// Taxe de carte grise recalculée CÔTÉ SERVEUR
+// ----------------------------------------------------------------------------
+// Le simulateur calcule la taxe dans le navigateur et l'enregistre dans
+// guest_orders.montant_ht, que le client peut réécrire : il aurait pu payer 30 €
+// une carte grise à 400 €. On refait donc ici le calcul de
+// src/utils/calculatePrice.ts, avec :
+//   - les frais de la démarche lus dans le catalogue (guest_demarche_types) ;
+//   - le tarif du département choisi dans le simulateur ;
+//   - la puissance, la date et le genre lus au SIV (vehicle_cache, inaccessible
+//     au client) quand la plaque y figure, sinon ceux saisis sur la commande.
+// Listes recopiées de src/lib/taxeCarteGrise.ts et calculatePrice.ts.
+// ---------------------------------------------------------------------------
+const DEMARCHES_AVEC_TAXE = ["CG", "SUCCESSION", "CG_NEUF", "CPI_WW"];
+const GENRES_AVEC_TAXE_PARAFISCALE = ["CTTE"];
+const MOTO_GENRES = ["MTL", "MTT1", "MTT2"];
+const GENRES_EXONERES_Y1 = ["CL", "TRA", "MAGA", "REM", "SREM"];
+
+class PrixARecalculer extends Error {}
+
+function ageVehicule(dateMec: string): number {
+  let date: Date;
+  if (dateMec.includes("-")) {
+    const p = dateMec.split("-");
+    date = p[0].length === 4 ? new Date(dateMec) : new Date(`${p[2]}-${p[1]}-${p[0]}`);
+  } else if (dateMec.includes("/")) {
+    const p = dateMec.split("/");
+    date = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+  } else {
+    throw new PrixARecalculer("Date de mise en circulation invalide");
+  }
+  if (isNaN(date.getTime())) throw new PrixARecalculer("Date de mise en circulation invalide");
+  const now = new Date();
+  const age = now.getFullYear() - date.getFullYear();
+  const mois = now.getMonth() - date.getMonth();
+  return mois < 0 || (mois === 0 && now.getDate() < date.getDate()) ? age - 1 : age;
+}
+
+function taxeCarteGrise(tarif: number, chevaux: number, dateMec: string, genre: string): number {
+  const g = (genre || "").toUpperCase();
+  const anciennete = ageVehicule(dateMec);
+  const parafiscale = GENRES_AVEC_TAXE_PARAFISCALE.includes(g) ? 34 : 0;
+  let prixCV = chevaux * tarif;
+  if (GENRES_EXONERES_Y1.includes(g)) prixCV = 0;
+  else if (MOTO_GENRES.includes(g)) prixCV = prixCV * 0.5;
+  else if (anciennete >= 10) prixCV = prixCV * 0.5;
+  const sousTotalArrondi = Math.ceil(Math.round((prixCV + parafiscale + 11) * 100) / 100);
+  return sousTotalArrondi + (g === "CL" ? 0 : 2.76);
+}
+
+async function calculerCommande(
+  supabase: any,
+  order: any,
+  departement: string | undefined,
+): Promise<{ taxe: number; frais: number }> {
+  const { data: type } = await supabase
+    .from("guest_demarche_types")
+    .select("prix_base")
+    .eq("code", order.demarche_type)
+    .maybeSingle();
+  const frais = type?.prix_base != null
+    ? Number(type.prix_base)
+    : (order.frais_dossier == null ? 30 : Number(order.frais_dossier));
+
+  if (!DEMARCHES_AVEC_TAXE.includes(order.demarche_type)) return { taxe: 0, frais };
+
+  if (!departement) {
+    throw new PrixARecalculer("Le prix de votre carte grise doit être recalculé : refaites la simulation depuis le site.");
+  }
+  const { data: tarifDep } = await supabase
+    .from("department_tariffs")
+    .select("tarif")
+    .eq("code", departement)
+    .maybeSingle();
+  if (!tarifDep?.tarif) throw new PrixARecalculer("Département inconnu : refaites la simulation depuis le site.");
+
+  let chevaux = Number(order.puiss_fisc) || 0;
+  let dateMec: string = order.date_mec || "";
+  let genre: string = order.genre || "";
+
+  const plaque = String(order.immatriculation || "").replace(/[-\s]/g, "").toUpperCase();
+  if (plaque) {
+    const { data: cache } = await supabase
+      .from("vehicle_cache")
+      .select("found, data")
+      .eq("plate", plaque)
+      .maybeSingle();
+    const siv = cache?.found ? cache.data : null;
+    if (Number(siv?.puissance_fiscale) > 0) chevaux = Number(siv.puissance_fiscale);
+    if (siv?.date_mec) dateMec = siv.date_mec;
+    if (siv?.genre) genre = siv.genre;
+  }
+  if (!dateMec && order.demarche_type === "CG_NEUF") dateMec = new Date().toISOString().slice(0, 10);
+
+  if (!(chevaux > 0) || !dateMec) {
+    throw new PrixARecalculer("Les informations du véhicule sont incomplètes : refaites la simulation depuis le site.");
+  }
+  return { taxe: taxeCarteGrise(Number(tarifDep.tarif), chevaux, dateMec, genre), frais };
+}
+
+// ---------------------------------------------------------------------------
 // Fonction principale
 // ---------------------------------------------------------------------------
 serve(async (req) => {
@@ -149,7 +249,7 @@ serve(async (req) => {
 
     // --- 2. Corps de la requête -----------------------------------------
     const body = await req.json();
-    const { orderId, returnUrl } = body;
+    const { orderId, returnUrl, departement } = body;
 
     if (!orderId) {
       return new Response(JSON.stringify({ error: "orderId requis" }), {
@@ -189,7 +289,32 @@ serve(async (req) => {
     }
 
     // --- 5. Montant recalculé côté serveur ------------------------------
+    // Taxe et frais refaits ici puis réécrits sur la commande : la facture,
+    // l'admin et les statistiques lisent ces colonnes.
+    let calcul: { taxe: number; frais: number };
+    try {
+      calcul = await calculerCommande(supabaseClient, order, departement);
+    } catch (e) {
+      if (e instanceof PrixARecalculer) {
+        return new Response(JSON.stringify({ error: e.message }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw e;
+    }
+    if (Math.abs(calcul.taxe - (Number(order.montant_ht) || 0)) > 0.009 ||
+        Math.abs(calcul.frais - (Number(order.frais_dossier) || 0)) > 0.009) {
+      console.warn(`Montant corrige pour ${orderId} : taxe ${order.montant_ht} -> ${calcul.taxe}, frais ${order.frais_dossier} -> ${calcul.frais}`);
+    }
+    order.montant_ht = calcul.taxe;
+    order.frais_dossier = calcul.frais;
     const calculatedTotal = computeGuestTotal(order);
+    const { error: majError } = await supabaseClient
+      .from("guest_orders")
+      .update({ montant_ht: calcul.taxe, frais_dossier: calcul.frais, montant_ttc: calculatedTotal })
+      .eq("id", orderId);
+    if (majError) throw new Error(`Mise à jour du montant impossible : ${majError.message}`);
     const amountCents = Math.round(calculatedTotal * 100);
     if (amountCents <= 0) {
       return new Response(JSON.stringify({ error: "Montant invalide (0)" }), {
