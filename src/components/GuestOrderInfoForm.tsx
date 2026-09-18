@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { User, Check, Loader2, ChevronDown, ChevronUp, UserPlus, LogIn, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
@@ -108,7 +109,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       try {
         await supabase
           .from('guest_orders')
-          .update(partialData)
+          .update(partialData).setHeader(EN_TETE_COMMANDE, orderId)
           .eq('id', orderId);
       } catch (e) {
         // Silent fail for auto-save - the manual submit will retry
@@ -124,7 +125,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
   const loadExistingData = async () => {
     const { data, error } = await supabase
       .from('guest_orders')
-      .select('*')
+      .select('*').setHeader(EN_TETE_COMMANDE, orderId)
       .eq('id', orderId)
       .single();
 
@@ -246,7 +247,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       // Attempt DB save - use .select() to detect if rows were actually updated
       const { data: updateResult, error: updateError } = await supabase
         .from('guest_orders')
-        .update(updateData)
+        .update(updateData).setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId)
         .select('id, email, nom')
         .maybeSingle();
@@ -270,7 +271,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
           const { user_id: _, ...updateWithoutUserId } = updateData;
           const { error: retryError } = await supabase
             .from('guest_orders')
-            .update(updateWithoutUserId)
+            .update(updateWithoutUserId).setHeader(EN_TETE_COMMANDE, orderId)
             .eq('id', orderId);
 
           if (retryError) {
@@ -282,7 +283,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       // Verify data was actually saved (read back)
       const { data: verifyData } = await supabase
         .from('guest_orders')
-        .select('email, nom, prenom, telephone')
+        .select('email, nom, prenom, telephone').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId)
         .maybeSingle();
 

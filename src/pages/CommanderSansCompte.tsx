@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { useAuth } from "@/hooks/useAuth";
 import { Upload, FileCheck, CreditCard, Loader2, Shield, Clock, User, Mail, MapPin, ChevronLeft, ChevronRight, CheckCircle, Receipt, UserPlus, LogIn } from "lucide-react";
 import Navbar from "@/components/Navbar";
@@ -144,7 +145,7 @@ const InlineCheckoutForm = ({ order, formData, onSuccess }: { order: any; formDa
             paid_at: new Date().toISOString(),
             status: "paye",
             montant_ttc: finalTTC,
-          })
+          }).setHeader(EN_TETE_COMMANDE, order.id)
           .eq("id", order.id);
 
         toast({
@@ -370,7 +371,7 @@ const CommanderSansCompte = () => {
     if (!orderId) return;
     const { data, error } = await supabase
       .from("guest_orders")
-      .select("*")
+      .select("*").setHeader(EN_TETE_COMMANDE, String(orderId))
       .eq("id", orderId)
       .single();
 
@@ -500,7 +501,7 @@ const CommanderSansCompte = () => {
 
       const { error: updateError } = await supabase
         .from("guest_orders")
-        .update(updatePayload)
+        .update(updatePayload).setHeader(EN_TETE_COMMANDE, String(orderId))
         .eq("id", orderId);
 
       if (updateError) throw updateError;
@@ -508,14 +509,14 @@ const CommanderSansCompte = () => {
       // Delete old docs
       const { data: existingDocs } = await supabase
         .from("guest_order_documents")
-        .select("id, url")
+        .select("id, url").setHeader(EN_TETE_COMMANDE, String(orderId))
         .eq("order_id", orderId);
 
       if (existingDocs && existingDocs.length > 0) {
         for (const doc of existingDocs) {
           const path = doc.url.split('/').slice(-2).join('/');
           await supabase.storage.from("guest-order-documents").remove([path]);
-          await supabase.from("guest_order_documents").delete().eq("id", doc.id);
+          await supabase.from("guest_order_documents").delete().setHeader(EN_TETE_COMMANDE, String(orderId)).eq("id", doc.id);
         }
       }
 
@@ -536,7 +537,7 @@ const CommanderSansCompte = () => {
 
         // Delete existing doc of same type to prevent duplicates
         await supabase.from("guest_order_documents")
-          .delete()
+          .delete().setHeader(EN_TETE_COMMANDE, String(orderId))
           .eq("order_id", orderId)
           .eq("type_document", key);
 
@@ -547,7 +548,7 @@ const CommanderSansCompte = () => {
           url: urlData.publicUrl,
           taille_octets: file.size,
           validation_status: 'pending',
-        });
+        }).setHeader(EN_TETE_COMMANDE, String(orderId));
       }
 
       // Notify admin of new guest order

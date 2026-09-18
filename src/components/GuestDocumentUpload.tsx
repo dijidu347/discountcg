@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -151,7 +152,7 @@ export function GuestDocumentUpload({
 
       // Delete existing doc of same type+side to prevent duplicates on re-upload
       await supabase.from('guest_order_documents')
-        .delete()
+        .delete().setHeader(EN_TETE_COMMANDE, orderId)
         .eq('order_id', orderId)
         .eq('type_document', documentType)
         .eq('side', side);
@@ -164,7 +165,7 @@ export function GuestDocumentUpload({
         taille_octets: file.size,
         side: side,
         validation_status: 'pending',
-      }).select().single();
+      }).setHeader(EN_TETE_COMMANDE, orderId).select().single();
 
       if (insertError) throw insertError;
 
@@ -252,7 +253,7 @@ export function GuestDocumentUpload({
 
       await supabase
         .from('guest_order_documents')
-        .delete()
+        .delete().setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', fileToRemove.id);
 
       toast({

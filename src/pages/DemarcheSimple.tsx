@@ -8,6 +8,7 @@ import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { Loader2, ChevronLeft, FileText, ArrowRightLeft, CheckCircle, Car, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users, Bike, Receipt, Globe, XCircle, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Navbar from "@/components/Navbar";
@@ -141,7 +142,7 @@ export default function DemarcheSimple() {
         // Vérifier si la commande existe et son statut
         const { data: order, error } = await supabase
           .from('guest_orders')
-          .select('paye, nom, prenom, email, express, non_gage_mode')
+          .select('paye, nom, prenom, email, express, non_gage_mode').setHeader(EN_TETE_COMMANDE, orderIdParam)
           .eq('id', orderIdParam)
           .single();
 
@@ -169,7 +170,7 @@ export default function DemarcheSimple() {
             // Auto-save to DB so user doesn't need to click "Continuer en tant qu'invité"
             await supabase
               .from('guest_orders')
-              .update({ email: user.email, updated_at: new Date().toISOString() })
+              .update({ email: user.email, updated_at: new Date().toISOString() }).setHeader(EN_TETE_COMMANDE, orderIdParam)
               .eq('id', orderIdParam);
             setIsEmailSaved(true);
           }
@@ -201,7 +202,7 @@ export default function DemarcheSimple() {
     try {
       const { data: orderData } = await supabase
         .from('guest_orders')
-        .select('tracking_number, email, nom, prenom, immatriculation')
+        .select('tracking_number, email, nom, prenom, immatriculation').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId)
         .single();
       if (orderData?.email) {
@@ -278,7 +279,7 @@ export default function DemarcheSimple() {
               checked={express}
               onCheckedChange={async (checked) => {
                 setExpress(checked);
-                await supabase.from('guest_orders').update({ express: checked }).eq('id', orderId);
+                await supabase.from('guest_orders').update({ express: checked }).setHeader(EN_TETE_COMMANDE, orderId).eq('id', orderId);
               }}
             />
             {isNonGageRequired(demarcheType) && (
@@ -293,14 +294,14 @@ export default function DemarcheSimple() {
                     // alimente déjà le calcul serveur, la facture et les e-mails.
                     await supabase
                       .from('guest_orders')
-                      .update({ non_gage_mode: mode, certificat_non_gage: mode === 'facture' })
+                      .update({ non_gage_mode: mode, certificat_non_gage: mode === 'facture' }).setHeader(EN_TETE_COMMANDE, orderId)
                       .eq('id', orderId);
                   }}
                   onRetirer={async () => {
                     setNonGageMode(null);
                     await supabase
                       .from('guest_orders')
-                      .update({ non_gage_mode: null, certificat_non_gage: false })
+                      .update({ non_gage_mode: null, certificat_non_gage: false }).setHeader(EN_TETE_COMMANDE, orderId)
                       .eq('id', orderId);
                   }}
                   disabled={isPaid}

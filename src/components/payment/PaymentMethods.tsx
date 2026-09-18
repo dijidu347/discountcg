@@ -7,6 +7,7 @@ import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { StripeWalletPayment } from "@/components/StripeWalletPayment";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
@@ -78,7 +79,7 @@ const StripeCardForm = ({ amount, orderId, onSuccess }: { amount: number; orderI
             payment_intent_id: paymentIntent.id,
             paid_at: new Date().toISOString(),
             status: "paye",
-          })
+          }).setHeader(EN_TETE_COMMANDE, orderId)
           .eq("id", orderId);
 
         toast({
@@ -198,7 +199,7 @@ export const PaymentMethods = ({ amount, orderId, trackingNumber, departement, o
           paye: true,
           paid_at: new Date().toISOString(),
           status: "paye",
-        })
+        }).setHeader(EN_TETE_COMMANDE, orderId)
         .eq("id", orderId);
 
       if (error) throw error;

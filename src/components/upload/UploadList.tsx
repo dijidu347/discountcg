@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 
 interface UploadListProps {
@@ -92,7 +93,7 @@ export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) =
       // Load existing uploaded documents
       const { data: existingDocs } = await supabase
         .from('guest_order_documents')
-        .select('*')
+        .select('*').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('order_id', orderId);
 
       if (existingDocs) {
@@ -122,7 +123,7 @@ export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) =
       // Check order info for conditional documents and blocking
       const { data: order } = await supabase
         .from('guest_orders')
-        .select('requires_resubmission_payment, resubmission_paid, tracking_number, is_heberge, has_cotitulaire, email, nom, prenom, immatriculation, montant_ttc, marque, modele')
+        .select('requires_resubmission_payment, resubmission_paid, tracking_number, is_heberge, has_cotitulaire, email, nom, prenom, immatriculation, montant_ttc, marque, modele').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId)
         .single();
 
@@ -178,7 +179,7 @@ export const UploadList = ({ orderId, isPaid, demarcheType }: UploadListProps) =
       // Update order to indicate documents received
       await supabase
         .from('guest_orders')
-        .update({ documents_complets: true })
+        .update({ documents_complets: true }).setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId);
 
       // Send email only if email is provided

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Upload, Loader2, Send, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 import { NON_GAGE_DOCUMENT_LABEL } from "@/lib/nonGage";
 import { getCerfaUrl } from "@/lib/cerfa-utils";
@@ -103,7 +104,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType, includeSituati
       // et les informations qui pré-remplissent le mandat.
       const { data: orderMode } = await supabase
         .from('guest_orders')
-        .select('*')
+        .select('*').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId)
         .single();
       setCommande(orderMode as Record<string, unknown> | null);
@@ -156,7 +157,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType, includeSituati
       // Load existing uploaded documents
       const { data: existingDocs } = await supabase
         .from('guest_order_documents')
-        .select('*')
+        .select('*').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('order_id', orderId);
 
       if (existingDocs) {
@@ -192,7 +193,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType, includeSituati
       // Get order info
       const { data: order } = await supabase
         .from('guest_orders')
-        .select('tracking_number, email, nom, prenom, immatriculation, montant_ttc, marque, modele')
+        .select('tracking_number, email, nom, prenom, immatriculation, montant_ttc, marque, modele').setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId)
         .single();
 
@@ -265,7 +266,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType, includeSituati
     try {
       await supabase
         .from('guest_orders')
-        .update({ documents_complets: true })
+        .update({ documents_complets: true }).setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId);
 
       if (orderInfo.email && orderInfo.email.trim() !== '') {
@@ -363,7 +364,7 @@ export const UploadListSimple = ({ orderId, isPaid, demarcheType, includeSituati
             value={mandatMode}
             onChange={async (mode) => {
               setMandatMode(mode);
-              await supabase.from('guest_orders').update({ mandat_mode: mode }).eq('id', orderId);
+              await supabase.from('guest_orders').update({ mandat_mode: mode }).setHeader(EN_TETE_COMMANDE, orderId).eq('id', orderId);
             }}
             slotUpload={
               <div className="space-y-2">

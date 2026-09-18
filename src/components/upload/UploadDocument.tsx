@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Upload, X, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 
 interface UploadDocumentProps {
@@ -58,7 +59,7 @@ export const UploadDocument = ({ orderId, documentType, onUploadSuccess }: Uploa
       // (re-upload replaces the old document instead of creating a new row)
       await supabase
         .from('guest_order_documents')
-        .delete()
+        .delete().setHeader(EN_TETE_COMMANDE, orderId)
         .eq('order_id', orderId)
         .eq('type_document', documentType);
 
@@ -71,7 +72,7 @@ export const UploadDocument = ({ orderId, documentType, onUploadSuccess }: Uploa
           url: publicUrl,
           taille_octets: file.size,
           validation_status: 'pending',
-        });
+        }).setHeader(EN_TETE_COMMANDE, orderId);
 
       if (dbError) throw dbError;
 

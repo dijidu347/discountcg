@@ -5,6 +5,7 @@ import { DepartmentSelect } from "@/components/simulateur/DepartmentSelect";
 import { Loader2, Calculator, FileText, Car, FileCheck, MapPin, PlusCircle, Copy, Search, PenTool, Home, ScrollText, Users, Bike, Receipt, Globe, XCircle, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE, nouvelIdCommande } from "@/lib/commandeParticulier";
 import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { avecTaxe, sansPlaque } from "@/lib/taxeCarteGrise";
 import { Input } from "@/components/ui/input";
@@ -170,9 +171,12 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
           }
         }
 
+        const nouvelId = nouvelIdCommande();
         const { data: order, error } = await supabase
           .from('guest_orders')
           .insert({
+
+            id: nouvelId,
             tracking_number: '',
             immatriculation: saisieManuelle ? '' : plaque,
             email: '',
@@ -188,7 +192,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
             status: 'en_attente',
             paye: false,
             demarche_type: selectedTypeCode,
-          })
+          }).setHeader(EN_TETE_COMMANDE, nouvelId)
           .select()
           .single();
 
@@ -206,9 +210,12 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
         // Parcours DA/DC - prix fixe sans TVA
         const prixHT = currentDemarche.prix_base;
 
+        const nouvelId = nouvelIdCommande();
         const { data: order, error } = await supabase
           .from('guest_orders')
           .insert({
+
+            id: nouvelId,
             tracking_number: '',
             immatriculation: plaque,
             email: '',
@@ -224,7 +231,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
             status: 'en_attente',
             paye: false,
             demarche_type: selectedTypeCode,
-          })
+          }).setHeader(EN_TETE_COMMANDE, nouvelId)
           .select()
           .single();
 

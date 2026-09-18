@@ -76,8 +76,13 @@ export function GuestOrderChat({
       )
       .subscribe();
 
+    // Côté client, le temps réel ne voit plus les messages (la base ne les
+    // ouvre qu'à la requête qui porte la commande) : on relit toutes les 15 s.
+    const relecture = isAdmin ? null : setInterval(() => loadMessages(true), 15000);
+
     return () => {
       supabase.removeChannel(channel);
+      if (relecture) clearInterval(relecture);
     };
   }, [orderId]);
 
@@ -104,8 +109,8 @@ export function GuestOrderChat({
     }
   }, [messages, isAdmin]);
 
-  const loadMessages = async () => {
-    setLoading(true);
+  const loadMessages = async (silencieux = false) => {
+    if (!silencieux) setLoading(true);
     if (isAdmin) {
       // Admin: direct DB access
       const { data, error } = await supabase

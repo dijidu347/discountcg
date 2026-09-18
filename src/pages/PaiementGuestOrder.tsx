@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { Loader2, CheckCircle, CreditCard, ArrowLeft } from "lucide-react";
 import { loadStripe, Stripe } from "@stripe/stripe-js";
 import { Elements, CardElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -109,7 +110,7 @@ const CheckoutForm = ({ order }: { order: any }) => {
             paid_at: new Date().toISOString(),
             status: "paye",
             montant_ttc: finalTTC,
-          })
+          }).setHeader(EN_TETE_COMMANDE, order.id)
           .eq("id", order.id);
 
         toast({
@@ -304,7 +305,7 @@ const PaiementGuestOrder = () => {
 
     const { data, error } = await supabase
       .from("guest_orders")
-      .select("*")
+      .select("*").setHeader(EN_TETE_COMMANDE, String(orderId))
       .eq("id", orderId)
       .single();
 

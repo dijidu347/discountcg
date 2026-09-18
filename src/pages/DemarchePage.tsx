@@ -25,6 +25,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE, nouvelIdCommande } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
 import { DEMARCHES_AVEC_TAXE } from "@/lib/taxeCarteGrise";
@@ -77,9 +78,12 @@ const DemarchePage = () => {
 
       const prixHT = typeData?.prix_base || 30;
 
+      const nouvelId = nouvelIdCommande();
       const { data, error } = await supabase
         .from("guest_orders")
         .insert({
+
+          id: nouvelId,
           tracking_number: "",
           immatriculation: "",
           email: "",
@@ -95,7 +99,7 @@ const DemarchePage = () => {
           status: "en_attente",
           paye: false,
           demarche_type: demarche.code,
-        })
+        }).setHeader(EN_TETE_COMMANDE, nouvelId)
         .select("id")
         .single();
 

@@ -12,6 +12,7 @@ import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
 import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { Loader2, ChevronLeft, Zap, CheckCircle } from "lucide-react";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
@@ -185,7 +186,7 @@ export default function ResultatCarteGrise() {
         // vehicle-lookup quand la commande a déjà été enrichie (cf. plus bas).
         const { data: orderData } = await supabase
           .from("guest_orders")
-          .select("demarche_type, email, paye, express, marque, modele, energie, date_mec, puiss_fisc, genre")
+          .select("demarche_type, email, paye, express, marque, modele, energie, date_mec, puiss_fisc, genre").setHeader(EN_TETE_COMMANDE, orderIdParam)
           .eq("id", orderIdParam)
           .single();
         if (orderData?.demarche_type) {
@@ -369,7 +370,7 @@ export default function ResultatCarteGrise() {
           prix_cv_avant_abattement: calculation.prixCVAvantAbattement ?? null,
           taxe_parafiscale: calculation.taxeParafiscale,
           sous_total_arrondi: calculation.sousTotalArrondi,
-        })
+        }).setHeader(EN_TETE_COMMANDE, orderId)
         .eq('id', orderId);
 
       if (!error) {
@@ -645,7 +646,7 @@ export default function ResultatCarteGrise() {
                   try {
                     const { data: orderData } = await supabase
                       .from("guest_orders")
-                      .select("*")
+                      .select("*").setHeader(EN_TETE_COMMANDE, orderId)
                       .eq("id", orderId)
                       .single();
                     if (orderData) {

@@ -77,12 +77,9 @@ export default function MonEspace() {
           .from("user_roles")
           .upsert({ user_id: user.id, role: "particulier" as any }, { onConflict: "user_id,role" });
 
-        // Auto-link existing guest orders
-        await supabase
-          .from("guest_orders")
-          .update({ user_id: user.id })
-          .eq("email", user.email || "")
-          .is("user_id", null);
+        // Auto-link existing guest orders. Passe par le serveur : le client ne
+        // peut plus parcourir les commandes, et seul un email vérifié rattache.
+        await (supabase.rpc as unknown as (fn: string) => Promise<unknown>)("rattacher_mes_commandes");
       }
       setProfile(profileData);
 

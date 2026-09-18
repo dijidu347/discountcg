@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import {
   Loader2,
   CheckCircle,
@@ -1008,7 +1009,7 @@ const SuiviCommande = () => {
                                 .update({ 
                                   documents_complets: true,
                                   status: 'en_traitement'
-                                })
+                                }).setHeader(EN_TETE_COMMANDE, order.id)
                                 .eq('id', order.id);
 
                               // Send notification email
