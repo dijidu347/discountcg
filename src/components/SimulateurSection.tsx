@@ -77,8 +77,8 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
       const filteredData = (data || []).filter(t => t.code !== 'DA');
       setDemarcheTypes(filteredData);
       if (filteredData.length > 0) {
-        // Carte grise par defaut ; une page demarche soumise a taxe (succession,
-        // vehicule neuf, WW) arrive avec son type et le garde.
+        // Carte grise par defaut ; une page demarche dont on encaisse la taxe
+        // (immatriculation definitive) arrive avec son type et le garde.
         const typeToSelect = avecTaxe(initialType) && filteredData.some(t => t.code === initialType)
           ? initialType
           : filteredData.find(t => t.code === 'CG') ? 'CG' : filteredData[0].code;
@@ -94,7 +94,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
   const currentDemarche = demarcheTypes.find(t => t.code === selectedTypeCode);
   // Prix avec taxe de carte grise, calcule ici avant paiement.
   const calculTaxe = !!currentDemarche && (currentDemarche.require_carte_grise_price || avecTaxe(currentDemarche.code));
-  // Vehicule sans plaque francaise : caracteristiques saisies a l'etape suivante.
+  // Plaque WW provisoire : caracteristiques saisies a l'etape suivante.
   const saisieManuelle = sansPlaque(selectedTypeCode);
 
   const validatePlate = (plate: string) => {
@@ -148,7 +148,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
     setLoading(true);
     try {
       if (calculTaxe) {
-        // Vehicule sans plaque francaise : rien a lire au SIV, le client saisit
+        // Plaque WW provisoire : rien a lire au SIV, le client saisit
         // puissance, date et genre sur la page suivante.
         let vehicleData: { dateMiseEnCirculation?: string; chevauxFiscaux?: number; genre?: string } = {};
         if (!saisieManuelle) {
@@ -270,9 +270,8 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
           )}
           {saisieManuelle && (
             <p className="text-sm text-muted-foreground text-center mb-6">
-              Votre véhicule n'a pas encore de plaque française : choisissez votre département,
-              vous renseignerez ensuite ses caractéristiques (puissance fiscale,{" "}
-              {selectedTypeCode === 'CG_NEUF' ? "genre" : "date de 1re mise en circulation, genre"}).
+              Choisissez votre département : vous renseignerez ensuite les caractéristiques
+              du véhicule (puissance fiscale, date de 1re mise en circulation, genre).
             </p>
           )}
           {/* Plaque d'immatriculation visuelle */}

@@ -74,8 +74,7 @@ export default function ResultatCarteGrise() {
 
   const certificatNonGagePrix = NON_GAGE_PRICE_PARTICULIER;
 
-  // Frais de la démarche (catalogue particulier) : 30 € pour la carte grise,
-  // davantage pour une succession, un véhicule neuf ou un WW.
+  // Frais de la démarche, lus dans le catalogue particulier.
   const [fraisDossier, setFraisDossier] = useState<number>(30);
 
   // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché :
@@ -274,9 +273,7 @@ export default function ResultatCarteGrise() {
           freshVehicle?.puissance_fiscale && freshVehicle.puissance_fiscale > 0
             ? freshVehicle.puissance_fiscale
             : vehicleData.chevauxFiscaux;
-        // Véhicule neuf : mis en circulation aujourd'hui, la date n'est pas demandée.
-        const dateEffective = freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation
-          ?? (orderData?.demarche_type === "CG_NEUF" ? new Date().toISOString().slice(0, 10) : undefined);
+        const dateEffective = freshVehicle?.date_mec ?? vehicleData.dateMiseEnCirculation;
         const genreEffective = freshVehicle?.genre ?? vehicleData.genre;
 
         // Mémoriser le tarif (recalcul via formulaire) + les valeurs connues.
@@ -434,7 +431,7 @@ export default function ResultatCarteGrise() {
             <CardContent className="space-y-6">
               <p className="text-sm text-muted-foreground">
                 {sansPlaque(demarcheType)
-                  ? "Renseignez les caractéristiques de votre véhicule pour calculer le prix exact de votre carte grise. Vous les trouverez sur le certificat de conformité (COC) ou la carte grise étrangère."
+                  ? "Renseignez les caractéristiques de votre véhicule pour calculer le prix exact de votre carte grise. Vous les trouverez sur votre carte grise provisoire WW."
                   : "Certaines informations n'ont pas pu être lues automatiquement. Renseignez-les pour calculer le prix exact de votre carte grise."}
               </p>
 

@@ -134,7 +134,9 @@ function computeGuestTotal(order: any): number {
 //     au client) quand la plaque y figure, sinon ceux saisis sur la commande.
 // Listes recopiées de src/lib/taxeCarteGrise.ts et calculatePrice.ts.
 // ---------------------------------------------------------------------------
-const DEMARCHES_AVEC_TAXE = ["CG", "SUCCESSION", "CG_NEUF", "CPI_WW"];
+// Seules la carte grise et l'immatriculation définitive incluent la taxe
+// régionale ; pour les autres démarches, le client règle ses taxes lui-même.
+const DEMARCHES_AVEC_TAXE = ["CG", "IMMAT_DEFINITIVE"];
 const GENRES_AVEC_TAXE_PARAFISCALE = ["CTTE"];
 const MOTO_GENRES = ["MTL", "MTT1", "MTT2"];
 const GENRES_EXONERES_Y1 = ["CL", "TRA", "MAGA", "REM", "SREM"];
@@ -213,7 +215,6 @@ async function calculerCommande(
     if (siv?.date_mec) dateMec = siv.date_mec;
     if (siv?.genre) genre = siv.genre;
   }
-  if (!dateMec && order.demarche_type === "CG_NEUF") dateMec = new Date().toISOString().slice(0, 10);
 
   if (!(chevaux > 0) || !dateMec) {
     throw new PrixARecalculer("Les informations du véhicule sont incomplètes : refaites la simulation depuis le site.");

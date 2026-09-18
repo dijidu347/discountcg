@@ -18,6 +18,7 @@ import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/exp
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { isNonGageRequired, getNonGageSurcharge, NonGageMode } from "@/lib/nonGage";
+import { TAXES_A_REGLER_PAR_LE_CLIENT } from "@/lib/taxeCarteGrise";
 
 interface DemarcheTypeInfo {
   id: string;
@@ -295,6 +296,12 @@ export default function DemarcheSimple() {
                   disabled={isPaid}
                 />
               </div>
+            )}
+            {TAXES_A_REGLER_PAR_LE_CLIENT.includes(demarcheType) && (
+              <p className="text-sm mt-4 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+                Ce prix couvre nos frais de dossier. Les taxes de la carte grise ne sont pas
+                incluses et restent à votre charge.
+              </p>
             )}
             {demarcheTypeInfo?.description && (
               <p className="text-sm text-muted-foreground mt-4">{demarcheTypeInfo.description}</p>
