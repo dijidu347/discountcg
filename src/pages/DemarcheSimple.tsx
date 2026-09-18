@@ -20,6 +20,7 @@ import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
 import { isNonGageRequired, getNonGageSurcharge, NonGageMode } from "@/lib/nonGage";
 import { TAXES_A_REGLER_PAR_LE_CLIENT } from "@/lib/taxeCarteGrise";
+import { getDemarcheByCode } from "@/data/demarchesConfig";
 
 interface DemarcheTypeInfo {
   id: string;
@@ -243,13 +244,18 @@ export default function DemarcheSimple() {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
+        {/* Retour vers la page de la demarche : le simulateur ne concerne que
+            la carte grise. */}
         <Button
           variant="ghost"
-          onClick={() => navigate('/simulateur')}
+          onClick={() => {
+            const page = getDemarcheByCode(demarcheType);
+            navigate(page ? `/${page.slug}` : '/');
+          }}
           className="mb-8"
         >
           <ChevronLeft className="w-4 h-4 mr-2" />
-          Retour au simulateur
+          Retour
         </Button>
 
         {/* Header */}
@@ -262,10 +268,12 @@ export default function DemarcheSimple() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted-foreground">Immatriculation :</span>
-                <p className="font-medium">{plaque}</p>
-              </div>
+              {plaque && (
+                <div>
+                  <span className="text-muted-foreground">Immatriculation :</span>
+                  <p className="font-medium">{plaque}</p>
+                </div>
+              )}
               <div>
                 <span className="text-muted-foreground">Prix :</span>
                 <p className="font-bold text-primary text-lg">{formatPrice(totalTTC)}€</p>

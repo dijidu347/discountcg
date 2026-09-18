@@ -595,9 +595,13 @@ export default function Dashboard() {
                       en_attente: { label: "En attente", color: "text-orange-500", icon: Clock },
                       paye: { label: "Payée", color: "text-blue-500", icon: CheckCircle },
                       valide: { label: "Validée", color: "text-green-500", icon: CheckCircle },
-                      finalise: { label: "Finalisée", color: "text-primary", icon: CheckCircle }
+                      finalise: { label: "Finalisée", color: "text-primary", icon: CheckCircle },
+                      // Sans ces entrees, un dossier refuse s'affichait « En attente ».
+                      refuse: { label: "Refusée", color: "text-red-500", icon: AlertCircle },
+                      en_attente_paiement_client: { label: "Attente paiement client", color: "text-orange-500", icon: Clock },
+                      en_attente_paiement_pro: { label: "Attente de votre paiement", color: "text-orange-500", icon: Clock },
                     };
-                    const config = statusConfig[demarche.status] || statusConfig.en_attente;
+                    const config = statusConfig[demarche.status] || { label: demarche.status, color: "text-gray-500", icon: Clock };
                     const StatusIcon = config.icon;
 
                     return (
@@ -609,7 +613,9 @@ export default function Dashboard() {
                         <div className="flex items-center gap-3">
                           <div
                             className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              config.color.includes('blue')
+                              config.color.includes('red')
+                                ? 'bg-red-100'
+                                : config.color.includes('blue')
                                 ? 'bg-blue-100'
                                 : config.color.includes('green')
                                 ? 'bg-green-100'

@@ -602,11 +602,11 @@ export function DocumentsNecessaires({
               <a
                 href={getCerfaUrl(cerfaNumber)}
                 download
-                className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
+                className="text-primary hover:text-primary/80 underline font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
                 {doc.nom}
-                <Download className="h-3 w-3" />
+                <Download className="inline h-3 w-3 ml-1 align-baseline" />
               </a>
             </>
           ) : (
@@ -618,11 +618,11 @@ export function DocumentsNecessaires({
                     key={index}
                     href={getCerfaUrl(cerfaNumber)}
                     download
-                    className="text-primary hover:text-primary/80 underline inline-flex items-center gap-1 font-medium"
+                    className="text-primary hover:text-primary/80 underline font-medium"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {part}
-                    <Download className="h-3 w-3" />
+                    <Download className="inline h-3 w-3 ml-1 align-baseline" />
                   </a>
                 );
               }

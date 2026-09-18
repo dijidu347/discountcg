@@ -35,7 +35,9 @@ const statusLabels: Record<string, string> = {
   paye: "Payé",
   valide: "Validé",
   finalise: "Finalisé",
-  refuse: "Refusé"
+  refuse: "Refusé",
+  en_attente_paiement_client: "Attente paiement client",
+  en_attente_paiement_pro: "Attente de votre paiement",
 };
 
 const typeLabels: Record<string, string> = {

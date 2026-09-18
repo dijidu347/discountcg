@@ -76,13 +76,24 @@ serve(async (req) => {
       .select('*')
       .eq('order_id', order.id);
 
+    // Facture : fermee au public en base, le client la recupere ici avec sa
+    // commande (le telechargement verifie ensuite le numero de suivi).
+    const { data: facture } = await supabase
+      .from('factures')
+      .select('pdf_url')
+      .eq('guest_order_id', order.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         data: { 
           order, 
           documents: documents || [], 
-          adminDocuments: adminDocuments || [] 
+          adminDocuments: adminDocuments || [],
+          facturePdfUrl: facture?.pdf_url ?? null,
         } 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

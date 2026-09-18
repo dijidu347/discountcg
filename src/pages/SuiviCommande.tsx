@@ -122,15 +122,10 @@ const SuiviCommande = () => {
         setCarteGriseUrl(carteGriseDoc.url);
       }
 
-      // Get facture from factures table (public read with order_id)
-      const { data: facture } = await supabase
-        .from('factures')
-        .select('pdf_url')
-        .eq('guest_order_id', orderData.id)
-        .single();
-      
-      if (facture?.pdf_url) {
-        setFacturePath(extractPathFromUrl(facture.pdf_url));
+      // Facture renvoyee par get-guest-order : la table est fermee au public.
+      const facturePdfUrl: string | null = response.data.facturePdfUrl ?? null;
+      if (facturePdfUrl) {
+        setFacturePath(extractPathFromUrl(facturePdfUrl));
       }
     } catch (err) {
       console.error('Error loading order:', err);
@@ -699,7 +694,6 @@ const SuiviCommande = () => {
                         url={doc.url}
                         trackingNumber={order.tracking_number}
                         filename={doc.nom_fichier}
-                        trackingNumber={trackingNumber}
                         variant="default"
                         size="default"
                         className="inline-flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
@@ -722,7 +716,6 @@ const SuiviCommande = () => {
                         url={doc.url}
                         trackingNumber={order.tracking_number}
                         filename={doc.nom_fichier || doc.type_document}
-                        trackingNumber={trackingNumber}
                         variant="default"
                         size="default"
                         className="inline-flex items-center gap-2 px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
@@ -837,7 +830,6 @@ const SuiviCommande = () => {
                             url={doc.url}
                         trackingNumber={order.tracking_number}
                             filename={doc.nom_fichier || doc.type_document}
-                            trackingNumber={order.tracking_number}
                             variant="ghost"
                             size="icon"
                           />
