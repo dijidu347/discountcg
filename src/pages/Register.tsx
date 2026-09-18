@@ -214,7 +214,7 @@ export default function Register() {
                 <h3 className="font-semibold text-lg">Informations de l'entreprise</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="raisonSociale">Raison sociale *</Label>
+                  <Label htmlFor="raisonSociale">Raison sociale <span className="text-destructive">*</span></Label>
                   <Input
                     id="raisonSociale"
                     placeholder="Garage Martin SARL"
@@ -249,7 +249,7 @@ export default function Register() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="adresse">Adresse *</Label>
+                  <Label htmlFor="adresse">Adresse <span className="text-destructive">*</span></Label>
                   <Input
                     id="adresse"
                     placeholder="15 rue de la République"
@@ -261,7 +261,7 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="codePostal">Code postal *</Label>
+                    <Label htmlFor="codePostal">Code postal <span className="text-destructive">*</span></Label>
                     <Input
                       id="codePostal"
                       inputMode="numeric"
@@ -274,7 +274,7 @@ export default function Register() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="ville">Ville *</Label>
+                    <Label htmlFor="ville">Ville <span className="text-destructive">*</span></Label>
                     <Input
                       id="ville"
                       placeholder="Paris"
@@ -291,7 +291,7 @@ export default function Register() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email professionnel *</Label>
+                    <Label htmlFor="email">Email professionnel <span className="text-destructive">*</span></Label>
                     <Input
                       id="email"
                       type="email"
@@ -303,7 +303,7 @@ export default function Register() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="telephone">Téléphone *</Label>
+                    <Label htmlFor="telephone">Téléphone <span className="text-destructive">*</span></Label>
                     <Input
                       id="telephone"
                       type="tel"
@@ -352,7 +352,7 @@ export default function Register() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="password">Mot de passe *</Label>
+                    <Label htmlFor="password">Mot de passe <span className="text-destructive">*</span></Label>
                     <Input
                       id="password"
                       type="password"
@@ -365,7 +365,7 @@ export default function Register() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                    <Label htmlFor="confirmPassword">Confirmer le mot de passe <span className="text-destructive">*</span></Label>
                     <Input
                       id="confirmPassword"
                       type="password"

@@ -653,11 +653,11 @@ const CommanderSansCompte = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="nom">Nom *</Label>
+                    <Label htmlFor="nom">Nom <span className="text-destructive">*</span></Label>
                     <Input id="nom" value={formData.nom} onChange={(e) => setFormData({ ...formData, nom: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="prenom">Prénom *</Label>
+                    <Label htmlFor="prenom">Prénom <span className="text-destructive">*</span></Label>
                     <Input id="prenom" value={formData.prenom} onChange={(e) => setFormData({ ...formData, prenom: e.target.value })} />
                   </div>
                 </div>
@@ -675,11 +675,11 @@ const CommanderSansCompte = () => {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email *</Label>
+                    <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
                     <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="telephone">Téléphone *</Label>
+                    <Label htmlFor="telephone">Téléphone <span className="text-destructive">*</span></Label>
                     <Input id="telephone" type="tel" inputMode="tel" value={formData.telephone} onChange={(e) => setFormData({ ...formData, telephone: e.target.value })} />
                   </div>
                 </div>
@@ -735,16 +735,16 @@ const CommanderSansCompte = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="adresse">Adresse *</Label>
+                  <Label htmlFor="adresse">Adresse <span className="text-destructive">*</span></Label>
                   <Input id="adresse" value={formData.adresse} onChange={(e) => setFormData({ ...formData, adresse: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="code_postal">Code postal *</Label>
+                    <Label htmlFor="code_postal">Code postal <span className="text-destructive">*</span></Label>
                     <Input id="code_postal" inputMode="numeric" pattern="[0-9]*" value={formData.code_postal} onChange={(e) => setFormData({ ...formData, code_postal: e.target.value })} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ville">Ville *</Label>
+                    <Label htmlFor="ville">Ville <span className="text-destructive">*</span></Label>
                     <Input id="ville" value={formData.ville} onChange={(e) => setFormData({ ...formData, ville: e.target.value })} />
                   </div>
                 </div>
@@ -800,7 +800,7 @@ const CommanderSansCompte = () => {
                   <div key={doc.id} className="p-4 border rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
                       <Label className="font-medium">
-                        {doc.nom_document} {doc.obligatoire && '*'}
+                        {doc.nom_document} {doc.obligatoire && <span className="text-destructive">*</span>}
                       </Label>
                       {uploadedDocs[doc.nom_document] ? (
                         <Badge className="bg-green-500 text-white">

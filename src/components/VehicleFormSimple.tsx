@@ -419,7 +419,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="immatriculation">Immatriculation *</Label>
+                        <Label htmlFor="immatriculation">Immatriculation <span className="text-destructive">*</span></Label>
                         <div className="flex gap-2">
                           <Input
                             id="immatriculation"
@@ -508,7 +508,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
                     <>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="manual-immat">Immatriculation *</Label>
+                          <Label htmlFor="manual-immat">Immatriculation <span className="text-destructive">*</span></Label>
                           <Input
                             id="manual-immat"
                             placeholder="AA-123-AA"

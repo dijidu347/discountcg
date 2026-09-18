@@ -184,7 +184,7 @@ export default function CompleteProfile() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="raison_sociale">Raison sociale *</Label>
+                <Label htmlFor="raison_sociale">Raison sociale <span className="text-destructive">*</span></Label>
                 <Input
                   id="raison_sociale"
                   name="raison_sociale"
@@ -220,7 +220,7 @@ export default function CompleteProfile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="adresse">Adresse *</Label>
+                <Label htmlFor="adresse">Adresse <span className="text-destructive">*</span></Label>
                 <Input
                   id="adresse"
                   name="adresse"
@@ -233,7 +233,7 @@ export default function CompleteProfile() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code_postal">Code postal *</Label>
+                  <Label htmlFor="code_postal">Code postal <span className="text-destructive">*</span></Label>
                   <Input
                     id="code_postal"
                     name="code_postal"
@@ -247,7 +247,7 @@ export default function CompleteProfile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="ville">Ville *</Label>
+                  <Label htmlFor="ville">Ville <span className="text-destructive">*</span></Label>
                   <Input
                     id="ville"
                     name="ville"
@@ -260,7 +260,7 @@ export default function CompleteProfile() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telephone">Téléphone *</Label>
+                <Label htmlFor="telephone">Téléphone <span className="text-destructive">*</span></Label>
                 <Input
                   id="telephone"
                   name="telephone"

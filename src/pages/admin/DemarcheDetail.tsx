@@ -1857,7 +1857,7 @@ export default function DemarcheDetail() {
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="refusal-comment">Raison du refus *</Label>
+              <Label htmlFor="refusal-comment">Raison du refus <span className="text-destructive">*</span></Label>
               <Textarea
                 id="refusal-comment"
                 value={invalidDocDialog.comment}

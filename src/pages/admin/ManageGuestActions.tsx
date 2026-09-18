@@ -370,7 +370,7 @@ export default function ManageGuestActions() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="code">Code *</Label>
+                    <Label htmlFor="code">Code <span className="text-destructive">*</span></Label>
                     <Input
                       id="code"
                       value={editingAction.code}
@@ -379,7 +379,7 @@ export default function ManageGuestActions() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="prix">Prix base (€) *</Label>
+                    <Label htmlFor="prix">Prix base (€) <span className="text-destructive">*</span></Label>
                     <Input
                       id="prix"
                       type="number"
@@ -391,7 +391,7 @@ export default function ManageGuestActions() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="titre">Titre *</Label>
+                  <Label htmlFor="titre">Titre <span className="text-destructive">*</span></Label>
                   <Input
                     id="titre"
                     value={editingAction.titre}

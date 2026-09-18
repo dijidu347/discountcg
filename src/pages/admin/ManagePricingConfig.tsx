@@ -698,7 +698,7 @@ const ManagePricingConfig = () => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="code">Code *</Label>
+                  <Label htmlFor="code">Code <span className="text-destructive">*</span></Label>
                   <Input
                     id="code"
                     value={editingType.code}
@@ -708,7 +708,7 @@ const ManagePricingConfig = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="prix">Prix de base (€) *</Label>
+                  <Label htmlFor="prix">Prix de base (€) <span className="text-destructive">*</span></Label>
                   <Input
                     id="prix"
                     type="number"
@@ -720,7 +720,7 @@ const ManagePricingConfig = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="titre">Titre *</Label>
+                <Label htmlFor="titre">Titre <span className="text-destructive">*</span></Label>
                 <Input
                   id="titre"
                   value={editingType.titre}
@@ -808,7 +808,7 @@ const ManagePricingConfig = () => {
           {editingDoc && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="nom">Nom du document *</Label>
+                <Label htmlFor="nom">Nom du document <span className="text-destructive">*</span></Label>
                 <Input
                   id="nom"
                   value={editingDoc.nom_document}

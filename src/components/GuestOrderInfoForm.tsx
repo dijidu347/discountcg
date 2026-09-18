@@ -362,7 +362,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
               {/* Informations personnelles */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prenom">Prénom *</Label>
+                  <Label htmlFor="prenom">Prénom <span className="text-destructive">*</span></Label>
                   <Input
                     id="prenom"
                     value={prenom}
@@ -371,7 +371,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nom">Nom *</Label>
+                  <Label htmlFor="nom">Nom <span className="text-destructive">*</span></Label>
                   <Input
                     id="nom"
                     value={nom}
@@ -380,7 +380,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email *</Label>
+                  <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
                   <Input
                     id="email"
                     type="email"
@@ -390,7 +390,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="telephone">Téléphone *</Label>
+                  <Label htmlFor="telephone">Téléphone <span className="text-destructive">*</span></Label>
                   <Input
                     id="telephone"
                     type="tel"
@@ -442,7 +442,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="adresse">Adresse *</Label>
+                <Label htmlFor="adresse">Adresse <span className="text-destructive">*</span></Label>
                 <Input
                   id="adresse"
                   value={adresse}
@@ -453,7 +453,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="codePostal">Code postal *</Label>
+                  <Label htmlFor="codePostal">Code postal <span className="text-destructive">*</span></Label>
                   <Input
                     id="codePostal"
                     inputMode="numeric"
@@ -464,7 +464,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ville">Ville *</Label>
+                  <Label htmlFor="ville">Ville <span className="text-destructive">*</span></Label>
                   <Input
                     id="ville"
                     value={ville}
@@ -481,7 +481,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
                   {/* Cotitulaire - sans upload de documents ici */}
                   <div className="space-y-3">
-                    <Label>Inscrire un co-titulaire sur la carte grise ? *</Label>
+                    <Label>Inscrire un co-titulaire sur la carte grise ? <span className="text-destructive">*</span></Label>
                     <RadioGroup value={hasCotitulaire} onValueChange={setHasCotitulaire} className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="oui" id="cotitulaire-oui" />
@@ -497,7 +497,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                       <div className="ml-4 p-4 bg-muted/50 rounded-lg space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <Label htmlFor="cotitulairePrenom">Prénom du co-titulaire *</Label>
+                            <Label htmlFor="cotitulairePrenom">Prénom du co-titulaire <span className="text-destructive">*</span></Label>
                             <Input
                               id="cotitulairePrenom"
                               value={cotitulairePrenom}
@@ -506,7 +506,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
                             />
                           </div>
                           <div className="space-y-2">
-                            <Label htmlFor="cotitulaireNom">Nom du co-titulaire *</Label>
+                            <Label htmlFor="cotitulaireNom">Nom du co-titulaire <span className="text-destructive">*</span></Label>
                             <Input
                               id="cotitulaireNom"
                               value={cotitulaireNom}
@@ -524,7 +524,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
                   {/* Véhicule professionnel */}
                   <div className="space-y-3">
-                    <Label>Véhicule acheté auprès d'un professionnel automobile ? *</Label>
+                    <Label>Véhicule acheté auprès d'un professionnel automobile ? <span className="text-destructive">*</span></Label>
                     <RadioGroup value={vehiculePro} onValueChange={setVehiculePro} className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="oui" id="vehicule-pro-oui" />
@@ -539,7 +539,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
                   {/* Leasing */}
                   <div className="space-y-3">
-                    <Label>Véhicule en leasing, LLD ou LOA ? *</Label>
+                    <Label>Véhicule en leasing, LLD ou LOA ? <span className="text-destructive">*</span></Label>
                     <RadioGroup value={vehiculeLeasing} onValueChange={setVehiculeLeasing} className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="oui" id="leasing-oui" />
@@ -554,7 +554,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
                   {/* Mineur */}
                   <div className="space-y-3">
-                    <Label>Je suis mineur (-18 ans) ? *</Label>
+                    <Label>Je suis mineur (-18 ans) ? <span className="text-destructive">*</span></Label>
                     <RadioGroup value={isMineur} onValueChange={setIsMineur} className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="oui" id="mineur-oui" />
@@ -569,7 +569,7 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
 
                   {/* Hébergé */}
                   <div className="space-y-3">
-                    <Label>Je suis hébergé (famille, proche, etc...) ? *</Label>
+                    <Label>Je suis hébergé (famille, proche, etc...) ? <span className="text-destructive">*</span></Label>
                     <RadioGroup value={isHeberge} onValueChange={setIsHeberge} className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="oui" id="heberge-oui" />

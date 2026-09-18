@@ -667,7 +667,7 @@ export default function GuestOrderDetail() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Nom du document *</Label>
+                  <Label>Nom du document <span className="text-destructive">*</span></Label>
                   <Input placeholder="Ex: Certificat..." value={adminDocName} onChange={(e) => setAdminDocName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
@@ -675,7 +675,7 @@ export default function GuestOrderDetail() {
                   <Input placeholder="Description..." value={adminDocDescription} onChange={(e) => setAdminDocDescription(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Fichier *</Label>
+                  <Label>Fichier <span className="text-destructive">*</span></Label>
                   <Input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" onChange={(e) => { const f = e.target.files?.[0]; if (f) { setAdminDocFile(f); if (!adminDocName) setAdminDocName(f.name.replace(/\.[^.]+$/, '')); } }} />
                 </div>
                 <Button onClick={async () => {

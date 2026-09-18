@@ -94,7 +94,7 @@ export function VehicleInfoFormPro({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="marque">Marque *</Label>
+            <Label htmlFor="marque">Marque <span className="text-destructive">*</span></Label>
             <Input
               id="marque"
               placeholder="Ex: Renault, Peugeot..."
@@ -108,7 +108,7 @@ export function VehicleInfoFormPro({
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="modele">Modèle *</Label>
+            <Label htmlFor="modele">Modèle <span className="text-destructive">*</span></Label>
             <Input
               id="modele"
               placeholder="Ex: Clio, 308..."
@@ -120,7 +120,7 @@ export function VehicleInfoFormPro({
 
         <div className="space-y-2">
           <Label htmlFor="vin">
-            {libelleVin} {requireVin && "*"}
+            {libelleVin} {requireVin && <span className="text-destructive">*</span>}
           </Label>
           <Input
             id="vin"

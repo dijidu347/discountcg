@@ -200,7 +200,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
         
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="immatriculation">Immatriculation *</Label>
+            <Label htmlFor="immatriculation">Immatriculation <span className="text-destructive">*</span></Label>
             <Input
               id="immatriculation"
               placeholder="AA-123-AA ou 1234 ABC 45"
@@ -212,7 +212,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="departement">Département d'immatriculation *</Label>
+            <Label htmlFor="departement">Département d'immatriculation <span className="text-destructive">*</span></Label>
             <Popover open={openDepartement} onOpenChange={setOpenDepartement}>
               <PopoverTrigger asChild>
                 <Button

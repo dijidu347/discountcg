@@ -125,7 +125,7 @@ export default function RegisterParticulier() {
             <form onSubmit={handleRegister} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="prenom">Prénom *</Label>
+                  <Label htmlFor="prenom">Prénom <span className="text-destructive">*</span></Label>
                   <Input
                     id="prenom"
                     placeholder="Jean"
@@ -135,7 +135,7 @@ export default function RegisterParticulier() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="nom">Nom *</Label>
+                  <Label htmlFor="nom">Nom <span className="text-destructive">*</span></Label>
                   <Input
                     id="nom"
                     placeholder="Dupont"
@@ -147,7 +147,7 @@ export default function RegisterParticulier() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">Email <span className="text-destructive">*</span></Label>
                 <Input
                   id="email"
                   type="email"
@@ -159,7 +159,7 @@ export default function RegisterParticulier() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="telephone">Téléphone *</Label>
+                <Label htmlFor="telephone">Téléphone <span className="text-destructive">*</span></Label>
                 <Input
                   id="telephone"
                   type="tel"
@@ -172,7 +172,7 @@ export default function RegisterParticulier() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Mot de passe *</Label>
+                <Label htmlFor="password">Mot de passe <span className="text-destructive">*</span></Label>
                 <Input
                   id="password"
                   type="password"
@@ -185,7 +185,7 @@ export default function RegisterParticulier() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe *</Label>
+                <Label htmlFor="confirmPassword">Confirmer le mot de passe <span className="text-destructive">*</span></Label>
                 <Input
                   id="confirmPassword"
                   type="password"
