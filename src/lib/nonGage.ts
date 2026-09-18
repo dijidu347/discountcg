@@ -5,6 +5,9 @@
 // Règle métier : sur les démarches CG, DA et DC, la pièce est obligatoire. Soit
 // le client la dépose lui-même, soit nous la commandons pour lui et elle est
 // facturée. Le tarif diffère selon l'audience.
+// Exception : la DC d'un particulier. L'administration ne demande pas le
+// certificat pour enregistrer une cession (le vendeur le remet à l'acheteur),
+// on le propose donc en option sans l'imposer.
 
 export type NonGageMode = "fourni" | "facture";
 
@@ -25,6 +28,16 @@ export const NON_GAGE_PRICE_PARTICULIER = 10;
 export function isNonGageRequired(type: string | null | undefined): boolean {
   if (!type) return false;
   return NON_GAGE_TYPES.includes(type);
+}
+
+// Démarches où, côté particulier, le certificat n'est qu'une option payante.
+const NON_GAGE_FACULTATIF_PARTICULIER = ["DC"];
+
+export function isNonGageOptional(
+  type: string | null | undefined,
+  audience: "pro" | "particulier",
+): boolean {
+  return audience === "particulier" && !!type && NON_GAGE_FACULTATIF_PARTICULIER.includes(type);
 }
 
 export function getNonGagePrice(audience: "pro" | "particulier"): number {

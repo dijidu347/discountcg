@@ -17,7 +17,7 @@ import { Helmet } from "react-helmet-async";
 import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/expressOption";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
-import { isNonGageRequired, getNonGageSurcharge, NonGageMode } from "@/lib/nonGage";
+import { isNonGageRequired, isNonGageOptional, getNonGageSurcharge, NonGageMode } from "@/lib/nonGage";
 import { TAXES_A_REGLER_PAR_LE_CLIENT } from "@/lib/taxeCarteGrise";
 
 interface DemarcheTypeInfo {
@@ -101,7 +101,10 @@ export default function DemarcheSimple() {
     + getNonGageSurcharge(demarcheType, nonGageMode, "particulier"); // Pas de TVA pour DA/DC
 
   // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché.
-  const nonGageChoisi = !isNonGageRequired(demarcheType) || nonGageMode !== null;
+  // Sur la DC d'un particulier, le certificat est une option : rien à trancher.
+  const nonGageChoisi = !isNonGageRequired(demarcheType)
+    || isNonGageOptional(demarcheType, "particulier")
+    || nonGageMode !== null;
 
   useEffect(() => {
     const loadData = async () => {
@@ -291,6 +294,13 @@ export default function DemarcheSimple() {
                     await supabase
                       .from('guest_orders')
                       .update({ non_gage_mode: mode, certificat_non_gage: mode === 'facture' })
+                      .eq('id', orderId);
+                  }}
+                  onRetirer={async () => {
+                    setNonGageMode(null);
+                    await supabase
+                      .from('guest_orders')
+                      .update({ non_gage_mode: null, certificat_non_gage: false })
                       .eq('id', orderId);
                   }}
                   disabled={isPaid}
