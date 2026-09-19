@@ -514,7 +514,7 @@ export const MandatGenerator = ({
                   Le vérifier
                 </a>
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => setGeneratedUrl(null)}>
+              <Button type="button" variant="ghost" size="sm" onClick={() => setGeneratedUrl(null)}>
                 Corriger et régénérer
               </Button>
             </AlertDescription>
@@ -524,7 +524,7 @@ export const MandatGenerator = ({
           <p className="text-xs text-muted-foreground">
             <span className="text-destructive font-bold">*</span> = champ obligatoire
           </p>
-          <Button onClick={generer} disabled={generating} className="w-full">
+          <Button type="button" onClick={generer} disabled={generating} className="w-full">
             {generating ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

@@ -226,7 +226,6 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
               value={immatriculation}
               onChange={(e) => setImmatriculation(e.target.value.toUpperCase())}
               disabled={priceCalculated}
-              required
             />
           </div>
 

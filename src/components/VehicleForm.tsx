@@ -195,7 +195,6 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
                   placeholder="AA-123-AA ou 1234 ABC 45"
                   value={formData.immatriculation}
                   onChange={(e) => setFormData({ ...formData, immatriculation: e.target.value.toUpperCase() })}
-                  required
                 />
               </div>
 
@@ -229,7 +228,7 @@ export function VehicleForm({ garageId, onVehicleSelect, selectedVehicleId, onPr
               </div>
             </div>
 
-            <Button
+            <Button type="button"
               onClick={handleSubmit}
               disabled={loading || !formData.immatriculation.trim()}
               className="w-full"

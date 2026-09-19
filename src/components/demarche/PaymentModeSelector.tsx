@@ -155,7 +155,7 @@ export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMod
             )}
           </div>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => { onConfirm(); /* toggle back */ }}>
+        <Button type="button" variant="ghost" size="sm" onClick={() => { onConfirm(); /* toggle back */ }}>
           Modifier
         </Button>
       </div>
@@ -265,7 +265,7 @@ export function PaymentModeSelector({ onSelect, onConfirm, confirmed, initialMod
         </div>
       )}
 
-      <Button
+      <Button type="button"
         onClick={handleConfirm}
         disabled={!isValid}
         className="w-full bg-blue-600 hover:bg-blue-700"

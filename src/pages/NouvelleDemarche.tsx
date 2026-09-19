@@ -1455,7 +1455,7 @@ export default function NouvelleDemarche() {
         <title>Nouvelle démarche | Discount Carte Grise</title>
       </Helmet>
       <div className="container mx-auto px-4 py-8">
-        <Button
+        <Button type="button"
           variant="ghost"
           onClick={() => navigate("/dashboard")}
           className="mb-6"
@@ -2021,7 +2021,7 @@ export default function NouvelleDemarche() {
                                 </p>
                               </div>
                             </div>
-                            <Button
+                            <Button type="button"
                               onClick={handleTokenPayment}
                               disabled={!canPayWithTokens() || payingWithTokens}
                               className="bg-primary hover:bg-primary/90"
