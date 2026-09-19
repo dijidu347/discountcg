@@ -407,7 +407,7 @@ export default function NouvelleDemarche() {
       documentsRequis, nonGageMode]);
   const enErreur = (cle: string) => afficherManquants && manquants.some((m) => m.cle === cle);
   const cadreErreur = (cle: string) =>
-    enErreur(cle) ? "rounded-lg ring-2 ring-destructive ring-offset-2" : "";
+    enErreur(cle) ? "[&>*]:border-2 [&>*]:border-destructive [&>*]:bg-red-50" : "";
 
   useEffect(() => {
     console.log("=== DEBUG DUPLICATA_CG_PRO ===");
@@ -1302,8 +1302,9 @@ export default function NouvelleDemarche() {
   // auparavant present que sur CG/DA/DC, et les demarches PRO n'offraient que
   // le depot d'un Cerfa rempli a la main.
   const blocMandat = mandatRequis && demarcheId ? (
-    <div id="bloc-mandat" className={`space-y-3 scroll-mt-24 ${cadreErreur("mandat")}`}>
+    <div id="bloc-mandat" className="space-y-3 scroll-mt-24">
                               <MandatChoice
+                                enErreur={enErreur("mandat")}
                                 value={mandatMode}
                                 onChange={async (mode) => {
                                   setMandatMode(mode);

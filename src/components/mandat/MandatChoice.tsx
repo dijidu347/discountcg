@@ -13,6 +13,8 @@ interface MandatChoiceProps {
   slotUpload?: ReactNode;
   slotGenere?: ReactNode;
   disabled?: boolean;
+  // Signale la carte en rouge quand le mandat manque au paiement.
+  enErreur?: boolean;
 }
 
 // Comment le client obtient son mandat. Le pré-remplissage est proposé à côté du
@@ -24,8 +26,9 @@ export const MandatChoice = ({
   slotUpload,
   slotGenere,
   disabled = false,
+  enErreur = false,
 }: MandatChoiceProps) => (
-  <div className="space-y-3 p-4 rounded-lg border-2 border-border bg-card">
+  <div className={`space-y-3 p-4 rounded-lg border-2 ${enErreur ? "border-destructive bg-red-50" : "border-border bg-card"}`}>
     <div className="flex items-center gap-2">
       <FileSignature className="w-4 h-4 text-primary" />
       <p className="font-medium">
