@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { applyATraiterFilters } from "@/lib/demarcheFilters";
+import { AlertesSms } from "@/components/admin/AlertesSms";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -458,6 +459,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Revenue Stats Section - Link to full page */}
+        <AlertesSms />
+
         <Card className="mb-8 cursor-pointer hover:border-primary transition-colors" onClick={() => navigate("/admin/revenus")}>
           <CardHeader>
             <div className="flex items-center justify-between">

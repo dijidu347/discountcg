@@ -10,6 +10,7 @@ import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
 import { calculatePrice, PriceCalculation } from "@/utils/calculatePrice";
+import { GenreVehiculeChoice } from "@/components/simulateur/GenreVehiculeChoice";
 import { getVehicleByPlate, NormalizedVehicleData } from "@/lib/vehicle-api";
 import { supabase } from "@/integrations/supabase/client";
 import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
@@ -94,6 +95,17 @@ export default function ResultatCarteGrise() {
     return prixCarteGrise + totalServicesHT;
   };
 
+  // Dernières valeurs du calcul : un changement de genre (VP / utilitaire) le
+  // refait sans redemander la puissance ni la date.
+  const [parametresCalcul, setParametresCalcul] = useState<{ puissance: number; dateMec: string; tarif: number } | null>(null);
+  const genreAffiche = vehicleInfo?.genre || knownGenre;
+  const changerGenre = (genre: "VP" | "CTTE") => {
+    setVehicleInfo((prev) => ({ ...(prev ?? {}), genre }) as NormalizedVehicleData);
+    if (parametresCalcul) {
+      calculerEtAfficher(parametresCalcul.puissance, parametresCalcul.dateMec, genre, parametresCalcul.tarif);
+    }
+  };
+
   // Champs manquants au SIV (les DEUX sources vides = à saisir à la main).
   const missingPuissance = !(knownPuissance > 0);
   const missingDate = !knownDate;
@@ -111,6 +123,7 @@ export default function ResultatCarteGrise() {
     try {
       const calc = calculatePrice(tarifValue, puissance, dateMec, genre);
       setCalculation(calc);
+      setParametresCalcul({ puissance, dateMec, tarif: tarifValue });
     } catch (e) {
       console.error("Erreur calculatePrice:", e);
       toast({
@@ -477,8 +490,9 @@ export default function ResultatCarteGrise() {
                       <SelectValue placeholder="Sélectionnez le genre" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="VP">Voiture particulière (VT, M1)</SelectItem>
-                      <SelectItem value="AUTRE">Autre type de véhicule (utilitaire, moto…)</SelectItem>
+                      <SelectItem value="VP">Voiture particulière (VP)</SelectItem>
+                      <SelectItem value="CTTE">Utilitaire (CTTE)</SelectItem>
+                      <SelectItem value="AUTRE">Autre type de véhicule (moto, camping-car…)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -600,6 +614,14 @@ export default function ResultatCarteGrise() {
                 entre les options et le paiement : le client voit ce qu'il paie
                 juste avant de payer, plutôt que dans une colonne annexe reléguée
                 en bas de page sur mobile. */}
+            {!isPaid && (
+              <GenreVehiculeChoice
+                genre={genreAffiche}
+                modele={vehicleInfo?.modele}
+                onChange={changerGenre}
+              />
+            )}
+
             <PriceSummary
               calculation={calculation}
               departement={departement}

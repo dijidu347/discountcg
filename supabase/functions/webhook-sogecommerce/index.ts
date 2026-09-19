@@ -41,6 +41,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { PDFDocument, rgb, StandardFonts } from "https://esm.sh/pdf-lib@1.17.1";
+import { envoyerSmsAlerte } from "../_shared/smsAlerte.ts";
 
 // -----------------------------
 // Types (recopiés de webhook-stripe)
@@ -536,44 +537,24 @@ function isPaymentSuccessful(fields: Record<string, string>): boolean {
 // SMS d'alerte "Dossier Prioritaire" (option express) — NON bloquant.
 // Ne doit jamais casser le paiement : toute erreur est avalée dans le try/catch.
 // ---------------------------------------------------------------------------
-async function sendExpressSms(message: string) {
+async function sendExpressSms(
+  supabase: SupabaseClient,
+  contexte: string,
+  reference: string | null,
+  message: string,
+) {
+  const resultat = await envoyerSmsAlerte(supabase, { contexte, reference, message });
+  if (resultat.envoye) return;
   // Alerte interne par email quand le SMS échoue — NON bloquante, ne throw jamais.
-  const notifySmsFailure = async (reason: string) => {
-    try {
-      for (const admin of ADMIN_EMAILS) {
-        await sendEmail("custom_notification", admin, {
-          subject: "⚠️ Échec alerte SMS dossier prioritaire",
-          message: `Le SMS d'alerte n'a pas pu être envoyé.\n\nRaison : ${reason}\n\nMessage prévu :\n${message}`,
-        });
-      }
-    } catch (e) {
-      console.error("Echec envoi email alerte SMS:", e);
-    }
-  };
-
   try {
-    const apiKey = Deno.env.get("SMSPARTNER_API_KEY");
-    const phoneNumber = Deno.env.get("SMS_ALERT_NUMBER");
-    if (!apiKey || !phoneNumber) {
-      console.error("SMS non envoye: SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant");
-      await notifySmsFailure("SMSPARTNER_API_KEY ou SMS_ALERT_NUMBER manquant (secret absent)");
-      return;
-    }
-    const res = await fetch("https://api.smspartner.fr/v1/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ apiKey, phoneNumbers: phoneNumber, message }),
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok || data?.success === false) {
-      console.error("Echec envoi SMS Partner:", res.status, data);
-      await notifySmsFailure(`SMS Partner a refusé (HTTP ${res.status}) — ${JSON.stringify(data)}`);
-    } else {
-      console.log("SMS alerte envoye");
+    for (const admin of ADMIN_EMAILS) {
+      await sendEmail("custom_notification", admin, {
+        subject: "⚠️ Échec alerte SMS dossier prioritaire",
+        message: `Le SMS d'alerte n'a pas pu être envoyé.\n\nRaison : ${resultat.erreur}${resultat.reponse ? ` — ${JSON.stringify(resultat.reponse)}` : ""}\n\nMessage prévu :\n${message}`,
+      });
     }
   } catch (e) {
-    console.error("Exception envoi SMS:", e);
-    await notifySmsFailure(`Exception lors de l'envoi : ${e instanceof Error ? e.message : String(e)}`);
+    console.error("Echec envoi email alerte SMS:", e);
   }
 }
 
@@ -661,7 +642,7 @@ async function handleDemarchePayment(
   // SMS alerte dossier prioritaire (non bloquant) — uniquement quand la démarche
   // passe réellement à payé (pro_pays_all) ; en mode split, paye reste false.
   if (paymentMode !== "split" && demarche.express) {
-    await sendExpressSms(`Nouveau dossier PRIORITAIRE paye: ${demarche.numero_demarche} (${demarche.type}). A traiter sous 2h.`);
+    await sendExpressSms(supabase, "paiement_pro", demarche.numero_demarche, `Nouveau dossier PRIORITAIRE paye: ${demarche.numero_demarche} (${demarche.type}). A traiter sous 2h.`);
   }
 
   // Crée l'enregistrement paiement (identifiant Sogecommerce dans
@@ -900,7 +881,7 @@ async function handleGuestOrderPayment(
 
   // SMS alerte dossier prioritaire (non bloquant)
   if (order.express) {
-    await sendExpressSms(`Nouveau dossier PRIORITAIRE paye: ${order.tracking_number} (${order.demarche_type}). A traiter sous 2h.`);
+    await sendExpressSms(supabase, "paiement_particulier", order.tracking_number, `Nouveau dossier PRIORITAIRE paye: ${order.tracking_number} (${order.demarche_type}). A traiter sous 2h.`);
   }
 
   // Relit la commande (les infos ont pu être saisies avant le paiement)
@@ -1148,7 +1129,7 @@ async function handleClientPayment(
   // SMS alerte dossier prioritaire (non bloquant). Couvre la PART CLIENT
   // (fin d'un split ET mode client_pays_all) — cas non gérés par handleDemarchePayment.
   if (demarche.express) {
-    await sendExpressSms(`Nouveau dossier PRIORITAIRE paye: ${demarche.numero_demarche} (${demarche.type}). A traiter rapidement.`);
+    await sendExpressSms(supabase, "paiement_client", demarche.numero_demarche, `Nouveau dossier PRIORITAIRE paye: ${demarche.numero_demarche} (${demarche.type}). A traiter rapidement.`);
   }
 
   // Crée l'enregistrement paiement (payer_type = client).

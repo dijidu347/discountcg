@@ -67,3 +67,5 @@ project_id = "oiotlgkfwuwshpwraneb"
     verify_jwt = false
   [functions.webhook-stripe]
     verify_jwt = false
+  [functions.alerte-sms]
+    verify_jwt = true

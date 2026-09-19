@@ -410,6 +410,11 @@ const PaiementDemarche = () => {
       });
       if (balanceError) throw new Error(balanceError.message);
       const newBalance = Number((paiement as { nouveau_solde: number })?.nouveau_solde ?? 0);
+      // Dossier prioritaire payé en jetons : la banque ne passe pas par le
+      // webhook, l'alerte SMS est demandée ici (le serveur vérifie et dédoublonne).
+      if (demarche?.express) {
+        supabase.functions.invoke("alerte-sms", { body: { demarcheId } }).catch(() => {});
+      }
 
       if (currentPaymentMode === 'split') {
         // Auto-create and send client payment link

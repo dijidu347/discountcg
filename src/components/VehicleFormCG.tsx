@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { PriceCalculation } from "@/utils/calculatePrice";
+import { GenreVehiculeChoice } from "@/components/simulateur/GenreVehiculeChoice";
 import { Car, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +39,9 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const [immatriculation, setImmatriculation] = useState("");
   const [openDepartement, setOpenDepartement] = useState(false);
   const [departments, setDepartments] = useState<DepartmentTariff[]>([]);
+  // Tarif du département retenu : sert à refaire le calcul si le genre change.
+  const [tarifRetenu, setTarifRetenu] = useState<number>(0);
+  const [valide, setValide] = useState(false);
 
   useEffect(() => {
     const fetchDepartments = async () => {
@@ -96,6 +100,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
           setCalculatedPrice(priceResult.prixTotal);
           setPriceDetails(priceResult);
           setPriceCalculated(true);
+          setTarifRetenu(selectedDept.tarif);
 
           const abattementText = priceResult.abattement ? " (abattement -50% appliqué)" : "";
           toast({
@@ -132,7 +137,20 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
     }
   };
 
+  // Correction VP / utilitaire (case J.1) : même calcul, autre genre.
+  const changerGenre = async (genre: "VP" | "CTTE") => {
+    if (!vehicleData || !tarifRetenu) return;
+    const { calculatePrice } = await import("@/utils/calculatePrice");
+    const priceResult = calculatePrice(tarifRetenu, Number(vehicleData.puissance_fiscale), vehicleData.date_mec, genre);
+    setVehicleData({ ...vehicleData, genre });
+    setCalculatedPrice(priceResult.prixTotal);
+    setPriceDetails(priceResult);
+    // Déjà validé : la démarche doit porter le nouveau prix.
+    if (valide && onPriceCalculated) onPriceCalculated(priceResult.prixTotal, priceResult);
+  };
+
   const handleModify = () => {
+    setValide(false);
     setPriceCalculated(false);
     setCalculatedPrice(0);
     setPriceDetails(null);
@@ -141,6 +159,7 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
 
   const handleValidate = () => {
     if (!vehicleData) return;
+    setValide(true);
 
     // Notifier le parent du prix calculé + du détail complet (snapshot).
     // Le détail vient du même priceResult que le prix — aucun recalcul.
@@ -293,6 +312,14 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
                 <p className="text-lg font-bold mt-2">Prix: {formatPrice(calculatedPrice)}€</p>
               </div>
             </div>
+          )}
+
+          {priceCalculated && vehicleData && (
+            <GenreVehiculeChoice
+              genre={vehicleData.genre}
+              modele={vehicleData.modele}
+              onChange={changerGenre}
+            />
           )}
         </div>
 

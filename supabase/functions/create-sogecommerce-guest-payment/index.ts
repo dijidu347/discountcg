@@ -217,7 +217,10 @@ async function calculerCommande(
     const siv = cache?.found ? cache.data : null;
     if (Number(siv?.puissance_fiscale) > 0) chevaux = Number(siv.puissance_fiscale);
     if (siv?.date_mec) dateMec = siv.date_mec;
-    if (siv?.genre) genre = siv.genre;
+    // Genre : le client peut corriger VP <-> utilitaire (case J.1, le fichier
+    // se trompe parfois) ; pour tout autre genre, le fichier fait foi.
+    const corrigeable = (g: unknown) => ["VP", "CTTE"].includes(String(g || "").toUpperCase());
+    if (siv?.genre && !(corrigeable(siv.genre) && corrigeable(order.genre))) genre = siv.genre;
   }
 
   if (!(chevaux > 0) || !dateMec) {

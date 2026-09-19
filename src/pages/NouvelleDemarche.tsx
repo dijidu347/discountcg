@@ -1190,6 +1190,12 @@ export default function NouvelleDemarche() {
       })
       .eq('id', demarcheId);
 
+    // Dossier prioritaire réglé en jetons ou offert : aucune banque, donc aucun
+    // webhook pour prévenir par SMS ; le serveur vérifie et n'envoie qu'une fois.
+    if (expressSelected) {
+      supabase.functions.invoke("alerte-sms", { body: { demarcheId } }).catch(() => {});
+    }
+
     // Charger les données de la démarche pour l'envoi des mails
     const { data: demarche } = await supabase
       .from('demarches')
