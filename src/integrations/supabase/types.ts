@@ -2208,6 +2208,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      appel_de_confiance: { Args: never; Returns: boolean }
       bilan_compression: {
         Args: never
         Returns: {
