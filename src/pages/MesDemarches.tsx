@@ -173,12 +173,15 @@ export default function MesDemarches() {
         .order('created_at', { ascending: false });
 
       if (demarchesData) {
-        setDemarches(demarchesData);
-        setFilteredDemarches(demarchesData);
+        // Une démarche offerte pas encore envoyée reste un brouillon : elle est
+        // listée plus bas dans « Brouillons », pas ici comme si elle était partie.
+        const envoyees = demarchesData.filter((d) => !(d.is_draft && d.is_free_token && !d.paye));
+        setDemarches(envoyees);
+        setFilteredDemarches(envoyees);
 
         // Niveau 1 — statuts terminaux : une démarche traitée n'affiche jamais de pastille.
         const TERMINAL_STATUSES = ['valide', 'finalise', 'refuse'];
-        const demarcheIds = demarchesData
+        const demarcheIds = envoyees
           .filter((d) => !TERMINAL_STATUSES.includes(d.status))
           .map((d) => d.id);
 
@@ -215,7 +218,6 @@ export default function MesDemarches() {
         .eq('garage_id', garageData.id)
         .eq('is_draft', true)
         .eq('paye', false)
-        .eq('is_free_token', false)
         .order('created_at', { ascending: false });
 
       if (brouillonsData) {

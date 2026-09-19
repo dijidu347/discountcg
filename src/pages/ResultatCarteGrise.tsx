@@ -382,7 +382,9 @@ export default function ResultatCarteGrise() {
     };
 
     updateOrder();
-  }, [orderId, calculation, express, certificatNonGage, vehicleInfo, fraisDossier]);
+  // nonGageMode : sans lui, le choix « je le fournis » (qui ne change pas le
+  // prix) n'était jamais enregistré sur la commande.
+  }, [orderId, calculation, express, certificatNonGage, nonGageMode, vehicleInfo, fraisDossier]);
 
   // Bloquer le refresh/fermeture pendant la commande
   useEffect(() => {

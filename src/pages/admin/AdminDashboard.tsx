@@ -76,6 +76,8 @@ export default function AdminDashboard() {
     demarches30j: 0,
     demarchesAujourdhui: 0,
     demarchesAttenteClient: 0,
+    commandesPartATraiter: 0,
+    commandesPartNouvelles: 0,
     coffreAbonnes: 0,
     coffrePaying: 0,
     coffreStripe: 0,
@@ -142,6 +144,20 @@ export default function AdminDashboard() {
       .select('*', { count: 'exact', head: true })
       .eq('is_draft', false)
       .eq('status', 'en_attente_paiement_client');
+
+    // Commandes particulier à traiter : même règle que la page Commandes
+    // particulier (payée, ni finalisée ni refusée, statut vide inclus) ; les
+    // « nouvelles » n'ont pas encore été ouvertes par un admin.
+    const commandesPartATraiter = () =>
+      supabase
+        .from('guest_orders')
+        .select('*', { count: 'exact', head: true })
+        .eq('paye', true)
+        .or('status.not.in.(finalise,refuse),status.is.null');
+    const [{ count: commandesPartATraiterCount }, { count: commandesPartNouvellesCount }] = await Promise.all([
+      commandesPartATraiter(),
+      commandesPartATraiter().not('admin_viewed', 'is', true),
+    ]);
 
     // Revenus et volumes : trois appels à la RPC d'agrégation, sur trois
     // fenêtres. Remplace le calcul JS qui rapatriait toutes les lignes de
@@ -214,6 +230,8 @@ export default function AdminDashboard() {
       demarches30j: Number(totaux30j?.total_demarches ?? 0),
       demarchesAujourdhui: Number(totauxAujourdhui?.total_demarches ?? 0),
       demarchesAttenteClient: demarchesAttenteClientCount || 0,
+      commandesPartATraiter: commandesPartATraiterCount || 0,
+      commandesPartNouvelles: commandesPartNouvellesCount || 0,
       coffreAbonnes: coffreActive.length,
       coffrePaying: coffreActive.filter(s => s.status === 'active' && s.payment_mode !== 'beta').length,
       coffreStripe: coffreActive.filter(s => s.payment_mode === 'stripe').length,
@@ -287,6 +305,41 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <Button className="bg-red-500 hover:bg-red-600">
+                  <Bell className="h-4 w-4 mr-2" />
+                  Voir maintenant
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Alerte commandes particulier à traiter */}
+        {stats.commandesPartATraiter > 0 && (
+          <Card className="mb-6 border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20 cursor-pointer hover:bg-blue-100 dark:hover:bg-blue-950/30 transition-colors"
+                onClick={() => navigate("/admin/guest-orders")}>
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <ShoppingCart className="h-8 w-8 text-blue-500" />
+                    {stats.commandesPartNouvelles > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-4 w-4 bg-blue-500"></span>
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-bold text-blue-700 dark:text-blue-400">
+                      {stats.commandesPartATraiter} commande{stats.commandesPartATraiter > 1 ? 's' : ''} particulier à traiter
+                      {stats.commandesPartNouvelles > 0 && ` dont ${stats.commandesPartNouvelles} nouvelle${stats.commandesPartNouvelles > 1 ? 's' : ''} !`}
+                    </p>
+                    <p className="text-sm text-blue-600 dark:text-blue-500">
+                      Cliquez pour voir les commandes payées en attente
+                    </p>
+                  </div>
+                </div>
+                <Button className="bg-blue-500 hover:bg-blue-600">
                   <Bell className="h-4 w-4 mr-2" />
                   Voir maintenant
                 </Button>

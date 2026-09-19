@@ -471,6 +471,9 @@ export default function NouvelleDemarche() {
       .update({
         prix_carte_grise: prixCarteGrise,
         frais_dossier: fraisDossierHT,
+        // Suit l'état réel du jeton : un brouillon offert repris après usage du
+        // jeton sur une autre démarche redevient payant.
+        is_free_token: isFreeTokenEligible,
         montant_ht: totalServicesHT,
         montant_ttc: totalTTC,
         express: expressSelected,
