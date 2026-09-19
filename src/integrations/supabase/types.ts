@@ -1791,6 +1791,42 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_envois: {
+        Row: {
+          contexte: string
+          created_at: string
+          destinataire: string | null
+          envoye: boolean
+          erreur: string | null
+          id: string
+          message: string
+          reference: string | null
+          reponse: Json | null
+        }
+        Insert: {
+          contexte: string
+          created_at?: string
+          destinataire?: string | null
+          envoye: boolean
+          erreur?: string | null
+          id?: string
+          message: string
+          reference?: string | null
+          reponse?: Json | null
+        }
+        Update: {
+          contexte?: string
+          created_at?: string
+          destinataire?: string | null
+          envoye?: boolean
+          erreur?: string | null
+          id?: string
+          message?: string
+          reference?: string | null
+          reponse?: Json | null
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string | null
