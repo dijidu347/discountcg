@@ -342,6 +342,73 @@ export default function NouvelleDemarche() {
     return Boolean(plaque || vin);
   }, [formData.type, vehiculeMandat, selectedImmatriculation, vehicleInfoPro]);
 
+  // Tout ce qui manque pour payer, dans l'ordre de la page. Le bouton Payer
+  // reste cliquable : au clic, cette liste s'affiche et chaque bloc concerne
+  // s'encadre en rouge (cle = identifiant du bloc ou de la piece).
+  const [afficherManquants, setAfficherManquants] = useState(false);
+  const manquants = useMemo(() => {
+    const liste: { cle: string; libelle: string }[] = [];
+    if (!formData.type) return liste;
+    const estPro = PRO_DEMARCHE_TYPES.includes(formData.type);
+
+    if (estPro && nbQuestions !== 0 && !questionnaireCompleted) {
+      liste.push({ cle: "questionnaire", libelle: "Répondre aux questions préalables" });
+      return liste; // les pieces n'apparaissent qu'apres le questionnaire
+    }
+
+    if (estPro) {
+      if (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) {
+        liste.push({ cle: "vehicule", libelle: "Informations du véhicule (marque, modèle, VIN)" });
+      } else if (!vehiculeIdentifie) {
+        liste.push({ cle: "vehicule", libelle: "Plaque d'immatriculation ou numéro VIN du véhicule" });
+      }
+    } else if (!plaqueReelle(selectedImmatriculation)) {
+      liste.push({ cle: "vehicule", libelle: "Véhicule : choisissez-le ou ajoutez-le" });
+    } else if (formData.type === "CG" && !(carteGrisePrice > 0)) {
+      liste.push({ cle: "vehicule", libelle: "Prix de la carte grise : cliquez sur « Obtenir le prix » puis « Valider »" });
+      return liste; // les pieces de la carte grise s'affichent une fois le prix valide
+    }
+
+    if (mandatRequis && mandatDocumentType && !uploadedDocuments.has(mandatDocumentType)) {
+      liste.push({
+        cle: "mandat",
+        libelle: mandatMode ? "Mandat d'immatriculation à déposer ou à générer" : "Mandat : choisissez de déposer le vôtre ou de le remplir en ligne",
+      });
+    }
+
+    if (estPro) {
+      getDocumentsConfig(formData.type, questionnaireAnswerTexts).documents
+        .filter((d) => d.obligatoire && d.id !== mandatDocumentType && !uploadedDocuments.has(d.id))
+        .forEach((d) => liste.push({ cle: `piece-${d.id}`, libelle: d.nom }));
+    } else {
+      const premiereCarteGrise = documentsRequis.findIndex((d) => {
+        const nom = (d.nom_document ?? "").toLowerCase();
+        return nom.includes("carte grise") && !nom.includes("recto") && !nom.includes("verso");
+      });
+      documentsRequis.forEach((doc, idx) => {
+        const cle = `doc_${idx + 1}`;
+        if (!doc.obligatoire || cle === mandatDocumentType) return;
+        if (mandatRequis && /13757/.test(doc.nom_document ?? "")) return;
+        const depose = uploadedDocuments.has(cle) || (idx === premiereCarteGrise && uploadedDocuments.has(`${cle}_recto`));
+        if (!depose) liste.push({ cle: `piece-${cle}`, libelle: doc.nom_document });
+      });
+    }
+
+    if (isNonGageRequired(formData.type)) {
+      if (!nonGageMode) {
+        liste.push({ cle: "non_gage", libelle: "Certificat de non-gage : choisissez « Je fournis » ou « Nous le commandons »" });
+      } else if (nonGageMode === "fourni" && !uploadedDocuments.has("non_gage")) {
+        liste.push({ cle: "non_gage", libelle: "Certificat de non-gage à déposer" });
+      }
+    }
+    return liste;
+  }, [formData.type, nbQuestions, questionnaireCompleted, vehicleInfoProValid, vehiculeIdentifie, selectedImmatriculation,
+      carteGrisePrice, mandatRequis, mandatDocumentType, uploadedDocuments, mandatMode, questionnaireAnswerTexts,
+      documentsRequis, nonGageMode]);
+  const enErreur = (cle: string) => afficherManquants && manquants.some((m) => m.cle === cle);
+  const cadreErreur = (cle: string) =>
+    enErreur(cle) ? "rounded-lg ring-2 ring-destructive ring-offset-2" : "";
+
   useEffect(() => {
     console.log("=== DEBUG DUPLICATA_CG_PRO ===");
     console.log("type démarche:", formData.type);
@@ -824,6 +891,25 @@ export default function NouvelleDemarche() {
   const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (manquants.length > 0) {
+      setAfficherManquants(true);
+      toast({
+        title: "Il manque des éléments pour payer",
+        description: (
+          <ul className="list-disc pl-4 space-y-0.5">
+            {manquants.map((m) => <li key={m.cle}>{m.libelle}</li>)}
+          </ul>
+        ),
+        variant: "destructive",
+      });
+      const premier = manquants[0].cle;
+      const cible = document.getElementById(
+        premier.startsWith("piece-") ? premier : premier === "non_gage" ? "bloc-non-gage" : `bloc-${premier}`,
+      );
+      cible?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+
     // Validation spécifique pour les démarches PRO
     if (PRO_DEMARCHE_TYPES.includes(formData.type)) {
       // Vérifier que le questionnaire est complété
@@ -1216,7 +1302,7 @@ export default function NouvelleDemarche() {
   // auparavant present que sur CG/DA/DC, et les demarches PRO n'offraient que
   // le depot d'un Cerfa rempli a la main.
   const blocMandat = mandatRequis && demarcheId ? (
-    <div className="space-y-3">
+    <div id="bloc-mandat" className={`space-y-3 scroll-mt-24 ${cadreErreur("mandat")}`}>
                               <MandatChoice
                                 value={mandatMode}
                                 onChange={async (mode) => {
@@ -1450,7 +1536,7 @@ export default function NouvelleDemarche() {
               )}
 
               {garage && (
-                <>
+                <div id="bloc-vehicule" className={`scroll-mt-24 ${cadreErreur("vehicule")}`}>
                   {/* Formulaires véhicule classiques */}
                   {formData.type === 'CG' ? (
                     <VehicleFormCG
@@ -1505,7 +1591,7 @@ export default function NouvelleDemarche() {
                       onPriceCalculated={handlePriceCalculated}
                     />
                   )}
-                </>
+                </div>
               )}
 
 
@@ -1525,9 +1611,10 @@ export default function NouvelleDemarche() {
                   la demarche n'en a aucune. */}
               {actionDetails?.id && (nbQuestions ?? 0) > 0 && (
                 <Collapsible
-                  open={isQuestionnaireOpen}
+                  id="bloc-questionnaire"
+                  open={isQuestionnaireOpen || enErreur("questionnaire")}
                   onOpenChange={setIsQuestionnaireOpen}
-                  className="border rounded-lg"
+                  className={`border rounded-lg scroll-mt-24 ${enErreur("questionnaire") ? "border-2 border-destructive bg-red-50" : ""}`}
                 >
                   <CollapsibleTrigger asChild>
                     <button
@@ -1617,6 +1704,7 @@ export default function NouvelleDemarche() {
                           // tete de la carte ; elle reste comptee parmi les pieces requises.
                           masquerIds={blocMandat && mandatDocumentType ? [mandatDocumentType] : []}
                           enTete={blocMandat}
+                          idsEnErreur={manquants.filter((m) => enErreur(m.cle) && m.cle.startsWith("piece-")).map((m) => m.cle.slice(6))}
                         />
                       )}
                     </div>
@@ -1704,7 +1792,7 @@ export default function NouvelleDemarche() {
                                   .replace(/recto verso/gi, 'verso');
                                 
                                 return (
-                                  <div key={doc.id} className="space-y-3">
+                                  <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`space-y-3 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
                                     <div className="flex items-center gap-4">
                                       <div className="flex-1">
                                         {renderDocLabel(doc.nom_document, doc.obligatoire)}
@@ -1739,7 +1827,7 @@ export default function NouvelleDemarche() {
                               }
                               
                               return (
-                                <div key={doc.id} className="flex items-center gap-4">
+                                <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`flex items-center gap-4 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
                                   <div className="flex-1">
                                     {renderDocLabel(doc.nom_document, doc.obligatoire)}
                                   </div>
@@ -1763,6 +1851,7 @@ export default function NouvelleDemarche() {
                             audience="pro"
                             value={nonGageMode}
                             onChange={handleNonGageChange}
+                            enErreur={enErreur("non_gage")}
                             uploadSlot={
                               <div className="space-y-2">
                                 <Label className="text-sm font-medium">
@@ -1867,22 +1956,9 @@ export default function NouvelleDemarche() {
               <Button
                 type="submit"
                 size="lg"
-                disabled={
-                  loading || 
-                  isQuestionnaireBlocked ||
-                  // Pour les démarches PRO avec véhicule, vérifier les infos véhicule
-                  (PRO_TYPES_WITH_VEHICLE.includes(formData.type) && !vehicleInfoProValid) ||
-                  // Pour les démarches PRO, vérifier que le questionnaire est complété
-                  (PRO_DEMARCHE_TYPES.includes(formData.type) && !questionnaireCompleted) ||
-                  // Pour les démarches PRO, exiger la plaque OU le VIN (mandat 13757)
-                  (PRO_DEMARCHE_TYPES.includes(formData.type) && !vehiculeIdentifie) ||
-                  // Pour les démarches PRO, vérifier que les documents obligatoires sont uploadés
-                  (PRO_DEMARCHE_TYPES.includes(formData.type) && !proDocsState.allRequiredUploaded) ||
-                  // Pour les démarches classiques, vérifier l'immatriculation
-                  (!PRO_DEMARCHE_TYPES.includes(formData.type) && !selectedImmatriculation.trim()) ||
-                  // Pour CG, vérifier le prix carte grise
-                  ((formData.type !== 'DA' && formData.type !== 'DC' && !PRO_DEMARCHE_TYPES.includes(formData.type)) && carteGrisePrice === 0)
-                }
+                // Cliquable meme incomplet : le clic liste ce qui manque et
+                // l'encadre en rouge, plutot qu'un bouton grise sans explication.
+                disabled={loading || isQuestionnaireBlocked}
                 className={`w-full ${isFreeTokenEligible ? 'bg-green-500 hover:bg-green-600' : 'bg-success hover:bg-success/90'}`}
               >
                 {isQuestionnaireBlocked ? 'Démarche impossible'

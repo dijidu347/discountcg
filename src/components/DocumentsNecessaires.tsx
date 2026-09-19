@@ -31,6 +31,8 @@ interface DocumentsNecessairesProps {
   masquerIds?: string[];
   /** Contenu affiche en tete de la carte, avant la liste des pieces. */
   enTete?: ReactNode;
+  /** Pieces obligatoires manquantes a signaler en rouge (clic sur Payer). */
+  idsEnErreur?: string[];
 }
 
 // Configuration des documents par type de démarche
@@ -507,6 +509,7 @@ export function DocumentsNecessaires({
   uploadedDocuments,
   masquerIds = [],
   enTete,
+  idsEnErreur = [],
 }: DocumentsNecessairesProps) {
   const { documents, blockingMessage } = useMemo(
     () => getDocumentsConfig(demarcheType, questionnaireAnswers),
@@ -685,10 +688,12 @@ export function DocumentsNecessaires({
               const hasRectoVerso = docName.includes('recto/verso') || docName.includes('recto verso');
               
               return (
-                <div key={doc.id} className="space-y-2">
+                <div key={doc.id} id={`piece-${doc.id}`} className="space-y-2 scroll-mt-24">
                   <div 
                     className={`flex items-center gap-4 p-3 rounded-lg ${
-                      showRecommendedWarning 
+                      idsEnErreur.includes(doc.id)
+                        ? 'bg-red-50 border-2 border-destructive'
+                        : showRecommendedWarning 
                         ? 'bg-amber-50 border border-amber-200' 
                         : 'bg-muted/30'
                     }`}

@@ -241,7 +241,15 @@ export const MandatGenerator = ({
       if (garageId) {
         // Enregistrement definitif sur la fiche du garage : la prochaine
         // demarche reprendra ces chemins sans rien redemander.
-        const patch: { signature_path?: string; tampon_path?: string } = {};
+        const patch: { signature_path?: string; tampon_path?: string; signataire_nom?: string; signataire_qualite?: string | null } = {};
+        // Nom et qualite du signataire : saisis une fois, repris ensuite comme
+        // la signature et le tampon. « M. Dupont, gérant » -> nom + qualite.
+        const signataireSaisi = form.signataire.trim();
+        if (signataireSaisi && signataireSaisi !== (defaults.signataire ?? "").trim()) {
+          const [nomSignataire, ...reste] = signataireSaisi.split(",");
+          patch.signataire_nom = nomSignataire.trim();
+          patch.signataire_qualite = reste.join(",").trim() || null;
+        }
         if (signature) {
           signaturePath = await deposer(signature, `${garageId}/signature`);
           patch.signature_path = signaturePath;

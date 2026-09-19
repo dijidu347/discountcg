@@ -19,6 +19,8 @@ interface NonGageChoiceProps {
   // certificat » une fois celle-ci sélectionnée. Laissé vide sur les parcours où
   // le dépôt intervient à une étape ultérieure (particulier : après paiement).
   uploadSlot?: ReactNode;
+  // Signale le bloc en rouge quand le choix ou la piece manque au paiement.
+  enErreur?: boolean;
 }
 
 // Choix imposé (pas d'option à cocher) : sur CG/DA/DC le certificat de non-gage
@@ -31,13 +33,14 @@ export const NonGageChoice = ({
   onChange,
   disabled = false,
   uploadSlot,
+  enErreur = false,
 }: NonGageChoiceProps) => {
   if (!isNonGageRequired(demarcheType)) return null;
 
   const prix = getNonGagePrice(audience);
 
   return (
-    <div className="space-y-3 p-4 rounded-lg border-2 border-border bg-card">
+    <div id="bloc-non-gage" className={`space-y-3 p-4 rounded-lg border-2 scroll-mt-24 ${enErreur ? "border-destructive bg-red-50" : "border-border bg-card"}`}>
       <div className="flex items-center gap-2">
         <FileSearch className="w-4 h-4 text-primary" />
         <p className="font-medium">
