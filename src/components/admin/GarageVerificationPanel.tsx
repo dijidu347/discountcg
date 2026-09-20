@@ -556,6 +556,19 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
           </div>
         </div>
 
+        {/* Solde et don de jetons : hors des onglets, sinon le bouton reste
+            introuvable — il était caché sous l'onglet « Notifications ». */}
+        <Card className="p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm text-muted-foreground">Solde de jetons</p>
+            <p className="text-lg font-bold">{garage.token_balance || 0} €</p>
+          </div>
+          <Button onClick={() => setShowOfferTokensDialog(true)}>
+            <Coins className="mr-2 h-4 w-4" />
+            Offrir des jetons
+          </Button>
+        </Card>
+
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -707,17 +720,6 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
 
           <TabsContent value="notifications" className="mt-4">
             <div className="space-y-4">
-              <Card className="p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Solde actuel</p>
-                  <p className="text-lg font-bold">{garage.token_balance || 0} €</p>
-                </div>
-                <Button variant="outline" onClick={() => setShowOfferTokensDialog(true)}>
-                  <Coins className="mr-2 h-4 w-4" />
-                  Offrir des jetons
-                </Button>
-              </Card>
-
               <Button onClick={() => setShowNotificationDialog(true)} className="w-full">
                 <Send className="mr-2 h-4 w-4" />
                 Envoyer une notification
