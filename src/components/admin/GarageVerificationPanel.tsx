@@ -65,6 +65,12 @@ interface GarageVerificationPanelProps {
    * (vérification, refus, don de jetons), avec le patch appliqué.
    */
   onGarageChanged?: (patch: Record<string, any>) => void;
+  /**
+   * Ouverture du don de jetons pilotée depuis la fiche garage : le bouton vit
+   * dans la carte « Solde de jetons » en haut de page, le dialogue reste ici.
+   */
+  donJetonsOuvert?: boolean;
+  onDonJetonsOuvertChange?: (ouvert: boolean) => void;
 }
 
 /**
@@ -76,7 +82,12 @@ interface GarageVerificationPanelProps {
  * été extrait tel quel pour être rendu en pleine page dans la fiche garage,
  * quand les deux boutons de la liste ont été remplacés par "Voir la fiche".
  */
-export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerificationPanelProps) {
+export function GarageVerificationPanel({
+  garage,
+  onGarageChanged,
+  donJetonsOuvert,
+  onDonJetonsOuvertChange,
+}: GarageVerificationPanelProps) {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -98,7 +109,9 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
   const [notificationMessage, setNotificationMessage] = useState("");
   const [sendingNotification, setSendingNotification] = useState(false);
 
-  const [showOfferTokensDialog, setShowOfferTokensDialog] = useState(false);
+  const [donJetonsInterne, setDonJetonsInterne] = useState(false);
+  const showOfferTokensDialog = donJetonsOuvert ?? donJetonsInterne;
+  const setShowOfferTokensDialog = onDonJetonsOuvertChange ?? setDonJetonsInterne;
   const [tokensToOffer, setTokensToOffer] = useState("");
   const [offeringTokens, setOfferingTokens] = useState(false);
 
@@ -555,19 +568,6 @@ export function GarageVerificationPanel({ garage, onGarageChanged }: GarageVerif
             )}
           </div>
         </div>
-
-        {/* Solde et don de jetons : hors des onglets, sinon le bouton reste
-            introuvable — il était caché sous l'onglet « Notifications ». */}
-        <Card className="p-4 mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm text-muted-foreground">Solde de jetons</p>
-            <p className="text-lg font-bold">{garage.token_balance || 0} €</p>
-          </div>
-          <Button onClick={() => setShowOfferTokensDialog(true)}>
-            <Coins className="mr-2 h-4 w-4" />
-            Offrir des jetons
-          </Button>
-        </Card>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">

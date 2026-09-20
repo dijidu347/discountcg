@@ -104,6 +104,8 @@ export default function GarageDetail() {
   const [stats, setStats] = useState<DemarcheStats | null>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
   const [clientDepuis, setClientDepuis] = useState<string | null>(null);
+  // Don de jetons : bouton dans la carte du haut, dialogue dans le panneau.
+  const [donJetonsOuvert, setDonJetonsOuvert] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
@@ -233,12 +235,18 @@ export default function GarageDetail() {
 
         {/* Solde de jetons — mis en évidence */}
         <Card className="p-6 mb-6 border-2 border-primary/30 bg-primary/5">
-          <div className="flex items-center gap-4">
-            <Coins className="h-10 w-10 text-primary shrink-0" />
-            <div>
-              <p className="text-sm text-muted-foreground">Solde de jetons</p>
-              <p className="text-3xl font-bold text-primary">{garage.token_balance ?? 0} €</p>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <Coins className="h-10 w-10 text-primary shrink-0" />
+              <div>
+                <p className="text-sm text-muted-foreground">Solde de jetons</p>
+                <p className="text-3xl font-bold text-primary">{garage.token_balance ?? 0} €</p>
+              </div>
             </div>
+            <Button onClick={() => setDonJetonsOuvert(true)}>
+              <Coins className="mr-2 h-4 w-4" />
+              Offrir des jetons
+            </Button>
           </div>
         </Card>
 
@@ -350,6 +358,8 @@ export default function GarageDetail() {
           <GarageVerificationPanel
             garage={garage}
             onGarageChanged={(patch) => setGarage((prev: any) => ({ ...prev, ...patch }))}
+            donJetonsOuvert={donJetonsOuvert}
+            onDonJetonsOuvertChange={setDonJetonsOuvert}
           />
         </div>
 
