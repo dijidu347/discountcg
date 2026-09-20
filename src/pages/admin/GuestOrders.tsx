@@ -22,6 +22,8 @@ import {
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { TransactionDate } from "@/components/admin/TransactionDate";
 import { getExpressSurcharge } from "@/lib/expressOption";
+import { EtatPiecesBadge } from "@/components/admin/EtatPiecesBadge";
+import { EtatPieces, etatsParDossier } from "@/lib/etatPieces";
 
 interface GuestOrder {
   id: string;
@@ -118,6 +120,7 @@ export default function GuestOrders() {
   const { toast } = useToast();
   const [isAdmin, setIsAdmin] = useState(false);
   const [orders, setOrders] = useState<GuestOrder[]>([]);
+  const [etatsPieces, setEtatsPieces] = useState<Record<string, EtatPieces>>({});
   const [loading, setLoading] = useState(true);
   const [progressLoaded, setProgressLoaded] = useState(0);
 
@@ -157,6 +160,19 @@ export default function GuestOrders() {
     try {
       const allOrders = await fetchAllOrders((loaded) => setProgressLoaded(loaded));
       setOrders(allOrders);
+
+      // Où en est le contrôle des pièces, commande par commande. Une commande
+      // sans aucune pièce n'apparaît pas ici : l'affichage dit « Aucune pièce ».
+      const ids = allOrders
+        .filter((o) => o.paye && o.status !== "finalise" && o.status !== "refuse")
+        .map((o) => o.id);
+      if (ids.length > 0) {
+        const { data: docs } = await supabase
+          .from("guest_order_documents")
+          .select("order_id, type_document, validation_status, validated_at, created_at")
+          .in("order_id", ids);
+        setEtatsPieces(etatsParDossier(docs || [], "order_id"));
+      }
     } catch (error) {
       console.error("Erreur:", error);
       toast({ title: "Erreur", description: "Impossible de charger les commandes", variant: "destructive" });
@@ -521,6 +537,9 @@ export default function GuestOrders() {
                             {[o.marque, o.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
+                        <div className="mt-1">
+                          <EtatPiecesBadge etat={etatsPieces[o.id] ?? "aucune_piece"} />
+                        </div>
                       </TableCell>
                       <TableCell>{renderClientCell(o)}</TableCell>
                       <TableCell>{o.demarche_type || "—"}</TableCell>
