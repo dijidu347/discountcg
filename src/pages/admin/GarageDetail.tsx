@@ -46,6 +46,31 @@ interface DemarcheStats {
  * donc sur la TOTALITÉ des démarches du garage : ni plafond de 1000 lignes, ni
  * filtrage JS sur un échantillon tronqué.
  */
+// Date de la première démarche réellement engagée (payée, réglée en jetons,
+// payée par le client, ou offerte) : c'est de là que le garage est client.
+const fetchClientDepuis = async (garageId: string): Promise<string | null> => {
+  const { data } = await supabase
+    .from("demarches")
+    .select("created_at")
+    .eq("garage_id", garageId)
+    .eq("is_draft", false)
+    .or("paye.eq.true,paid_with_tokens.eq.true,client_paid.eq.true,is_free_token.eq.true")
+    .order("created_at", { ascending: true })
+    .limit(1);
+  return data?.[0]?.created_at ?? null;
+};
+
+// « depuis 1 an et 3 mois », « depuis 8 mois », « depuis 12 jours ».
+const anciennete = (depuis: string): string => {
+  const jours = Math.max(0, Math.floor((Date.now() - new Date(depuis).getTime()) / 86400000));
+  if (jours < 31) return `depuis ${jours} jour${jours > 1 ? "s" : ""}`;
+  const mois = Math.floor(jours / 30.44);
+  if (mois < 12) return `depuis ${mois} mois`;
+  const ans = Math.floor(mois / 12);
+  const reste = mois % 12;
+  return `depuis ${ans} an${ans > 1 ? "s" : ""}${reste ? ` et ${reste} mois` : ""}`;
+};
+
 const fetchDemarcheStats = async (garageId: string): Promise<DemarcheStats> => {
   const base = () =>
     supabase
@@ -78,6 +103,7 @@ export default function GarageDetail() {
   const [garage, setGarage] = useState<any>(null);
   const [stats, setStats] = useState<DemarcheStats | null>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
+  const [clientDepuis, setClientDepuis] = useState<string | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
@@ -135,7 +161,7 @@ export default function GarageDetail() {
       setGarage((prev: any) => ({ ...prev, verification_admin_viewed: true }));
     }
 
-    const [statsData, { data: recentes }] = await Promise.all([
+    const [statsData, { data: recentes }, premiere] = await Promise.all([
       fetchDemarcheStats(id),
       // Tri ET limite CÔTÉ BASE : on ne rapatrie que 20 lignes, jamais la table
       // entière. Aucun risque de buter sur le plafond de 1000 lignes.
@@ -145,8 +171,10 @@ export default function GarageDetail() {
         .eq("garage_id", id)
         .order("created_at", { ascending: false })
         .limit(RECENT_DEMARCHES_LIMIT),
+      fetchClientDepuis(id),
     ]);
 
+    setClientDepuis(premiere);
     setStats(statsData);
     setDemarches(recentes || []);
     setLoading(false);
@@ -293,6 +321,21 @@ export default function GarageDetail() {
               <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Inscrit le</dt>
                 <dd className="font-medium">{formatDateTimeParis(garage.created_at) ?? "—"}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-muted-foreground">Client depuis</dt>
+                <dd className="font-medium text-right">
+                  {clientDepuis ? (
+                    <>
+                      {formatDateTimeParis(clientDepuis)?.slice(0, 10)}
+                      <span className="block text-xs font-normal text-muted-foreground">
+                        {anciennete(clientDepuis)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="font-normal text-muted-foreground">Aucune démarche engagée</span>
+                  )}
+                </dd>
               </div>
             </dl>
             <p className="text-xs text-muted-foreground mt-4 pt-3 border-t">

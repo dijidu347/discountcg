@@ -1,14 +1,12 @@
 // Alertes SMS appelées depuis le site.
 //
-// - { test: true } : SMS de test, réservé aux administrateurs. Renvoie aussi le
-//   compte SMS Partner rattaché à la clé, pour vérifier qu'on regarde le bon.
 // - { demarcheId } : dossier prioritaire payé sans passer par la banque (jetons,
 //   démarche offerte). Le webhook de paiement ne voit pas ces paiements : c'est
 //   le garage qui appelle cette fonction juste après. Un seul SMS par dossier.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
-import { compteSmsPartner, envoyerSmsAlerte } from "../_shared/smsAlerte.ts";
+import { envoyerSmsAlerte } from "../_shared/smsAlerte.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,18 +40,6 @@ serve(async (req) => {
     const estAdmin = (roles || []).some((r: { role: string }) => r.role === "admin");
 
     const body = await req.json().catch(() => ({}));
-
-    // --- SMS de test --------------------------------------------------------
-    if (body?.test === true) {
-      if (!estAdmin) return json(403, { error: "Réservé aux administrateurs" });
-      const heure = new Date().toLocaleString("fr-FR", { timeZone: "Europe/Paris" });
-      const resultat = await envoyerSmsAlerte(supabase, {
-        contexte: "test",
-        reference: null,
-        message: `Test DiscountCarteGrise du ${heure} : les alertes SMS des dossiers prioritaires fonctionnent.`,
-      });
-      return json(200, { ...resultat, compte: await compteSmsPartner() });
-    }
 
     // --- Dossier prioritaire payé en jetons ou offert -----------------------
     const demarcheId = body?.demarcheId;

@@ -57,23 +57,3 @@ export async function envoyerSmsAlerte(
   else console.error("SMS alerte non envoye:", resultat.erreur, resultat.reponse ?? "");
   return resultat;
 }
-
-// Compte SMS Partner rattaché à la clé : permet de vérifier que les envois
-// partent bien du compte que l'on consulte.
-export async function compteSmsPartner(): Promise<Record<string, unknown> | null> {
-  const apiKey = Deno.env.get("SMSPARTNER_API_KEY");
-  if (!apiKey) return null;
-  try {
-    const res = await fetch(`https://api.smspartner.fr/v1/me?apiKey=${encodeURIComponent(apiKey)}`);
-    const data = await res.json().catch(() => null);
-    const u = data?.user ?? data;
-    if (!u) return null;
-    return {
-      email: u.email ?? null,
-      identifiant: u.username ?? null,
-      credits: u.credits ?? u.creditSms ?? u.credit ?? null,
-    };
-  } catch {
-    return null;
-  }
-}
