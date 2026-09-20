@@ -19,6 +19,7 @@ import { TransactionDate } from "@/components/admin/TransactionDate";
 import { StatusPill } from "@/components/StatusPill";
 import { EtatPiecesBadge } from "@/components/admin/EtatPiecesBadge";
 import { EtatPieces, etatsParDossier } from "@/lib/etatPieces";
+import { chargerPieces } from "@/lib/chargerPieces";
 import { TERMINAL_STATUSES } from "@/lib/demarcheStatusBadge";
 import { isATraiter } from "@/lib/demarcheFilters";
 
@@ -145,15 +146,14 @@ export default function AllDemarches() {
       .filter((d) => d.is_draft === false && !TERMINAL_STATUSES.includes(d.status))
       .map((d) => d.id);
     if (ids.length > 0) {
-      const { data: docs } = await supabase
-        .from("documents")
-        .select("demarche_id, type_document, validation_status, validated_at, created_at")
-        .in("demarche_id", ids);
+      // Chargement paginé : 1473 pièces pour ~215 dossiers, soit plus que les
+      // 1000 lignes d'une requête unique.
+      const docs = await chargerPieces("documents", "demarche_id", ids);
       // Où en est le contrôle des pièces, dossier par dossier. Un dossier sans
       // aucune pièce n'apparaît pas ici : l'affichage retombe sur « Aucune pièce ».
-      setEtatsPieces(etatsParDossier(docs || [], "demarche_id"));
+      setEtatsPieces(etatsParDossier(docs, "demarche_id"));
       const latestByKey: Record<string, { demarcheId: string; created_at: string; status: string | null }> = {};
-      (docs || []).forEach((doc: any) => {
+      (docs as any[]).forEach((doc: any) => {
         const key = `${doc.demarche_id}|${doc.type_document}`;
         const prev = latestByKey[key];
         if (!prev || new Date(doc.created_at).getTime() > new Date(prev.created_at).getTime()) {
@@ -528,11 +528,11 @@ export default function AllDemarches() {
                             {[d.marque || d.vehicules?.marque, d.modele || d.vehicules?.modele].filter(Boolean).join(" ")}
                           </span>
                         )}
+                        {/* File « à traiter » : le statut vaut « En cours » pour
+                            presque tout le monde et n'apprend rien. Seule l'étape
+                            du contrôle des pièces est affichée. */}
                         <div className="mt-1">
-                          <StatusPill statut={d.status} hasActiveRejectedDoc={rejectedIds.has(d.id)} />
-                          <span className="ml-1 inline-block align-middle">
-                            <EtatPiecesBadge etat={etatsPieces[d.id] ?? "aucune_piece"} />
-                          </span>
+                          <EtatPiecesBadge etat={etatsPieces[d.id] ?? "aucune_piece"} />
                         </div>
                       </TableCell>
                       <TableCell>

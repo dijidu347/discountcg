@@ -24,6 +24,7 @@ import { TransactionDate } from "@/components/admin/TransactionDate";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { EtatPiecesBadge } from "@/components/admin/EtatPiecesBadge";
 import { EtatPieces, etatsParDossier } from "@/lib/etatPieces";
+import { chargerPieces } from "@/lib/chargerPieces";
 
 interface GuestOrder {
   id: string;
@@ -167,11 +168,8 @@ export default function GuestOrders() {
         .filter((o) => o.paye && o.status !== "finalise" && o.status !== "refuse")
         .map((o) => o.id);
       if (ids.length > 0) {
-        const { data: docs } = await supabase
-          .from("guest_order_documents")
-          .select("order_id, type_document, validation_status, validated_at, created_at")
-          .in("order_id", ids);
-        setEtatsPieces(etatsParDossier(docs || [], "order_id"));
+        const docs = await chargerPieces("guest_order_documents", "order_id", ids);
+        setEtatsPieces(etatsParDossier(docs, "order_id"));
       }
     } catch (error) {
       console.error("Erreur:", error);

@@ -54,12 +54,12 @@ export function etatPieces(pieces: PieceControlee[]): EtatPieces {
   return "controle";
 }
 
-export const LIBELLES_ETAT_PIECES: Record<EtatPieces, { texte: string; aide: string } | null> = {
+export const LIBELLES_ETAT_PIECES: Record<EtatPieces, { texte: string; aide: string }> = {
   aucune_piece: { texte: "Aucune pièce", aide: "Le client n'a encore déposé aucune pièce." },
   jamais_controle: { texte: "À contrôler", aide: "Des pièces attendent un premier contrôle." },
   nouvelle_piece: { texte: "Nouvelle pièce", aide: "Le client a déposé une pièce depuis votre dernier contrôle." },
   attente_client: { texte: "Attente client", aide: "Des pièces ont été refusées, le client n'a rien redéposé depuis." },
-  controle: null,
+  controle: { texte: "Contrôlé", aide: "Toutes les pièces déposées ont été contrôlées." },
 };
 
 // Regroupe les pièces par dossier : une seule requête, un état par dossier.
