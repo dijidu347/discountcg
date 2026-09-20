@@ -100,7 +100,6 @@ export default function ManageAccounts() {
                 <TableHead>SIRET</TableHead>
                 <TableHead>Vérifié</TableHead>
                 <TableHead>Abonnement</TableHead>
-                <TableHead>Démarches</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -132,9 +131,6 @@ export default function ManageAccounts() {
                     ) : (
                       <span className="text-muted-foreground">Aucun</span>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">Voir détails</Badge>
                   </TableCell>
                   <TableCell>
                     <Button size="sm" variant="outline" onClick={() => handleViewDetails(garage)}>
