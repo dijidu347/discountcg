@@ -303,26 +303,6 @@ export default function GarageDetail() {
                 </dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Gold</dt>
-                <dd>
-                  {garage.is_gold ? (
-                    <Badge className="bg-amber-500">Oui</Badge>
-                  ) : (
-                    <Badge variant="secondary">Non</Badge>
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Jetons gratuits illimités</dt>
-                <dd>
-                  {garage.unlimited_free_tokens ? (
-                    <Badge className="bg-blue-500">Oui</Badge>
-                  ) : (
-                    <Badge variant="secondary">Non</Badge>
-                  )}
-                </dd>
-              </div>
-              <div className="flex justify-between gap-4">
                 <dt className="text-muted-foreground">Réseau</dt>
                 <dd className="font-medium">{garage.reseau || "—"}</dd>
               </div>

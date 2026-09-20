@@ -12,6 +12,8 @@ import { ArrowLeft, Eye, ShieldCheck, Clock, Plus, AlertCircle } from "lucide-re
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { formatPrice } from "@/lib/utils";
+import { formatDateTimeParis } from "@/lib/dateFormat";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -39,6 +41,10 @@ interface Notification {
   sent_by: string;
 }
 
+// Jour d'inscription, sans l'heure : la colonne doit rester étroite.
+const jourInscription = (valeur: string | null | undefined) =>
+  formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
+
 export default function ManageGarages() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -53,6 +59,8 @@ export default function ManageGarages() {
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
   const [newDocForm, setNewDocForm] = useState({ nom_document: "", code: "", description: "", obligatoire: true });
   const [savingDoc, setSavingDoc] = useState(false);
+  // Dépense totale par garage : calculée en base (voir depense_par_garage).
+  const [depenses, setDepenses] = useState<Record<string, number>>({});
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -127,6 +135,14 @@ export default function ManageGarages() {
       g.verification_admin_viewed === true // ET doit avoir été ouvert par admin
     );
     
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: totaux } = await supabase.rpc('depense_par_garage' as any);
+    const parGarage: Record<string, number> = {};
+    ((totaux || []) as { garage_id: string; total: number }[]).forEach((t) => {
+      parGarage[t.garage_id] = Number(t.total) || 0;
+    });
+    setDepenses(parGarage);
+
     setGarages(allGarages);
     setGaragesAVerifier(aVerifier);
     setGaragesVerifies(verifies);
@@ -243,6 +259,8 @@ export default function ManageGarages() {
                   <TableHead>SIRET</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Téléphone</TableHead>
+                  <TableHead>Inscrit le</TableHead>
+                  <TableHead className="text-right">Dépensé</TableHead>
                   <TableHead>Date demande</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -268,6 +286,8 @@ export default function ManageGarages() {
                     <TableCell>{garage.siret}</TableCell>
                     <TableCell>{garage.email}</TableCell>
                     <TableCell>{garage.telephone}</TableCell>
+                    <TableCell className="whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
                     <TableCell>
                       {new Date(garage.verification_requested_at).toLocaleDateString('fr-FR')}
                     </TableCell>
@@ -309,6 +329,8 @@ export default function ManageGarages() {
                   <TableHead>SIRET</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Téléphone</TableHead>
+                  <TableHead>Inscrit le</TableHead>
+                  <TableHead className="text-right">Dépensé</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -325,6 +347,8 @@ export default function ManageGarages() {
                     <TableCell className="text-muted-foreground">{garage.siret}</TableCell>
                     <TableCell className="text-muted-foreground">{garage.email}</TableCell>
                     <TableCell className="text-muted-foreground">{garage.telephone}</TableCell>
+                    <TableCell className="text-muted-foreground whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
+                    <TableCell className="text-muted-foreground text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
                     <TableCell>
                       <Button
                         size="sm"
@@ -363,6 +387,8 @@ export default function ManageGarages() {
                   <TableHead>SIRET</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Téléphone</TableHead>
+                  <TableHead>Inscrit le</TableHead>
+                  <TableHead className="text-right">Dépensé</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -385,6 +411,8 @@ export default function ManageGarages() {
                     <TableCell>{garage.siret}</TableCell>
                     <TableCell>{garage.email}</TableCell>
                     <TableCell>{garage.telephone}</TableCell>
+                    <TableCell className="whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
                     <TableCell>
                       <Button
                         size="sm"
