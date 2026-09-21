@@ -58,7 +58,7 @@ interface Stats {
   nb_demarches: number;
   derniere_demarche: string | null;
   a_des_documents: boolean;
-  documents_a_controler: boolean;
+  dossier_complet: boolean;
 }
 
 const JOUR = 86_400_000;
@@ -241,7 +241,7 @@ export default function ManageGarages() {
         nb_demarches: Number(t.nb_demarches) || 0,
         derniere_demarche: t.derniere_demarche,
         a_des_documents: !!t.a_des_documents,
-        documents_a_controler: !!t.documents_a_controler,
+        dossier_complet: !!t.dossier_complet,
       };
     });
     setStats(parGarage);
@@ -291,10 +291,10 @@ export default function ManageGarages() {
   // onglet pour ceux qui n'ont jamais rien demandé, jusqu'ici invisibles).
   const etape = (g: Garage): Etape => {
     if (g.is_verified) return "valides";
-    // À nous : demande jamais ouverte, ou documents envoyés pas encore contrôlés.
-    if ((g.verification_requested_at && !g.verification_admin_viewed) || stats[g.id]?.documents_a_controler) return "a_verifier";
-    // Au garage : tout est contrôlé, il doit renvoyer ou compléter.
-    if (stats[g.id]?.a_des_documents && g.verification_admin_viewed) return "en_attente";
+    // À nous : toutes les pièces obligatoires sont là, aucune n'est refusée.
+    if (stats[g.id]?.dossier_complet) return "a_verifier";
+    // Au garage : une pièce obligatoire manque ou a été refusée.
+    if (stats[g.id]?.a_des_documents) return "en_attente";
     return "sans_demande";
   };
 
@@ -367,13 +367,13 @@ export default function ManageGarages() {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
-  // Dans l'ordre du parcours d'un garage : inscrit sans documents, documents
-  // à contrôler, compléments demandés, validé.
+  // Dans l'ordre du parcours d'un garage : inscrit sans documents, dossier
+  // incomplet, dossier complet à contrôler, validé.
   const ONGLETS: { cle: Onglet; texte: string; aide: string }[] = [
     { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
     { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
-    { cle: "a_verifier", texte: "À vérifier", aide: "Documents envoyés que nous n'avons pas encore contrôlés" },
-    { cle: "en_attente", texte: "Documents à compléter", aide: "Tout est contrôlé : le garage doit renvoyer ou compléter ses documents" },
+    { cle: "en_attente", texte: "Documents à compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter" },
+    { cle: "a_verifier", texte: "À vérifier", aide: "Toutes les pièces obligatoires sont envoyées : à nous de contrôler et valider" },
     { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
   ];
 

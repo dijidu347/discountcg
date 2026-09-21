@@ -212,16 +212,16 @@ export default function AdminDashboard() {
       .in('status', ['active', 'trialing']);
 
     // Garages à vérifier : même règle que l'onglet « À vérifier » de la page
-    // Garages (demande jamais ouverte, ou documents pas encore contrôlés).
+    // Garages (toutes les pièces obligatoires envoyées, aucune refusée).
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: chiffresGarages } = await supabase.rpc('depense_par_garage' as any);
     const aControler = new Set(
-      ((chiffresGarages || []) as { garage_id: string; documents_a_controler: boolean }[])
-        .filter((c) => c.documents_a_controler)
+      ((chiffresGarages || []) as { garage_id: string; dossier_complet: boolean }[])
+        .filter((c) => c.dossier_complet)
         .map((c) => c.garage_id),
     );
     const garagesAVerifier = garages?.filter(g =>
-      !g.is_verified && ((g.verification_requested_at && !g.verification_admin_viewed) || aControler.has(g.id))
+      !g.is_verified && aControler.has(g.id)
     ) || [];
 
     const coffreActive = coffreSubs || [];
