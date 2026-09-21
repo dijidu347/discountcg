@@ -23,6 +23,7 @@ import {
 import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, parse, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { DemarchesRecuesTraitees } from "@/components/admin/DemarchesRecuesTraitees";
 
 // Frais bancaires connus a partir de cette date : du 30/06 au 10/09/2026,
 // commissions reelles du releve bancaire reparties par remise ; depuis le
@@ -866,6 +867,9 @@ export default function AdminRevenus() {
           </CardContent>
         </Card>
         )}
+
+        {/* Démarches reçues et traitées, par type */}
+        <DemarchesRecuesTraitees du={dateRange.start} au={dateRange.end} />
 
         {/* Token Usage Stats */}
         <Card className="mb-8">
