@@ -36,6 +36,7 @@ const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
 const AllDemarches = React.lazy(() => import("./pages/admin/AllDemarches"));
 const AdminDemarcheDetail = React.lazy(() => import("./pages/admin/DemarcheDetail"));
 const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
+const Prospection = React.lazy(() => import("./pages/Prospection"));
 const ManageActions = React.lazy(() => import("./pages/admin/ManageActions"));
 const ManageGarages = React.lazy(() => import("./pages/admin/ManageGarages"));
 const GarageDetail = React.lazy(() => import("./pages/admin/GarageDetail"));
@@ -116,6 +117,7 @@ const App = () => (
             <Route path="/login-particulier" element={<LoginParticulier />} />
             <Route path="/register-particulier" element={<RegisterParticulier />} />
             <Route path="/mon-espace" element={<MonEspace />} />
+            <Route path="/prospection" element={<Prospection />} />
             <Route path="/support" element={<Support />} />
             <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
           <Route path="/admin/demarches" element={<AdminGuard><AllDemarches /></AdminGuard>} />

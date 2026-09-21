@@ -34,8 +34,10 @@ export default function Login() {
         .select("role")
         .eq("user_id", user.id)
         .then(({ data }) => {
-          const roles = (data || []).map((r) => r.role);
-          if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
+          const roles = (data || []).map((r) => r.role as string);
+          if (roles.includes("prospecteur") && !roles.includes("admin") && !roles.includes("garage")) {
+            navigate("/prospection");
+          } else if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
             navigate("/mon-espace");
           } else {
             navigate("/dashboard");

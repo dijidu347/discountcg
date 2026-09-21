@@ -578,6 +578,14 @@ export default function AdminDashboard() {
               <Button
                 variant="outline"
                 className="h-24 flex flex-col items-center justify-center gap-2"
+                onClick={() => navigate("/prospection")}
+              >
+                <UserCog className="h-6 w-6" />
+                <span className="text-sm font-medium">Prospection</span>
+              </Button>
+              <Button
+                variant="outline"
+                className="h-24 flex flex-col items-center justify-center gap-2"
                 onClick={() => navigate("/admin/notifications")}
               >
                 <FileText className="h-6 w-6" />

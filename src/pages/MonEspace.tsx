@@ -46,6 +46,20 @@ export default function MonEspace() {
     }
   }, [user]);
 
+  // Un prospecteur se connecte par l'espace particulier : on l'envoie sur
+  // son espace de travail.
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        const roles = (data || []).map((r) => r.role as string);
+        if (roles.includes("prospecteur") && !roles.includes("admin")) navigate("/prospection");
+      });
+  }, [user, navigate]);
+
   const loadData = async () => {
     setLoading(true);
     try {
