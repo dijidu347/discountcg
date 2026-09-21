@@ -2367,7 +2367,7 @@ export type Database = {
       verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
     }
     Enums: {
-      app_role: "admin" | "staff" | "garage" | "particulier"
+      app_role: "admin" | "staff" | "garage" | "particulier" | "prospecteur"
       demarche_status:
         | "en_saisie"
         | "en_attente"
@@ -2527,7 +2527,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "staff", "garage", "particulier"],
+      app_role: ["admin", "staff", "garage", "particulier", "prospecteur"],
       demarche_status: [
         "en_saisie",
         "en_attente",
