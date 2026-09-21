@@ -1,14 +1,16 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Eye, ShieldCheck, Clock, Plus, AlertCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ArrowLeft, Eye, Plus, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -45,35 +47,74 @@ interface Notification {
 const jourInscription = (valeur: string | null | undefined) =>
   formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
 
+// Garages : onglets par étape de vérification, tri, filtres.
+type Onglet = "a_verifier" | "en_attente" | "valides" | "sans_demande";
+type Tri = "recents" | "anciens" | "depense" | "demarches";
+
+interface Stats {
+  total: number;
+  nb_demarches: number;
+  derniere_demarche: string | null;
+  a_des_documents: boolean;
+}
+
+const JOUR = 86_400_000;
+
+type Garage = Tables<"garages">;
+
+// Département déduit du code postal (Corse : 2A / 2B, outre-mer : 3 chiffres).
+const departementDe = (cp: string | null | undefined): string | null => {
+  const c = String(cp || "").replace(/\s/g, "");
+  if (!/^\d{5}$/.test(c)) return null;
+  if (c.startsWith("97") || c.startsWith("98")) return c.slice(0, 3);
+  if (c.startsWith("20")) return Number(c) < 20200 ? "2A" : "2B";
+  return c.slice(0, 2);
+};
+
+const jour = (valeur: string | null | undefined) => formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
+
+// Filtres, tri et onglet survivent à un aller-retour vers une fiche.
+const lireMemoire = () => {
+  try { return JSON.parse(sessionStorage.getItem("gerer-garages") || "{}"); } catch { return {}; }
+};
+
 export default function ManageGarages() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [garages, setGarages] = useState<any[]>([]);
-  const [garagesAVerifier, setGaragesAVerifier] = useState<any[]>([]);
-  const [garagesVerifies, setGaragesVerifies] = useState<any[]>([]);
-  const [garagesEnAttente, setGaragesEnAttente] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  const memoire = useMemo(lireMemoire, []);
+  const [garages, setGarages] = useState<Garage[]>([]);
+  const [stats, setStats] = useState<Record<string, Stats>>({});
   const [loading, setLoading] = useState(true);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
   const [newDocForm, setNewDocForm] = useState({ nom_document: "", code: "", description: "", obligatoire: true });
   const [savingDoc, setSavingDoc] = useState(false);
-  // Dépense totale par garage : calculée en base (voir depense_par_garage).
-  const [depenses, setDepenses] = useState<Record<string, number>>({});
-  // Démarches effectuées (payées, en jetons, par le client ou offertes).
-  const [nbDemarches, setNbDemarches] = useState<Record<string, number>>({});
-  // Tri commun aux trois tableaux, par clic sur l'en-tête de colonne.
-  const [tri, setTri] = useState<{ cle: "inscription" | "depense" | "demarches"; sens: "asc" | "desc" }>({ cle: "inscription", sens: "desc" });
+
+  const [onglet, setOnglet] = useState<Onglet>(memoire.onglet ?? "a_verifier");
+  const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
+  const [tri, setTri] = useState<Tri>(memoire.tri ?? "recents");
+  const [activite, setActivite] = useState<string>(memoire.activite ?? "tous");
+  const [solde, setSolde] = useState<string>(memoire.solde ?? "tous");
+  const [offerte, setOfferte] = useState<string>(memoire.offerte ?? "tous");
+  const [inscription, setInscription] = useState<string>(memoire.inscription ?? "tous");
+  const [departement, setDepartement] = useState<string>(memoire.departement ?? "tous");
+  const [page, setPage] = useState<number>(memoire.page ?? 1);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("gerer-garages", JSON.stringify({ onglet, recherche, tri, activite, solde, offerte, inscription, departement, page }));
+    } catch { /* navigation privée */ }
+  }, [onglet, recherche, tri, activite, solde, offerte, inscription, departement, page]);
 
   useEffect(() => {
     if (!authLoading && user) {
       checkAdminAccess();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading]);
 
   const checkAdminAccess = async () => {
-    // Filtre sur le rôle admin (sinon .single() casse pour les users ayant plusieurs rôles)
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
@@ -98,62 +139,37 @@ export default function ManageGarages() {
     setRequiredDocs(data || []);
   };
 
+  // Garages par pages de 1000 (plafond d'une requête), puis leurs chiffres
+  // calculés en base (dépense, démarches, dernière démarche, documents).
   const loadGarages = async () => {
-    const { data, error } = await supabase
-      .from('garages')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error loading garages:', error);
-      setLoading(false);
-      return;
+    const tous: Garage[] = [];
+    for (let depuis = 0; ; depuis += 1000) {
+      const { data, error } = await supabase
+        .from('garages')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(depuis, depuis + 999);
+      if (error) {
+        console.error('Error loading garages:', error);
+        break;
+      }
+      tous.push(...(data || []));
+      if (!data || data.length < 1000) break;
     }
-    
-    const allGarages = data || [];
-    
-    // Charger les documents de vérification pour tous les garages
-    const { data: allDocs } = await supabase
-      .from('verification_documents')
-      .select('garage_id');
-    
-    // Set de garages ayant au moins 1 document
-    const garagesWithDocs = new Set((allDocs || []).map(d => d.garage_id));
-    
-    // VÉRIFIÉS: Garages déjà vérifiés
-    const verifies = allGarages.filter(g => g.is_verified);
-    
-    // À VÉRIFIER: Garages avec tous les documents soumis ET pas encore ouverts par admin
-    const aVerifier = allGarages.filter(g => 
-      g.verification_requested_at && 
-      !g.is_verified && 
-      !g.verification_admin_viewed
-    );
-    
-    // EN ATTENTE: Garages avec au moins 1 document ET (ouverts par admin OU pas tous les docs)
-    // DOIT avoir au moins 1 document pour apparaître
-    const enAttente = allGarages.filter(g => 
-      !g.is_verified && 
-      !aVerifier.some(av => av.id === g.id) && 
-      garagesWithDocs.has(g.id) && // OBLIGATOIRE: au moins 1 document
-      g.verification_admin_viewed === true // ET doit avoir été ouvert par admin
-    );
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: totaux } = await supabase.rpc('depense_par_garage' as any);
-    const parGarage: Record<string, number> = {};
-    const demarchesParGarage: Record<string, number> = {};
-    ((totaux || []) as { garage_id: string; total: number; nb_demarches: number }[]).forEach((t) => {
-      parGarage[t.garage_id] = Number(t.total) || 0;
-      demarchesParGarage[t.garage_id] = Number(t.nb_demarches) || 0;
+    const parGarage: Record<string, Stats> = {};
+    ((totaux || []) as ({ garage_id: string } & Stats)[]).forEach((t) => {
+      parGarage[t.garage_id] = {
+        total: Number(t.total) || 0,
+        nb_demarches: Number(t.nb_demarches) || 0,
+        derniere_demarche: t.derniere_demarche,
+        a_des_documents: !!t.a_des_documents,
+      };
     });
-    setDepenses(parGarage);
-    setNbDemarches(demarchesParGarage);
-
-    setGarages(allGarages);
-    setGaragesAVerifier(aVerifier);
-    setGaragesVerifies(verifies);
-    setGaragesEnAttente(enAttente);
+    setStats(parGarage);
+    setGarages(tous);
     setLoading(false);
   };
 
@@ -195,45 +211,82 @@ export default function ManageGarages() {
     await loadRequiredDocs();
   };
 
+  // Étape de vérification de chaque garage (mêmes règles qu'avant, plus un
+  // onglet pour ceux qui n'ont jamais rien demandé, jusqu'ici invisibles).
+  const etape = (g: Garage): Onglet => {
+    if (g.is_verified) return "valides";
+    if (g.verification_requested_at && !g.verification_admin_viewed) return "a_verifier";
+    if (stats[g.id]?.a_des_documents && g.verification_admin_viewed) return "en_attente";
+    return "sans_demande";
+  };
+
+  const departements = useMemo(
+    () => Array.from(new Set(garages.map((g) => departementDe(g.code_postal)).filter(Boolean) as string[])).sort(),
+    [garages],
+  );
+
+  const maintenant = Date.now();
+  const filtres = useMemo(() => {
+    const q = recherche.trim().toLowerCase();
+    return garages.filter((g) => {
+      const st = stats[g.id];
+      if (q && ![g.raison_sociale, g.email, g.ville, g.siret, g.telephone].some((v) => (v || "").toLowerCase().includes(q))) return false;
+      if (departement !== "tous" && departementDe(g.code_postal) !== departement) return false;
+      if (activite !== "tous") {
+        const derniere = st?.derniere_demarche ? new Date(st.derniere_demarche).getTime() : null;
+        const age = derniere ? (maintenant - derniere) / JOUR : null;
+        if (activite === "jamais" && age !== null) return false;
+        if (activite === "actif" && !(age !== null && age <= 30)) return false;
+        if (activite === "ralenti" && !(age !== null && age > 30 && age <= 90)) return false;
+        if (activite === "inactif" && !(age !== null && age > 90)) return false;
+      }
+      if (solde === "avec" && !(Number(g.token_balance) > 0)) return false;
+      if (solde === "vide" && Number(g.token_balance) > 0) return false;
+      if (offerte === "non_utilisee" && !g.free_token_available) return false;
+      if (inscription !== "tous" && maintenant - new Date(g.created_at).getTime() > Number(inscription) * JOUR) return false;
+      return true;
+    });
+  }, [garages, stats, recherche, departement, activite, solde, offerte, inscription, maintenant]);
+
+  const comptes = useMemo(() => {
+    const c: Record<Onglet, number> = { a_verifier: 0, en_attente: 0, valides: 0, sans_demande: 0 };
+    filtres.forEach((g) => { c[etape(g)]++; });
+    return c;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtres, stats]);
+
+  const liste = useMemo(() => {
+    const valeur = (g: Garage) =>
+      tri === "depense" ? stats[g.id]?.total || 0
+        : tri === "demarches" ? stats[g.id]?.nb_demarches || 0
+        : new Date(g.created_at).getTime();
+    return filtres
+      .filter((g) => etape(g) === onglet)
+      .sort((a, b) => (tri === "anciens" ? valeur(a) - valeur(b) : valeur(b) - valeur(a)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtres, onglet, tri, stats]);
+
+  const PAR_PAGE = 50;
+  const pages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
+  const pageCourante = Math.min(page, pages);
+  const visibles = liste.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
+
+  const filtresActifs = [activite, solde, offerte, inscription, departement].filter((v) => v !== "tous").length;
+  const reinitialiser = () => {
+    setActivite("tous"); setSolde("tous"); setOfferte("tous"); setInscription("tous"); setDepartement("tous"); setRecherche("");
+  };
+  const changer = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
+
   if (authLoading || loading) {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
-  // Recherche EN MÉMOIRE par nom (raison_sociale) OU email — appliquée aux 3 buckets.
-  const filtrerGarages = (liste: any[]) => {
-    const q = searchQuery.trim().toLowerCase();
-    const filtres = q
-      ? liste.filter((g) => g.raison_sociale?.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q))
-      : liste;
-    const valeur = (g: any) =>
-      tri.cle === "depense" ? depenses[g.id] || 0
-        : tri.cle === "demarches" ? nbDemarches[g.id] || 0
-        : new Date(g.created_at).getTime();
-    return [...filtres].sort((a, b) => (tri.sens === "asc" ? 1 : -1) * (valeur(a) - valeur(b)));
-  };
-
-  // En-tête cliquable : 1er clic = du plus grand au plus petit, 2e clic = inverse.
-  const EnteteTri = ({ cle, children, droite }: { cle: typeof tri.cle; children: React.ReactNode; droite?: boolean }) => (
-    <TableHead className={droite ? "text-right" : ""}>
-      <button
-        type="button"
-        className={`inline-flex items-center gap-1 font-medium hover:text-foreground ${tri.cle === cle ? "text-foreground" : ""}`}
-        onClick={() => setTri((t) => ({ cle, sens: t.cle === cle && t.sens === "desc" ? "asc" : "desc" }))}
-      >
-        {children}
-        <span aria-hidden="true">{tri.cle === cle ? (tri.sens === "desc" ? "↓" : "↑") : "↕"}</span>
-      </button>
-    </TableHead>
-  );
-  const filteredAVerifier = filtrerGarages(garagesAVerifier);
-  const filteredEnAttente = filtrerGarages(garagesEnAttente);
-  const filteredVerifies = filtrerGarages(garagesVerifies);
-  const aucunResultat =
-    searchQuery.trim() !== "" &&
-    filteredAVerifier.length === 0 &&
-    filteredEnAttente.length === 0 &&
-    filteredVerifies.length === 0 &&
-    garagesAVerifier.length + garagesEnAttente.length + garagesVerifies.length > 0;
+  const ONGLETS: { cle: Onglet; texte: string }[] = [
+    { cle: "a_verifier", texte: "À vérifier" },
+    { cle: "en_attente", texte: "En attente de documents" },
+    { cle: "valides", texte: "Validés" },
+    { cle: "sans_demande", texte: "Sans demande" },
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
@@ -253,216 +306,172 @@ export default function ManageGarages() {
           </Button>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-6">
-          <Input
-            placeholder="Rechercher un garage (nom ou email)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="flex-1"
-          />
+        <h1 className="text-3xl font-bold mb-4">Garages</h1>
+
+        {/* Onglets */}
+        <div className="flex flex-wrap gap-2 mb-4 border-b pb-3">
+          {ONGLETS.map((o) => (
+            <Button
+              key={o.cle}
+              variant={onglet === o.cle ? "default" : "ghost"}
+              onClick={() => { setOnglet(o.cle); setPage(1); }}
+            >
+              {o.texte}
+              <Badge variant={onglet === o.cle ? "secondary" : "outline"} className="ml-2">{comptes[o.cle]}</Badge>
+            </Button>
+          ))}
         </div>
 
-        {aucunResultat && (
-          <p className="text-muted-foreground text-center py-8">Aucun garage ne correspond à la recherche</p>
+        {/* Recherche, tri et filtres */}
+        <Card className="p-4 mb-4 space-y-3">
+          <div className="flex flex-wrap gap-3">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Nom, email, ville, SIRET, téléphone…"
+                value={recherche}
+                onChange={(e) => { setRecherche(e.target.value); setPage(1); }}
+              />
+            </div>
+            <Select value={tri} onValueChange={(v) => { setTri(v as Tri); setPage(1); }}>
+              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recents">Trier : plus récents</SelectItem>
+                <SelectItem value="anciens">Trier : plus anciens</SelectItem>
+                <SelectItem value="depense">Trier : plus grosse dépense</SelectItem>
+                <SelectItem value="demarches">Trier : plus de démarches</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <Select value={activite} onValueChange={changer(setActivite)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Activité : toutes</SelectItem>
+                <SelectItem value="actif">Actif (moins de 30 j)</SelectItem>
+                <SelectItem value="ralenti">En perte de vitesse (30 à 90 j)</SelectItem>
+                <SelectItem value="inactif">Inactif (plus de 90 j)</SelectItem>
+                <SelectItem value="jamais">Jamais de démarche</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={solde} onValueChange={changer(setSolde)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Solde : tous</SelectItem>
+                <SelectItem value="avec">Avec du solde</SelectItem>
+                <SelectItem value="vide">Solde vide</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={offerte} onValueChange={changer(setOfferte)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Démarche offerte : tous</SelectItem>
+                <SelectItem value="non_utilisee">Pas encore utilisée</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={inscription} onValueChange={changer(setInscription)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Inscription : toutes</SelectItem>
+                <SelectItem value="7">Inscrits depuis 7 jours</SelectItem>
+                <SelectItem value="30">Inscrits depuis 30 jours</SelectItem>
+                <SelectItem value="90">Inscrits depuis 90 jours</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={departement} onValueChange={changer(setDepartement)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Département : tous</SelectItem>
+                {departements.map((d) => (
+                  <SelectItem key={d} value={d}>{d}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {(filtresActifs > 0 || recherche) && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">
+                {filtres.length} garage{filtres.length > 1 ? "s" : ""} correspondent (tous onglets confondus)
+              </span>
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => { reinitialiser(); setPage(1); }}>
+                Effacer les filtres
+              </Button>
+            </div>
+          )}
+        </Card>
+
+        {/* Liste */}
+        <Card className="p-0 overflow-hidden">
+          {liste.length === 0 ? (
+            <p className="text-muted-foreground text-center py-12">Aucun garage dans cet onglet avec ces filtres.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Garage</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Inscrit le</TableHead>
+                    {onglet === "a_verifier" && <TableHead>Demande le</TableHead>}
+                    <TableHead>Dernière démarche</TableHead>
+                    <TableHead className="text-right">Dépensé</TableHead>
+                    <TableHead className="text-right">Démarches</TableHead>
+                    <TableHead className="text-right">Solde</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibles.map((g) => {
+                    const st = stats[g.id];
+                    return (
+                      <TableRow key={g.id} className="cursor-pointer" onClick={() => navigate(`/admin/garages/${g.id}`)}>
+                        <TableCell>
+                          <p className="font-medium">{g.raison_sociale || "Sans raison sociale"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {[g.code_postal, g.ville].filter(Boolean).join(" ") || "—"}
+                            {g.free_token_available && <span className="ml-2 text-emerald-600">· offerte non utilisée</span>}
+                          </p>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          <p>{g.telephone || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{g.email}</p>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(g.created_at)}</TableCell>
+                        {onglet === "a_verifier" && (
+                          <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(g.verification_requested_at)}</TableCell>
+                        )}
+                        <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(st?.derniere_demarche)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatPrice(st?.total || 0)} €</TableCell>
+                        <TableCell className="text-right tabular-nums">{st?.nb_demarches || 0}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatPrice(Number(g.token_balance) || 0)} €</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => { e.stopPropagation(); navigate(`/admin/garages/${g.id}`); }}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Voir
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Card>
+
+        {pages > 1 && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <Button variant="outline" size="sm" disabled={pageCourante <= 1} onClick={() => setPage(pageCourante - 1)}>Précédent</Button>
+            <span className="text-sm text-muted-foreground">Page {pageCourante} sur {pages}</span>
+            <Button variant="outline" size="sm" disabled={pageCourante >= pages} onClick={() => setPage(pageCourante + 1)}>Suivant</Button>
+          </div>
         )}
 
-        {/* Section À VÉRIFIER */}
-        <Card className="p-6 mb-8 border-2 border-orange-500/20 bg-orange-50/5">
-          <div className="flex items-center gap-3 mb-6">
-            <Eye className="h-6 w-6 text-orange-600" />
-            <h1 className="text-2xl font-bold text-orange-700 dark:text-orange-500">Garages à vérifier</h1>
-            <Badge variant="outline" className="border-orange-500 text-orange-600">{garagesAVerifier.length}</Badge>
-          </div>
-
-          {garagesAVerifier.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucun garage en attente de vérification</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Raison sociale</TableHead>
-                  <TableHead>SIRET</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <EnteteTri cle="inscription">Inscrit le</EnteteTri>
-                  <EnteteTri cle="depense" droite>Dépensé</EnteteTri>
-                  <EnteteTri cle="demarches" droite>Démarches</EnteteTri>
-                  <TableHead>Date demande</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredAVerifier.map((garage) => (
-                  <TableRow
-                    key={garage.id}
-                    onClick={() => navigate(`/admin/garages/${garage.id}`)}
-                    className={`cursor-pointer ${!garage.verification_admin_viewed ? "bg-red-50 dark:bg-red-950/20" : "bg-orange-50/50 dark:bg-orange-950/10"}`}
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {garage.raison_sociale}
-                        {!garage.verification_admin_viewed && (
-                          <Badge variant="destructive" className="animate-pulse">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Nouveau
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{garage.siret}</TableCell>
-                    <TableCell>{garage.email}</TableCell>
-                    <TableCell>{garage.telephone}</TableCell>
-                    <TableCell className="whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
-                    <TableCell className="text-right tabular-nums">{nbDemarches[garage.id] || 0}</TableCell>
-                    <TableCell>
-                      {new Date(garage.verification_requested_at).toLocaleDateString('fr-FR')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        className="bg-orange-600 hover:bg-orange-700"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/admin/garages/${garage.id}`);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir la fiche
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-
-        {/* Section EN ATTENTE (nouveau : vue après ouverture) */}
-        <Card className="p-6 mb-8 border-2 border-yellow-500/20 bg-yellow-50/5">
-          <div className="flex items-center gap-3 mb-6">
-            <Clock className="h-6 w-6 text-yellow-600" />
-            <h1 className="text-2xl font-bold text-yellow-700 dark:text-yellow-500">En attente de documents</h1>
-            <Badge variant="outline" className="border-yellow-500 text-yellow-600">{garagesEnAttente.length}</Badge>
-          </div>
-
-          {garagesEnAttente.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucun garage en attente</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Raison sociale</TableHead>
-                  <TableHead>SIRET</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <EnteteTri cle="inscription">Inscrit le</EnteteTri>
-                  <EnteteTri cle="depense" droite>Dépensé</EnteteTri>
-                  <EnteteTri cle="demarches" droite>Démarches</EnteteTri>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredEnAttente.map((garage) => (
-                  <TableRow
-                    key={garage.id}
-                    onClick={() => navigate(`/admin/garages/${garage.id}`)}
-                    className="cursor-pointer"
-                  >
-                    <TableCell className="font-medium text-muted-foreground">
-                      {garage.raison_sociale}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{garage.siret}</TableCell>
-                    <TableCell className="text-muted-foreground">{garage.email}</TableCell>
-                    <TableCell className="text-muted-foreground">{garage.telephone}</TableCell>
-                    <TableCell className="text-muted-foreground whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
-                    <TableCell className="text-muted-foreground text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
-                    <TableCell className="text-muted-foreground text-right tabular-nums">{nbDemarches[garage.id] || 0}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/admin/garages/${garage.id}`);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir la fiche
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
-
-        {/* Section VÉRIFIÉS */}
-        <Card className="p-6 mb-8 border-2 border-green-500/20 bg-green-50/5">
-          <div className="flex items-center gap-3 mb-6">
-            <ShieldCheck className="h-6 w-6 text-green-600" />
-            <h1 className="text-2xl font-bold text-green-700 dark:text-green-500">Garages vérifiés</h1>
-            <Badge variant="outline" className="border-green-500 text-green-600">{garagesVerifies.length}</Badge>
-          </div>
-
-          {garagesVerifies.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucun garage vérifié</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Raison sociale</TableHead>
-                  <TableHead>SIRET</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <EnteteTri cle="inscription">Inscrit le</EnteteTri>
-                  <EnteteTri cle="depense" droite>Dépensé</EnteteTri>
-                  <EnteteTri cle="demarches" droite>Démarches</EnteteTri>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVerifies.map((garage) => (
-                  <TableRow
-                    key={garage.id}
-                    onClick={() => navigate(`/admin/garages/${garage.id}`)}
-                    className="cursor-pointer bg-green-50/50 dark:bg-green-950/10"
-                  >
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {garage.raison_sociale}
-                        <Badge className="bg-green-500">
-                          <ShieldCheck className="h-3 w-3 mr-1" />
-                          Vérifié
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>{garage.siret}</TableCell>
-                    <TableCell>{garage.email}</TableCell>
-                    <TableCell>{garage.telephone}</TableCell>
-                    <TableCell className="whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
-                    <TableCell className="text-right tabular-nums">{nbDemarches[garage.id] || 0}</TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          navigate(`/admin/garages/${garage.id}`);
-                        }}
-                      >
-                        <Eye className="h-4 w-4 mr-2" />
-                        Voir la fiche
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </Card>
 
         {/* Manage Required Documents Dialog */}
         <Dialog open={showManageDocsDialog} onOpenChange={setShowManageDocsDialog}>
