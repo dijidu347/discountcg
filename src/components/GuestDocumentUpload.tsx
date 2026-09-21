@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
 import { supabase } from "@/integrations/supabase/client";
 import { EN_TETE_COMMANDE } from "@/lib/commandeParticulier";
 import { Input } from "@/components/ui/input";
@@ -341,7 +342,12 @@ export function GuestDocumentUpload({
   // Render label with Cerfa link if applicable
   const renderLabel = () => {
     if (!hasCerfa || !cerfaNumber) {
-      return <Label className="font-medium">{label}</Label>;
+      return (
+        <div className="flex flex-col">
+          <Label className="font-medium">{label}</Label>
+          <LienFormulaireVierge label={label} />
+        </div>
+      );
     }
 
     // Split the label to highlight the Cerfa part

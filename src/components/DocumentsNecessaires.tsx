@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -583,6 +584,7 @@ export function DocumentsNecessaires({
             {doc.nom}
             {renderBadges()}
           </div>
+          <LienFormulaireVierge label={doc.nom} />
           {renderHelpText()}
         </div>
       );

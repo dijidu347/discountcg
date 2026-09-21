@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -317,7 +318,12 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
     if (!label) return null;
     
     if (!hasCerfa || !cerfaNumber) {
-      return <Label>{label}</Label>;
+      return (
+        <div className="flex flex-col">
+          <Label>{label}</Label>
+          <LienFormulaireVierge label={label} />
+        </div>
+      );
     }
 
     // Split the label to highlight the Cerfa part
