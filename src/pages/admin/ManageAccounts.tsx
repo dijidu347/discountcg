@@ -110,18 +110,17 @@ export default function ManageAccounts() {
   const pages = Math.max(1, Math.ceil(filtres.length / PAR_PAGE));
   const visibles = filtres.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);
 
-  const donnerAcces = async (email: string) => {
-    setAction(email);
-    const { error } = await rpc("definir_prospecteur", { p_email: email });
+  const adminVersProspecteur = async (c: Compte) => {
+    setAction(c.user_id);
+    const { error } = await rpc("admin_vers_prospecteur", { p_user_id: c.user_id });
     setAction(null);
     if (error) {
-      toast({ title: "Accès non donné", description: error.message, variant: "destructive" });
-      return false;
+      toast({ title: "Compte non modifié", description: error.message, variant: "destructive" });
+      return;
     }
-    toast({ title: "Accès prospection donné", description: `${email} voit maintenant l'espace Prospection.` });
-    setFicheCompte((f) => (f ? { ...f, roles: [...f.roles, "prospecteur"] } : f));
+    toast({ title: "Compte passé prospecteur", description: `${c.email ?? ""} n'a plus accès à l'administration.` });
+    setFicheCompte((f) => (f ? { ...f, roles: [...f.roles.filter((r) => r !== "admin"), "prospecteur"] } : f));
     await charger();
-    return true;
   };
 
   const retirerAcces = async (c: Compte) => {
@@ -218,7 +217,7 @@ export default function ManageAccounts() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => (c.garage_id ? navigate(`/admin/garages/${c.garage_id}`) : setFicheCompte(c))}
+                        onClick={() => (c.garage_id && !estAdmin(c) ? navigate(`/admin/garages/${c.garage_id}`) : setFicheCompte(c))}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Voir
@@ -261,22 +260,34 @@ export default function ManageAccounts() {
                 <dt className="text-muted-foreground">Dernière connexion</dt>
                 <dd>{jour(ficheCompte.derniere_connexion)}</dd>
               </dl>
-              {!estAdmin(ficheCompte) && (
+              {ficheCompte.garage_id && (
+                <Button variant="outline" size="sm" className="self-start" onClick={() => navigate(`/admin/garages/${ficheCompte.garage_id}`)}>
+                  <Eye className="h-4 w-4 mr-1" />
+                  Voir la fiche garage
+                </Button>
+              )}
+              {(estAdmin(ficheCompte) || estProspecteur(ficheCompte)) && (
                 <div className="border-t pt-4 space-y-2">
                   <p className="font-semibold">Accès prospection</p>
-                  <p className="text-sm text-muted-foreground">
-                    Un prospecteur ne voit que l'espace Prospection : les garages et leurs coordonnées, jamais les
-                    démarches ni les chiffres.
-                  </p>
-                  {estProspecteur(ficheCompte) ? (
+                  {estAdmin(ficheCompte) ? (
+                    <>
+                      <p className="text-sm text-muted-foreground">
+                        Le compte perd l'accès à l'administration et ne voit plus que l'espace Prospection : les
+                        garages et leurs coordonnées, jamais les démarches ni les chiffres.
+                      </p>
+                      {ficheCompte.user_id === user?.id ? (
+                        <p className="text-sm text-muted-foreground">Vous ne pouvez pas modifier votre propre compte.</p>
+                      ) : (
+                        <Button disabled={action === ficheCompte.user_id} onClick={() => adminVersProspecteur(ficheCompte)}>
+                          Rendre prospecteur (retire l'admin)
+                        </Button>
+                      )}
+                    </>
+                  ) : (
                     <Button variant="outline" disabled={action === ficheCompte.user_id} onClick={() => retirerAcces(ficheCompte)}>
                       Retirer l'accès prospection
                     </Button>
-                  ) : ficheCompte.email ? (
-                    <Button disabled={action === ficheCompte.email} onClick={() => donnerAcces(ficheCompte.email!)}>
-                      Rendre prospecteur
-                    </Button>
-                  ) : null}
+                  )}
                 </div>
               )}
             </>

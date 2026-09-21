@@ -187,3 +187,27 @@ language sql stable security definer set search_path = public as $$
 $$;
 revoke all on function public.liste_comptes() from public, anon;
 grant execute on function public.liste_comptes() to authenticated;
+
+-- Transformer un compte administrateur en prospecteur (il perd l'admin).
+-- Interdit sur son propre compte, et il doit rester au moins un administrateur.
+create or replace function public.admin_vers_prospecteur(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.has_role(auth.uid(), 'admin'::public.app_role) then raise exception 'réservé aux administrateurs'; end if;
+  if p_user_id = auth.uid() then raise exception 'Vous ne pouvez pas retirer votre propre accès administrateur.'; end if;
+  if not public.has_role(p_user_id, 'admin'::public.app_role) then raise exception 'Ce compte n''est pas administrateur.'; end if;
+  if (select count(distinct user_id) from user_roles where role = 'admin'::public.app_role and user_id <> p_user_id) < 1 then
+    raise exception 'Il doit rester au moins un administrateur.';
+  end if;
+  delete from user_roles where user_id = p_user_id and role = 'admin'::public.app_role;
+  insert into user_roles (user_id, role) values (p_user_id, 'prospecteur'::public.app_role)
+  on conflict (user_id, role) do nothing;
+  delete from admin_trusted_devices where user_id = p_user_id;
+end;
+$$;
+revoke all on function public.admin_vers_prospecteur(uuid) from public, anon;
+grant execute on function public.admin_vers_prospecteur(uuid) to authenticated;
