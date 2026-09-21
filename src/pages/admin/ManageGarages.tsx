@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, ArrowUpDown, CalendarDays, Check, ChevronDown, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import { CALENDRIER_BLEU } from "@/components/admin/calendrierBleu";
 import type { DateRange } from "react-day-picker";
 import { format, subDays } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -195,14 +196,7 @@ function CalendrierPeriode({ valeur, onChange, onFermer }: { valeur: Periode; on
         selected={plage}
         onSelect={(r) => onChange({ du: r?.from ? versJour(r.from) : null, au: r?.to ? versJour(r.to) : r?.from ? versJour(r.from) : null })}
         disabled={{ after: new Date() }}
-        classNames={{
-          cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md [&:has([aria-selected].day-range-end)]:rounded-r-md focus-within:relative focus-within:z-20",
-          day: "inline-flex h-9 w-9 items-center justify-center rounded-md p-0 text-sm font-normal hover:bg-blue-100 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 aria-selected:opacity-100",
-          day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
-          day_range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-900 rounded-none",
-          day_today: "font-semibold underline underline-offset-4",
-          day_outside: "day-outside text-muted-foreground opacity-40 aria-selected:bg-transparent",
-        }}
+        classNames={CALENDRIER_BLEU}
       />
       <div className="flex items-center justify-between border-t p-3 text-xs text-muted-foreground">
         <span>Cliquez sur le premier jour, puis sur le dernier.</span>

@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useState, useMemo } from "react";
+import { startTransition, useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,20 +9,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
 import {
   ArrowLeft, DollarSign, TrendingUp, TrendingDown, Minus,
   CreditCard, Coins, BarChart3, Users, FileText,
-  ArrowUpRight, ArrowDownRight, Activity, Euro, Eye, Archive
+  ArrowUpRight, ArrowDownRight, Activity, Euro, Eye, Archive, CalendarDays, ChevronDown
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line
 } from "recharts";
-import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, parse, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
+import { CALENDRIER_BLEU } from "@/components/admin/calendrierBleu";
 import { DemarchesRecuesTraitees } from "@/components/admin/DemarchesRecuesTraitees";
 
 // Frais bancaires connus a partir de cette date : du 30/06 au 10/09/2026,
@@ -137,6 +140,102 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const CHART_COLORS = ["#10b981", "#3b82f6", "#8b5cf6", "#f59e0b", "#ef4444", "#06b6d4", "#ec4899", "#84cc16", "#f97316", "#6366f1", "#14b8a6"];
+
+const PERIODES: { cle: string; texte: string }[] = [
+  { cle: "today", texte: "Aujourd'hui" },
+  { cle: "yesterday", texte: "Hier" },
+  { cle: "7", texte: "7 derniers jours" },
+  { cle: "30", texte: "30 derniers jours" },
+  { cle: "90", texte: "3 derniers mois" },
+  { cle: "180", texte: "6 derniers mois" },
+  { cle: "365", texte: "12 derniers mois" },
+  { cle: "all", texte: "Depuis le début" },
+];
+
+// Choix de la période : raccourcis à gauche, calendrier toujours affiché à
+// droite. Une période précise ne s'applique qu'une fois ses deux dates
+// choisies, pour ne pas recalculer toute la page au premier clic.
+function SelecteurPeriode({ period, plage, onRaccourci, onPlage }: {
+  period: string;
+  plage: { from?: Date; to?: Date };
+  onRaccourci: (cle: string) => void;
+  onPlage: (r: { from: Date; to: Date }) => void;
+}) {
+  const [ouvert, setOuvert] = useState(false);
+  const [brouillon, setBrouillon] = useState<DateRange | undefined>(undefined);
+  const court = (d: Date) => format(d, "d MMM yyyy", { locale: fr });
+  const libelle = period === "custom" && plage.from
+    ? (plage.to && plage.to.getTime() !== plage.from.getTime() ? `${court(plage.from)} → ${court(plage.to)}` : court(plage.from))
+    : PERIODES.find((p) => p.cle === period)?.texte ?? "Période";
+  return (
+    <Popover
+      open={ouvert}
+      onOpenChange={(o) => { setOuvert(o); if (o) setBrouillon(period === "custom" && plage.from ? { from: plage.from, to: plage.to } : undefined); }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="inline-flex h-10 min-w-[200px] items-center justify-between gap-2 rounded-md border bg-background px-3 text-sm font-medium transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+        >
+          <span className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-blue-600" />{libelle}</span>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto p-0">
+        <div className="flex flex-col sm:flex-row">
+          <div className="flex flex-row flex-wrap gap-1 border-b p-2 sm:w-44 sm:flex-col sm:flex-nowrap sm:border-b-0 sm:border-r">
+            {PERIODES.map((p) => {
+              const actif = period === p.cle;
+              return (
+                <button
+                  key={p.cle}
+                  type="button"
+                  onClick={() => { onRaccourci(p.cle); setOuvert(false); }}
+                  className={`rounded-md px-3 py-1.5 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${
+                    actif ? "bg-blue-600 text-white" : "hover:bg-blue-50 hover:text-blue-900"
+                  }`}
+                >
+                  {p.texte}
+                </button>
+              );
+            })}
+          </div>
+          <div>
+            <p className="px-3 pt-3 text-xs font-medium text-muted-foreground">Période précise</p>
+            <Calendar
+              mode="range"
+              locale={fr}
+              numberOfMonths={2}
+              defaultMonth={brouillon?.from ?? subMonths(new Date(), 1)}
+              selected={brouillon}
+              onSelect={(r) => {
+                setBrouillon(r);
+                if (r?.from && r?.to && r.to.getTime() !== r.from.getTime()) {
+                  onPlage({ from: r.from, to: r.to });
+                  setOuvert(false);
+                }
+              }}
+              disabled={{ after: new Date() }}
+              classNames={CALENDRIER_BLEU}
+            />
+            <div className="flex items-center justify-between gap-3 border-t p-3 text-xs text-muted-foreground">
+              <span>Cliquez sur le premier jour, puis sur le dernier.</span>
+              <Button
+                type="button"
+                size="sm"
+                className="h-7 bg-blue-600 hover:bg-blue-700"
+                disabled={!brouillon?.from}
+                onClick={() => { if (brouillon?.from) { onPlage({ from: brouillon.from, to: brouillon.to ?? brouillon.from }); setOuvert(false); } }}
+              >
+                Appliquer
+              </Button>
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 export default function AdminRevenus() {
   const { user, loading: authLoading } = useAuth();
@@ -372,56 +471,37 @@ export default function AdminRevenus() {
   const prevTotal = prevPaiements.reduce((s, p) => s + getRevenueAmount(p), 0) + prevTokens.reduce((s, t) => s + Number(t.amount), 0) + prevParticuliers;
   const trendPct = prevTotal > 0 ? ((totalRevenue - prevTotal) / prevTotal) * 100 : 0;
 
+  // Clé de regroupement (jour ou mois, heure locale). Les graphiques
+  // regroupent chaque ligne une seule fois : refiltrer toutes les lignes pour
+  // chaque jour de la période rendait la page très lente sur les longues
+  // périodes.
+  const cleDe = (iso: string) => {
+    const d = new Date(iso);
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    return viewMode === "monthly" ? `${d.getFullYear()}-${m}` : `${d.getFullYear()}-${m}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  const intervalles = useMemo(() => (
+    viewMode === "monthly"
+      ? eachMonthOfInterval({ start: dateRange.start, end: dateRange.end }).map(d => ({ key: format(d, "yyyy-MM"), label: format(d, "MMM yy", { locale: fr }) }))
+      : eachDayOfInterval({ start: dateRange.start, end: dateRange.end }).map(d => ({ key: format(d, "yyyy-MM-dd"), label: format(d, "dd/MM", { locale: fr }) }))
+  ), [dateRange, viewMode]);
+
   // Daily/Monthly chart data
   const chartData = useMemo(() => {
-    const getTokenUsage = (items: RawDemarche[], keyFn: (d: RawDemarche) => string, key: string) =>
-      items.filter(d => keyFn(d) === key && (d.paid_with_tokens || d.is_free_token))
-        .reduce((s, d) => s + Number(d.frais_dossier || d.montant_ttc || 0), 0);
-
-    if (viewMode === "monthly") {
-      const months = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
-      return months.map(month => {
-        const key = format(month, "yyyy-MM");
-        const keyFn = (d: RawDemarche) => format(new Date(d.created_at), "yyyy-MM");
-        const pSum = filteredPaiements
-          .filter(p => format(new Date(p.created_at), "yyyy-MM") === key)
-          .reduce((s, p) => s + getRevenueAmount(p), 0);
-        const tSum = filteredTokens
-          .filter(t => format(new Date(t.created_at), "yyyy-MM") === key)
-          .reduce((s, t) => s + Number(t.amount), 0);
-        const uSum = getTokenUsage(filteredDemarches, keyFn, key);
-        return {
-          date: key,
-          label: format(month, "MMM yy", { locale: fr }),
-          paiements: Math.round(pSum * 100) / 100,
-          tokens: Math.round(tSum * 100) / 100,
-          utilisation: Math.round(uSum * 100) / 100,
-          total: Math.round((pSum + tSum) * 100) / 100,
-        };
-      });
-    }
-    // Daily
-    const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
-    return days.map(day => {
-      const key = format(day, "yyyy-MM-dd");
-      const keyFn = (d: RawDemarche) => format(new Date(d.created_at), "yyyy-MM-dd");
-      const pSum = filteredPaiements
-        .filter(p => format(new Date(p.created_at), "yyyy-MM-dd") === key)
-        .reduce((s, p) => s + getRevenueAmount(p), 0);
-      const tSum = filteredTokens
-        .filter(t => format(new Date(t.created_at), "yyyy-MM-dd") === key)
-        .reduce((s, t) => s + Number(t.amount), 0);
-      const uSum = getTokenUsage(filteredDemarches, keyFn, key);
-      return {
-        date: key,
-        label: format(day, "dd/MM", { locale: fr }),
-        paiements: Math.round(pSum * 100) / 100,
-        tokens: Math.round(tSum * 100) / 100,
-        utilisation: Math.round(uSum * 100) / 100,
-        total: Math.round((pSum + tSum) * 100) / 100,
-      };
+    const somme = new Map<string, { p: number; t: number; u: number }>();
+    const case_ = (k: string) => { let c = somme.get(k); if (!c) { c = { p: 0, t: 0, u: 0 }; somme.set(k, c); } return c; };
+    filteredPaiements.forEach(p => { case_(cleDe(p.created_at)).p += getRevenueAmount(p); });
+    filteredTokens.forEach(t => { case_(cleDe(t.created_at)).t += Number(t.amount); });
+    filteredDemarches.forEach(d => {
+      if (d.paid_with_tokens || d.is_free_token) case_(cleDe(d.created_at)).u += Number(d.frais_dossier || d.montant_ttc || 0);
     });
-  }, [filteredPaiements, filteredTokens, dateRange, viewMode]);
+    const arrondi = (n: number) => Math.round(n * 100) / 100;
+    return intervalles.map(({ key, label }) => {
+      const c = somme.get(key) || { p: 0, t: 0, u: 0 };
+      return { date: key, label, paiements: arrondi(c.p), tokens: arrondi(c.t), utilisation: arrondi(c.u), total: arrondi(c.p + c.t) };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredPaiements, filteredTokens, filteredDemarches, intervalles]);
 
   // Demarche count chart data (with type filter)
   const demarcheChartData = useMemo(() => {
@@ -429,43 +509,29 @@ export default function AdminRevenus() {
       ? filteredDemarches
       : filteredDemarches.filter(d => d.type === demarcheTypeFilter);
 
-    const countByKey = (key: string) => {
-      const inKey = filtered.filter(d => {
-        const dk = viewMode === "monthly" ? format(new Date(d.created_at), "yyyy-MM") : format(new Date(d.created_at), "yyyy-MM-dd");
-        return dk === key;
-      });
-      const cbItems = inKey.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token);
-      const cbEuros = cbItems.reduce((s, d) => {
-        if (["CG", "CG_DA", "CG_IMPORT"].includes(d.type)) return s + Number(d.frais_dossier || 20);
-        return s + Number(d.montant_ttc || d.frais_dossier || 0);
-      }, 0);
-      const jetonItems = inKey.filter(d => d.paid_with_tokens);
-      const jetonEuros = jetonItems.reduce((s, d) => s + Number(d.frais_dossier || d.montant_ttc || 0), 0);
-      return {
-        cb: cbItems.length,
-        cbEuros: Math.round(cbEuros * 100) / 100,
-        jetons: jetonItems.length,
-        jetonEuros: Math.round(jetonEuros * 100) / 100,
-        gratuit: inKey.filter(d => d.is_free_token).length,
-        nonPaye: inKey.filter(d => !d.paye && !d.paid_with_tokens && !d.is_free_token).length,
-      };
-    };
-
-    if (viewMode === "monthly") {
-      const months = eachMonthOfInterval({ start: dateRange.start, end: dateRange.end });
-      return months.map(month => {
-        const key = format(month, "yyyy-MM");
-        const c = countByKey(key);
-        return { label: format(month, "MMM yy", { locale: fr }), cb: c.cb, cbEuros: c.cbEuros, jetons: c.jetons, jetonEuros: c.jetonEuros, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
-      });
-    }
-    const days = eachDayOfInterval({ start: dateRange.start, end: dateRange.end });
-    return days.map(day => {
-      const key = format(day, "yyyy-MM-dd");
-      const c = countByKey(key);
-      return { label: format(day, "dd/MM", { locale: fr }), cb: c.cb, cbEuros: c.cbEuros, jetons: c.jetons, jetonEuros: c.jetonEuros, gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye };
+    const vide = () => ({ cb: 0, cbEuros: 0, jetons: 0, jetonEuros: 0, gratuit: 0, nonPaye: 0 });
+    const parCle = new Map<string, ReturnType<typeof vide>>();
+    filtered.forEach(d => {
+      const k = cleDe(d.created_at);
+      let c = parCle.get(k);
+      if (!c) { c = vide(); parCle.set(k, c); }
+      if (d.paye && !d.paid_with_tokens && !d.is_free_token) {
+        c.cb++;
+        c.cbEuros += ["CG", "CG_DA", "CG_IMPORT"].includes(d.type) ? Number(d.frais_dossier || 20) : Number(d.montant_ttc || d.frais_dossier || 0);
+      }
+      if (d.paid_with_tokens) { c.jetons++; c.jetonEuros += Number(d.frais_dossier || d.montant_ttc || 0); }
+      if (d.is_free_token) c.gratuit++;
+      if (!d.paye && !d.paid_with_tokens && !d.is_free_token) c.nonPaye++;
     });
-  }, [filteredDemarches, dateRange, viewMode, demarcheTypeFilter]);
+    return intervalles.map(({ key, label }) => {
+      const c = parCle.get(key) || vide();
+      return {
+        label, cb: c.cb, cbEuros: Math.round(c.cbEuros * 100) / 100, jetons: c.jetons, jetonEuros: Math.round(c.jetonEuros * 100) / 100,
+        gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredDemarches, intervalles, demarcheTypeFilter]);
 
   // Available demarche types for filter
   const availableDemarcheTypes = useMemo(() => {
@@ -589,7 +655,7 @@ export default function AdminRevenus() {
         <title>Admin revenus | Discount Carte Grise</title>
       </Helmet>
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        <Button variant="ghost" onClick={() => navigate("/admin")} className="mb-6">
+        <Button variant="ghost" onClick={() => navigate("/admin")} className="mb-6 hover:bg-blue-50 hover:text-blue-900">
           <ArrowLeft className="mr-2 h-4 w-4" /> Retour
         </Button>
 
@@ -608,62 +674,16 @@ export default function AdminRevenus() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="daily">Par jour</SelectItem>
-                <SelectItem value="monthly">Par mois</SelectItem>
+                <SelectItem value="daily" className="focus:bg-blue-50 focus:text-blue-900">Par jour</SelectItem>
+                <SelectItem value="monthly" className="focus:bg-blue-50 focus:text-blue-900">Par mois</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={period} onValueChange={(v) => { setPeriod(v); if (v !== "custom") setCustomDateRange({}); }}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Aujourd'hui</SelectItem>
-                <SelectItem value="yesterday">Hier</SelectItem>
-                <SelectItem value="7">7 derniers jours</SelectItem>
-                <SelectItem value="30">30 derniers jours</SelectItem>
-                <SelectItem value="90">3 derniers mois</SelectItem>
-                <SelectItem value="180">6 derniers mois</SelectItem>
-                <SelectItem value="365">12 derniers mois</SelectItem>
-                <SelectItem value="all">Depuis le début</SelectItem>
-                <SelectItem value="custom">Personnalisé</SelectItem>
-              </SelectContent>
-            </Select>
-            {period === "custom" && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-muted-foreground">Du</span>
-                  <Input
-                    type="date"
-                    max={format(new Date(), "yyyy-MM-dd")}
-                    value={customDateRange.from ? format(customDateRange.from, "yyyy-MM-dd") : ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setCustomDateRange((prev) => ({
-                        ...prev,
-                        from: v ? parse(v, "yyyy-MM-dd", new Date()) : undefined,
-                      }));
-                    }}
-                    className="w-[160px]"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-sm text-muted-foreground">Au</span>
-                  <Input
-                    type="date"
-                    max={format(new Date(), "yyyy-MM-dd")}
-                    value={customDateRange.to ? format(customDateRange.to, "yyyy-MM-dd") : ""}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setCustomDateRange((prev) => ({
-                        ...prev,
-                        to: v ? parse(v, "yyyy-MM-dd", new Date()) : undefined,
-                      }));
-                    }}
-                    className="w-[160px]"
-                  />
-                </div>
-              </div>
-            )}
+            <SelecteurPeriode
+              period={period}
+              plage={customDateRange}
+              onRaccourci={(cle) => startTransition(() => { setPeriod(cle); setCustomDateRange({}); })}
+              onPlage={(r) => startTransition(() => { setCustomDateRange(r); setPeriod("custom"); })}
+            />
           </div>
         </div>
 
@@ -1004,9 +1024,9 @@ export default function AdminRevenus() {
                     <SelectValue placeholder="Filtrer par type" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tous les types</SelectItem>
+                    <SelectItem value="all" className="focus:bg-blue-50 focus:text-blue-900">Tous les types</SelectItem>
                     {availableDemarcheTypes.map(t => (
-                      <SelectItem key={t} value={t}>{TYPE_LABELS[t] || t}</SelectItem>
+                      <SelectItem key={t} value={t} className="focus:bg-blue-50 focus:text-blue-900">{TYPE_LABELS[t] || t}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1208,7 +1228,7 @@ export default function AdminRevenus() {
                           {g.tokenPurchases > 0 && <span>Jet: {g.tokenPurchases.toFixed(2)}€</span>}
                         </div>
                       </div>
-                      <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setSelectedGarageId(g.id)}>
+                      <Button variant="ghost" size="icon" className="shrink-0 hover:bg-blue-50 hover:text-blue-900" onClick={() => setSelectedGarageId(g.id)}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </div>
