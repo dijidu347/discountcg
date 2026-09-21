@@ -128,6 +128,9 @@ const PaiementDemarche = () => {
   const [actionRapide, setActionRapide] = useState<any>(null);
   const [stripePromise, setStripePromise] = useState<any>(null);
   const [garage, setGarage] = useState<any>(null);
+  // Frais déjà payés en jetons, taxe régionale encore due : elle se règle par
+  // carte (reprise possible depuis « Mes démarches »).
+  const taxeSeule = !!demarche?.paid_with_tokens && !demarche?.paye && demarche?.status === "en_attente_paiement_pro";
   const [showBalanceConfirm, setShowBalanceConfirm] = useState(false);
   const [isProcessingBalance, setIsProcessingBalance] = useState(false);
   
@@ -393,7 +396,10 @@ const PaiementDemarche = () => {
     const frais = Number(demarche.frais_dossier) || 0;
     const optionsSum = trackingServices.reduce((sum, s) => sum + Number(s.price || 0), 0);
     const expressPrix = demarche.express ? getExpressSurcharge(demarche.type) : 0;
-    const amountToPayRaw = (currentPaymentMode === 'split' ? (frais + optionsSum) : (prixCG + frais + optionsSum)) + expressPrix;
+    // Le solde ne paie que les frais de service ; la taxe régionale (prixCG) se
+    // règle par carte ensuite (payer_demarche_avec_solde renvoie taxe_a_payer).
+    void prixCG;
+    const amountToPayRaw = frais + optionsSum + expressPrix;
     const amountToPay = Math.round(amountToPayRaw * 100) / 100;
 
     if (amountToPay <= 0 || garage.token_balance < amountToPay) return;
@@ -410,6 +416,20 @@ const PaiementDemarche = () => {
       });
       if (balanceError) throw new Error(balanceError.message);
       const newBalance = Number((paiement as { nouveau_solde: number })?.nouveau_solde ?? 0);
+      const taxeAPayer = Number((paiement as { taxe_a_payer?: number })?.taxe_a_payer ?? 0);
+
+      // Taxe régionale : jamais en jetons. Les frais viennent d'être réglés,
+      // la taxe part maintenant en paiement carte.
+      if (taxeAPayer > 0) {
+        setGarage((g: any) => (g ? { ...g, token_balance: newBalance } : g));
+        toast({
+          title: "Frais réglés avec votre solde",
+          description: `Réglez maintenant la taxe régionale (${formatPrice(taxeAPayer)} €) par carte.`,
+        });
+        await handleSogecommercePay("taxe");
+        return;
+      }
+
       // Dossier prioritaire payé en jetons : la banque ne passe pas par le
       // webhook, l'alerte SMS est demandée ici (le serveur vérifie et dédoublonne).
       if (demarche?.express) {
@@ -511,12 +531,12 @@ const PaiementDemarche = () => {
   };
 
   // Paiement carte via Sogecommerce (redirection page hébergée SG).
-  const handleSogecommercePay = async () => {
+  const handleSogecommercePay = async (modeForce?: "taxe") => {
     if (!demarcheId) return;
     const urlMode = searchParams.get('mode');
-    const currentPaymentMode = (demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
+    const currentPaymentMode = modeForce || (taxeSeule ? "taxe" : null) || ((demarche?.payment_mode && demarche.payment_mode !== 'pro_pays_all')
       ? demarche.payment_mode
-      : (urlMode || demarche?.payment_mode || 'pro_pays_all');
+      : (urlMode || demarche?.payment_mode || 'pro_pays_all'));
 
     // En split, on revient sur la page avec pro_paid=true (affiche l'UI lien client,
     // le token ayant été généré par le webhook). Sinon, page de succès.
@@ -780,10 +800,13 @@ const PaiementDemarche = () => {
   // For split mode, pro only pays services (frais + options), not carte grise
   const isSplitMode = paymentMode === 'split';
   const fullAmount = calculatedTotal !== null ? calculatedTotal : (prixCarteGrise + totalServices);
-  const finalAmount = isSplitMode ? totalServices : fullAmount;
-  
-  // Vérifier si le paiement par solde est possible (utiliser finalAmount au lieu de calculatedTotal)
-  const canPayWithBalance = garage && finalAmount > 0 && garage.token_balance >= finalAmount;
+  // Frais déjà réglés en jetons : seule la taxe reste, par carte.
+  const finalAmount = taxeSeule ? prixCarteGrise : (isSplitMode ? totalServices : fullAmount);
+
+  // Le solde ne couvre que les frais de service, jamais la taxe régionale.
+  const montantSolde = totalServices;
+  const taxeApresSolde = isSplitMode ? 0 : prixCarteGrise;
+  const canPayWithBalance = !taxeSeule && garage && montantSolde > 0 && garage.token_balance >= montantSolde;
 
 
   return (
@@ -814,7 +837,17 @@ const PaiementDemarche = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* 0. Paiement par solde */}
-                {garage && garage.token_balance > 0 && (
+                {taxeSeule && (
+                  <div className="rounded-lg border-2 border-green-500 bg-green-50 dark:bg-green-950/30 p-4 text-sm">
+                    <p className="font-semibold">Frais de service déjà réglés avec votre solde.</p>
+                    <p className="text-muted-foreground mt-1">
+                      Il reste la taxe régionale de <strong>{formatPrice(prixCarteGrise)} €</strong>, reversée à l'État :
+                      elle se règle uniquement par carte bancaire.
+                    </p>
+                  </div>
+                )}
+
+                {!taxeSeule && garage && garage.token_balance > 0 && (
                   <div className={`border-2 rounded-lg p-6 space-y-4 ${canPayWithBalance ? 'border-green-500 bg-green-50 dark:bg-green-950/30' : 'border-muted'}`}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -837,8 +870,14 @@ const PaiementDemarche = () => {
                             Souhaitez-vous utiliser votre solde pour payer cette démarche ?
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            <span className="font-bold">{formatPrice(finalAmount)}€</span> seront débités de votre solde.
+                            <span className="font-bold">{formatPrice(montantSolde)}€</span> de frais seront débités de votre solde.
                           </p>
+                          {taxeApresSolde > 0 && (
+                            <p className="text-sm text-muted-foreground">
+                              La taxe régionale ({formatPrice(taxeApresSolde)}€) ne se paie pas en jetons : vous la réglerez
+                              ensuite par carte bancaire.
+                            </p>
+                          )}
                           <div className="flex gap-3">
                             <Button 
                               onClick={handleBalancePayment}
@@ -873,18 +912,20 @@ const PaiementDemarche = () => {
                           size="lg"
                         >
                           <CheckCircle className="w-5 h-5 mr-2" />
-                          Utiliser mon solde ({formatPrice(finalAmount)}€)
+                          {taxeApresSolde > 0
+                            ? `Payer les frais avec mon solde (${formatPrice(montantSolde)}€)`
+                            : `Utiliser mon solde (${formatPrice(montantSolde)}€)`}
                         </Button>
                       )
                     ) : (
                       <div className="text-sm text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 p-3 rounded-lg">
-                        ⚠️ Solde insuffisant. Il vous manque <span className="font-bold">{formatPrice(finalAmount - garage.token_balance)}€</span>
+                        ⚠️ Solde insuffisant. Il vous manque <span className="font-bold">{formatPrice(montantSolde - garage.token_balance)}€</span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {garage && garage.token_balance > 0 && (
+                {!taxeSeule && garage && garage.token_balance > 0 && (
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <span className="w-full border-t" />
@@ -903,7 +944,7 @@ const PaiementDemarche = () => {
                       Visa, Mastercard, Apple Pay, Google Pay…
                     </p>
                     <Button
-                      onClick={handleSogecommercePay}
+                      onClick={() => handleSogecommercePay()}
                       size="lg"
                       className="w-full text-lg h-12"
                     >

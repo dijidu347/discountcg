@@ -31,6 +31,7 @@ const getStatusLabel = (demarche: any): string => {
     en_saisie: "En saisie",
     en_attente: "En attente",
     en_attente_paiement_client: "Attente paiement client",
+    en_attente_paiement_pro: "Taxe à régler",
     paye: "Payé",
     valide: "En cours",
     finalise: "Finalisé",
@@ -50,6 +51,7 @@ const getStatusColor = (demarche: any): string => {
     en_saisie: "bg-gray-500",
     en_attente: "bg-orange-500",
     en_attente_paiement_client: "bg-amber-500",
+    en_attente_paiement_pro: "bg-red-500",
     paye: "bg-blue-500",
     valide: "bg-blue-500",
     finalise: "bg-green-700",
@@ -169,7 +171,7 @@ export default function MesDemarches() {
         .from('demarches')
         .select('*, vehicules(marque, modele)')
         .eq('garage_id', garageData.id)
-        .or('paye.eq.true,is_free_token.eq.true,status.eq.en_attente_paiement_client')
+        .or('paye.eq.true,is_free_token.eq.true,status.eq.en_attente_paiement_client,status.eq.en_attente_paiement_pro')
         .order('created_at', { ascending: false });
 
       if (demarchesData) {
@@ -513,6 +515,25 @@ export default function MesDemarches() {
                           <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg">
                             <CheckCircle className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                             <span className="font-semibold text-emerald-700 dark:text-emerald-400">Offert</span>
+                          </div>
+                        ) : demarche.status === 'en_attente_paiement_pro' ? (
+                          // Frais payés en jetons, taxe régionale encore due : elle
+                          // se règle uniquement par carte.
+                          <div className="space-y-1.5">
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+                              <Clock className="h-5 w-5 text-red-600 dark:text-red-400" />
+                              <span className="font-semibold text-red-700 dark:text-red-400">Taxe à régler par carte</span>
+                            </div>
+                            <Button
+                              size="sm"
+                              className="w-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/paiement-demarche/${demarche.id}`);
+                              }}
+                            >
+                              Payer la taxe ({(Number(demarche.prix_carte_grise) || 0).toFixed(2)} €)
+                            </Button>
                           </div>
                         ) : demarche.status === 'en_attente_paiement_client' ? (
                           <div className="space-y-1.5">

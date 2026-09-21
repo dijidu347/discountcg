@@ -213,7 +213,26 @@ serve(async (req) => {
 
     // --- 5. Détermination du mode de paiement -----------------------------
     // (même logique que create-payment-intent)
-    const paymentMode = requestedMode || demarche.payment_mode || "pro_pays_all";
+    let paymentMode = requestedMode || demarche.payment_mode || "pro_pays_all";
+    if (demarche.paye === true) {
+      return new Response(JSON.stringify({ error: "Cette démarche est déjà payée." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    // Frais déjà réglés avec le solde de jetons : il ne reste que la taxe
+    // régionale, qui se paie uniquement par carte (mode « taxe »).
+    if (demarche.paid_with_tokens === true) {
+      if (demarche.status !== "en_attente_paiement_pro" || !(Number(demarche.prix_carte_grise) > 0)) {
+        return new Response(JSON.stringify({ error: "Aucune taxe à régler par carte pour cette démarche." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      paymentMode = "taxe";
+    } else if (paymentMode === "taxe") {
+      paymentMode = demarche.payment_mode || "pro_pays_all";
+    }
     if (paymentMode === "client_pays_all") {
       return new Response(
         JSON.stringify({ error: "Le client est responsable du paiement pour cette démarche" }),
@@ -240,7 +259,10 @@ serve(async (req) => {
     const totalServices = fraisDossier + optionsTotal + expressSurcharge;
 
     let calculatedTotal: number;
-    if (paymentMode === "split") {
+    if (paymentMode === "taxe") {
+      // Frais payés en jetons : seule la taxe passe par la carte.
+      calculatedTotal = prixCarteGrise;
+    } else if (paymentMode === "split") {
       // Mode split : le pro paie seulement frais de dossier + options.
       calculatedTotal = totalServices;
     } else {

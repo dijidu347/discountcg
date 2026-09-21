@@ -868,9 +868,24 @@ export default function NouvelleDemarche() {
       });
       if (updateError) throw new Error(updateError.message);
       const newBalance = Number((paiement as { nouveau_solde: number })?.nouveau_solde ?? 0);
+      const taxeAPayer = Number((paiement as { taxe_a_payer?: number })?.taxe_a_payer ?? 0);
 
       // Mettre à jour le solde local
       setTokenBalance(newBalance);
+
+      // La taxe régionale ne se paie pas en jetons : les frais sont réglés,
+      // la taxe se règle maintenant par carte sur la page de paiement.
+      if (taxeAPayer > 0) {
+        setPaymentCompleted(true);
+        await enregistrerQuestionnaire();
+        setShowPaymentDialog(false);
+        toast({
+          title: "Frais réglés avec vos jetons",
+          description: `Réglez maintenant la taxe régionale (${formatPrice(taxeAPayer)} €) par carte.`,
+        });
+        navigate(`/paiement-demarche/${demarcheId}`);
+        return;
+      }
 
       // Fermer le dialog et traiter comme un succès
       setShowPaymentDialog(false);
@@ -1140,12 +1155,9 @@ export default function NouvelleDemarche() {
     setShowPaymentDialog(true);
   };
 
-  const handlePaymentSuccess = async () => {
-    if (!demarcheId) return;
-
-    // Mark payment as completed to prevent cleanup deletion
-    setPaymentCompleted(true);
-
+  // Réponses au questionnaire : enregistrées dès que la démarche est réglée,
+  // y compris quand seule la taxe reste à payer par carte.
+  const enregistrerQuestionnaire = async () => {
     // Save questionnaire responses if any
     if (Object.keys(questionnaireAnswers).length > 0 && actionDetails) {
       try {
@@ -1180,6 +1192,15 @@ export default function NouvelleDemarche() {
         console.error('Error saving questionnaire responses:', error);
       }
     }
+  };
+
+  const handlePaymentSuccess = async () => {
+    if (!demarcheId) return;
+
+    // Mark payment as completed to prevent cleanup deletion
+    setPaymentCompleted(true);
+
+    await enregistrerQuestionnaire();
 
     // Update demarche to mark as not draft
     await supabase
@@ -2017,8 +2038,14 @@ export default function NouvelleDemarche() {
                               <div>
                                 <p className="font-semibold">Payer avec vos jetons</p>
                                 <p className="text-sm text-muted-foreground">
-                                  Coût : {formatPrice(getTokenCost())}€ • Votre solde : {formatPrice(tokenBalance)}€
+                                  Frais : {formatPrice(getTokenCost())}€ • Votre solde : {formatPrice(tokenBalance)}€
                                 </p>
+                                {paymentMode !== 'split' && getClientPrice() > 0 && (
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    La taxe régionale ({formatPrice(getClientPrice())}€) ne se paie pas en jetons :
+                                    vous la réglerez ensuite par carte.
+                                  </p>
+                                )}
                               </div>
                             </div>
                             <Button type="button"
