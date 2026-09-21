@@ -1350,6 +1350,7 @@ export type Database = {
           date_mec: string | null
           demarche_type: string | null
           departement: string | null
+          derniere_relance_at: string | null
           documents_complets: boolean
           dossier_prioritaire: boolean | null
           email: string
@@ -1380,6 +1381,8 @@ export type Database = {
           prix_cv: number | null
           prix_cv_avant_abattement: number | null
           puiss_fisc: number | null
+          relances_envoyees: number
+          relances_stoppees: boolean
           requires_resubmission_payment: boolean | null
           resubmission_paid: boolean | null
           resubmission_payment_amount: number | null
@@ -1416,6 +1419,7 @@ export type Database = {
           date_mec?: string | null
           demarche_type?: string | null
           departement?: string | null
+          derniere_relance_at?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email: string
@@ -1446,6 +1450,8 @@ export type Database = {
           prix_cv?: number | null
           prix_cv_avant_abattement?: number | null
           puiss_fisc?: number | null
+          relances_envoyees?: number
+          relances_stoppees?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
@@ -1482,6 +1488,7 @@ export type Database = {
           date_mec?: string | null
           demarche_type?: string | null
           departement?: string | null
+          derniere_relance_at?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email?: string
@@ -1512,6 +1519,8 @@ export type Database = {
           prix_cv?: number | null
           prix_cv_avant_abattement?: number | null
           puiss_fisc?: number | null
+          relances_envoyees?: number
+          relances_stoppees?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
@@ -1575,6 +1584,44 @@ export type Database = {
           },
           {
             foreignKeyName: "messages_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes_prospection: {
+        Row: {
+          auteur_email: string | null
+          auteur_id: string
+          contenu: string
+          created_at: string
+          garage_id: string
+          id: string
+          rappel_le: string | null
+        }
+        Insert: {
+          auteur_email?: string | null
+          auteur_id: string
+          contenu: string
+          created_at?: string
+          garage_id: string
+          id?: string
+          rappel_le?: string | null
+        }
+        Update: {
+          auteur_email?: string | null
+          auteur_id?: string
+          contenu?: string
+          created_at?: string
+          garage_id?: string
+          id?: string
+          rappel_le?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_prospection_garage_id_fkey"
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
@@ -2244,6 +2291,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ajouter_note_prospection: {
+        Args: { p_contenu: string; p_garage_id: string; p_rappel_le?: string }
+        Returns: string
+      }
       appel_de_confiance: { Args: never; Returns: boolean }
       bilan_compression: {
         Args: never
@@ -2269,6 +2320,7 @@ export type Database = {
         Args: { p_garage_id: string; p_montant: number }
         Returns: number
       }
+      definir_prospecteur: { Args: { p_email: string }; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2296,6 +2348,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      est_prospecteur_ou_admin: { Args: never; Returns: boolean }
       fichiers_a_compresser: {
         Args: { p_limite?: number }
         Returns: {
@@ -2303,6 +2356,25 @@ export type Database = {
           chemin: string
           taille: number
           type_mime: string
+        }[]
+      }
+      garages_prospection: {
+        Args: never
+        Returns: {
+          actif_90j: boolean
+          adresse: string
+          code_postal: string
+          derniere_note_le: string
+          email: string
+          id: string
+          inscrit_le: string
+          nb_notes: number
+          prochain_rappel: string
+          raison_sociale: string
+          siret: string
+          telephone: string
+          verification: string
+          ville: string
         }[]
       }
       generate_demarche_numero: { Args: never; Returns: string }
@@ -2332,6 +2404,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      liste_comptes: {
+        Args: never
+        Returns: {
+          derniere_connexion: string
+          email: string
+          garage_id: string
+          inscrit_le: string
+          nom: string
+          roles: string[]
+          user_id: string
+        }[]
+      }
+      liste_prospecteurs: {
+        Args: never
+        Returns: {
+          depuis: string
+          email: string
+          user_id: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -2340,6 +2432,16 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      notes_prospection_garage: {
+        Args: { p_garage_id: string }
+        Returns: {
+          auteur_email: string
+          contenu: string
+          created_at: string
+          id: string
+          rappel_le: string
+        }[]
       }
       payer_demarche_avec_solde: {
         Args: {
@@ -2360,6 +2462,7 @@ export type Database = {
         }[]
       }
       renew_coffre_token_subscriptions: { Args: never; Returns: undefined }
+      retirer_prospecteur: { Args: { p_user_id: string }; Returns: undefined }
       setup_facture_cron: {
         Args: { p_service_role_key: string }
         Returns: Json
