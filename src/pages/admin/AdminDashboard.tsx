@@ -211,9 +211,17 @@ export default function AdminDashboard() {
       .select('status, payment_mode')
       .in('status', ['active', 'trialing']);
 
-    // Garages à vérifier = verification_requested_at not null ET is_verified false ET pas encore vu par admin
-    const garagesAVerifier = garages?.filter(g => 
-      g.verification_requested_at && !g.is_verified && !g.verification_admin_viewed
+    // Garages à vérifier : même règle que l'onglet « À vérifier » de la page
+    // Garages (demande jamais ouverte, ou documents pas encore contrôlés).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: chiffresGarages } = await supabase.rpc('depense_par_garage' as any);
+    const aControler = new Set(
+      ((chiffresGarages || []) as { garage_id: string; documents_a_controler: boolean }[])
+        .filter((c) => c.documents_a_controler)
+        .map((c) => c.garage_id),
+    );
+    const garagesAVerifier = garages?.filter(g =>
+      !g.is_verified && ((g.verification_requested_at && !g.verification_admin_viewed) || aControler.has(g.id))
     ) || [];
 
     const coffreActive = coffreSubs || [];

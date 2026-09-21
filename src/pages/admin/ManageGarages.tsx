@@ -58,6 +58,7 @@ interface Stats {
   nb_demarches: number;
   derniere_demarche: string | null;
   a_des_documents: boolean;
+  documents_a_controler: boolean;
 }
 
 const JOUR = 86_400_000;
@@ -240,6 +241,7 @@ export default function ManageGarages() {
         nb_demarches: Number(t.nb_demarches) || 0,
         derniere_demarche: t.derniere_demarche,
         a_des_documents: !!t.a_des_documents,
+        documents_a_controler: !!t.documents_a_controler,
       };
     });
     setStats(parGarage);
@@ -289,7 +291,9 @@ export default function ManageGarages() {
   // onglet pour ceux qui n'ont jamais rien demandé, jusqu'ici invisibles).
   const etape = (g: Garage): Etape => {
     if (g.is_verified) return "valides";
-    if (g.verification_requested_at && !g.verification_admin_viewed) return "a_verifier";
+    // À nous : demande jamais ouverte, ou documents envoyés pas encore contrôlés.
+    if ((g.verification_requested_at && !g.verification_admin_viewed) || stats[g.id]?.documents_a_controler) return "a_verifier";
+    // Au garage : tout est contrôlé, il doit renvoyer ou compléter.
     if (stats[g.id]?.a_des_documents && g.verification_admin_viewed) return "en_attente";
     return "sans_demande";
   };
@@ -365,8 +369,8 @@ export default function ManageGarages() {
 
   const ONGLETS: { cle: Onglet; texte: string; aide: string }[] = [
     { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
-    { cle: "a_verifier", texte: "À vérifier", aide: "Documents envoyés, pas encore contrôlés" },
-    { cle: "en_attente", texte: "En attente de documents", aide: "Documents déjà contrôlés, le garage doit en renvoyer" },
+    { cle: "a_verifier", texte: "À vérifier", aide: "Documents envoyés que nous n'avons pas encore contrôlés" },
+    { cle: "en_attente", texte: "Documents à compléter", aide: "Tout est contrôlé : le garage doit renvoyer ou compléter ses documents" },
     { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
     { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
   ];
