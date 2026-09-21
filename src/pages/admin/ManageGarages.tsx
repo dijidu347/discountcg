@@ -367,12 +367,14 @@ export default function ManageGarages() {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
+  // Dans l'ordre du parcours d'un garage : inscrit sans documents, documents
+  // à contrôler, compléments demandés, validé.
   const ONGLETS: { cle: Onglet; texte: string; aide: string }[] = [
     { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
+    { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
     { cle: "a_verifier", texte: "À vérifier", aide: "Documents envoyés que nous n'avons pas encore contrôlés" },
     { cle: "en_attente", texte: "Documents à compléter", aide: "Tout est contrôlé : le garage doit renvoyer ou compléter ses documents" },
     { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
-    { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
   ];
 
   return (
