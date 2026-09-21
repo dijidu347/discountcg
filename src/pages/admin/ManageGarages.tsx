@@ -446,7 +446,6 @@ export default function ManageGarages() {
                           <p className="font-medium">{g.raison_sociale || "Sans raison sociale"}</p>
                           <p className="text-xs text-muted-foreground">
                             {[g.code_postal, g.ville].filter(Boolean).join(" ") || "—"}
-                            {g.free_token_available && <span className="ml-2 text-emerald-600">· offerte non utilisée</span>}
                           </p>
                         </TableCell>
                         <TableCell className="text-sm">
