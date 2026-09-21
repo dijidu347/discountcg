@@ -1672,10 +1672,14 @@ export default function NouvelleDemarche() {
                       </div>
                     </button>
                   </CollapsibleTrigger>
-                  <CollapsibleContent>
+                  {/* forceMount : replier le bloc ne doit pas démonter le
+                      questionnaire, sinon ses réponses repartaient de zéro. */}
+                  <CollapsibleContent forceMount className="data-[state=closed]:hidden">
                     <div className="px-4 pb-4">
                       <ActionQuestionnaire
                         actionId={actionDetails.id}
+                        reponsesInitiales={questionnaireAnswers}
+                        cleMemoire={demarcheId ? `questionnaire-${demarcheId}` : undefined}
                         onAnswersChange={(answers, isBlocked, condDocs, allAnswered, answerTexts) => {
                           setQuestionnaireAnswers(answers);
                           setIsQuestionnaireBlocked(isBlocked);

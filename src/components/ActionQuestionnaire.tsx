@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -33,10 +33,23 @@ interface ConditionalDocument {
 
 interface ActionQuestionnaireProps {
   actionId: string;
+  /** Réponses déjà données (question -> option) : reprises quand le bloc est
+   *  replié puis rouvert, sinon elles repartaient de zéro. */
+  reponsesInitiales?: Record<string, string>;
+  /** Clé de mémoire du navigateur : les réponses survivent à un rechargement. */
+  cleMemoire?: string;
   onAnswersChange: (answers: Record<string, string>, isBlocked: boolean, conditionalDocs: ConditionalDocument[], allAnswered: boolean, answerTexts: Record<string, string>) => void;
 }
 
-export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestionnaireProps) {
+const lireMemoire = (cle?: string): Record<string, string> => {
+  if (!cle) return {};
+  try { return JSON.parse(sessionStorage.getItem(cle) || "{}") || {}; } catch { return {}; }
+};
+
+export function ActionQuestionnaire({ actionId, onAnswersChange, reponsesInitiales, cleMemoire }: ActionQuestionnaireProps) {
+  // Lues au chargement seulement : elles ne doivent pas relancer le chargement.
+  const reprise = useRef<Record<string, string>>({});
+  reprise.current = { ...lireMemoire(cleMemoire), ...(reponsesInitiales || {}) };
   const [questions, setQuestions] = useState<Question[]>([]);
   const [options, setOptions] = useState<Record<string, Option[]>>({});
   const [conditionalDocs, setConditionalDocs] = useState<Record<string, ConditionalDocument[]>>({});
@@ -87,8 +100,8 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
 
   const loadQuestions = async () => {
     setLoading(true);
-    setAnswers({});
     setBlockingMessage(null);
+    const aReprendre = reprise.current;
 
     // Load questions for this action
     const { data: questionsData, error: questionsError } = await supabase
@@ -118,6 +131,14 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
         });
         setOptions(optionsByQuestion);
 
+        // Reprend les réponses déjà données, si elles correspondent toujours
+        // à une option existante de la question.
+        const reprises: Record<string, string> = {};
+        Object.entries(aReprendre).forEach(([questionId, optionId]) => {
+          if (optionsByQuestion[questionId]?.some((o) => o.id === optionId)) reprises[questionId] = optionId;
+        });
+        setAnswers(reprises);
+
         // Load conditional documents for all options
         const optionIds = optionsData.map(o => o.id);
         const { data: docsData } = await supabase
@@ -142,16 +163,20 @@ export function ActionQuestionnaire({ actionId, onAnswersChange }: ActionQuestio
       setQuestions([]);
       setOptions({});
       setConditionalDocs({});
+      setAnswers({});
     }
 
     setLoading(false);
   };
 
   const handleAnswerChange = (questionId: string, optionId: string) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: optionId
-    }));
+    setAnswers(prev => {
+      const suivantes = { ...prev, [questionId]: optionId };
+      if (cleMemoire) {
+        try { sessionStorage.setItem(cleMemoire, JSON.stringify(suivantes)); } catch { /* navigation privée */ }
+      }
+      return suivantes;
+    });
   };
 
   if (loading) {

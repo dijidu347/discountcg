@@ -102,6 +102,17 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       if (adresse.trim()) partialData.adresse = adresse.trim();
       if (codePostal.trim()) partialData.code_postal = codePostal.trim();
       if (ville.trim()) partialData.ville = ville.trim();
+      // Réponses aux questions de la carte grise : gardées elles aussi, pour ne
+      // pas les perdre en revenant en arrière ou en rechargeant la page.
+      if (showConditionalQuestions) {
+        partialData.has_cotitulaire = hasCotitulaire === "oui";
+        partialData.cotitulaire_nom = hasCotitulaire === "oui" ? cotitulaireNom.trim() || null : null;
+        partialData.cotitulaire_prenom = hasCotitulaire === "oui" ? cotitulairePrenom.trim() || null : null;
+        partialData.vehicule_pro = vehiculePro === "oui";
+        partialData.vehicule_leasing = vehiculeLeasing === "oui";
+        partialData.is_mineur = isMineur === "oui";
+        partialData.is_heberge = isHeberge === "oui";
+      }
 
       // Only save if we have at least one real field
       if (Object.keys(partialData).length <= 1) return;
@@ -116,7 +127,8 @@ export function GuestOrderInfoForm({ orderId, onComplete, isPaid, isEnabled, sho
       }
     }, 2000);
     return () => clearTimeout(dbTimer);
-  }, [nom, prenom, email, telephone, adresse, codePostal, ville, orderId]);
+  }, [nom, prenom, email, telephone, adresse, codePostal, ville, orderId,
+      showConditionalQuestions, hasCotitulaire, cotitulaireNom, cotitulairePrenom, vehiculePro, vehiculeLeasing, isMineur, isHeberge]);
 
   useEffect(() => {
     loadExistingData();
