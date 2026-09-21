@@ -509,11 +509,11 @@ export default function AllDemarches() {
                     title={o.cle === "sommeil" ? "Aucune pièce ni message du garage depuis plus de 30 jours" : undefined}
                     onClick={() => { setVueATraiter(o.cle); setPageATraiter(1); }}
                     className={`inline-flex items-center gap-2 rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                      actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                      actif ? "bg-blue-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     {o.texte}
-                    <span className="rounded-full bg-background/60 px-2 py-0.5 text-xs tabular-nums">{o.n}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${actif ? "bg-white/20 text-white" : "bg-background/60"}`}>{o.n}</span>
                   </button>
                 );
               })}

@@ -202,11 +202,11 @@ export default function ManageAccounts() {
                   aria-selected={actif}
                   onClick={() => setFiltre(o.cle)}
                   className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    actif ? "bg-blue-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {o.texte}
-                  <span className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${actif ? "bg-muted text-foreground" : "bg-background/60 text-muted-foreground"}`}>
+                  <span className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${actif ? "bg-white/20 text-white" : "bg-background/60 text-muted-foreground"}`}>
                     {compteurs[o.cle]}
                   </span>
                 </button>
