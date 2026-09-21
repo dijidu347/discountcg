@@ -227,11 +227,13 @@ export default function AcheterJetons() {
             return (
               <Card
                 key={pack.id}
-                className={`flex flex-col ${isPopular ? "border-2 border-primary shadow-lg" : ""}`}
+                className={`relative flex flex-col ${isPopular ? "border-2 border-primary shadow-lg" : ""}`}
               >
                 <CardContent className="flex flex-1 flex-col gap-3 pt-6">
+                  {/* Bandeau posé sur le bord de la carte : hors du flux, il ne
+                      décale pas les prix, qui restent alignés d'une carte à l'autre. */}
                   {isPopular && (
-                    <span className="self-start rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground">
                       Populaire · meilleur bonus
                     </span>
                   )}
