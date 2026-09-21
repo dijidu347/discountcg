@@ -169,24 +169,60 @@ const lirePeriode = (v: unknown): Periode =>
     ? { du: (v as Periode).du ?? null, au: (v as Periode).au ?? null }
     : PERIODE_VIDE;
 
-function FiltrePeriode({ titre, valeur, onChange }: { titre: string; valeur: Periode; onChange: (p: Periode) => void }) {
-  const [ouvert, setOuvert] = useState(false);
-  const actif = !!(valeur.du || valeur.au);
+const resumePeriode = (valeur: Periode) => {
   const court = (j: string) => format(depuisJour(j), "d MMM yyyy", { locale: fr });
-  const resume = valeur.du && valeur.au
+  return valeur.du && valeur.au
     ? (valeur.du === valeur.au ? `le ${court(valeur.du)}`
       : valeur.du.slice(0, 4) === valeur.au.slice(0, 4)
         ? `${format(depuisJour(valeur.du), "d MMM", { locale: fr })} → ${court(valeur.au)}`
         : `${court(valeur.du)} → ${court(valeur.au)}`)
     : valeur.du ? `depuis le ${court(valeur.du)}` : valeur.au ? `jusqu'au ${court(valeur.au)}` : "";
+};
+
+// Calendrier deux mois pour choisir une période, aux couleurs bleues de la page
+// (le rouge du thème reste réservé aux alertes).
+function CalendrierPeriode({ valeur, onChange, onFermer }: { valeur: Periode; onChange: (p: Periode) => void; onFermer: () => void }) {
+  const plage: DateRange | undefined = valeur.du
+    ? { from: depuisJour(valeur.du), to: valeur.au ? depuisJour(valeur.au) : undefined }
+    : undefined;
+  return (
+    <>
+      <Calendar
+        mode="range"
+        locale={fr}
+        numberOfMonths={2}
+        defaultMonth={plage?.from ?? subDays(new Date(), 30)}
+        selected={plage}
+        onSelect={(r) => onChange({ du: r?.from ? versJour(r.from) : null, au: r?.to ? versJour(r.to) : r?.from ? versJour(r.from) : null })}
+        disabled={{ after: new Date() }}
+        classNames={{
+          cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md [&:has([aria-selected].day-range-end)]:rounded-r-md focus-within:relative focus-within:z-20",
+          day: "inline-flex h-9 w-9 items-center justify-center rounded-md p-0 text-sm font-normal hover:bg-blue-100 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 aria-selected:opacity-100",
+          day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
+          day_range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-900 rounded-none",
+          day_today: "font-semibold underline underline-offset-4",
+          day_outside: "day-outside text-muted-foreground opacity-40 aria-selected:bg-transparent",
+        }}
+      />
+      <div className="flex items-center justify-between border-t p-3 text-xs text-muted-foreground">
+        <span>Cliquez sur le premier jour, puis sur le dernier.</span>
+        <Button type="button" size="sm" className="h-7 bg-blue-600 hover:bg-blue-700" onClick={onFermer}>
+          OK
+        </Button>
+      </div>
+    </>
+  );
+}
+
+function FiltrePeriode({ titre, valeur, onChange }: { titre: string; valeur: Periode; onChange: (p: Periode) => void }) {
+  const [ouvert, setOuvert] = useState(false);
+  const actif = !!(valeur.du || valeur.au);
+  const resume = resumePeriode(valeur);
   const derniersJours = (n: number) => {
     const aujourdhui = new Date();
     onChange({ du: versJour(subDays(aujourdhui, n - 1)), au: versJour(aujourdhui) });
     setOuvert(false);
   };
-  const plage: DateRange | undefined = valeur.du
-    ? { from: depuisJour(valeur.du), to: valeur.au ? depuisJour(valeur.au) : undefined }
-    : undefined;
   return (
     <div
       className={`inline-flex h-8 items-center rounded-full border text-sm transition-colors ${
@@ -218,29 +254,7 @@ function FiltrePeriode({ titre, valeur, onChange }: { titre: string; valeur: Per
               </button>
             ))}
           </div>
-          <Calendar
-            mode="range"
-            locale={fr}
-            numberOfMonths={2}
-            defaultMonth={plage?.from ?? subDays(new Date(), 30)}
-            selected={plage}
-            onSelect={(r) => onChange({ du: r?.from ? versJour(r.from) : null, au: r?.to ? versJour(r.to) : r?.from ? versJour(r.from) : null })}
-            disabled={{ after: new Date() }}
-            classNames={{
-              cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md [&:has([aria-selected].day-range-end)]:rounded-r-md focus-within:relative focus-within:z-20",
-              day: "inline-flex h-9 w-9 items-center justify-center rounded-md p-0 text-sm font-normal hover:bg-blue-100 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 aria-selected:opacity-100",
-              day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
-              day_range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-900 rounded-none",
-              day_today: "font-semibold underline underline-offset-4",
-              day_outside: "day-outside text-muted-foreground opacity-40 aria-selected:bg-transparent",
-            }}
-          />
-          <div className="flex items-center justify-between border-t p-3 text-xs text-muted-foreground">
-            <span>Cliquez sur le premier jour, puis sur le dernier.</span>
-            <Button type="button" size="sm" className="h-7 bg-blue-600 hover:bg-blue-700" onClick={() => setOuvert(false)}>
-              OK
-            </Button>
-          </div>
+          <CalendrierPeriode valeur={valeur} onChange={onChange} onFermer={() => setOuvert(false)} />
         </PopoverContent>
       </Popover>
       {actif && (
@@ -248,6 +262,90 @@ function FiltrePeriode({ titre, valeur, onChange }: { titre: string; valeur: Per
           type="button"
           aria-label={`Retirer le filtre ${titre}`}
           onClick={() => onChange(PERIODE_VIDE)}
+          className="mr-1 rounded-full p-1 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// Activité : raccourcis cochables avec le nombre de garages concernés, ou une
+// période « dernière démarche entre le … et le … ». L'un remplace l'autre.
+function FiltreActivite({ choix, periode, options, onChoix, onPeriode }: {
+  choix: string[];
+  periode: Periode;
+  options: { valeur: string; texte: string; nombre: number }[];
+  onChoix: (v: string[]) => void;
+  onPeriode: (p: Periode) => void;
+}) {
+  const [ouvert, setOuvert] = useState(false);
+  const aPeriode = !!(periode.du || periode.au);
+  const choisies = options.filter((o) => choix.includes(o.valeur));
+  const actif = aPeriode || choisies.length > 0;
+  const resume = aPeriode
+    ? `dernière démarche ${resumePeriode(periode)}`
+    : choisies.length === 1 ? choisies[0].texte : `${choisies.length} choix`;
+  const basculer = (v: string) => {
+    onPeriode(PERIODE_VIDE);
+    onChoix(choix.includes(v) ? choix.filter((x) => x !== v) : [...choix, v]);
+  };
+  return (
+    <div
+      className={`inline-flex h-8 items-center rounded-full border text-sm transition-colors ${
+        actif ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-background text-foreground hover:border-blue-300 hover:bg-blue-50"
+      }`}
+    >
+      <Popover open={ouvert} onOpenChange={setOuvert}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={`inline-flex h-full items-center gap-1.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${actif ? "pl-3 pr-1" : "px-3"}`}
+          >
+            <span className={actif ? "text-white/80" : ""}>Activité{actif ? " :" : ""}</span>
+            {actif && <span className="font-medium">{resume}</span>}
+            {!actif && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <div className="p-2">
+            {options.map((o) => {
+              const coche = choix.includes(o.valeur);
+              return (
+                <button
+                  key={o.valeur}
+                  type="button"
+                  onClick={() => basculer(o.valeur)}
+                  className="flex w-full items-center gap-2.5 rounded-sm px-2 py-1.5 text-left text-sm hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                >
+                  <span
+                    aria-hidden
+                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                      coche ? "border-blue-600 bg-blue-600 text-white" : "border-muted-foreground/40 bg-background"
+                    }`}
+                  >
+                    {coche && <Check className="h-3 w-3" strokeWidth={3} />}
+                  </span>
+                  <span className="flex-1">{o.texte}</span>
+                  <span className="ml-4 rounded-full bg-muted px-2 py-0.5 text-xs tabular-nums text-muted-foreground">{o.nombre}</span>
+                </button>
+              );
+            })}
+          </div>
+          <p className="border-t px-3 pt-3 text-xs font-medium text-muted-foreground">Ou : dernière démarche entre le … et le …</p>
+          <CalendrierPeriode
+            valeur={periode}
+            onChange={(p) => { onChoix([]); onPeriode(p); }}
+            onFermer={() => setOuvert(false)}
+          />
+        </PopoverContent>
+      </Popover>
+      {actif && (
+        <button
+          type="button"
+          aria-label="Retirer le filtre Activité"
+          onClick={() => { onChoix([]); onPeriode(PERIODE_VIDE); }}
           className="mr-1 rounded-full p-1 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           <X className="h-3.5 w-3.5" />
@@ -274,6 +372,7 @@ export default function ManageGarages() {
   const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
   const [tri, setTri] = useState<Tri>(memoire.tri ?? "recents");
   const [activite, setActivite] = useState<string[]>(enListe(memoire.activite));
+  const [activitePeriode, setActivitePeriode] = useState<Periode>(lirePeriode(memoire.activitePeriode));
   const [solde, setSolde] = useState<string[]>(enListe(memoire.solde));
   const [offerte, setOfferte] = useState<string[]>(enListe(memoire.offerte));
   const [inscription, setInscription] = useState<Periode>(lirePeriode(memoire.inscription));
@@ -282,9 +381,9 @@ export default function ManageGarages() {
 
   useEffect(() => {
     try {
-      sessionStorage.setItem("gerer-garages", JSON.stringify({ onglet, recherche, tri, activite, solde, offerte, inscription, departement, page }));
+      sessionStorage.setItem("gerer-garages", JSON.stringify({ onglet, recherche, tri, activite, activitePeriode, solde, offerte, inscription, departement, page }));
     } catch { /* navigation privée */ }
-  }, [onglet, recherche, tri, activite, solde, offerte, inscription, departement, page]);
+  }, [onglet, recherche, tri, activite, activitePeriode, solde, offerte, inscription, departement, page]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -408,23 +507,24 @@ export default function ManageGarages() {
   );
 
   const maintenant = Date.now();
-  const filtres = useMemo(() => {
+  // Âge (en jours) de la dernière démarche payée, null si jamais.
+  const ageDerniere = (g: Garage) => {
+    const d = stats[g.id]?.derniere_demarche;
+    return d ? (maintenant - new Date(d).getTime()) / JOUR : null;
+  };
+  const correspondActivite = (a: string, age: number | null) =>
+    a === "jamais" ? age === null
+      : a === "actif" ? age !== null && age <= 30
+      : a === "ralenti" ? age !== null && age > 30 && age <= 90
+      : a === "inactif" ? age !== null && age > 90
+      : false;
+
+  // Tous les filtres sauf l'activité : sert aussi à compter chaque choix d'activité.
+  const horsActivite = useMemo(() => {
     const q = recherche.trim().toLowerCase();
     return garages.filter((g) => {
-      const st = stats[g.id];
       if (q && ![g.raison_sociale, g.email, g.ville, g.siret, g.telephone].some((v) => (v || "").toLowerCase().includes(q))) return false;
       if (departement.length && !departement.includes(departementDe(g.code_postal) ?? "")) return false;
-      if (activite.length) {
-        const derniere = st?.derniere_demarche ? new Date(st.derniere_demarche).getTime() : null;
-        const age = derniere ? (maintenant - derniere) / JOUR : null;
-        const correspond = (a: string) =>
-          a === "jamais" ? age === null
-            : a === "actif" ? age !== null && age <= 30
-            : a === "ralenti" ? age !== null && age > 30 && age <= 90
-            : a === "inactif" ? age !== null && age > 90
-            : false;
-        if (!activite.some(correspond)) return false;
-      }
       if (solde.length) {
         const aDuSolde = Number(g.token_balance) > 0;
         if (!solde.includes(aDuSolde ? "avec" : "vide")) return false;
@@ -437,7 +537,29 @@ export default function ManageGarages() {
       }
       return true;
     });
-  }, [garages, stats, recherche, departement, activite, solde, offerte, inscription, maintenant]);
+  }, [garages, recherche, departement, solde, offerte, inscription]);
+
+  const filtres = useMemo(() => {
+    return horsActivite.filter((g) => {
+      if (activite.length && !activite.some((a) => correspondActivite(a, ageDerniere(g)))) return false;
+      if (activitePeriode.du || activitePeriode.au) {
+        const d = stats[g.id]?.derniere_demarche;
+        if (!d) return false;
+        const t = new Date(d).getTime();
+        if (activitePeriode.du && t < depuisJour(activitePeriode.du).getTime()) return false;
+        if (activitePeriode.au && t >= depuisJour(activitePeriode.au).getTime() + JOUR) return false;
+      }
+      return true;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [horsActivite, stats, activite, activitePeriode, maintenant]);
+
+  const OPTIONS_ACTIVITE = [
+    { valeur: "actif", texte: "Actif (moins de 30 j)" },
+    { valeur: "ralenti", texte: "En perte de vitesse (30 à 90 j)" },
+    { valeur: "inactif", texte: "Inactif (plus de 90 j)" },
+    { valeur: "jamais", texte: "Jamais de démarche" },
+  ].map((o) => ({ ...o, nombre: horsActivite.filter((g) => correspondActivite(o.valeur, ageDerniere(g))).length }));
 
   const comptes = useMemo(() => {
     const c: Record<Onglet, number> = { tous: filtres.length, a_verifier: 0, en_attente: 0, valides: 0, sans_demande: 0 };
@@ -462,9 +584,11 @@ export default function ManageGarages() {
   const pageCourante = Math.min(page, pages);
   const visibles = liste.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
 
-  const filtresActifs = [activite, solde, offerte, departement].filter((v) => v.length > 0).length + (inscription.du || inscription.au ? 1 : 0);
+  const filtresActifs = [solde, offerte, departement].filter((v) => v.length > 0).length
+    + (activite.length || activitePeriode.du || activitePeriode.au ? 1 : 0)
+    + (inscription.du || inscription.au ? 1 : 0);
   const reinitialiser = () => {
-    setActivite([]); setSolde([]); setOfferte([]); setInscription(PERIODE_VIDE); setDepartement([]); setRecherche("");
+    setActivite([]); setActivitePeriode(PERIODE_VIDE); setSolde([]); setOfferte([]); setInscription(PERIODE_VIDE); setDepartement([]); setRecherche("");
   };
   const changer = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
@@ -558,16 +682,12 @@ export default function ManageGarages() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
-            <FiltrePastille
-              titre="Activité"
-              valeurs={activite}
-              onChange={changer(setActivite)}
-              options={[
-                { valeur: "actif", texte: "Actif (moins de 30 j)" },
-                { valeur: "ralenti", texte: "En perte de vitesse (30 à 90 j)" },
-                { valeur: "inactif", texte: "Inactif (plus de 90 j)" },
-                { valeur: "jamais", texte: "Jamais de démarche" },
-              ]}
+            <FiltreActivite
+              choix={activite}
+              periode={activitePeriode}
+              options={OPTIONS_ACTIVITE}
+              onChoix={changer(setActivite)}
+              onPeriode={changer(setActivitePeriode)}
             />
             <FiltrePastille
               titre="Solde"
