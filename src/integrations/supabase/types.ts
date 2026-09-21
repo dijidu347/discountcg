@@ -528,6 +528,7 @@ export type Database = {
           client_stripe_payment_id: string | null
           commentaire: string | null
           created_at: string
+          derniere_relance_sommeil_at: string | null
           documents_complets: boolean | null
           express: boolean
           facture_id: string | null
@@ -553,6 +554,7 @@ export type Database = {
           prix_cv: number | null
           prix_cv_avant_abattement: number | null
           pro_payment_pending: boolean
+          relances_sommeil: number
           requires_resubmission_payment: boolean | null
           resubmission_paid: boolean | null
           resubmission_payment_amount: number | null
@@ -580,6 +582,7 @@ export type Database = {
           client_stripe_payment_id?: string | null
           commentaire?: string | null
           created_at?: string
+          derniere_relance_sommeil_at?: string | null
           documents_complets?: boolean | null
           express?: boolean
           facture_id?: string | null
@@ -605,6 +608,7 @@ export type Database = {
           prix_cv?: number | null
           prix_cv_avant_abattement?: number | null
           pro_payment_pending?: boolean
+          relances_sommeil?: number
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
@@ -632,6 +636,7 @@ export type Database = {
           client_stripe_payment_id?: string | null
           commentaire?: string | null
           created_at?: string
+          derniere_relance_sommeil_at?: string | null
           documents_complets?: boolean | null
           express?: boolean
           facture_id?: string | null
@@ -657,6 +662,7 @@ export type Database = {
           prix_cv?: number | null
           prix_cv_avant_abattement?: number | null
           pro_payment_pending?: boolean
+          relances_sommeil?: number
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
           resubmission_payment_amount?: number | null
@@ -1351,6 +1357,7 @@ export type Database = {
           demarche_type: string | null
           departement: string | null
           derniere_relance_at: string | null
+          derniere_relance_sommeil_at: string | null
           documents_complets: boolean
           dossier_prioritaire: boolean | null
           email: string
@@ -1382,6 +1389,7 @@ export type Database = {
           prix_cv_avant_abattement: number | null
           puiss_fisc: number | null
           relances_envoyees: number
+          relances_sommeil: number
           relances_stoppees: boolean
           requires_resubmission_payment: boolean | null
           resubmission_paid: boolean | null
@@ -1420,6 +1428,7 @@ export type Database = {
           demarche_type?: string | null
           departement?: string | null
           derniere_relance_at?: string | null
+          derniere_relance_sommeil_at?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email: string
@@ -1451,6 +1460,7 @@ export type Database = {
           prix_cv_avant_abattement?: number | null
           puiss_fisc?: number | null
           relances_envoyees?: number
+          relances_sommeil?: number
           relances_stoppees?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
@@ -1489,6 +1499,7 @@ export type Database = {
           demarche_type?: string | null
           departement?: string | null
           derniere_relance_at?: string | null
+          derniere_relance_sommeil_at?: string | null
           documents_complets?: boolean
           dossier_prioritaire?: boolean | null
           email?: string
@@ -1520,6 +1531,7 @@ export type Database = {
           prix_cv_avant_abattement?: number | null
           puiss_fisc?: number | null
           relances_envoyees?: number
+          relances_sommeil?: number
           relances_stoppees?: boolean
           requires_resubmission_payment?: boolean | null
           resubmission_paid?: boolean | null
@@ -2291,6 +2303,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_vers_prospecteur: {
+        Args: { p_user_id: string }
+        Returns: undefined
+      }
       ajouter_note_prospection: {
         Args: { p_contenu: string; p_garage_id: string; p_rappel_le?: string }
         Returns: string
@@ -2328,8 +2344,25 @@ export type Database = {
       depense_par_garage: {
         Args: never
         Returns: {
+          a_des_documents: boolean
+          derniere_demarche: string
           garage_id: string
+          nb_demarches: number
           total: number
+        }[]
+      }
+      dossiers_sommeil_a_relancer: {
+        Args: { p_mise_en_service: string }
+        Returns: {
+          demarche: string
+          dossier_id: string
+          email: string
+          immatriculation: string
+          nom: string
+          numero_relance: number
+          pieces: Json
+          reference: string
+          source: string
         }[]
       }
       email_queue_dispatch: { Args: never; Returns: undefined }
