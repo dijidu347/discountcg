@@ -16,6 +16,7 @@ import {
   GARAGE_FIELD_LABELS,
 } from "@/components/admin/GarageEditDialog";
 import { GarageVerificationPanel } from "@/components/admin/GarageVerificationPanel";
+import { NotesProspection } from "@/components/admin/NotesProspection";
 
 /** Nombre de démarches récentes listées. Appliqué CÔTÉ BASE via .limit(). */
 const RECENT_DEMARCHES_LIMIT = 20;
@@ -360,6 +361,15 @@ export default function GarageDetail() {
             onDonJetonsOuvertChange={setDonJetonsOuvert}
           />
         </div>
+
+        {/* Suivi de prospection : notes partagées avec les prospecteurs */}
+        <Card className="p-6 mb-6">
+          <h2 className="text-lg font-semibold mb-1">Suivi de prospection</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Notes visibles par les administrateurs et les prospecteurs.
+          </p>
+          <NotesProspection garageId={garage.id} />
+        </Card>
 
         {/* Démarches récentes : en cours (payées) / brouillons (non payés) */}
         <Card className="p-6">

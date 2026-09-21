@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CalendarClock, Loader2, LogOut, Mail, MapPin, Phone, Search, StickyNote } from "lucide-react";
+import { CalendarClock, Loader2, LogOut, Mail, MapPin, Phone, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
@@ -9,12 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateTimeParis } from "@/lib/dateFormat";
+import { NotesProspection } from "@/components/admin/NotesProspection";
 
 // Espace des prospecteurs : la liste des garages, leurs coordonnées et les notes
 // de prospection. Aucune démarche, aucun montant : les données arrivent de
@@ -38,13 +37,6 @@ interface GarageProspection {
   nb_notes: number;
 }
 
-interface NoteProspection {
-  id: string;
-  auteur_email: string | null;
-  contenu: string;
-  rappel_le: string | null;
-  created_at: string;
-}
 
 const VERIFICATION: Record<GarageProspection["verification"], { texte: string; classe: string }> = {
   verifie: { texte: "Vérifié", classe: "bg-green-600 hover:bg-green-600" },
@@ -73,10 +65,6 @@ export default function Prospection() {
   const [aRappeler, setARappeler] = useState(false);
   const [page, setPage] = useState(1);
   const [ouvert, setOuvert] = useState<GarageProspection | null>(null);
-  const [notes, setNotes] = useState<NoteProspection[]>([]);
-  const [nouvelleNote, setNouvelleNote] = useState("");
-  const [rappel, setRappel] = useState("");
-  const [enregistrement, setEnregistrement] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/login");
@@ -127,36 +115,7 @@ export default function Prospection() {
   const visibles = filtres.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);
   const nbARappeler = garages.filter((g) => g.prochain_rappel && g.prochain_rappel <= aujourdHui).length;
 
-  const ouvrir = async (g: GarageProspection) => {
-    setOuvert(g);
-    setNotes([]);
-    setNouvelleNote("");
-    setRappel("");
-    const { data } = await rpc("notes_prospection_garage", { p_garage_id: g.id });
-    setNotes((data || []) as NoteProspection[]);
-  };
-
-  const ajouterNote = async () => {
-    if (!ouvert) return;
-    if (!nouvelleNote.trim()) {
-      toast({ title: "Note vide", description: "Écrivez ce qui s'est dit avant d'enregistrer.", variant: "destructive" });
-      return;
-    }
-    setEnregistrement(true);
-    const { error } = await rpc("ajouter_note_prospection", {
-      p_garage_id: ouvert.id,
-      p_contenu: nouvelleNote,
-      p_rappel_le: rappel || null,
-    });
-    setEnregistrement(false);
-    if (error) {
-      toast({ title: "Note non enregistrée", description: error.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Note enregistrée" });
-    await ouvrir(ouvert);
-    charger();
-  };
+  const ouvrir = (g: GarageProspection) => setOuvert(g);
 
   if (authLoading || autorise === null) {
     return (
@@ -335,40 +294,8 @@ export default function Prospection() {
                 </div>
               </div>
 
-              <div className="space-y-3 border-t pt-4">
-                <p className="flex items-center gap-2 font-semibold"><StickyNote className="h-4 w-4" />Nouvelle note</p>
-                <Textarea
-                  placeholder="Appelé le gérant, intéressé par les packs de jetons, rappeler mardi…"
-                  value={nouvelleNote}
-                  onChange={(e) => setNouvelleNote(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="rappel" className="text-xs">Date de rappel (facultatif)</Label>
-                    <Input id="rappel" type="date" value={rappel} onChange={(e) => setRappel(e.target.value)} className="w-44" />
-                  </div>
-                  <Button onClick={ajouterNote} disabled={enregistrement}>
-                    {enregistrement ? "Enregistrement…" : "Enregistrer la note"}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-2 border-t pt-4">
-                <p className="font-semibold">Historique</p>
-                {notes.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aucune note pour ce garage.</p>
-                ) : (
-                  notes.map((n) => (
-                    <div key={n.id} className="rounded-md border p-3 text-sm">
-                      <p className="whitespace-pre-wrap">{n.contenu}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {formatDateTimeParis(n.created_at)} · {n.auteur_email || "—"}
-                        {n.rappel_le ? ` · rappel le ${jourCalendrier(n.rappel_le)}` : ""}
-                      </p>
-                    </div>
-                  ))
-                )}
+              <div className="border-t pt-4">
+                <NotesProspection garageId={ouvert.id} onNoteAjoutee={charger} />
               </div>
             </>
           )}
