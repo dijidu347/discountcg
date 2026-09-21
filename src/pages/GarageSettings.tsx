@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -84,6 +84,31 @@ export default function GarageSettings() {
       setActiveTab('verification');
     }
   }, [user]);
+
+  // Dossier complet sans demande enregistrée (une pièce requise a été retirée
+  // de la liste, comme le mandat le 21/09/2026) : la demande part d'elle-même,
+  // sinon le garage n'aurait ni « Vérification en cours » ni pièce à envoyer.
+  const demandeRattrapee = useRef(false);
+  useEffect(() => {
+    if (!garage || garage.is_verified || garage.verification_requested_at || demandeRattrapee.current) return;
+    const requis = requiredDocs.filter(d => d.obligatoire).map(d => d.code);
+    if (requis.length === 0) return;
+    const envoyes = new Set(verificationDocs.filter(d => d.status === 'approved' || d.status === 'pending').map(d => d.document_type));
+    if (!requis.every(code => envoyes.has(code))) return;
+    demandeRattrapee.current = true;
+    (async () => {
+      const maintenant = new Date().toISOString();
+      const { error } = await supabase.from('garages').update({
+        verification_requested_at: maintenant,
+        verification_admin_viewed: false,
+      }).eq('id', garage.id);
+      if (error) { demandeRattrapee.current = false; return; }
+      setGarage((g: any) => (g ? { ...g, verification_requested_at: maintenant } : g));
+      await supabase.functions.invoke('send-email', {
+        body: { type: 'admin_verification_request', to: 'contact@discountcartegrise.fr', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
+      });
+    })();
+  }, [garage, requiredDocs, verificationDocs]);
 
   // Subscribe to realtime updates for verification documents
   useEffect(() => {
