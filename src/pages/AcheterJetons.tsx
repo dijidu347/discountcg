@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Euro, Loader2, Percent, LogOut, Settings, Receipt } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Settings, Receipt, Coins, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { NotificationBell } from "@/components/NotificationBell";
@@ -26,6 +26,9 @@ export default function AcheterJetons() {
   const [creditPacks, setCreditPacks] = useState<CreditPack[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  // Frais de service actuels, pour traduire un pack en nombre de démarches.
+  const [prixDaDc, setPrixDaDc] = useState(5);
+  const [prixCg, setPrixCg] = useState(20);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -37,6 +40,7 @@ export default function AcheterJetons() {
     if (user) {
       loadGarageData();
       loadCreditPacks();
+      loadPrixDemarches();
       checkAdmin();
     }
   }, [user]);
@@ -85,6 +89,17 @@ export default function AcheterJetons() {
     setLoading(false);
   };
 
+  const loadPrixDemarches = async () => {
+    const { data } = await supabase
+      .from("actions_rapides")
+      .select("code, prix")
+      .in("code", ["DA", "CG"]);
+    (data || []).forEach((a: { code: string; prix: number }) => {
+      if (a.code === "DA" && Number(a.prix) > 0) setPrixDaDc(Number(a.prix));
+      if (a.code === "CG" && Number(a.prix) > 0) setPrixCg(Number(a.prix));
+    });
+  };
+
   const handleSelectPack = (pack: CreditPack) => {
     // SECURITY: Only pass pack ID, price is validated server-side
     navigate(`/paiement-recharge?packId=${pack.id}`);
@@ -93,11 +108,6 @@ export default function AcheterJetons() {
   const handleLogout = async () => {
     await signOut();
     navigate("/");
-  };
-
-  const getBonus = (creditAmount: number, price: number) => {
-    const bonus = ((creditAmount - price) / price) * 100;
-    return Math.round(bonus);
   };
 
   if (authLoading || loading) {
@@ -165,84 +175,99 @@ export default function AcheterJetons() {
           Retour au tableau de bord
         </Button>
 
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
-            <Euro className="w-8 h-8 text-primary" />
-            <h1 className="text-3xl font-bold">Recharger mon compte</h1>
+        {/* En-tête + solde */}
+        <div className="flex flex-wrap items-end justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Recharger mon solde</h1>
+            <p className="text-muted-foreground mt-1">Plus vous rechargez, plus le bonus est grand.</p>
           </div>
-          <p className="text-muted-foreground">
-            Rechargez votre solde et profitez de bonus exclusifs
-          </p>
+          {garage && (
+            <div className="rounded-lg border bg-card px-4 py-2 text-right">
+              <p className="text-xs text-muted-foreground">Solde actuel</p>
+              <p className="text-2xl font-bold tabular-nums">{formatPrice(garage.token_balance || 0)} €</p>
+            </div>
+          )}
         </div>
 
-        {garage && (
-          <Card className="mb-8 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                    <Euro className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Solde actuel</p>
-                    <p className="text-2xl font-bold">{formatPrice(garage.token_balance || 0)}€</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Ce que paient les jetons, et ce qu'ils ne paient pas */}
+        <div className="grid gap-4 sm:grid-cols-3 mb-8">
+          <div className="flex gap-3 items-start">
+            <Coins className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm">
+              <span className="font-semibold">1 jeton = 1 €</span>
+              <span className="block text-muted-foreground">Votre solde est en euros.</span>
+            </p>
+          </div>
+          <div className="flex gap-3 items-start">
+            <Receipt className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm">
+              <span className="font-semibold">Paie vos frais de service</span>
+              <span className="block text-muted-foreground">
+                DA et DC à {formatPrice(prixDaDc)} €, carte grise à {formatPrice(prixCg)} €…
+              </span>
+            </p>
+          </div>
+          <div className="flex gap-3 items-start">
+            <CreditCard className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm">
+              <span className="font-semibold">Taxe régionale par carte</span>
+              <span className="block text-muted-foreground">Reversée à l'État, jamais en jetons.</span>
+            </p>
+          </div>
+        </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Packs */}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {creditPacks.map((pack) => {
-            const bonus = getBonus(pack.quantity, pack.price);
             const isPopular = pack.price === 500;
             const bonusAmount = pack.quantity - pack.price;
+            const nbDaDc = prixDaDc > 0 ? Math.floor(pack.quantity / prixDaDc) : 0;
+            const nbCg = prixCg > 0 ? Math.floor(pack.quantity / prixCg) : 0;
 
             return (
-              <Card 
-                key={pack.id} 
-                className={`relative ${isPopular ? 'border-primary shadow-lg' : ''}`}
+              <Card
+                key={pack.id}
+                className={`flex flex-col ${isPopular ? "border-2 border-primary shadow-lg" : ""}`}
               >
-                {isPopular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-semibold">
-                    Populaire
+                <CardContent className="flex flex-1 flex-col gap-3 pt-6">
+                  {isPopular && (
+                    <span className="self-start rounded-md bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                      Populaire · meilleur bonus
+                    </span>
+                  )}
+                  <div>
+                    <p className="text-sm text-muted-foreground">Vous payez</p>
+                    <p className="text-3xl font-bold tabular-nums">{formatPrice(pack.price)} €</p>
                   </div>
-                )}
-                <div className="absolute top-3 right-3">
-                  <div className="flex items-center gap-1 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                    <Percent className="w-3 h-3" />
-                    +{bonus}%
-                  </div>
-                </div>
-                <CardHeader className="pt-10">
-                  <CardTitle className="flex items-center gap-2">
-                    <Euro className="w-5 h-5 text-primary" />
-                    {formatPrice(pack.quantity)}€ de crédit
-                  </CardTitle>
-                  <CardDescription>Pour seulement {formatPrice(pack.price)}€</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-3xl font-bold">{formatPrice(pack.price)}€</p>
-                      <p className="text-sm text-green-600 mt-1 font-medium">
-                        +{formatPrice(bonusAmount)}€ offerts
-                      </p>
-                    </div>
-                    <Button 
-                      onClick={() => handleSelectPack(pack)}
-                      className="w-full"
-                      variant={isPopular ? "default" : "outline"}
-                    >
-                      Recharger
-                    </Button>
-                  </div>
+                  <p className="text-sm">
+                    Vous recevez <span className="font-semibold">{formatPrice(pack.quantity)} €</span>
+                  </p>
+                  {bonusAmount > 0 && (
+                    <span className="self-start rounded-md bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700 dark:bg-green-900/40 dark:text-green-400">
+                      +{formatPrice(bonusAmount)} € offerts
+                    </span>
+                  )}
+                  {nbDaDc > 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      ≈ {nbDaDc} DA/DC ou {nbCg} cartes grises
+                    </p>
+                  )}
+                  <Button
+                    onClick={() => handleSelectPack(pack)}
+                    className="mt-auto w-full"
+                    variant={isPopular ? "default" : "outline"}
+                  >
+                    Recharger
+                  </Button>
                 </CardContent>
               </Card>
             );
           })}
         </div>
+
+        <p className="mt-6 text-xs text-muted-foreground">
+          Paiement sécurisé par carte · une facture est envoyée pour chaque recharge.
+        </p>
       </div>
     </div>
   );
