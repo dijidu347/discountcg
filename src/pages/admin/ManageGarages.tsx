@@ -10,7 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowUpDown, Check, ChevronDown, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, CalendarDays, Check, ChevronDown, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import type { DateRange } from "react-day-picker";
+import { format, subDays } from "date-fns";
+import { fr } from "date-fns/locale";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,6 +158,105 @@ function FiltrePastille({ titre, valeurs, options, onChange, defilant }: {
   );
 }
 
+// Période d'inscription : raccourcis (7, 30, 90 jours) et calendrier pour
+// choisir du … au … . Dates au format AAAA-MM-JJ, jour local.
+type Periode = { du: string | null; au: string | null };
+const PERIODE_VIDE: Periode = { du: null, au: null };
+const versJour = (d: Date) => format(d, "yyyy-MM-dd");
+const depuisJour = (j: string) => { const [a, m, d] = j.split("-").map(Number); return new Date(a, m - 1, d); };
+const lirePeriode = (v: unknown): Periode =>
+  v && typeof v === "object" && !Array.isArray(v) && ("du" in v || "au" in v)
+    ? { du: (v as Periode).du ?? null, au: (v as Periode).au ?? null }
+    : PERIODE_VIDE;
+
+function FiltrePeriode({ titre, valeur, onChange }: { titre: string; valeur: Periode; onChange: (p: Periode) => void }) {
+  const [ouvert, setOuvert] = useState(false);
+  const actif = !!(valeur.du || valeur.au);
+  const court = (j: string) => format(depuisJour(j), "d MMM yyyy", { locale: fr });
+  const resume = valeur.du && valeur.au
+    ? (valeur.du === valeur.au ? `le ${court(valeur.du)}`
+      : valeur.du.slice(0, 4) === valeur.au.slice(0, 4)
+        ? `${format(depuisJour(valeur.du), "d MMM", { locale: fr })} → ${court(valeur.au)}`
+        : `${court(valeur.du)} → ${court(valeur.au)}`)
+    : valeur.du ? `depuis le ${court(valeur.du)}` : valeur.au ? `jusqu'au ${court(valeur.au)}` : "";
+  const derniersJours = (n: number) => {
+    const aujourdhui = new Date();
+    onChange({ du: versJour(subDays(aujourdhui, n - 1)), au: versJour(aujourdhui) });
+    setOuvert(false);
+  };
+  const plage: DateRange | undefined = valeur.du
+    ? { from: depuisJour(valeur.du), to: valeur.au ? depuisJour(valeur.au) : undefined }
+    : undefined;
+  return (
+    <div
+      className={`inline-flex h-8 items-center rounded-full border text-sm transition-colors ${
+        actif ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-background text-foreground hover:border-blue-300 hover:bg-blue-50"
+      }`}
+    >
+      <Popover open={ouvert} onOpenChange={setOuvert}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={`inline-flex h-full items-center gap-1.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${actif ? "pl-3 pr-1" : "px-3"}`}
+          >
+            <CalendarDays className={`h-3.5 w-3.5 ${actif ? "text-white/80" : "text-muted-foreground"}`} />
+            <span className={actif ? "text-white/80" : ""}>{titre}{actif ? " :" : ""}</span>
+            {actif && <span className="font-medium">{resume}</span>}
+            {!actif && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-auto p-0">
+          <div className="flex flex-wrap gap-1.5 border-b p-3">
+            {[7, 30, 90].map((n) => (
+              <button
+                key={n}
+                type="button"
+                onClick={() => derniersJours(n)}
+                className="rounded-full border px-3 py-1 text-xs hover:border-blue-300 hover:bg-blue-50"
+              >
+                {n} derniers jours
+              </button>
+            ))}
+          </div>
+          <Calendar
+            mode="range"
+            locale={fr}
+            numberOfMonths={2}
+            defaultMonth={plage?.from ?? subDays(new Date(), 30)}
+            selected={plage}
+            onSelect={(r) => onChange({ du: r?.from ? versJour(r.from) : null, au: r?.to ? versJour(r.to) : r?.from ? versJour(r.from) : null })}
+            disabled={{ after: new Date() }}
+            classNames={{
+              cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-blue-50 first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md [&:has([aria-selected].day-range-end)]:rounded-r-md focus-within:relative focus-within:z-20",
+              day: "inline-flex h-9 w-9 items-center justify-center rounded-md p-0 text-sm font-normal hover:bg-blue-100 hover:text-blue-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 aria-selected:opacity-100",
+              day_selected: "bg-blue-600 text-white hover:bg-blue-600 hover:text-white focus:bg-blue-600 focus:text-white",
+              day_range_middle: "aria-selected:bg-blue-50 aria-selected:text-blue-900 rounded-none",
+              day_today: "font-semibold underline underline-offset-4",
+              day_outside: "day-outside text-muted-foreground opacity-40 aria-selected:bg-transparent",
+            }}
+          />
+          <div className="flex items-center justify-between border-t p-3 text-xs text-muted-foreground">
+            <span>Cliquez sur le premier jour, puis sur le dernier.</span>
+            <Button type="button" size="sm" className="h-7 bg-blue-600 hover:bg-blue-700" onClick={() => setOuvert(false)}>
+              OK
+            </Button>
+          </div>
+        </PopoverContent>
+      </Popover>
+      {actif && (
+        <button
+          type="button"
+          aria-label={`Retirer le filtre ${titre}`}
+          onClick={() => onChange(PERIODE_VIDE)}
+          className="mr-1 rounded-full p-1 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ManageGarages() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -172,7 +276,7 @@ export default function ManageGarages() {
   const [activite, setActivite] = useState<string[]>(enListe(memoire.activite));
   const [solde, setSolde] = useState<string[]>(enListe(memoire.solde));
   const [offerte, setOfferte] = useState<string[]>(enListe(memoire.offerte));
-  const [inscription, setInscription] = useState<string[]>(enListe(memoire.inscription));
+  const [inscription, setInscription] = useState<Periode>(lirePeriode(memoire.inscription));
   const [departement, setDepartement] = useState<string[]>(enListe(memoire.departement));
   const [page, setPage] = useState<number>(memoire.page ?? 1);
 
@@ -326,9 +430,10 @@ export default function ManageGarages() {
         if (!solde.includes(aDuSolde ? "avec" : "vide")) return false;
       }
       if (offerte.includes("non_utilisee") && !g.free_token_available) return false;
-      if (inscription.length) {
-        const jours = Math.max(...inscription.map(Number));
-        if (maintenant - new Date(g.created_at).getTime() > jours * JOUR) return false;
+      if (inscription.du || inscription.au) {
+        const inscrit = new Date(g.created_at).getTime();
+        if (inscription.du && inscrit < depuisJour(inscription.du).getTime()) return false;
+        if (inscription.au && inscrit >= depuisJour(inscription.au).getTime() + JOUR) return false;
       }
       return true;
     });
@@ -357,9 +462,9 @@ export default function ManageGarages() {
   const pageCourante = Math.min(page, pages);
   const visibles = liste.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
 
-  const filtresActifs = [activite, solde, offerte, inscription, departement].filter((v) => v.length > 0).length;
+  const filtresActifs = [activite, solde, offerte, departement].filter((v) => v.length > 0).length + (inscription.du || inscription.au ? 1 : 0);
   const reinitialiser = () => {
-    setActivite([]); setSolde([]); setOfferte([]); setInscription([]); setDepartement([]); setRecherche("");
+    setActivite([]); setSolde([]); setOfferte([]); setInscription(PERIODE_VIDE); setDepartement([]); setRecherche("");
   };
   const changer = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
@@ -479,16 +584,7 @@ export default function ManageGarages() {
               onChange={changer(setOfferte)}
               options={[{ valeur: "non_utilisee", texte: "Pas encore utilisée" }]}
             />
-            <FiltrePastille
-              titre="Inscription"
-              valeurs={inscription}
-              onChange={changer(setInscription)}
-              options={[
-                { valeur: "7", texte: "Moins de 7 jours" },
-                { valeur: "30", texte: "Moins de 30 jours" },
-                { valeur: "90", texte: "Moins de 90 jours" },
-              ]}
-            />
+            <FiltrePeriode titre="Inscription" valeur={inscription} onChange={changer(setInscription)} />
             <FiltrePastille
               titre="Département"
               valeurs={departement}
