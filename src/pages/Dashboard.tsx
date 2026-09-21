@@ -40,7 +40,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
-  const [missingDocsCount, setMissingDocsCount] = useState(3);
+  const [missingDocsCount, setMissingDocsCount] = useState(0);
+  const [requiredDocNames, setRequiredDocNames] = useState<string[]>([]);
+  const aucunDocEnvoye = requiredDocNames.length > 0 && missingDocsCount === requiredDocNames.length;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
   const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
@@ -142,10 +144,18 @@ export default function Dashboard() {
           .eq('garage_id', garageData.id)
           .in('status', ['pending', 'approved']);
         
+        // Pièces demandées : celles que l'admin a laissées actives et obligatoires
+        // (le mandat n'est plus demandé depuis le 21/09/2026).
+        const { data: requis } = await supabase
+          .from('garage_verification_required_documents')
+          .select('code, nom_document')
+          .eq('actif', true)
+          .eq('obligatoire', true)
+          .order('ordre', { ascending: true });
         const uploadedTypes = new Set(verificationDocs?.map(d => d.document_type) || []);
-        const requiredDocs = ['kbis', 'carte_identite', 'mandat'];
-        const missing = requiredDocs.filter(doc => !uploadedTypes.has(doc)).length;
-        setMissingDocsCount(missing);
+        const liste = requis || [];
+        setRequiredDocNames(liste.map(r => r.nom_document));
+        setMissingDocsCount(liste.filter(r => !uploadedTypes.has(r.code)).length);
       }
     }
     setLoading(false);
@@ -340,11 +350,11 @@ export default function Dashboard() {
           <Alert className="mb-8 border-2 border-primary bg-primary/10">
             <AlertCircle className="h-5 w-5 text-primary" />
             <AlertTitle className="text-primary font-bold">
-              {missingDocsCount === 3 ? "Bienvenue sur DiscountCarteGrise !" : `Il manque ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''}`}
+              {aucunDocEnvoye ? "Bienvenue sur DiscountCarteGrise !" : `Il manque ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''}`}
             </AlertTitle>
             <AlertDescription className="text-primary">
-              {missingDocsCount === 3 
-                ? "Pour valider votre compte et bénéficier de tous les avantages, veuillez envoyer vos documents de vérification (KBIS, Carte d'identité, Mandat)."
+              {aucunDocEnvoye
+                ? `Pour valider votre compte et bénéficier de tous les avantages, veuillez envoyer vos documents de vérification (${requiredDocNames.join(", ")}).`
                 : `Il vous reste ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''} à envoyer pour compléter votre demande de vérification.`
               }
               <Button
@@ -353,7 +363,7 @@ export default function Dashboard() {
                 className="mt-2 ml-0 border-primary text-primary hover:bg-primary hover:text-white"
                 onClick={() => navigate("/garage-settings?tab=verification")}
               >
-                {missingDocsCount === 3 ? "Envoyer mes documents" : "Compléter mes documents"}
+                {aucunDocEnvoye ? "Envoyer mes documents" : "Compléter mes documents"}
               </Button>
             </AlertDescription>
           </Alert>
