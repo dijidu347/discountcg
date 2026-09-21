@@ -921,6 +921,43 @@ const getEmailTemplate = (type: string, data: any) => {
       };
     }
 
+    // Relance d'un dossier réglé qui dort : il manque des pièces au client
+    // (garage ou particulier). Envoyée à 30 jours sans nouvelles, puis à 60.
+    case "dossier_pieces_manquantes": {
+      const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+      const pro = data.audience === "pro";
+      const dernier = Number(data.numero_relance) >= 2;
+      const pieces = (Array.isArray(data.pieces) ? data.pieces : []) as { piece?: string; motif?: string }[];
+      const liste = pieces.length
+        ? pieces.map((p) => `<li style="margin: 4px 0;"><strong>${esc(p.piece)}</strong>${p.motif ? ` : ${esc(p.motif)}` : ""}</li>`).join("")
+        : `<li style="margin: 4px 0;">Les pièces demandées pour votre dossier (vous les retrouvez en suivant le lien ci-dessous).</li>`;
+      const vehicule = data.immatriculation ? ` pour le véhicule <strong>${esc(data.immatriculation)}</strong>` : "";
+      const intro = pro
+        ? `<p>Votre démarche <strong>${esc(data.demarche_label)}</strong> <strong>${esc(data.reference)}</strong>${vehicule} est en attente de votre part depuis ${dernier ? "deux mois" : "plus d'un mois"}.</p>`
+        : `<p>Votre commande <strong>${esc(data.reference)}</strong> (${esc(data.demarche_label)}${data.immatriculation ? `, ${esc(data.immatriculation)}` : ""}) est réglée, mais nous attendons encore des pièces pour la traiter.</p>`;
+      return {
+        subject: pro
+          ? `${dernier ? "Dernier rappel - " : ""}${data.reference} : il nous manque des éléments`
+          : `${dernier ? "Dernier rappel - " : ""}Votre ${String(data.demarche_label || "démarche").toLowerCase()} : il nous manque des pièces`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <p>Bonjour${data.nom ? ` ${esc(data.nom)}` : ""},</p>
+            ${intro}
+            <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0 0 8px 0; font-weight: bold;">${pro ? "Pièces à renvoyer" : "Pièces à envoyer"}</p>
+              <ul style="margin: 0; padding-left: 20px;">${liste}</ul>
+            </div>
+            <p>Dès réception, ${pro ? "nous finalisons votre dossier" : "nous nous occupons du reste"}.</p>
+            <a href="${data.lien}" style="display: inline-block; background-color: #0047AB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
+              ${pro ? "Compléter ma démarche" : "Envoyer mes pièces"}
+            </a>
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+    }
+
     // === GUEST ORDER - NEW TEMPLATES ===
     case "guest_order_submitted":
       return {

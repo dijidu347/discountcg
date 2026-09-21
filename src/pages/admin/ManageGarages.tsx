@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Eye, Plus, Search } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, Check, ChevronDown, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -78,6 +79,56 @@ const jour = (valeur: string | null | undefined) => formatDateTimeParis(valeur)?
 const lireMemoire = () => {
   try { return JSON.parse(sessionStorage.getItem("gerer-garages") || "{}"); } catch { return {}; }
 };
+
+// Filtre en pastille : grise au repos, bleue avec la valeur choisie quand il
+// est actif, et une croix pour l'enlever d'un clic.
+function FiltrePastille({ titre, valeur, options, onChange, defilant }: {
+  titre: string;
+  valeur: string;
+  options: { valeur: string; texte: string }[];
+  onChange: (v: string) => void;
+  defilant?: boolean;
+}) {
+  const choisie = options.find((o) => o.valeur === valeur);
+  return (
+    <div
+      className={`inline-flex h-8 items-center rounded-full border text-sm transition-colors ${
+        choisie ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-background text-foreground hover:bg-muted"
+      }`}
+    >
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={`inline-flex h-full items-center gap-1.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${choisie ? "pl-3 pr-1" : "px-3"}`}
+          >
+            <span className={choisie ? "text-white/80" : ""}>{titre}{choisie ? " :" : ""}</span>
+            {choisie && <span className="font-medium">{choisie.texte}</span>}
+            {!choisie && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className={defilant ? "max-h-72 overflow-y-auto" : ""}>
+          {options.map((o) => (
+            <DropdownMenuItem key={o.valeur} onSelect={() => onChange(o.valeur)} className="gap-2">
+              <Check className={`h-4 w-4 ${o.valeur === valeur ? "opacity-100" : "opacity-0"}`} />
+              {o.texte}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+      {choisie && (
+        <button
+          type="button"
+          aria-label={`Retirer le filtre ${titre}`}
+          onClick={() => onChange("tous")}
+          className="mr-1 rounded-full p-1 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      )}
+    </div>
+  );
+}
 
 export default function ManageGarages() {
   const { user, loading: authLoading } = useAuth();
@@ -339,83 +390,87 @@ export default function ManageGarages() {
         </div>
 
         {/* Recherche, tri et filtres */}
-        <Card className="p-4 mb-4 space-y-3">
+        <div className="mb-4 space-y-3">
           <div className="flex flex-wrap gap-3">
             <div className="relative flex-1 min-w-[220px]">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                className="pl-9"
+                className="pl-9 bg-background"
                 placeholder="Nom, email, ville, SIRET, téléphone…"
                 value={recherche}
                 onChange={(e) => { setRecherche(e.target.value); setPage(1); }}
               />
             </div>
             <Select value={tri} onValueChange={(v) => { setTri(v as Tri); setPage(1); }}>
-              <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-[230px] bg-background">
+                <ArrowUpDown className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recents">Trier : plus récents</SelectItem>
-                <SelectItem value="anciens">Trier : plus anciens</SelectItem>
-                <SelectItem value="depense">Trier : plus grosse dépense</SelectItem>
-                <SelectItem value="demarches">Trier : plus de démarches</SelectItem>
+                <SelectItem value="recents">Plus récents</SelectItem>
+                <SelectItem value="anciens">Plus anciens</SelectItem>
+                <SelectItem value="depense">Plus grosse dépense</SelectItem>
+                <SelectItem value="demarches">Plus de démarches</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-            <Select value={activite} onValueChange={changer(setActivite)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Activité : toutes</SelectItem>
-                <SelectItem value="actif">Actif (moins de 30 j)</SelectItem>
-                <SelectItem value="ralenti">En perte de vitesse (30 à 90 j)</SelectItem>
-                <SelectItem value="inactif">Inactif (plus de 90 j)</SelectItem>
-                <SelectItem value="jamais">Jamais de démarche</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={solde} onValueChange={changer(setSolde)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Solde : tous</SelectItem>
-                <SelectItem value="avec">Avec du solde</SelectItem>
-                <SelectItem value="vide">Solde vide</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={offerte} onValueChange={changer(setOfferte)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Démarche offerte : tous</SelectItem>
-                <SelectItem value="non_utilisee">Pas encore utilisée</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={inscription} onValueChange={changer(setInscription)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Inscription : toutes</SelectItem>
-                <SelectItem value="7">Inscrits depuis 7 jours</SelectItem>
-                <SelectItem value="30">Inscrits depuis 30 jours</SelectItem>
-                <SelectItem value="90">Inscrits depuis 90 jours</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={departement} onValueChange={changer(setDepartement)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Département : tous</SelectItem>
-                {departements.map((d) => (
-                  <SelectItem key={d} value={d}>{d}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-wrap items-center gap-2">
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <FiltrePastille
+              titre="Activité"
+              valeur={activite}
+              onChange={changer(setActivite)}
+              options={[
+                { valeur: "actif", texte: "Actif (moins de 30 j)" },
+                { valeur: "ralenti", texte: "En perte de vitesse (30 à 90 j)" },
+                { valeur: "inactif", texte: "Inactif (plus de 90 j)" },
+                { valeur: "jamais", texte: "Jamais de démarche" },
+              ]}
+            />
+            <FiltrePastille
+              titre="Solde"
+              valeur={solde}
+              onChange={changer(setSolde)}
+              options={[
+                { valeur: "avec", texte: "Avec du solde" },
+                { valeur: "vide", texte: "Solde vide" },
+              ]}
+            />
+            <FiltrePastille
+              titre="Démarche offerte"
+              valeur={offerte}
+              onChange={changer(setOfferte)}
+              options={[{ valeur: "non_utilisee", texte: "Pas encore utilisée" }]}
+            />
+            <FiltrePastille
+              titre="Inscription"
+              valeur={inscription}
+              onChange={changer(setInscription)}
+              options={[
+                { valeur: "7", texte: "Moins de 7 jours" },
+                { valeur: "30", texte: "Moins de 30 jours" },
+                { valeur: "90", texte: "Moins de 90 jours" },
+              ]}
+            />
+            <FiltrePastille
+              titre="Département"
+              valeur={departement}
+              onChange={changer(setDepartement)}
+              options={departements.map((d) => ({ valeur: d, texte: d }))}
+              defilant
+            />
+            {(filtresActifs > 0 || recherche) && (
+              <>
+                <span className="ml-1 text-sm text-muted-foreground">
+                  {filtres.length} garage{filtres.length > 1 ? "s" : ""}
+                </span>
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground" onClick={() => { reinitialiser(); setPage(1); }}>
+                  Tout effacer
+                </Button>
+              </>
+            )}
           </div>
-          {(filtresActifs > 0 || recherche) && (
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {filtres.length} garage{filtres.length > 1 ? "s" : ""} correspondent (tous onglets confondus)
-              </span>
-              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => { reinitialiser(); setPage(1); }}>
-                Effacer les filtres
-              </Button>
-            </div>
-          )}
-        </Card>
+        </div>
 
         {/* Liste */}
         <Card className="p-0 overflow-hidden">
