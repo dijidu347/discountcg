@@ -57,8 +57,8 @@ export default function ManageAccounts() {
     try { sessionStorage.setItem("gestion-comptes", JSON.stringify({ filtre, recherche, page })); } catch { /* navigation privée */ }
   }, [filtre, recherche, page]);
   const [action, setAction] = useState<string | null>(null);
-  // Fiche d'un compte sans garage (particulier, prospecteur) : l'accès
-  // prospection se donne et se retire ici, pas depuis la liste.
+  // Fiche du COMPTE (identité, type, connexions), distincte de la fiche garage
+  // qui reste accessible depuis elle pour un professionnel.
   const [ficheCompte, setFicheCompte] = useState<Compte | null>(null);
 
   useEffect(() => {
@@ -228,7 +228,7 @@ export default function ManageAccounts() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => (c.garage_id && !estAdmin(c) ? navigate(`/admin/garages/${c.garage_id}`) : setFicheCompte(c))}
+                        onClick={() => setFicheCompte(c)}
                       >
                         <Eye className="h-4 w-4 mr-1" />
                         Voir
@@ -264,6 +264,8 @@ export default function ManageAccounts() {
                 <DialogDescription>{ficheCompte.email}</DialogDescription>
               </DialogHeader>
               <dl className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2 text-sm">
+                <dt className="text-muted-foreground">Email</dt>
+                <dd className="break-all">{ficheCompte.email || "—"}</dd>
                 <dt className="text-muted-foreground">Type</dt>
                 <dd>{types(ficheCompte)}</dd>
                 <dt className="text-muted-foreground">Inscrit le</dt>
