@@ -1,12 +1,13 @@
 import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Eye, Search, UserPlus } from "lucide-react";
+import { ArrowLeft, Eye, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -35,8 +36,8 @@ const estParticulier = (c: Compte) => !estPro(c) && !estProspecteur(c) && !estAd
 
 const jour = (v: string | null | undefined) => formatDateTimeParis(v)?.slice(0, 10) ?? "—";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 // bind : sans lui, la méthode détachée perd son client et plante au premier appel.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => any;
 
 export default function ManageAccounts() {
@@ -48,8 +49,10 @@ export default function ManageAccounts() {
   const [filtre, setFiltre] = useState<Filtre>("tous");
   const [recherche, setRecherche] = useState("");
   const [page, setPage] = useState(1);
-  const [emailProspecteur, setEmailProspecteur] = useState("");
   const [action, setAction] = useState<string | null>(null);
+  // Fiche d'un compte sans garage (particulier, prospecteur) : l'accès
+  // prospection se donne et se retire ici, pas depuis la liste.
+  const [ficheCompte, setFicheCompte] = useState<Compte | null>(null);
 
   useEffect(() => {
     if (!authLoading && user) checkAdminAccess();
@@ -116,6 +119,7 @@ export default function ManageAccounts() {
       return false;
     }
     toast({ title: "Accès prospection donné", description: `${email} voit maintenant l'espace Prospection.` });
+    setFicheCompte((f) => (f ? { ...f, roles: [...f.roles, "prospecteur"] } : f));
     await charger();
     return true;
   };
@@ -129,6 +133,7 @@ export default function ManageAccounts() {
       return;
     }
     toast({ title: "Accès prospection retiré", description: c.email ?? "" });
+    setFicheCompte((f) => (f ? { ...f, roles: f.roles.filter((r) => r !== "prospecteur") } : f));
     await charger();
   };
 
@@ -166,38 +171,6 @@ export default function ManageAccounts() {
           <ArrowLeft className="mr-2 h-4 w-4" />
           Retour
         </Button>
-
-        <Card className="p-6 mb-6">
-          <h2 className="text-lg font-semibold flex items-center gap-2 mb-1">
-            <UserPlus className="h-5 w-5" />
-            Ajouter un prospecteur
-          </h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Le prospecteur crée d'abord son compte sur le site avec son propre email (Espace particulier),
-            puis vous saisissez cet email ici. Il ne verra que l'espace Prospection : les garages et leurs
-            coordonnées, jamais les démarches ni les chiffres.
-          </p>
-          <form
-            className="flex flex-wrap gap-3"
-            onSubmit={async (e) => {
-              e.preventDefault();
-              if (!emailProspecteur.trim()) {
-                toast({ title: "Email manquant", description: "Saisissez l'email du compte du prospecteur.", variant: "destructive" });
-                return;
-              }
-              if (await donnerAcces(emailProspecteur.trim())) setEmailProspecteur("");
-            }}
-          >
-            <Input
-              type="email"
-              placeholder="prenom.nom@gmail.com"
-              value={emailProspecteur}
-              onChange={(e) => setEmailProspecteur(e.target.value)}
-              className="max-w-sm"
-            />
-            <Button type="submit" disabled={!!action}>Donner l'accès prospection</Button>
-          </form>
-        </Card>
 
         <Card className="p-6">
           <div className="flex flex-wrap items-end justify-between gap-4 mb-4">
@@ -242,23 +215,14 @@ export default function ManageAccounts() {
                     <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(c.inscrit_le)}</TableCell>
                     <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(c.derniere_connexion)}</TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        {c.garage_id && (
-                          <Button size="sm" variant="outline" onClick={() => navigate(`/admin/garages/${c.garage_id}`)}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            Fiche
-                          </Button>
-                        )}
-                        {!estAdmin(c) && (estProspecteur(c) ? (
-                          <Button size="sm" variant="outline" disabled={action === c.user_id} onClick={() => retirerAcces(c)}>
-                            Retirer la prospection
-                          </Button>
-                        ) : !estPro(c) && c.email ? (
-                          <Button size="sm" variant="outline" disabled={action === c.email} onClick={() => donnerAcces(c.email!)}>
-                            Rendre prospecteur
-                          </Button>
-                        ) : null)}
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => (c.garage_id ? navigate(`/admin/garages/${c.garage_id}`) : setFicheCompte(c))}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Voir
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -280,6 +244,45 @@ export default function ManageAccounts() {
           )}
         </Card>
       </div>
+
+      <Dialog open={!!ficheCompte} onOpenChange={(v) => !v && setFicheCompte(null)}>
+        <DialogContent className="max-w-lg">
+          {ficheCompte && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{ficheCompte.nom || ficheCompte.email || "Compte"}</DialogTitle>
+                <DialogDescription>{ficheCompte.email}</DialogDescription>
+              </DialogHeader>
+              <dl className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2 text-sm">
+                <dt className="text-muted-foreground">Type</dt>
+                <dd>{types(ficheCompte)}</dd>
+                <dt className="text-muted-foreground">Inscrit le</dt>
+                <dd>{jour(ficheCompte.inscrit_le)}</dd>
+                <dt className="text-muted-foreground">Dernière connexion</dt>
+                <dd>{jour(ficheCompte.derniere_connexion)}</dd>
+              </dl>
+              {!estAdmin(ficheCompte) && (
+                <div className="border-t pt-4 space-y-2">
+                  <p className="font-semibold">Accès prospection</p>
+                  <p className="text-sm text-muted-foreground">
+                    Un prospecteur ne voit que l'espace Prospection : les garages et leurs coordonnées, jamais les
+                    démarches ni les chiffres.
+                  </p>
+                  {estProspecteur(ficheCompte) ? (
+                    <Button variant="outline" disabled={action === ficheCompte.user_id} onClick={() => retirerAcces(ficheCompte)}>
+                      Retirer l'accès prospection
+                    </Button>
+                  ) : ficheCompte.email ? (
+                    <Button disabled={action === ficheCompte.email} onClick={() => donnerAcces(ficheCompte.email!)}>
+                      Rendre prospecteur
+                    </Button>
+                  ) : null}
+                </div>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

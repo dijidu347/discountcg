@@ -56,8 +56,8 @@ const jour = (valeur: string | null | undefined) => formatDateTimeParis(valeur)?
 const jourCalendrier = (valeur: string | null | undefined) =>
   valeur ? new Date(`${valeur}T12:00:00`).toLocaleDateString("fr-FR") : "—";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 // bind : sans lui, la méthode détachée perd son client et plante au premier appel.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: any }>;
 
 export default function Prospection() {
