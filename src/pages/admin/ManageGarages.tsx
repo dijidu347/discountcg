@@ -76,51 +76,73 @@ const departementDe = (cp: string | null | undefined): string | null => {
 const jour = (valeur: string | null | undefined) => formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
 
 // Filtres, tri et onglet survivent à un aller-retour vers une fiche.
+// Les filtres étaient des valeurs uniques ("tous" = aucun) : on relit les deux formes.
+const enListe = (v: unknown): string[] =>
+  Array.isArray(v) ? v.map(String) : typeof v === "string" && v && v !== "tous" ? [v] : [];
 const lireMemoire = () => {
   try { return JSON.parse(sessionStorage.getItem("gerer-garages") || "{}"); } catch { return {}; }
 };
 
-// Filtre en pastille : grise au repos, bleue avec la valeur choisie quand il
-// est actif, et une croix pour l'enlever d'un clic.
-function FiltrePastille({ titre, valeur, options, onChange, defilant }: {
+// Filtre en pastille : blanche au repos, bleue quand au moins une case est
+// cochée (avec la croix pour tout décocher). Plusieurs cases peuvent être
+// cochées : un garage passe s'il correspond à l'une d'elles.
+function FiltrePastille({ titre, valeurs, options, onChange, defilant }: {
   titre: string;
-  valeur: string;
+  valeurs: string[];
   options: { valeur: string; texte: string }[];
-  onChange: (v: string) => void;
+  onChange: (v: string[]) => void;
   defilant?: boolean;
 }) {
-  const choisie = options.find((o) => o.valeur === valeur);
+  const choisies = options.filter((o) => valeurs.includes(o.valeur));
+  const actif = choisies.length > 0;
+  const resume = choisies.length === 1 ? choisies[0].texte : `${choisies.length} choix`;
+  const basculer = (v: string) => onChange(valeurs.includes(v) ? valeurs.filter((x) => x !== v) : [...valeurs, v]);
   return (
     <div
       className={`inline-flex h-8 items-center rounded-full border text-sm transition-colors ${
-        choisie ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-background text-foreground hover:bg-muted"
+        actif ? "border-blue-600 bg-blue-600 text-white" : "border-border bg-background text-foreground hover:border-blue-300 hover:bg-blue-50"
       }`}
     >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             type="button"
-            className={`inline-flex h-full items-center gap-1.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${choisie ? "pl-3 pr-1" : "px-3"}`}
+            className={`inline-flex h-full items-center gap-1.5 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 ${actif ? "pl-3 pr-1" : "px-3"}`}
           >
-            <span className={choisie ? "text-white/80" : ""}>{titre}{choisie ? " :" : ""}</span>
-            {choisie && <span className="font-medium">{choisie.texte}</span>}
-            {!choisie && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+            <span className={actif ? "text-white/80" : ""}>{titre}{actif ? " :" : ""}</span>
+            {actif && <span className="font-medium">{resume}</span>}
+            {!actif && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className={defilant ? "max-h-72 overflow-y-auto" : ""}>
-          {options.map((o) => (
-            <DropdownMenuItem key={o.valeur} onSelect={() => onChange(o.valeur)} className="gap-2">
-              <Check className={`h-4 w-4 ${o.valeur === valeur ? "opacity-100" : "opacity-0"}`} />
-              {o.texte}
-            </DropdownMenuItem>
-          ))}
+        <DropdownMenuContent align="start" className={`min-w-[220px] ${defilant ? "max-h-72 overflow-y-auto" : ""}`}>
+          {options.map((o) => {
+            const coche = valeurs.includes(o.valeur);
+            return (
+              <DropdownMenuItem
+                key={o.valeur}
+                // Le menu reste ouvert pour cocher plusieurs cases d'affilée.
+                onSelect={(e) => { e.preventDefault(); basculer(o.valeur); }}
+                className="gap-2.5 cursor-pointer focus:bg-blue-50 focus:text-foreground"
+              >
+                <span
+                  aria-hidden
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                    coche ? "border-blue-600 bg-blue-600 text-white" : "border-muted-foreground/40 bg-background"
+                  }`}
+                >
+                  {coche && <Check className="h-3 w-3" strokeWidth={3} />}
+                </span>
+                {o.texte}
+              </DropdownMenuItem>
+            );
+          })}
         </DropdownMenuContent>
       </DropdownMenu>
-      {choisie && (
+      {actif && (
         <button
           type="button"
           aria-label={`Retirer le filtre ${titre}`}
-          onClick={() => onChange("tous")}
+          onClick={() => onChange([])}
           className="mr-1 rounded-full p-1 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           <X className="h-3.5 w-3.5" />
@@ -146,11 +168,11 @@ export default function ManageGarages() {
   const [onglet, setOnglet] = useState<Onglet>(memoire.onglet ?? "a_verifier");
   const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
   const [tri, setTri] = useState<Tri>(memoire.tri ?? "recents");
-  const [activite, setActivite] = useState<string>(memoire.activite ?? "tous");
-  const [solde, setSolde] = useState<string>(memoire.solde ?? "tous");
-  const [offerte, setOfferte] = useState<string>(memoire.offerte ?? "tous");
-  const [inscription, setInscription] = useState<string>(memoire.inscription ?? "tous");
-  const [departement, setDepartement] = useState<string>(memoire.departement ?? "tous");
+  const [activite, setActivite] = useState<string[]>(enListe(memoire.activite));
+  const [solde, setSolde] = useState<string[]>(enListe(memoire.solde));
+  const [offerte, setOfferte] = useState<string[]>(enListe(memoire.offerte));
+  const [inscription, setInscription] = useState<string[]>(enListe(memoire.inscription));
+  const [departement, setDepartement] = useState<string[]>(enListe(memoire.departement));
   const [page, setPage] = useState<number>(memoire.page ?? 1);
 
   useEffect(() => {
@@ -283,19 +305,27 @@ export default function ManageGarages() {
     return garages.filter((g) => {
       const st = stats[g.id];
       if (q && ![g.raison_sociale, g.email, g.ville, g.siret, g.telephone].some((v) => (v || "").toLowerCase().includes(q))) return false;
-      if (departement !== "tous" && departementDe(g.code_postal) !== departement) return false;
-      if (activite !== "tous") {
+      if (departement.length && !departement.includes(departementDe(g.code_postal) ?? "")) return false;
+      if (activite.length) {
         const derniere = st?.derniere_demarche ? new Date(st.derniere_demarche).getTime() : null;
         const age = derniere ? (maintenant - derniere) / JOUR : null;
-        if (activite === "jamais" && age !== null) return false;
-        if (activite === "actif" && !(age !== null && age <= 30)) return false;
-        if (activite === "ralenti" && !(age !== null && age > 30 && age <= 90)) return false;
-        if (activite === "inactif" && !(age !== null && age > 90)) return false;
+        const correspond = (a: string) =>
+          a === "jamais" ? age === null
+            : a === "actif" ? age !== null && age <= 30
+            : a === "ralenti" ? age !== null && age > 30 && age <= 90
+            : a === "inactif" ? age !== null && age > 90
+            : false;
+        if (!activite.some(correspond)) return false;
       }
-      if (solde === "avec" && !(Number(g.token_balance) > 0)) return false;
-      if (solde === "vide" && Number(g.token_balance) > 0) return false;
-      if (offerte === "non_utilisee" && !g.free_token_available) return false;
-      if (inscription !== "tous" && maintenant - new Date(g.created_at).getTime() > Number(inscription) * JOUR) return false;
+      if (solde.length) {
+        const aDuSolde = Number(g.token_balance) > 0;
+        if (!solde.includes(aDuSolde ? "avec" : "vide")) return false;
+      }
+      if (offerte.includes("non_utilisee") && !g.free_token_available) return false;
+      if (inscription.length) {
+        const jours = Math.max(...inscription.map(Number));
+        if (maintenant - new Date(g.created_at).getTime() > jours * JOUR) return false;
+      }
       return true;
     });
   }, [garages, stats, recherche, departement, activite, solde, offerte, inscription, maintenant]);
@@ -323,9 +353,9 @@ export default function ManageGarages() {
   const pageCourante = Math.min(page, pages);
   const visibles = liste.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
 
-  const filtresActifs = [activite, solde, offerte, inscription, departement].filter((v) => v !== "tous").length;
+  const filtresActifs = [activite, solde, offerte, inscription, departement].filter((v) => v.length > 0).length;
   const reinitialiser = () => {
-    setActivite("tous"); setSolde("tous"); setOfferte("tous"); setInscription("tous"); setDepartement("tous"); setRecherche("");
+    setActivite([]); setSolde([]); setOfferte([]); setInscription([]); setDepartement([]); setRecherche("");
   };
   const changer = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
@@ -333,12 +363,12 @@ export default function ManageGarages() {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
-  const ONGLETS: { cle: Onglet; texte: string }[] = [
-    { cle: "tous", texte: "Tous" },
-    { cle: "a_verifier", texte: "À vérifier" },
-    { cle: "en_attente", texte: "En attente de documents" },
-    { cle: "valides", texte: "Validés" },
-    { cle: "sans_demande", texte: "Sans demande" },
+  const ONGLETS: { cle: Onglet; texte: string; aide: string }[] = [
+    { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
+    { cle: "a_verifier", texte: "À vérifier", aide: "Documents envoyés, pas encore contrôlés" },
+    { cle: "en_attente", texte: "En attente de documents", aide: "Documents déjà contrôlés, le garage doit en renvoyer" },
+    { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
+    { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
   ];
 
   return (
@@ -370,6 +400,7 @@ export default function ManageGarages() {
                 key={o.cle}
                 type="button"
                 role="tab"
+                title={o.aide}
                 aria-selected={actif}
                 onClick={() => { setOnglet(o.cle); setPage(1); }}
                 className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
@@ -418,7 +449,7 @@ export default function ManageGarages() {
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
             <FiltrePastille
               titre="Activité"
-              valeur={activite}
+              valeurs={activite}
               onChange={changer(setActivite)}
               options={[
                 { valeur: "actif", texte: "Actif (moins de 30 j)" },
@@ -429,7 +460,7 @@ export default function ManageGarages() {
             />
             <FiltrePastille
               titre="Solde"
-              valeur={solde}
+              valeurs={solde}
               onChange={changer(setSolde)}
               options={[
                 { valeur: "avec", texte: "Avec du solde" },
@@ -438,13 +469,13 @@ export default function ManageGarages() {
             />
             <FiltrePastille
               titre="Démarche offerte"
-              valeur={offerte}
+              valeurs={offerte}
               onChange={changer(setOfferte)}
               options={[{ valeur: "non_utilisee", texte: "Pas encore utilisée" }]}
             />
             <FiltrePastille
               titre="Inscription"
-              valeur={inscription}
+              valeurs={inscription}
               onChange={changer(setInscription)}
               options={[
                 { valeur: "7", texte: "Moins de 7 jours" },
@@ -454,7 +485,7 @@ export default function ManageGarages() {
             />
             <FiltrePastille
               titre="Département"
-              valeur={departement}
+              valeurs={departement}
               onChange={changer(setDepartement)}
               options={departements.map((d) => ({ valeur: d, texte: d }))}
               defilant
