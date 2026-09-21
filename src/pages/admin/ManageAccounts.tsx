@@ -36,7 +36,8 @@ const estParticulier = (c: Compte) => !estPro(c) && !estProspecteur(c) && !estAd
 const jour = (v: string | null | undefined) => formatDateTimeParis(v)?.slice(0, 10) ?? "—";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rpc = supabase.rpc as unknown as (fn: string, args?: Record<string, unknown>) => any;
+// bind : sans lui, la méthode détachée perd son client et plante au premier appel.
+const rpc = supabase.rpc.bind(supabase) as unknown as (fn: string, args?: Record<string, unknown>) => any;
 
 export default function ManageAccounts() {
   const { user, loading: authLoading } = useAuth();
