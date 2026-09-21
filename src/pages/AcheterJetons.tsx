@@ -196,7 +196,7 @@ export default function AcheterJetons() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {creditPacks.map((pack) => {
             const bonus = getBonus(pack.quantity, pack.price);
-            const isPopular = pack.price === 200;
+            const isPopular = pack.price === 500;
             const bonusAmount = pack.quantity - pack.price;
 
             return (
