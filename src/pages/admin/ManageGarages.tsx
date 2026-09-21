@@ -61,6 +61,10 @@ export default function ManageGarages() {
   const [savingDoc, setSavingDoc] = useState(false);
   // Dépense totale par garage : calculée en base (voir depense_par_garage).
   const [depenses, setDepenses] = useState<Record<string, number>>({});
+  // Démarches effectuées (payées, en jetons, par le client ou offertes).
+  const [nbDemarches, setNbDemarches] = useState<Record<string, number>>({});
+  // Tri commun aux trois tableaux, par clic sur l'en-tête de colonne.
+  const [tri, setTri] = useState<{ cle: "inscription" | "depense" | "demarches"; sens: "asc" | "desc" }>({ cle: "inscription", sens: "desc" });
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -138,10 +142,13 @@ export default function ManageGarages() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: totaux } = await supabase.rpc('depense_par_garage' as any);
     const parGarage: Record<string, number> = {};
-    ((totaux || []) as { garage_id: string; total: number }[]).forEach((t) => {
+    const demarchesParGarage: Record<string, number> = {};
+    ((totaux || []) as { garage_id: string; total: number; nb_demarches: number }[]).forEach((t) => {
       parGarage[t.garage_id] = Number(t.total) || 0;
+      demarchesParGarage[t.garage_id] = Number(t.nb_demarches) || 0;
     });
     setDepenses(parGarage);
+    setNbDemarches(demarchesParGarage);
 
     setGarages(allGarages);
     setGaragesAVerifier(aVerifier);
@@ -195,11 +202,29 @@ export default function ManageGarages() {
   // Recherche EN MÉMOIRE par nom (raison_sociale) OU email — appliquée aux 3 buckets.
   const filtrerGarages = (liste: any[]) => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return liste;
-    return liste.filter(
-      (g) => g.raison_sociale?.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q),
-    );
+    const filtres = q
+      ? liste.filter((g) => g.raison_sociale?.toLowerCase().includes(q) || g.email?.toLowerCase().includes(q))
+      : liste;
+    const valeur = (g: any) =>
+      tri.cle === "depense" ? depenses[g.id] || 0
+        : tri.cle === "demarches" ? nbDemarches[g.id] || 0
+        : new Date(g.created_at).getTime();
+    return [...filtres].sort((a, b) => (tri.sens === "asc" ? 1 : -1) * (valeur(a) - valeur(b)));
   };
+
+  // En-tête cliquable : 1er clic = du plus grand au plus petit, 2e clic = inverse.
+  const EnteteTri = ({ cle, children, droite }: { cle: typeof tri.cle; children: React.ReactNode; droite?: boolean }) => (
+    <TableHead className={droite ? "text-right" : ""}>
+      <button
+        type="button"
+        className={`inline-flex items-center gap-1 font-medium hover:text-foreground ${tri.cle === cle ? "text-foreground" : ""}`}
+        onClick={() => setTri((t) => ({ cle, sens: t.cle === cle && t.sens === "desc" ? "asc" : "desc" }))}
+      >
+        {children}
+        <span aria-hidden="true">{tri.cle === cle ? (tri.sens === "desc" ? "↓" : "↑") : "↕"}</span>
+      </button>
+    </TableHead>
+  );
   const filteredAVerifier = filtrerGarages(garagesAVerifier);
   const filteredEnAttente = filtrerGarages(garagesEnAttente);
   const filteredVerifies = filtrerGarages(garagesVerifies);
@@ -259,8 +284,9 @@ export default function ManageGarages() {
                   <TableHead>SIRET</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Téléphone</TableHead>
-                  <TableHead>Inscrit le</TableHead>
-                  <TableHead className="text-right">Dépensé</TableHead>
+                  <EnteteTri cle="inscription">Inscrit le</EnteteTri>
+                  <EnteteTri cle="depense" droite>Dépensé</EnteteTri>
+                  <EnteteTri cle="demarches" droite>Démarches</EnteteTri>
                   <TableHead>Date demande</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -288,6 +314,7 @@ export default function ManageGarages() {
                     <TableCell>{garage.telephone}</TableCell>
                     <TableCell className="whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
+                    <TableCell className="text-right tabular-nums">{nbDemarches[garage.id] || 0}</TableCell>
                     <TableCell>
                       {new Date(garage.verification_requested_at).toLocaleDateString('fr-FR')}
                     </TableCell>
@@ -329,8 +356,9 @@ export default function ManageGarages() {
                   <TableHead>SIRET</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Téléphone</TableHead>
-                  <TableHead>Inscrit le</TableHead>
-                  <TableHead className="text-right">Dépensé</TableHead>
+                  <EnteteTri cle="inscription">Inscrit le</EnteteTri>
+                  <EnteteTri cle="depense" droite>Dépensé</EnteteTri>
+                  <EnteteTri cle="demarches" droite>Démarches</EnteteTri>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -349,6 +377,7 @@ export default function ManageGarages() {
                     <TableCell className="text-muted-foreground">{garage.telephone}</TableCell>
                     <TableCell className="text-muted-foreground whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
                     <TableCell className="text-muted-foreground text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
+                    <TableCell className="text-muted-foreground text-right tabular-nums">{nbDemarches[garage.id] || 0}</TableCell>
                     <TableCell>
                       <Button
                         size="sm"
@@ -387,8 +416,9 @@ export default function ManageGarages() {
                   <TableHead>SIRET</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead>Téléphone</TableHead>
-                  <TableHead>Inscrit le</TableHead>
-                  <TableHead className="text-right">Dépensé</TableHead>
+                  <EnteteTri cle="inscription">Inscrit le</EnteteTri>
+                  <EnteteTri cle="depense" droite>Dépensé</EnteteTri>
+                  <EnteteTri cle="demarches" droite>Démarches</EnteteTri>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -413,6 +443,7 @@ export default function ManageGarages() {
                     <TableCell>{garage.telephone}</TableCell>
                     <TableCell className="whitespace-nowrap">{jourInscription(garage.created_at)}</TableCell>
                     <TableCell className="text-right tabular-nums">{formatPrice(depenses[garage.id] || 0)} €</TableCell>
+                    <TableCell className="text-right tabular-nums">{nbDemarches[garage.id] || 0}</TableCell>
                     <TableCell>
                       <Button
                         size="sm"

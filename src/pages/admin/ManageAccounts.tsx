@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Eye, Search } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,9 +46,16 @@ export default function ManageAccounts() {
   const { toast } = useToast();
   const [comptes, setComptes] = useState<Compte[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtre, setFiltre] = useState<Filtre>("tous");
-  const [recherche, setRecherche] = useState("");
-  const [page, setPage] = useState(1);
+  // Filtre, recherche et page survivent à un aller-retour vers une fiche.
+  const memoire = (() => {
+    try { return JSON.parse(sessionStorage.getItem("gestion-comptes") || "{}"); } catch { return {}; }
+  })();
+  const [filtre, setFiltre] = useState<Filtre>(memoire.filtre ?? "tous");
+  const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
+  const [page, setPage] = useState<number>(memoire.page ?? 1);
+  useEffect(() => {
+    try { sessionStorage.setItem("gestion-comptes", JSON.stringify({ filtre, recherche, page })); } catch { /* navigation privée */ }
+  }, [filtre, recherche, page]);
   const [action, setAction] = useState<string | null>(null);
   // Fiche d'un compte sans garage (particulier, prospecteur) : l'accès
   // prospection se donne et se retire ici, pas depuis la liste.
@@ -105,7 +112,11 @@ export default function ManageAccounts() {
     });
   }, [comptes, filtre, recherche]);
 
-  useEffect(() => setPage(1), [filtre, recherche]);
+  const premierRendu = useRef(true);
+  useEffect(() => {
+    if (premierRendu.current) { premierRendu.current = false; return; }
+    setPage(1);
+  }, [filtre, recherche]);
   const PAR_PAGE = 50;
   const pages = Math.max(1, Math.ceil(filtres.length / PAR_PAGE));
   const visibles = filtres.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);

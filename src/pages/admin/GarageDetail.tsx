@@ -208,13 +208,15 @@ export default function GarageDetail() {
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
+        {/* Retour à la page d'où l'on vient (gestion des comptes, liste des
+            garages, prospection…) ; à défaut d'historique, la liste des garages. */}
         <Button
           variant="ghost"
           className="mb-4"
-          onClick={() => navigate("/admin/manage-garages")}
+          onClick={() => ((window.history.state?.idx ?? 0) > 0 ? navigate(-1) : navigate("/admin/manage-garages"))}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Retour aux garages
+          Retour
         </Button>
 
         <div className="flex items-start justify-between gap-4 mb-6">
