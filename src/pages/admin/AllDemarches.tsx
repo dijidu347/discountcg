@@ -19,7 +19,7 @@ import { TransactionDate } from "@/components/admin/TransactionDate";
 import { StatusPill } from "@/components/StatusPill";
 import { EtatPiecesBadge } from "@/components/admin/EtatPiecesBadge";
 import { EtatPieces, etatsParDossier } from "@/lib/etatPieces";
-import { chargerPieces } from "@/lib/chargerPieces";
+import { chargerPieces, dernierMessageClient, derniereActivite, SOMMEIL_JOURS } from "@/lib/chargerPieces";
 import { TERMINAL_STATUSES } from "@/lib/demarcheStatusBadge";
 import { isATraiter } from "@/lib/demarcheFilters";
 
@@ -106,6 +106,10 @@ export default function AllDemarches() {
 
   // Pages courantes par section
   const [pageATraiter, setPageATraiter] = useState(1);
+  // File « à traiter » coupée en deux : actifs, et dossiers en sommeil (ni
+  // pièce ni message du client depuis 30 jours, déjà ouverts par l'admin).
+  const [activiteClient, setActiviteClient] = useState<Record<string, number>>({});
+  const [vueATraiter, setVueATraiter] = useState<"actifs" | "sommeil">("actifs");
   const [pageAttenteClient, setPageAttenteClient] = useState(1);
   const [pageRefusees, setPageRefusees] = useState(1);
   const [pageTerminees, setPageTerminees] = useState(1);
@@ -163,6 +167,19 @@ export default function AllDemarches() {
       const set = new Set<string>();
       Object.values(latestByKey).forEach((v) => { if (v.status === "rejected") set.add(v.demarcheId); });
       setRejectedIds(set);
+
+      // Dernière activité du garage : création, dernier dépôt, dernier message.
+      const dernierDepot: Record<string, number> = {};
+      (docs as any[]).forEach((doc: any) => {
+        const t = new Date(doc.created_at).getTime();
+        if (!dernierDepot[doc.demarche_id] || t > dernierDepot[doc.demarche_id]) dernierDepot[doc.demarche_id] = t;
+      });
+      const dernierMessage = await dernierMessageClient("messages", "demarche_id", ids);
+      const activite: Record<string, number> = {};
+      allDemarches.forEach((d) => {
+        if (ids.includes(d.id)) activite[d.id] = derniereActivite(d.created_at, dernierDepot[d.id], dernierMessage[d.id]);
+      });
+      setActiviteClient(activite);
     }
 
     setLoading(false);
@@ -215,6 +232,12 @@ export default function AllDemarches() {
     () => filtered.filter(isATraiter).sort(parActiviteRecente),
     [filtered]
   );
+  const joursSansNouvelles = (id: string) =>
+    activiteClient[id] ? Math.floor((Date.now() - activiteClient[id]) / 86_400_000) : 0;
+  const enSommeil = (d: any) => d.admin_viewed === true && joursSansNouvelles(d.id) > SOMMEIL_JOURS;
+  const aTraiterSommeil = useMemo(() => aTraiter.filter(enSommeil), [aTraiter, activiteClient]); // eslint-disable-line react-hooks/exhaustive-deps
+  const aTraiterActifs = useMemo(() => aTraiter.filter((d) => !enSommeil(d)), [aTraiter, activiteClient]); // eslint-disable-line react-hooks/exhaustive-deps
+  const aTraiterAffiches = vueATraiter === "sommeil" ? aTraiterSommeil : aTraiterActifs;
   const attenteClient = useMemo(
     () => filtered.filter((d) => d.status === "en_attente_paiement_client"),
     [filtered]
@@ -471,6 +494,30 @@ export default function AllDemarches() {
             <CheckCircle className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Démarches à traiter</h1>
             <Badge variant="outline">{aTraiter.length}</Badge>
+            <div role="tablist" className="ml-auto inline-flex gap-1 rounded-lg bg-muted p-1">
+              {([
+                { cle: "actifs", texte: "Actifs", n: aTraiterActifs.length },
+                { cle: "sommeil", texte: "En sommeil", n: aTraiterSommeil.length },
+              ] as const).map((o) => {
+                const actif = vueATraiter === o.cle;
+                return (
+                  <button
+                    key={o.cle}
+                    type="button"
+                    role="tab"
+                    aria-selected={actif}
+                    title={o.cle === "sommeil" ? "Aucune pièce ni message du garage depuis plus de 30 jours" : undefined}
+                    onClick={() => { setVueATraiter(o.cle); setPageATraiter(1); }}
+                    className={`inline-flex items-center gap-2 rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                      actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {o.texte}
+                    <span className="rounded-full bg-background/60 px-2 py-0.5 text-xs tabular-nums">{o.n}</span>
+                  </button>
+                );
+              })}
+            </div>
             {unviewedCount > 0 && (
               <Badge className="bg-red-500 text-white animate-pulse">
                 <Bell className="h-3 w-3 mr-1" />
@@ -479,8 +526,10 @@ export default function AllDemarches() {
             )}
           </div>
 
-          {aTraiter.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucune démarche à traiter</p>
+          {aTraiterAffiches.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              {vueATraiter === "sommeil" ? "Aucun dossier en sommeil." : "Aucune démarche à traiter"}
+            </p>
           ) : (
             <>
               <Table>
@@ -498,7 +547,7 @@ export default function AllDemarches() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginate(aTraiter, pageATraiter).map((d: any) => (
+                  {paginate(aTraiterAffiches, pageATraiter).map((d: any) => (
                     <TableRow
                       key={d.id}
                       className={
@@ -533,6 +582,9 @@ export default function AllDemarches() {
                             du contrôle des pièces est affichée. */}
                         <div className="mt-1">
                           <EtatPiecesBadge etat={etatsPieces[d.id] ?? "aucune_piece"} />
+                          {vueATraiter === "sommeil" && (
+                            <span className="ml-2 text-xs text-muted-foreground">sans nouvelles depuis {joursSansNouvelles(d.id)} j</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -561,7 +613,7 @@ export default function AllDemarches() {
                   ))}
                 </TableBody>
               </Table>
-              <Pagination page={pageATraiter} total={aTraiter.length} onChange={setPageATraiter} />
+              <Pagination page={pageATraiter} total={aTraiterAffiches.length} onChange={setPageATraiter} />
             </>
           )}
         </Card>

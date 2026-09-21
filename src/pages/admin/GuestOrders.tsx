@@ -24,7 +24,7 @@ import { TransactionDate } from "@/components/admin/TransactionDate";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { EtatPiecesBadge } from "@/components/admin/EtatPiecesBadge";
 import { EtatPieces, etatsParDossier } from "@/lib/etatPieces";
-import { chargerPieces } from "@/lib/chargerPieces";
+import { chargerPieces, dernierMessageClient, derniereActivite, SOMMEIL_JOURS } from "@/lib/chargerPieces";
 
 interface GuestOrder {
   id: string;
@@ -132,6 +132,10 @@ export default function GuestOrders() {
 
   // Pages courantes par section
   const [pageATraiter, setPageATraiter] = useState(1);
+  // File « à traiter » coupée en deux : actifs, et commandes en sommeil (ni
+  // pièce ni message du client depuis 30 jours, déjà ouvertes par l'admin).
+  const [activiteClient, setActiviteClient] = useState<Record<string, number>>({});
+  const [vueATraiter, setVueATraiter] = useState<"actifs" | "sommeil">("actifs");
   const [pageRefusees, setPageRefusees] = useState(1);
   const [pageTerminees, setPageTerminees] = useState(1);
 
@@ -170,6 +174,22 @@ export default function GuestOrders() {
       if (ids.length > 0) {
         const docs = await chargerPieces("guest_order_documents", "order_id", ids);
         setEtatsPieces(etatsParDossier(docs, "order_id"));
+
+        // Dernière activité du client : paiement, dernier dépôt, dernier message.
+        const dernierDepot: Record<string, number> = {};
+        docs.forEach((doc) => {
+          const cle = String(doc.order_id);
+          const t = new Date(String(doc.created_at)).getTime();
+          if (!dernierDepot[cle] || t > dernierDepot[cle]) dernierDepot[cle] = t;
+        });
+        const dernierMessage = await dernierMessageClient("guest_order_messages", "order_id", ids);
+        const activite: Record<string, number> = {};
+        allOrders.forEach((o) => {
+          if (ids.includes(o.id)) {
+            activite[o.id] = derniereActivite(o.paid_at || o.created_at, dernierDepot[o.id], dernierMessage[o.id]);
+          }
+        });
+        setActiviteClient(activite);
       }
     } catch (error) {
       console.error("Erreur:", error);
@@ -241,6 +261,13 @@ export default function GuestOrders() {
         .sort(parActiviteRecente),
     [filtered]
   );
+  const joursSansNouvelles = (id: string) =>
+    activiteClient[id] ? Math.floor((Date.now() - activiteClient[id]) / 86_400_000) : 0;
+  const enSommeil = (o: GuestOrder) => o.admin_viewed === true && joursSansNouvelles(o.id) > SOMMEIL_JOURS;
+  const aTraiterSommeil = useMemo(() => aTraiter.filter(enSommeil), [aTraiter, activiteClient]); // eslint-disable-line react-hooks/exhaustive-deps
+  const aTraiterActifs = useMemo(() => aTraiter.filter((o) => !enSommeil(o)), [aTraiter, activiteClient]); // eslint-disable-line react-hooks/exhaustive-deps
+  const aTraiterAffiches = vueATraiter === "sommeil" ? aTraiterSommeil : aTraiterActifs;
+
   const terminees = useMemo(
     () => filtered.filter((o) => o.status === "finalise"),
     [filtered]
@@ -478,6 +505,30 @@ export default function GuestOrders() {
             <CheckCircle className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold">Commandes à traiter</h1>
             <Badge variant="outline">{aTraiter.length}</Badge>
+            <div role="tablist" className="ml-auto inline-flex gap-1 rounded-lg bg-muted p-1">
+              {([
+                { cle: "actifs", texte: "Actives", n: aTraiterActifs.length },
+                { cle: "sommeil", texte: "En sommeil", n: aTraiterSommeil.length },
+              ] as const).map((v) => {
+                const actif = vueATraiter === v.cle;
+                return (
+                  <button
+                    key={v.cle}
+                    type="button"
+                    role="tab"
+                    aria-selected={actif}
+                    title={v.cle === "sommeil" ? "Aucune pièce ni message du client depuis plus de 30 jours" : undefined}
+                    onClick={() => { setVueATraiter(v.cle); setPageATraiter(1); }}
+                    className={`inline-flex items-center gap-2 rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                      actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {v.texte}
+                    <span className="rounded-full bg-background/60 px-2 py-0.5 text-xs tabular-nums">{v.n}</span>
+                  </button>
+                );
+              })}
+            </div>
             {unviewedCount > 0 && (
               <Badge className="bg-red-500 text-white animate-pulse">
                 <Bell className="h-3 w-3 mr-1" />
@@ -486,8 +537,10 @@ export default function GuestOrders() {
             )}
           </div>
 
-          {aTraiter.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">Aucune commande à traiter</p>
+          {aTraiterAffiches.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">
+              {vueATraiter === "sommeil" ? "Aucune commande en sommeil." : "Aucune commande à traiter"}
+            </p>
           ) : (
             <>
               <Table>
@@ -505,7 +558,7 @@ export default function GuestOrders() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paginate(aTraiter, pageATraiter).map((o) => (
+                  {paginate(aTraiterAffiches, pageATraiter).map((o) => (
                     <TableRow
                       key={o.id}
                       className={
@@ -537,6 +590,9 @@ export default function GuestOrders() {
                         )}
                         <div className="mt-1">
                           <EtatPiecesBadge etat={etatsPieces[o.id] ?? "aucune_piece"} />
+                          {vueATraiter === "sommeil" && (
+                            <span className="ml-2 text-xs text-muted-foreground">sans nouvelles depuis {joursSansNouvelles(o.id)} j</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>{renderClientCell(o)}</TableCell>
@@ -558,7 +614,7 @@ export default function GuestOrders() {
                   ))}
                 </TableBody>
               </Table>
-              <Pagination page={pageATraiter} total={aTraiter.length} onChange={setPageATraiter} />
+              <Pagination page={pageATraiter} total={aTraiterAffiches.length} onChange={setPageATraiter} />
             </>
           )}
         </Card>

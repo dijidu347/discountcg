@@ -20,23 +20,16 @@ import { GarageVerificationPanel } from "@/components/admin/GarageVerificationPa
 /** Nombre de démarches récentes listées. Appliqué CÔTÉ BASE via .limit(). */
 const RECENT_DEMARCHES_LIMIT = 20;
 
-/**
- * Statuts considérés comme "en cours". Aligné sur la demande métier ; les
- * démarches finalisées et refusées ont leurs propres compteurs.
- */
-const STATUTS_EN_COURS = [
-  "en_saisie",
-  "en_attente",
-  "paye",
-  "en_attente_paiement_client",
-] as const;
-
 interface DemarcheStats {
   total: number;
   realisees: number;
   enCours: number;
   refusees: number;
+  brouillons: number;
 }
+
+// Démarche réglée : payée par carte, en jetons, par le client, ou offerte.
+const REGLEE = "paye.eq.true,paid_with_tokens.eq.true,client_paid.eq.true,is_free_token.eq.true";
 
 /**
  * Compteurs de démarches du garage.
@@ -71,6 +64,19 @@ const anciennete = (depuis: string): string => {
   return `depuis ${ans} an${ans > 1 ? "s" : ""}${reste ? ` et ${reste} mois` : ""}`;
 };
 
+type VueDemarches = "en_cours" | "brouillons" | "toutes";
+
+// Tri ET limite côté base : 20 lignes au plus, jamais la table entière.
+const requeteDemarches = (garageId: string, vue: VueDemarches) => {
+  let q = supabase
+    .from("demarches")
+    .select("id, numero_demarche, immatriculation, status, created_at, is_draft, paye, paid_with_tokens, client_paid, is_free_token")
+    .eq("garage_id", garageId);
+  if (vue === "en_cours") q = q.eq("is_draft", false).or(REGLEE).not("status", "in", "(finalise,refuse)");
+  if (vue === "brouillons") q = q.eq("is_draft", true);
+  return q.order("created_at", { ascending: false }).limit(RECENT_DEMARCHES_LIMIT);
+};
+
 const fetchDemarcheStats = async (garageId: string): Promise<DemarcheStats> => {
   const base = () =>
     supabase
@@ -78,11 +84,14 @@ const fetchDemarcheStats = async (garageId: string): Promise<DemarcheStats> => {
       .select("id", { count: "exact", head: true })
       .eq("garage_id", garageId);
 
-  const [total, realisees, enCours, refusees] = await Promise.all([
-    base(),
+  // « En cours » = réglée et pas encore finalisée ni refusée ; un brouillon
+  // n'est jamais payé et reste compté à part.
+  const [total, realisees, enCours, refusees, brouillons] = await Promise.all([
+    base().eq("is_draft", false).or(REGLEE),
     base().eq("status", "finalise"),
-    base().in("status", STATUTS_EN_COURS),
+    base().eq("is_draft", false).or(REGLEE).not("status", "in", "(finalise,refuse)"),
     base().eq("status", "refuse"),
+    base().eq("is_draft", true),
   ]);
 
   return {
@@ -90,6 +99,7 @@ const fetchDemarcheStats = async (garageId: string): Promise<DemarcheStats> => {
     realisees: realisees.count ?? 0,
     enCours: enCours.count ?? 0,
     refusees: refusees.count ?? 0,
+    brouillons: brouillons.count ?? 0,
   };
 };
 
@@ -103,6 +113,13 @@ export default function GarageDetail() {
   const [garage, setGarage] = useState<any>(null);
   const [stats, setStats] = useState<DemarcheStats | null>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
+  // Démarches récentes : en cours (payées) et brouillons (non payés) séparés.
+  const [vueDemarches, setVueDemarches] = useState<VueDemarches>("en_cours");
+  useEffect(() => {
+    if (!id || loading) return;
+    requeteDemarches(id, vueDemarches).then(({ data }) => setDemarches(data || []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vueDemarches]);
   const [clientDepuis, setClientDepuis] = useState<string | null>(null);
   // Don de jetons : bouton dans la carte du haut, dialogue dans le panneau.
   const [donJetonsOuvert, setDonJetonsOuvert] = useState(false);
@@ -167,12 +184,7 @@ export default function GarageDetail() {
       fetchDemarcheStats(id),
       // Tri ET limite CÔTÉ BASE : on ne rapatrie que 20 lignes, jamais la table
       // entière. Aucun risque de buter sur le plafond de 1000 lignes.
-      supabase
-        .from("demarches")
-        .select("id, numero_demarche, immatriculation, status, created_at, is_draft")
-        .eq("garage_id", id)
-        .order("created_at", { ascending: false })
-        .limit(RECENT_DEMARCHES_LIMIT),
+      requeteDemarches(id, vueDemarches),
       fetchClientDepuis(id),
     ]);
 
@@ -253,9 +265,9 @@ export default function GarageDetail() {
         </Card>
 
         {/* Statistiques démarches — compteurs COUNT SQL sur la totalité */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
           <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Total démarches</p>
+            <p className="text-sm text-muted-foreground">Démarches effectuées</p>
             <p className="text-2xl font-bold">{stats?.total ?? 0}</p>
           </Card>
           <Card className="p-4 border-green-500/30 bg-green-50/30 dark:bg-green-950/10">
@@ -263,12 +275,16 @@ export default function GarageDetail() {
             <p className="text-2xl font-bold text-green-600">{stats?.realisees ?? 0}</p>
           </Card>
           <Card className="p-4 border-amber-500/30 bg-amber-50/30 dark:bg-amber-950/10">
-            <p className="text-sm text-muted-foreground">En cours</p>
+            <p className="text-sm text-muted-foreground">En cours (payées)</p>
             <p className="text-2xl font-bold text-amber-600">{stats?.enCours ?? 0}</p>
           </Card>
           <Card className="p-4 border-red-500/30 bg-red-50/30 dark:bg-red-950/10">
             <p className="text-sm text-muted-foreground">Refusées</p>
             <p className="text-2xl font-bold text-red-600">{stats?.refusees ?? 0}</p>
+          </Card>
+          <Card className="p-4">
+            <p className="text-sm text-muted-foreground">Brouillons (non payés)</p>
+            <p className="text-2xl font-bold text-muted-foreground">{stats?.brouillons ?? 0}</p>
           </Card>
         </div>
 
@@ -345,17 +361,42 @@ export default function GarageDetail() {
           />
         </div>
 
-        {/* Démarches récentes */}
+        {/* Démarches récentes : en cours (payées) / brouillons (non payés) */}
         <Card className="p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 className="text-lg font-semibold">Démarches récentes</h2>
-            <Badge variant="outline">
-              {demarches.length} sur {stats?.total ?? 0}
-            </Badge>
+            <div role="tablist" className="inline-flex gap-1 rounded-lg bg-muted p-1">
+              {([
+                { cle: "en_cours", texte: "En cours", n: stats?.enCours },
+                { cle: "brouillons", texte: "Brouillons", n: stats?.brouillons },
+                { cle: "toutes", texte: "Toutes", n: undefined },
+              ] as { cle: VueDemarches; texte: string; n?: number }[]).map((o) => {
+                const actif = vueDemarches === o.cle;
+                return (
+                  <button
+                    key={o.cle}
+                    type="button"
+                    role="tab"
+                    aria-selected={actif}
+                    onClick={() => setVueDemarches(o.cle)}
+                    className={`inline-flex items-center gap-2 rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                      actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {o.texte}
+                    {o.n !== undefined && (
+                      <span className="rounded-full bg-background/60 px-2 py-0.5 text-xs tabular-nums">{o.n}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {demarches.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucune démarche pour ce garage.</p>
+            <p className="text-sm text-muted-foreground">
+              {vueDemarches === "brouillons" ? "Aucun brouillon." : vueDemarches === "en_cours" ? "Aucune démarche en cours." : "Aucune démarche pour ce garage."}
+            </p>
           ) : (
             <Table>
               <TableHeader>
@@ -377,13 +418,21 @@ export default function GarageDetail() {
                       {d.numero_demarche || "—"}
                     </TableCell>
                     <TableCell className="font-medium">
-                      {d.immatriculation}
-                      {d.is_draft && (
-                        <Badge variant="secondary" className="ml-2 text-xs">Brouillon</Badge>
-                      )}
+                      {d.immatriculation && d.immatriculation !== "TEMP" ? d.immatriculation : "—"}
                     </TableCell>
                     <TableCell>
-                      <StatusPill statut={d.status} />
+                      {d.is_draft ? (
+                        <Badge variant="outline" className="text-xs text-muted-foreground">Brouillon · non payé</Badge>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <StatusPill statut={d.status} />
+                          {(d.paye || d.paid_with_tokens || d.client_paid || d.is_free_token) && (
+                            <span className="text-xs text-green-700 dark:text-green-400">
+                              {d.is_free_token && !d.paye ? "offerte" : "payée"}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell className="text-xs">
                       {formatDateTimeParis(d.created_at) ?? "—"}

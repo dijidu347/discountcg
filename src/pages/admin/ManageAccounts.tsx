@@ -191,17 +191,27 @@ export default function ManageAccounts() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-4">
-            {ONGLETS.map((o) => (
-              <Button
-                key={o.cle}
-                size="sm"
-                variant={filtre === o.cle ? "default" : "outline"}
-                onClick={() => setFiltre(o.cle)}
-              >
-                {o.texte} ({compteurs[o.cle]})
-              </Button>
-            ))}
+          <div role="tablist" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+            {ONGLETS.map((o) => {
+              const actif = filtre === o.cle;
+              return (
+                <button
+                  key={o.cle}
+                  type="button"
+                  role="tab"
+                  aria-selected={actif}
+                  onClick={() => setFiltre(o.cle)}
+                  className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {o.texte}
+                  <span className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${actif ? "bg-muted text-foreground" : "bg-background/60 text-muted-foreground"}`}>
+                    {compteurs[o.cle]}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="overflow-x-auto">

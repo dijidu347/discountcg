@@ -48,7 +48,8 @@ const jourInscription = (valeur: string | null | undefined) =>
   formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
 
 // Garages : onglets par étape de vérification, tri, filtres.
-type Onglet = "a_verifier" | "en_attente" | "valides" | "sans_demande";
+type Onglet = "tous" | "a_verifier" | "en_attente" | "valides" | "sans_demande";
+type Etape = Exclude<Onglet, "tous">;
 type Tri = "recents" | "anciens" | "depense" | "demarches";
 
 interface Stats {
@@ -213,7 +214,7 @@ export default function ManageGarages() {
 
   // Étape de vérification de chaque garage (mêmes règles qu'avant, plus un
   // onglet pour ceux qui n'ont jamais rien demandé, jusqu'ici invisibles).
-  const etape = (g: Garage): Onglet => {
+  const etape = (g: Garage): Etape => {
     if (g.is_verified) return "valides";
     if (g.verification_requested_at && !g.verification_admin_viewed) return "a_verifier";
     if (stats[g.id]?.a_des_documents && g.verification_admin_viewed) return "en_attente";
@@ -249,7 +250,7 @@ export default function ManageGarages() {
   }, [garages, stats, recherche, departement, activite, solde, offerte, inscription, maintenant]);
 
   const comptes = useMemo(() => {
-    const c: Record<Onglet, number> = { a_verifier: 0, en_attente: 0, valides: 0, sans_demande: 0 };
+    const c: Record<Onglet, number> = { tous: filtres.length, a_verifier: 0, en_attente: 0, valides: 0, sans_demande: 0 };
     filtres.forEach((g) => { c[etape(g)]++; });
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -261,7 +262,7 @@ export default function ManageGarages() {
         : tri === "demarches" ? stats[g.id]?.nb_demarches || 0
         : new Date(g.created_at).getTime();
     return filtres
-      .filter((g) => etape(g) === onglet)
+      .filter((g) => onglet === "tous" || etape(g) === onglet)
       .sort((a, b) => (tri === "anciens" ? valeur(a) - valeur(b) : valeur(b) - valeur(a)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtres, onglet, tri, stats]);
@@ -282,6 +283,7 @@ export default function ManageGarages() {
   }
 
   const ONGLETS: { cle: Onglet; texte: string }[] = [
+    { cle: "tous", texte: "Tous" },
     { cle: "a_verifier", texte: "À vérifier" },
     { cle: "en_attente", texte: "En attente de documents" },
     { cle: "valides", texte: "Validés" },
@@ -309,17 +311,31 @@ export default function ManageGarages() {
         <h1 className="text-3xl font-bold mb-4">Garages</h1>
 
         {/* Onglets */}
-        <div className="flex flex-wrap gap-2 mb-4 border-b pb-3">
-          {ONGLETS.map((o) => (
-            <Button
-              key={o.cle}
-              variant={onglet === o.cle ? "default" : "ghost"}
-              onClick={() => { setOnglet(o.cle); setPage(1); }}
-            >
-              {o.texte}
-              <Badge variant={onglet === o.cle ? "secondary" : "outline"} className="ml-2">{comptes[o.cle]}</Badge>
-            </Button>
-          ))}
+        <div role="tablist" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+          {ONGLETS.map((o) => {
+            const actif = onglet === o.cle;
+            return (
+              <button
+                key={o.cle}
+                type="button"
+                role="tab"
+                aria-selected={actif}
+                onClick={() => { setOnglet(o.cle); setPage(1); }}
+                className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  actif ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {o.texte}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${
+                    actif ? "bg-muted text-foreground" : "bg-background/60 text-muted-foreground"
+                  }`}
+                >
+                  {comptes[o.cle]}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Recherche, tri et filtres */}
