@@ -891,6 +891,36 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // === RELANCE D'UNE COMMANDE PARTICULIER NON PAYÉE (J+1 puis J+3) ===
+    case "guest_order_reminder": {
+      const dernier = Number(data.numero_relance) >= 2;
+      const vehicule = data.immatriculation ? ` pour le véhicule <strong>${data.immatriculation}</strong>` : "";
+      return {
+        subject: dernier
+          ? `Dernier rappel : votre ${data.demarche_label} n'est pas encore réglée`
+          : `Votre ${data.demarche_label} vous attend`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <p>Bonjour${data.prenom ? ` ${data.prenom}` : ""},</p>
+            <p>Vous avez commencé votre demande de <strong>${data.demarche_label}</strong>${vehicule} sur DiscountCarteGrise, sans aller jusqu'au paiement.</p>
+            <p>Tout est enregistré : il vous reste une étape. Une fois le paiement fait, vous nous envoyez vos pièces et nous nous occupons du reste.</p>
+            ${data.montant ? `<div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0;"><strong>Montant :</strong> ${data.montant} €</p>
+            </div>` : ""}
+            <a href="${data.lien_reprise}" style="display: inline-block; background-color: #0047AB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
+              Reprendre ma demande
+            </a>
+            ${guestReplyBlock}
+            ${guestFooter}
+            <p style="color: #9ca3af; font-size: 12px; margin-top: 16px;">
+              ${dernier ? "C'est notre dernier rappel pour cette demande. " : ""}Vous avez changé d'avis ?
+              <a href="${data.lien_stop}" style="color: #9ca3af;">Ne plus recevoir de rappel pour cette demande</a>.
+            </p>
+          </div>
+        `,
+      };
+    }
+
     // === GUEST ORDER - NEW TEMPLATES ===
     case "guest_order_submitted":
       return {

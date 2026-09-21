@@ -69,3 +69,5 @@ project_id = "oiotlgkfwuwshpwraneb"
     verify_jwt = false
   [functions.alerte-sms]
     verify_jwt = true
+  [functions.relance-commandes-particulier]
+    verify_jwt = false

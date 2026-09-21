@@ -181,27 +181,46 @@ export default function ResultatCarteGrise() {
           sessionStorage.setItem(`vehicleData_${orderIdParam}`, JSON.stringify(vehicleData));
         }
 
-        if (!orderIdParam || !departementParam || !vehicleData) {
+        const donneesManquantes = () => {
           toast({
             title: "Erreur",
             description: "Données manquantes",
             variant: "destructive",
           });
           navigate('/simulateur');
+        };
+        if (!orderIdParam) {
+          donneesManquantes();
           return;
         }
-
-        setOrderId(orderIdParam);
-        setDepartement(departementParam);
 
         // Load demarche type + email + paid status + données véhicule déjà en base.
         // Les colonnes véhicule sont lues ici pour éviter un appel payant à
         // vehicle-lookup quand la commande a déjà été enrichie (cf. plus bas).
         const { data: orderData } = await supabase
           .from("guest_orders")
-          .select("demarche_type, email, paye, express, marque, modele, energie, date_mec, puiss_fisc, genre").setHeader(EN_TETE_COMMANDE, orderIdParam)
+          .select("demarche_type, email, paye, express, marque, modele, energie, date_mec, puiss_fisc, genre, departement").setHeader(EN_TETE_COMMANDE, orderIdParam)
           .eq("id", orderIdParam)
           .single();
+
+        // Reprise depuis un lien (mail de relance, autre appareil) : ni state ni
+        // sessionStorage. Le véhicule et le département viennent alors de la
+        // commande, où ils sont enregistrés dès le premier calcul.
+        if (!vehicleData && orderData?.date_mec && orderData?.puiss_fisc) {
+          vehicleData = {
+            chevauxFiscaux: orderData.puiss_fisc,
+            dateMiseEnCirculation: orderData.date_mec,
+            genre: orderData.genre,
+          };
+        }
+        const departementEffectif = departementParam || orderData?.departement || null;
+        if (!departementEffectif || !vehicleData) {
+          donneesManquantes();
+          return;
+        }
+
+        setOrderId(orderIdParam);
+        setDepartement(departementEffectif);
         if (orderData?.demarche_type) {
           setDemarcheType(orderData.demarche_type);
           const { data: typeData } = await supabase
@@ -232,7 +251,7 @@ export default function ResultatCarteGrise() {
         const { data: tarifData } = await supabase
           .from("department_tariffs")
           .select("tarif")
-          .eq("code", departementParam)
+          .eq("code", departementEffectif)
           .single();
 
         if (!tarifData) {
@@ -372,6 +391,9 @@ export default function ResultatCarteGrise() {
           express: express,
           certificat_non_gage: certificatNonGage,
           non_gage_mode: nonGageMode,
+          // Département du calcul : permet de reprendre la commande depuis un
+          // lien (relance) et sert au recalcul serveur de la taxe.
+          ...(departement ? { departement } : {}),
           ...vehicleFields,
           // puiss_fisc vient de `calculation`, pas de vehicleInfo : il reste écrit
           // inconditionnellement, comme avant.
