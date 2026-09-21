@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
+import { LibelleFormulaire } from "@/components/LienFormulaireVierge";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -800,12 +800,9 @@ const CommanderSansCompte = () => {
                 {documents.map((doc) => (
                   <div key={doc.id} className="p-4 border rounded-xl space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex flex-col">
-                        <Label className="font-medium">
-                          {doc.nom_document} {doc.obligatoire && <span className="text-destructive">*</span>}
-                        </Label>
-                        <LienFormulaireVierge label={doc.nom_document} />
-                      </div>
+                      <Label className="font-medium">
+                        <LibelleFormulaire texte={doc.nom_document} /> {doc.obligatoire && <span className="text-destructive">*</span>}
+                      </Label>
                       {uploadedDocs[doc.nom_document] ? (
                         <Badge className="bg-green-500 text-white">
                           <FileCheck className="w-3 h-3 mr-1" /> Uploadé

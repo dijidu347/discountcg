@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
+import { LibelleFormulaire } from "@/components/LienFormulaireVierge";
 import { supabase } from "@/integrations/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -318,12 +318,7 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
     if (!label) return null;
     
     if (!hasCerfa || !cerfaNumber) {
-      return (
-        <div className="flex flex-col">
-          <Label>{label}</Label>
-          <LienFormulaireVierge label={label} />
-        </div>
-      );
+      return <Label><LibelleFormulaire texte={label} /></Label>;
     }
 
     // Split the label to highlight the Cerfa part
@@ -437,11 +432,6 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
           </>
         )}
       </div>
-        {pdfOnly && (
-          <p className="text-xs text-muted-foreground mt-1">
-            PDF, photo ou scan : converti automatiquement en PDF de moins de 1 Mo.
-          </p>
-        )}
         </>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
+import { LibelleFormulaire } from "@/components/LienFormulaireVierge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -178,7 +178,7 @@ export const getDocumentsConfig = (
     case "QUITUS_FISCAL_PRO": {
       // Documents requis
       documents = [
-        { id: "qf_formulaire_1993", nom: "Demande de quitus fiscal signée (formulaire 1993-PRO-D-SD)", obligatoire: true, helpText: "Téléchargez le formulaire vierge, remplissez-le, signez-le et tamponnez-le." },
+        { id: "qf_formulaire_1993", nom: "Demande de quitus fiscal signée (1993-PRO-D-SD)", obligatoire: true },
         { id: "qf_facture", nom: "Facture d'achat ou certificat de cession", obligatoire: true },
         { id: "qf_cg_etranger", nom: "Certificat d'immatriculation étranger", obligatoire: true },
         { id: "qf_mandat", nom: "Mandat d'immatriculation signé (Cerfa 13757)", obligatoire: true },
@@ -582,10 +582,9 @@ export function DocumentsNecessaires({
       return (
         <div className="flex-1">
           <div className="text-sm font-medium">
-            {doc.nom}
+            <LibelleFormulaire texte={doc.nom} />
             {renderBadges()}
           </div>
-          <LienFormulaireVierge label={doc.nom} />
           {renderHelpText()}
         </div>
       );

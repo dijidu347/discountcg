@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { LienFormulaireVierge } from "@/components/LienFormulaireVierge";
+import { LibelleFormulaire } from "@/components/LienFormulaireVierge";
 import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -1779,17 +1779,14 @@ export default function NouvelleDemarche() {
                               const renderDocLabel = (labelText: string, isObligatoire: boolean) => {
                                 if (!hasCerfa || !cerfaNumber) {
                                   return (
-                                    <div className="flex flex-col">
-                                      <Label className="text-sm font-medium">
-                                        {labelText}
-                                        {isObligatoire ? (
-                                          <span className="text-destructive text-base font-bold">&nbsp;*</span>
-                                        ) : (
-                                          <span className="text-muted-foreground text-xs">(optionnel)</span>
-                                        )}
-                                      </Label>
-                                      <LienFormulaireVierge label={labelText} />
-                                    </div>
+                                    <Label className="text-sm font-medium">
+                                      <LibelleFormulaire texte={labelText} />
+                                      {isObligatoire ? (
+                                        <span className="text-destructive text-base font-bold">&nbsp;*</span>
+                                      ) : (
+                                        <span className="text-muted-foreground text-xs">(optionnel)</span>
+                                      )}
+                                    </Label>
                                   );
                                 }
                                 
