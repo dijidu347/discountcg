@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
@@ -354,6 +354,9 @@ export default function ManageGarages() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const memoire = useMemo(lireMemoire, []);
+  // Onglet imposé par la page qui nous envoie ici (bandeau « garages à
+  // vérifier » du tableau de bord), sinon celui de la dernière visite.
+  const ongletDemande = (useLocation().state as { onglet?: Onglet } | null)?.onglet;
   const [garages, setGarages] = useState<Garage[]>([]);
   const [stats, setStats] = useState<Record<string, Stats>>({});
   const [loading, setLoading] = useState(true);
@@ -362,7 +365,7 @@ export default function ManageGarages() {
   const [newDocForm, setNewDocForm] = useState({ nom_document: "", code: "", description: "", obligatoire: true });
   const [savingDoc, setSavingDoc] = useState(false);
 
-  const [onglet, setOnglet] = useState<Onglet>(memoire.onglet ?? "a_verifier");
+  const [onglet, setOnglet] = useState<Onglet>(ongletDemande ?? memoire.onglet ?? "a_verifier");
   const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
   const [tri, setTri] = useState<Tri>(memoire.tri ?? "recents");
   const [activite, setActivite] = useState<string[]>(enListe(memoire.activite));

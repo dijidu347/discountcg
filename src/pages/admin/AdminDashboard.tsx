@@ -359,7 +359,7 @@ export default function AdminDashboard() {
         {/* Alerte garages à vérifier */}
         {stats.garagesAVerifier > 0 && (
           <Card className="mb-6 border-2 border-orange-500 bg-orange-50 dark:bg-orange-950/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors"
-                onClick={() => navigate("/admin/manage-garages")}>
+                onClick={() => navigate("/admin/manage-garages", { state: { onglet: "a_verifier" } })}>
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
