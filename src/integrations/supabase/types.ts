@@ -527,6 +527,24 @@ export type Database = {
         }
         Relationships: []
       }
+      controle_types_actifs: {
+        Row: {
+          actif: boolean
+          maj_le: string
+          type: string
+        }
+        Insert: {
+          actif?: boolean
+          maj_le?: string
+          type: string
+        }
+        Update: {
+          actif?: boolean
+          maj_le?: string
+          type?: string
+        }
+        Relationships: []
+      }
       controles_demarche: {
         Row: {
           anomalies: Json
@@ -2622,6 +2640,7 @@ export type Database = {
           type: string
         }[]
       }
+      type_sous_controle: { Args: { p_type: string }; Returns: boolean }
       verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
     }
     Enums: {
