@@ -9,6 +9,7 @@ import { typeHasPaymentChoice, paymentModeLabel } from "@/lib/demarchePayment";
 import { getExpressSurcharge } from "@/lib/expressOption";
 import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
+import { ControleAutomatique } from "@/components/admin/ControleAutomatique";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1253,6 +1254,8 @@ export default function DemarcheDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            <ControleAutomatique demarcheId={id!} />
 
             {/* Documents */}
             <Card>
