@@ -96,7 +96,7 @@ export async function rasteriserPdf(source: Blob, reglages: ReglagesRaster): Pro
       }
 
       const octets = await sortie.save();
-      return new Blob([octets], { type: "application/pdf" });
+      return new Blob([octets as unknown as BlobPart], { type: "application/pdf" });
     } finally {
       await doc.destroy();
     }
