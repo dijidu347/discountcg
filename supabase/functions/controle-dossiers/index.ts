@@ -12,7 +12,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { libellePiece } from "../_shared/libellesPieces.ts";
-import { lirePiece } from "./lecture.ts";
+import { lirePiece, type Source } from "./lecture.ts";
 import {
   anomaliesDossier,
   anomaliesPiece,
@@ -36,12 +36,17 @@ const json = (corps: unknown, status = 200) =>
 const MIMES: Record<string, string> = {
   jpg: "image/jpeg",
   jpeg: "image/jpeg",
+  jfif: "image/jpeg",
   png: "image/png",
   webp: "image/webp",
-  heic: "image/heic",
-  heif: "image/heif",
+  gif: "image/gif",
   pdf: "application/pdf",
 };
+
+// Les photos iPhone ne sont lisibles ni par le modèle ni par le logiciel du
+// SIV : inutile de payer une lecture, la règle les signale sur le seul nom du
+// fichier.
+const FORMATS_ILLISIBLES = new Set(["heic", "heif"]);
 
 // Les URL stockées prennent plusieurs formes selon l'époque de dépôt
 // (`/object/`, `/object/public/`, `/object/sign/`) : on retrouve le seau et le
@@ -73,8 +78,8 @@ serve(async (req) => {
   // Tant que la clé n'est pas posée, le contrôle reste en sommeil : le cron
   // tourne dans le vide sans remplir les journaux d'erreurs, et les pièces
   // déposées entre-temps attendent sagement dans la file.
-  const cleGemini = Deno.env.get("GEMINI_API_KEY") ?? "";
-  if (!cleGemini) return json({ enSommeil: true, motif: "GEMINI_API_KEY absente" });
+  const cleModele = Deno.env.get("MISTRAL_API_KEY") ?? "";
+  if (!cleModele) return json({ enSommeil: true, motif: "MISTRAL_API_KEY absente" });
 
   const supabase = createClient(supabaseUrl, serviceKey);
   const corps = await req.json().catch(() => ({}));
@@ -116,11 +121,40 @@ serve(async (req) => {
       const octets = new Uint8Array(await fichier.arrayBuffer());
       const empreinte = await empreinteDe(octets);
       const extension = (doc.nom_fichier.split(".").pop() ?? "").toLowerCase();
+
+      if (FORMATS_ILLISIBLES.has(extension)) {
+        await supabase.from("analyses_documents").update({
+          statut: "ok",
+          modele: null,
+          type_detecte: "illisible",
+          extraction: {},
+          empreinte,
+          erreur: null,
+          tentatives: ligne.tentatives + 1,
+          analyse_le: new Date().toISOString(),
+        }).eq("id", ligne.id);
+        lues++;
+        continue;
+      }
+
       const mime = MIMES[extension];
       if (!mime) throw new Error(`Format non pris en charge : ${extension || "sans extension"}`);
 
+      // Les PDF partent par un lien signé : Mistral va les chercher lui-même
+      // et les passe à son OCR, ce qu'un envoi encodé ne déclenche pas.
+      let source: Source;
+      if (mime === "application/pdf") {
+        const { data: lien, error: erreurLien } = await supabase.storage
+          .from(emplacement.seau)
+          .createSignedUrl(emplacement.chemin, 600);
+        if (erreurLien || !lien?.signedUrl) throw new Error(`Lien signé impossible : ${erreurLien?.message ?? "vide"}`);
+        source = { genre: "pdf", url: lien.signedUrl };
+      } else {
+        source = { genre: "image", mimeType: mime, octets };
+      }
+
       const contexte = await contexteDeLecture(supabase, ligne.demarche_id, doc.type_document, doc.document_type);
-      const { extraction, modele } = await lirePiece(cleGemini, octets, mime, contexte);
+      const { extraction, modele } = await lirePiece(cleModele, source, contexte);
 
       await supabase.from("analyses_documents").update({
         statut: "ok",
