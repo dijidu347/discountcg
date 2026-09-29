@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "discountcg-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 8080
+    },
+    {
+      "name": "tri-photos",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["/private/tmp/claude-501/-Users-sarahdiaz-Desktop-JSD-CAR-SERVICES-discountcg---claude/450353eb-d7bf-4adc-8fcc-219989e23ed0/scratchpad/serveur.py"],
+      "port": 8765
+    }
+  ]
+}

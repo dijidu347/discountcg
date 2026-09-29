@@ -1255,7 +1255,7 @@ export default function DemarcheDetail() {
               </CardContent>
             </Card>
 
-            <ControleAutomatique demarcheId={id!} />
+            <ControleAutomatique demarcheId={id!} typeDemarche={demarche?.type} />
 
             {/* Documents */}
             <Card>

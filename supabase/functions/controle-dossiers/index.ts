@@ -245,6 +245,16 @@ async function recontroler(supabase: ReturnType<typeof createClient>, demarcheId
     .maybeSingle();
   if (!demarche) return;
 
+  // Filet : un dossier hors périmètre n'a rien à faire ici, et surtout ne doit
+  // pas afficher de pièces manquantes calculées sur une liste qu'on ne connaît
+  // pas encore pour son type.
+  const { data: actif } = await supabase
+    .from("controle_types_actifs")
+    .select("actif")
+    .eq("type", demarche.type)
+    .maybeSingle();
+  if (actif?.actif !== true) return;
+
   const { data: documents } = await supabase
     .from("documents")
     .select("id, type_document, document_type, nom_fichier, taille_octets, created_at")

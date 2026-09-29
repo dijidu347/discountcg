@@ -50,11 +50,28 @@ const APPARENCE: Record<Gravite, { fond: string; texte: string; icone: typeof Al
 
 const ORDRE: Gravite[] = ["haute", "moyenne", "basse"];
 
-export function ControleAutomatique({ demarcheId }: { demarcheId: string }) {
+export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: string; typeDemarche?: string | null }) {
   const [controle, setControle] = useState<Controle | null>(null);
   const [chargement, setChargement] = useState(true);
+  const [dansLePerimetre, setDansLePerimetre] = useState(false);
   const [relance, setRelance] = useState(false);
   const { toast } = useToast();
+
+  // Le contrôle ne couvre pas encore tous les types de démarche : sur les autres
+  // le bloc n'a rien à dire, autant ne pas l'afficher du tout.
+  useEffect(() => {
+    let vivant = true;
+    if (!typeDemarche) {
+      setDansLePerimetre(false);
+      return;
+    }
+    rpc("type_sous_controle", { p_type: typeDemarche }).then(({ data }) => {
+      if (vivant) setDansLePerimetre(data === true);
+    });
+    return () => {
+      vivant = false;
+    };
+  }, [typeDemarche]);
 
   const charger = useCallback(async () => {
     const { data } = await table("controles_demarche")
@@ -94,7 +111,7 @@ export function ControleAutomatique({ demarcheId }: { demarcheId: string }) {
     charger();
   };
 
-  if (chargement) return null;
+  if (chargement || !dansLePerimetre) return null;
 
   const anomalies = controle?.anomalies ?? [];
   const enAttente = !controle || controle.niveau === "en_attente";
