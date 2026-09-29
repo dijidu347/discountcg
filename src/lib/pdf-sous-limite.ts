@@ -72,7 +72,7 @@ async function imageEnPdf(img: HTMLImageElement, coteMax: number, qualite: numbe
   const l = canvas.width * r;
   const h = canvas.height * r;
   page.drawImage(jpeg, { x: (page.getWidth() - l) / 2, y: (page.getHeight() - h) / 2, width: l, height: h });
-  return new Blob([await doc.save()], { type: "application/pdf" });
+  return new Blob([(await doc.save()) as unknown as BlobPart], { type: "application/pdf" });
 }
 
 /** Transforme le fichier depose en PDF de moins de 1 Mo, ou explique pourquoi c'est impossible. */
