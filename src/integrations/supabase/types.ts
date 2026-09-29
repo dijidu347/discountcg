@@ -298,6 +298,72 @@ export type Database = {
         }
         Relationships: []
       }
+      analyses_documents: {
+        Row: {
+          analyse_le: string | null
+          anomalies: Json
+          cree_le: string
+          demarche_id: string | null
+          document_id: string
+          empreinte: string | null
+          erreur: string | null
+          extraction: Json
+          id: string
+          modele: string | null
+          piece_attendue: string | null
+          statut: string
+          tentatives: number
+          type_detecte: string | null
+        }
+        Insert: {
+          analyse_le?: string | null
+          anomalies?: Json
+          cree_le?: string
+          demarche_id?: string | null
+          document_id: string
+          empreinte?: string | null
+          erreur?: string | null
+          extraction?: Json
+          id?: string
+          modele?: string | null
+          piece_attendue?: string | null
+          statut?: string
+          tentatives?: number
+          type_detecte?: string | null
+        }
+        Update: {
+          analyse_le?: string | null
+          anomalies?: Json
+          cree_le?: string
+          demarche_id?: string | null
+          document_id?: string
+          empreinte?: string | null
+          erreur?: string | null
+          extraction?: Json
+          id?: string
+          modele?: string | null
+          piece_attendue?: string | null
+          statut?: string
+          tentatives?: number
+          type_detecte?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analyses_documents_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "analyses_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: true
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bilan_stripe: {
         Row: {
           calcule_le: string
@@ -461,6 +527,41 @@ export type Database = {
         }
         Relationships: []
       }
+      controles_demarche: {
+        Row: {
+          anomalies: Json
+          calcule_le: string
+          demarche_id: string
+          niveau: string
+          pieces_analysees: number
+          pieces_attendues: number
+        }
+        Insert: {
+          anomalies?: Json
+          calcule_le?: string
+          demarche_id: string
+          niveau?: string
+          pieces_analysees?: number
+          pieces_attendues?: number
+        }
+        Update: {
+          anomalies?: Json
+          calcule_le?: string
+          demarche_id?: string
+          niveau?: string
+          pieces_analysees?: number
+          pieces_attendues?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "controles_demarche_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: true
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       demarche_questionnaire_responses: {
         Row: {
           answer_text: string
@@ -532,6 +633,7 @@ export type Database = {
           documents_complets: boolean | null
           express: boolean
           facture_id: string | null
+          finalise_at: string | null
           frais_dossier: number | null
           garage_id: string
           id: string
@@ -586,6 +688,7 @@ export type Database = {
           documents_complets?: boolean | null
           express?: boolean
           facture_id?: string | null
+          finalise_at?: string | null
           frais_dossier?: number | null
           garage_id: string
           id?: string
@@ -640,6 +743,7 @@ export type Database = {
           documents_complets?: boolean | null
           express?: boolean
           facture_id?: string | null
+          finalise_at?: string | null
           frais_dossier?: number | null
           garage_id?: string
           id?: string
@@ -1364,6 +1468,7 @@ export type Database = {
           email_notifications: boolean
           energie: string | null
           express: boolean
+          finalise_at: string | null
           frais_bancaires: number | null
           frais_dossier: number
           frais_origine: string | null
@@ -1435,6 +1540,7 @@ export type Database = {
           email_notifications?: boolean
           energie?: string | null
           express?: boolean
+          finalise_at?: string | null
           frais_bancaires?: number | null
           frais_dossier?: number
           frais_origine?: string | null
@@ -1506,6 +1612,7 @@ export type Database = {
           email_notifications?: boolean
           energie?: string | null
           express?: boolean
+          finalise_at?: string | null
           frais_bancaires?: number | null
           frais_dossier?: number
           frais_origine?: string | null
@@ -2346,6 +2453,7 @@ export type Database = {
         Returns: {
           a_des_documents: boolean
           derniere_demarche: string
+          dossier_complet: boolean
           garage_id: string
           nb_demarches: number
           total: number
@@ -2494,11 +2602,25 @@ export type Database = {
           read_ct: number
         }[]
       }
+      relancer_controle_dossier: {
+        Args: { p_demarche_id: string }
+        Returns: number
+      }
       renew_coffre_token_subscriptions: { Args: never; Returns: undefined }
       retirer_prospecteur: { Args: { p_user_id: string }; Returns: undefined }
       setup_facture_cron: {
         Args: { p_service_role_key: string }
         Returns: Json
+      }
+      stats_demarches_par_type: {
+        Args: { p_au: string; p_du: string }
+        Returns: {
+          recues: number
+          source: string
+          titre: string
+          traitees: number
+          type: string
+        }[]
       }
       verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
     }
