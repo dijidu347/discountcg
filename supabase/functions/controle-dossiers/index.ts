@@ -389,11 +389,14 @@ async function recontroler(supabase: any, demarcheId: string) {
   ];
 
   const analysees = pieces.filter((piece) => piece.extraction).length;
-  const enAttente = pieces.length > analysees;
 
+  // « En attente » seulement tant qu'aucune pièce n'a été lue. Dès qu'une l'a
+  // été, on affiche ce qu'on sait : une relecture de tout un dossier prend
+  // plusieurs passages, et faire disparaître un verdict déjà rendu pendant ce
+  // temps donne l'impression que le contrôle ne fonctionne plus.
   await supabase.from("controles_demarche").upsert({
     demarche_id: demarcheId,
-    niveau: enAttente && anomalies.length === 0 ? "en_attente" : niveauDossier(anomalies),
+    niveau: analysees === 0 ? "en_attente" : niveauDossier(anomalies),
     anomalies,
     pieces_analysees: analysees,
     pieces_attendues: pieces.length,

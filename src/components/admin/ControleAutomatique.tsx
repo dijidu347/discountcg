@@ -116,6 +116,9 @@ export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: 
   const anomalies = controle?.anomalies ?? [];
   const enAttente = !controle || controle.niveau === "en_attente";
   const restantes = controle ? Math.max(controle.pieces_attendues - controle.pieces_analysees, 0) : 0;
+  // Une relecture en cours ne doit pas effacer le verdict déjà rendu : on
+  // l'affiche, en disant simplement qu'il reste des pièces à lire.
+  const relectureEnCours = !enAttente && restantes > 0;
 
   return (
     <Card>
@@ -131,6 +134,8 @@ export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: 
                 ? restantes > 0
                   ? `Lecture en cours : ${restantes} pièce(s) restante(s).`
                   : "Aucune pièce lue pour l'instant."
+                : relectureEnCours
+                ? `${controle.pieces_analysees} pièce(s) lue(s) sur ${controle.pieces_attendues} • ${restantes} encore en lecture, le résultat peut évoluer`
                 : `${controle.pieces_analysees} pièce(s) lue(s) • dernier contrôle le ${formatDateTimeParis(controle.calcule_le)}`}
             </CardDescription>
           </div>
