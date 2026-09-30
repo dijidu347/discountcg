@@ -53,6 +53,7 @@ export type Database = {
           id: string
           nom_document: string
           obligatoire: boolean
+          obligatoire_depuis: string | null
           ordre: number
         }
         Insert: {
@@ -61,6 +62,7 @@ export type Database = {
           id?: string
           nom_document: string
           obligatoire?: boolean
+          obligatoire_depuis?: string | null
           ordre?: number
         }
         Update: {
@@ -69,6 +71,7 @@ export type Database = {
           id?: string
           nom_document?: string
           obligatoire?: boolean
+          obligatoire_depuis?: string | null
           ordre?: number
         }
         Relationships: [
