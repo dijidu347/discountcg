@@ -425,13 +425,21 @@ export default function AdminRevenus() {
   const totalTokenRevenue = filteredTokens.reduce((s, t) => s + Number(t.amount), 0);
   const totalParticuliers = filteredGuestOrders.reduce((s, o) => s + revenuParticulier(o), 0);
 
-  // Ce qui part a l'Etat sur les demarches pro, et ce qu'on ne sait pas encore
-  // chiffrer : une taxe variable qu'aucune colonne ne memorise gonfle le revenu
-  // sans qu'on puisse la retrancher. Mieux vaut l'annoncer que la taire.
-  const totalTaxesEtat = filteredPaiements.reduce(
+  // Tout ce qui part a l'Etat sur la periode, pros et particuliers confondus :
+  // la taxe de carte grise, memorisee au dossier, et les taxes fixes des
+  // demarches pro, qui ne le sont pas. Les deux sont deja retranchees du
+  // revenu ; la ligne existe pour montrer ce qui a transite sans jamais nous
+  // appartenir.
+  const taxesCartesGrises = filteredPaiements.reduce(
+    (s, p) => s + (p.premierDeLaDemarche ? Number(p.demarches?.prix_carte_grise || 0) : 0),
+    0,
+  );
+  const taxesProForfaitaires = filteredPaiements.reduce(
     (s, p) => s + (taxeEtat(p.demarches?.type) ?? 0),
     0,
   );
+  const taxesParticuliers = filteredGuestOrders.reduce((s, o) => s + Number(o.montant_ht || 0), 0);
+  const totalTaxesEtat = taxesCartesGrises + taxesProForfaitaires + taxesParticuliers;
   const demarchesTaxeInconnue = filteredPaiements.filter((p) => taxeInconnue(p.demarches?.type)).length;
   const totalRevenue = totalServiceFees + totalTokenRevenue + totalParticuliers;
   // Commissions bancaires sur les encaissements de la periode : Stripe au
@@ -782,21 +790,13 @@ export default function AdminRevenus() {
                   <td className="text-right">{filteredPaiements.length} paiements</td>
                 </tr>
                 <tr className="text-muted-foreground">
-                  <td className="py-1 pl-4">Ventes jetons</td>
+                  <td className="pt-1 pb-2.5 pl-4">Ventes jetons</td>
                   <td className="text-right">{eur(totalTokenRevenue)}</td>
                   <td></td>
                   <td></td>
                   <td className="text-right">{filteredTokens.length} achats</td>
                 </tr>
-                {totalTaxesEtat > 0 && (
-                  <tr className="text-muted-foreground">
-                    <td className="pt-1 pb-2.5 pl-4">Taxes reversées à l'État</td>
-                    <td className="text-right">−{eur(totalTaxesEtat)}</td>
-                    <td></td>
-                    <td></td>
-                    <td className="text-right">déjà déduites</td>
-                  </tr>
-                )}
+
                 <tr className="border-t">
                   <td className="py-2.5 font-semibold">Particuliers</td>
                   <td className="text-right font-semibold">{eur(totalParticuliers)}</td>
@@ -804,6 +804,15 @@ export default function AdminRevenus() {
                   <td className="text-right font-semibold">{eur(totalParticuliers - fraisParticuliers)}</td>
                   <td className="text-right text-muted-foreground">{filteredGuestOrders.length} commandes</td>
                 </tr>
+                {totalTaxesEtat > 0 && (
+                  <tr className="border-t text-muted-foreground">
+                    <td className="py-2.5">Taxes reversées à l'État</td>
+                    <td className="text-right">{eur(totalTaxesEtat)}</td>
+                    <td colSpan={3} className="text-right text-xs">
+                      encaissées puis reversées, jamais comptées en revenu
+                    </td>
+                  </tr>
+                )}
                 <tr className="border-t-2">
                   <td className="py-2.5 font-semibold">Total</td>
                   <td className="text-right font-semibold">{eur(totalRevenue)}</td>
