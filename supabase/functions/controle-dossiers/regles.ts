@@ -602,9 +602,10 @@ export function anomaliesDossier(
   // cession : le guide l'exige dans ses trois tableaux, et une discordance
   // bloque l'enregistrement.
   //
-  // Signalée sans bloquer : ces dates sont manuscrites, sur un cerfa dont le
-  // siècle est pré-imprimé, et leur lecture reste la plus délicate de toutes.
-  // C'est à l'œil que la discordance se confirme, en quelques secondes.
+  // Bloquant : le SIV refuse la démarche quand ces deux dates diffèrent, et la
+  // règle est posée par l'exploitante. La lecture de ces dates manuscrites reste
+  // la plus délicate de toutes — c'est pour cela que le message donne les deux
+  // dates lues, pour qu'un coup d'œil suffise à trancher.
   const dateDe = (motif: RegExp): { date: string; piece: string } | null => {
     for (const piece of pieces) {
       if (!motif.test(piece.libelle)) continue;
@@ -618,8 +619,8 @@ export function anomaliesDossier(
   if (surCession && surCarteGrise && surCession.date !== surCarteGrise.date) {
     anomalies.push({
       code: "dates_cession_differentes",
-      gravite: "moyenne",
-      message: `Dates de vente différentes : ${surCarteGrise.date} sur la carte grise, ${surCession.date} sur le certificat de cession. Les deux doivent être identiques — à confirmer à l'œil.`,
+      gravite: "haute",
+      message: `Dates de vente différentes : ${surCarteGrise.date} sur la carte grise, ${surCession.date} sur le certificat de cession. Les deux doivent être identiques.`,
       piece: surCarteGrise.piece,
     });
   }

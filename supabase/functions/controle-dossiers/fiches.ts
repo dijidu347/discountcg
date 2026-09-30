@@ -22,7 +22,7 @@ Il se lit en trois blocs, dans cet ordre :
 1. Le véhicule, en haut : (A) numéro d'immatriculation, (E) numéro d'identification du véhicule, (B) date de 1re immatriculation, (D.1) marque, (D.2) type variante version, (J.1) genre national, (D.3) dénomination commerciale, kilométrage au compteur, puis la présence du certificat d'immatriculation avec son numéro de formule ou, pour un ancien format, la date (I) du certificat.
 
 2. L'ANCIEN PROPRIÉTAIRE, c'est-à-dire le VENDEUR : « Je soussigné(e) », son nom ou sa raison sociale, son SIRET le cas échéant, son adresse complète. Puis la phrase qui porte la vente :
-   « Certifie céder — Le ____ à ____ h le véhicule désigné ci-dessus. »
+   « Certifie (veuillez cocher la case correspondante) : ☐ céder  ☐ céder pour destruction — Le ____ à ____ h le véhicule désigné ci-dessus. »
    → C'est ICI, et nulle part ailleurs, que se trouvent la DATE et l'HEURE DE LA CESSION. Mets-les dans dates.cession et dates.heure_cession.
    ATTENTION À L'ANNÉE : sur ce formulaire, le siècle « 2 0 » est PRÉ-IMPRIMÉ et seuls les deux derniers chiffres sont écrits à la main. Une date manuscrite « 31 08 » suivie de « 26 » après le « 2 0 » imprimé se lit 2026-08-31, jamais 2020. Ne rends jamais une année 2020 sur ce seul motif : reconstitue-la en collant les deux chiffres manuscrits derrière le « 2 0 ».
    Le bloc se termine par « Fait à ______, le ______ » suivi de la signature de l'ancien propriétaire (pour une société : nom, qualité du signataire et cachet).
