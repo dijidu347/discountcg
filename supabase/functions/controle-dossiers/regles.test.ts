@@ -183,7 +183,7 @@ const cgCoupeeMaisComplete = anomaliesPiece(
   }),
   contexte, maintenant,
 );
-verifie("document coupe mais complet : information seulement", cgCoupeeMaisComplete.every((a) => a.gravite === "basse"));
+verifie("document complet : on ne parle pas du cadrage", cgCoupeeMaisComplete.length === 0);
 
 const cgCoupeeEtVide = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "carte_grise", defauts: ["tronque"] } }),
@@ -241,7 +241,13 @@ const versoSeul = anomaliesPiece(
   piece({ type_document: "doc_2", libelle: "Carte d'identité du nouveau propriétaire", extraction: { type_document: "carte_identite", face: "verso" } }),
   contexte, maintenant,
 );
-verifie("verso seul : recto manquant", versoSeul.some((a) => a.code === "recto_manquant"));
+verifie("piece d'identite en verso seul : recto manquant", versoSeul.some((a) => a.code === "recto_manquant"));
+
+const cgVersoSeul = anomaliesPiece(
+  piece({ type_document: "doc_3", libelle: "Carte grise avec la mention cédé le recto/verso", extraction: { type_document: "carte_grise", face: "verso", immatriculations: ["AB-123-CD"] } }),
+  contexte, maintenant,
+);
+verifie("carte grise : le guide n'exige pas les deux faces", !cgVersoSeul.some((a) => a.code === "recto_manquant"));
 
 const emplacementVerso = anomaliesPiece(
   piece({ type_document: "doc_2_verso", libelle: "Carte d'identité (verso)", extraction: { type_document: "carte_identite", face: "verso" } }),

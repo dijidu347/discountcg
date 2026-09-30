@@ -76,7 +76,7 @@ ${FORME_ATTENDUE}
 
 - correspond : false si le document n'est pas la pièce attendue ci-dessus (une carte grise déposée à la place d'un justificatif de domicile, par exemple). Un recto seul d'une pièce recto/verso correspond quand même. Pour une pièce ajoutée librement, toujours true.
 - lisible : false si le texte utile ne peut pas être lu.
-- defauts : liste vide si rien ne gêne la lecture. Ne signale un défaut que s'il gêne vraiment.
+- defauts : laisse la liste VIDE dans l'immense majorité des cas. Ne signale un défaut que s'il t'a réellement empêché de lire une information que tu cherchais. Une photo un peu penchée, un fond visible, un bord de table, une lumière inégale ne sont pas des défauts. N'invente jamais un reflet ou un bord coupé que tu ne vois pas.
 - immatriculations : toutes les plaques françaises visibles (format AB-123-CD ou 123 ABC 45).
 - vin : le numéro de série à 17 caractères (champ E de la carte grise).
 - personnes : titulaire, vendeur, acheteur, mandant. Recopie les noms et adresses tels qu'ils sont écrits.
@@ -88,7 +88,7 @@ ${FORME_ATTENDUE}
   · sur une déclaration d'achat : la date ET l'heure, l'identité du vendeur et celle de l'acheteur ;
   · sur un mandat : le nom du mandant, celui du mandataire, la désignation du véhicule et la date.
 - version_cerfa : le numéro de version imprimé sur le formulaire, tel quel, par exemple « 13751*02 » ou « 15776*01 ». null si le document n'est pas un cerfa ou si le numéro n'est pas lisible.
-- face : pour une pièce d'identité, un permis ou une carte grise, indique si tu vois le recto seul, le verso seul, ou les deux. null pour les autres documents.
+- face : pour une pièce d'identité, un permis ou une carte grise seulement. Mets « recto_verso » uniquement si les DEUX faces apparaissent réellement sur l'image ou dans le document, côte à côte ou l'une sous l'autre. Si tu ne vois qu'une seule face, dis laquelle : le recto d'une carte d'identité porte la photo, le verso porte l'adresse et la bande de lecture optique. Dans le doute, mets null plutôt que de supposer.
 - mentions : uniquement pour une carte grise. cede_le = true si la mention « cédé le » est écrite et datée sur le document, false si l'emplacement est vierge. barree = true si le document est barré d'un trait. Omets le champ pour tout autre document.
 - ratures : true si une mention est barrée, surchargée ou corrigée au stylo. La barre qui acte une cession sur une carte grise n'est pas une rature.
 - type_document : choisis le terme le plus juste de la liste. Un document établi par un commissaire-priseur pour une vente aux enchères est un certificat_vente_publique ; un récépissé ANTS confirmant l'enregistrement est un accuse_enregistrement_cession ou accuse_enregistrement_achat selon son objet.

@@ -303,14 +303,17 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     ajoute("illisible", "haute", "La pièce n'est pas lisible.");
   }
 
-  const aLu = aLivreDesInformations(ex);
-  for (const defaut of ex.defauts ?? []) {
-    const texte = LIBELLE_DEFAUT[defaut];
-    if (!texte) continue;
-    if (aLu) {
-      ajoute(`qualite_${defaut}`, "basse", `Pour information : ${texte}, mais les renseignements y sont.`);
-    } else {
-      ajoute(`qualite_${defaut}`, "moyenne", `À renvoyer : ${texte}, et rien n'a pu en être lu.`);
+  // Les défauts d'image ne sont signalés que lorsque la pièce n'a rien livré.
+  //
+  // Le modèle les invente trop souvent pour qu'on les affiche autrement : sur
+  // DEM-2026-08200 il a annoncé une carte grise « coupée » avec un « reflet »,
+  // alors qu'elle n'avait ni l'un ni l'autre. La mesure le disait déjà — reflet
+  // 31 %, flou 29 % de justesse, sous le hasard. Quand la plaque, le VIN et les
+  // mentions ont été lus, le cadrage de la photo n'apprend rien à personne.
+  if (!aLivreDesInformations(ex)) {
+    for (const defaut of ex.defauts ?? []) {
+      const texte = LIBELLE_DEFAUT[defaut];
+      if (texte) ajoute(`qualite_${defaut}`, "moyenne", `À renvoyer : ${texte}, et rien n'a pu en être lu.`);
     }
   }
 
@@ -418,10 +421,13 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     );
   }
 
-  // Verso seul sur une pièce qui n'est pas l'emplacement prévu pour le verso :
-  // le recto manque, et c'est lui qui porte l'identité.
+  // Le guide n'exige les deux faces que pour les pièces d'identité et le permis.
+  // Pour la carte grise, il demande la mention « Vendu le », la signature du
+  // vendeur et la bonne date, peu importe la face où elles figurent — on ne
+  // réclame donc pas un recto qu'il n'exige pas.
+  const deuxFacesExigees = /identit|passeport|titre de s[ée]jour|permis/i.test(piece.libelle);
   const emplacementVerso = piece.type_document.endsWith("_verso") || /verso/i.test(piece.libelle);
-  if (!emplacementVerso && ex.face === "verso") {
+  if (deuxFacesExigees && !emplacementVerso && ex.face === "verso") {
     ajoute("recto_manquant", "moyenne", "Seul le verso est visible : il manque le recto.");
   }
 
