@@ -135,6 +135,15 @@ export function DemanderPiece({
     onChangement?.();
   };
 
+  // Suggestions au fil de la frappe : les pièces de la démarche dont l'intitulé
+  // contient ce qui est tapé, accents et casse ignorés. Rien tant que le champ
+  // est vide, et rien non plus quand la pièce choisie est déjà exacte.
+  const sansAccent = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const recherche = sansAccent(libelle.trim());
+  const suggestions = recherche.length === 0
+    ? []
+    : piecesConnues.filter((p) => sansAccent(p).includes(recherche) && sansAccent(p) !== recherche).slice(0, 5);
+
   const enAttente = demandes.filter((d) => !d.fournie_le);
   const fournies = demandes.filter((d) => d.fournie_le);
 
@@ -177,17 +186,20 @@ export function DemanderPiece({
                     id="libelle-piece"
                     value={libelle}
                     onChange={(e) => setLibelle(e.target.value)}
-                    placeholder="Par exemple : déclaration d'achat du vendeur"
+                    placeholder="Tapez les premières lettres, ou écrivez librement"
                     autoComplete="off"
                   />
-                  {piecesConnues.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 pt-1">
-                      {piecesConnues.map((p) => (
+                  {/* On propose au fil de la frappe plutôt que d'étaler toute la
+                      liste : elle compte une dizaine de pièces par démarche et
+                      remplissait la fenêtre avant même qu'on ait commencé. */}
+                  {suggestions.length > 0 && (
+                    <div className="rounded-lg border divide-y overflow-hidden">
+                      {suggestions.map((p) => (
                         <button
                           key={p}
                           type="button"
                           onClick={() => setLibelle(p)}
-                          className="rounded-full border px-2.5 py-1 text-xs hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                          className="block w-full px-3 py-2 text-left text-sm hover:bg-blue-50 hover:text-blue-700"
                         >
                           {p}
                         </button>
