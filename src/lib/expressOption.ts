@@ -30,10 +30,10 @@ export function getExpressSurcharge(type: string | null | undefined): number {
 // Disponibilité horaire de l'option "Dossier Prioritaire".
 // Règle métier : ouvert lundi, mardi, mercredi, vendredi (JEUDI fermé, ainsi
 // que samedi/dimanche), de 9h00 à 17h00 (16h59 accepté, 17h00 non).
+// Hors créneau, l'option n'est pas grisée : elle disparaît de la page.
 // Fuseau Europe/Paris IMPÉRATIF (gère l'heure d'été/hiver via Intl), on ne se
 // fie PAS à l'heure locale du navigateur.
 // ---------------------------------------------------------------------------
-export const EXPRESS_UNAVAILABLE_MESSAGE = "Indisponible actuellement";
 
 // Jours ouverts, en codes courts en-US renvoyés par Intl (weekday: 'short').
 const EXPRESS_OPEN_WEEKDAYS = ["Mon", "Tue", "Wed", "Fri"];
