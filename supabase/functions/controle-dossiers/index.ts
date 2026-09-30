@@ -99,7 +99,7 @@ serve(async (req) => {
     .from("analyses_documents")
     .select("id, document_id, demarche_id, tentatives, documents!inner(type_document, document_type, nom_fichier, url, taille_octets), demarches!inner(status)")
     .eq("statut", "en_attente")
-    .not("demarches.status", "in", "(finalise,refuse,annule)")
+    .not("demarches.status", "in", "(finalise,refuse)")
     .lt("tentatives", TENTATIVES_MAX)
     .order("cree_le", { ascending: true })
     .limit(lot);
@@ -317,7 +317,8 @@ async function recontroler(supabase: any, demarcheId: string) {
 
   // Un dossier terminé ne se contrôle pas : il est parti au SIV, ou il a été
   // refusé, ou annulé. Le relire ne sert à rien et coûte une lecture.
-  const TERMINES = ["finalise", "refuse", "annule"];
+  // Les seuls statuts terminaux de l'énumération : il n'existe pas d'« annulé ».
+  const TERMINES = ["finalise", "refuse"];
   if (TERMINES.includes(demarche.status ?? "")) return;
 
   const { data: documents } = await supabase
