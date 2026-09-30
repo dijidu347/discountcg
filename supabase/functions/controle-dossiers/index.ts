@@ -319,7 +319,7 @@ async function recontroler(supabase: any, demarcheId: string) {
     .from("analyses_documents")
     .select("document_id, statut, extraction, empreinte")
     .in("document_id", retenus.map((doc) => doc.id).slice(0, 200));
-  type Analyse = { statut?: string; extraction?: unknown; empreinte?: string | null };
+  type Analyse = { statut?: string; extraction?: Extraction | null; empreinte?: string | null };
   const parDocument = new Map((analyses ?? []).map((a: any) => [a.document_id, a] as [string, Analyse]));
 
   const libelles = await libellesDocN(supabase, demarche.type);
