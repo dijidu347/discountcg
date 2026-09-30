@@ -41,7 +41,6 @@ const FORME_ATTENDUE = `{
   "dates": { "emission": "AAAA-MM-JJ", "validite": "AAAA-MM-JJ", "mise_en_circulation": "AAAA-MM-JJ", "cession": "AAAA-MM-JJ", "heure_cession": "HH:MM" },
   "signatures": { "vendeur": true, "acheteur": true, "mandant": true, "tampon": false },
   "mentions": { "cede_le": true, "barree": true },
-  "version_cerfa": "13751*02" ou null,
   "situation_administrative": { "vierge": true, "mentions": [] },
   "face": "recto | verso | recto_verso" ou null,
   "champs_incomplets": ["heure de cession"],
@@ -89,7 +88,6 @@ ${FORME_ATTENDUE}
   · sur une déclaration d'achat : la date ET l'heure, l'identité du vendeur et celle de l'acheteur ;
   · sur un mandat : le nom du mandant, celui du mandataire, la désignation du véhicule et la date.
 - situation_administrative : uniquement pour un certificat de situation administrative (non-gage), qu'il vienne du site du Ministère de l'Intérieur ou du service Histovec. vierge = true si le document ne signale absolument rien ; false s'il mentionne une opposition, un gage, une saisie, un vol, une procédure VE ou VGE, une immatriculation suspendue, un certificat perdu ou déclaré en duplicata. Recopie dans « mentions » chaque situation trouvée, en quelques mots. Omets le champ pour tout autre document.
-- version_cerfa : le numéro de version imprimé sur le formulaire, tel quel, par exemple « 13751*02 » ou « 15776*01 ». null si le document n'est pas un cerfa ou si le numéro n'est pas lisible.
 - face : pour une pièce d'identité, un permis ou une carte grise seulement. Mets « recto_verso » uniquement si les DEUX faces apparaissent réellement sur l'image ou dans le document, côte à côte ou l'une sous l'autre. Si tu ne vois qu'une seule face, dis laquelle : le recto d'une carte d'identité porte la photo, le verso porte l'adresse et la bande de lecture optique. Dans le doute, mets null plutôt que de supposer.
 - mentions : uniquement pour une carte grise. cede_le = true dès qu'une mention de vente datée est portée à la main sur le document, quelle qu'en soit la formulation — « vendu le », « cédé le », « cédé », « vendu », « véhicule vendu le » — accompagnée d'une date. Ces formulations sont équivalentes, n'en privilégie aucune. false seulement si aucune mention de ce genre n'apparaît. barree = true si le document est barré d'un trait. Omets le champ pour tout autre document.
 - ratures : true si une mention est barrée, surchargée ou corrigée au stylo. La barre qui acte une cession sur une carte grise n'est pas une rature.

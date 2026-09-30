@@ -33,7 +33,6 @@ export interface Extraction {
   } | null;
   signatures?: { vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean } | null;
   mentions?: { cede_le?: boolean; barree?: boolean } | null;
-  version_cerfa?: string | null;
   face?: string | null;
   situation_administrative?: { vierge?: boolean; mentions?: string[] } | null;
   champs_incomplets?: string[] | null;
@@ -298,21 +297,6 @@ export function aLivreDesInformations(ex: Extraction): boolean {
   return false;
 }
 
-// Version du cerfa attendue, lue dans le libellé de la pièce : le site y écrit
-// déjà « cerfa 13751*02 », « cerfa 15776*01 ». Comparer la version imprimée sur
-// le document à celle-là évite d'inscrire dans le code des numéros qui
-// changeront, et suit automatiquement les mises à jour du libellé.
-export function versionAttendue(libelle: string): { numero: string; version: number } | null {
-  const trouve = libelle.match(/(\d{4,5})\s*\*\s*(\d{1,2})/);
-  return trouve ? { numero: trouve[1], version: Number(trouve[2]) } : null;
-}
-
-export function versionLue(valeur?: string | null): { numero: string; version: number } | null {
-  if (!valeur) return null;
-  const trouve = valeur.match(/(\d{4,5})\s*\*\s*(\d{1,2})/);
-  return trouve ? { numero: trouve[1], version: Number(trouve[2]) } : null;
-}
-
 // Cases que le SIV exige pour enregistrer une cession ou un achat : elles
 // portent une étoile sur ses écrans de saisie.
 const CHAMPS_SIV = /heure|date|immatricul|plaque|identification du v|\bvin\b|identit[ée]|num[ée]ro de formule/i;
@@ -451,6 +435,10 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   const vinInutile = plaquesLues.length > 0;
   for (const champ of ex.champs_incomplets ?? []) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
+    // Sur un PDF, une case « signature » vide ne veut rien dire : le modèle lit
+    // le texte, pas l'encre. Annoncer qu'elle manque revient à accuser au
+    // hasard des documents parfaitement signés.
+    if (!pageVue && /signature|cachet|tampon/i.test(champ)) continue;
     // Toutes les cases vides ne se valent pas. Les écrans « Inscrire la cession »
     // et « Inscrire l'achat » du SIV marquent d'une étoile la date, l'heure, la
     // plaque et le numéro d'identification : sans elles, l'opérateur ne peut pas
@@ -484,22 +472,6 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
       mentions.length > 0
         ? `Le certificat n'est pas vierge : ${mentions.join(", ")}.`
         : "Le certificat de situation administrative n'est pas vierge.",
-    );
-  }
-
-  // Un cerfa dans une version périmée est refusé au SIV. On ne compare que des
-  // versions d'un même formulaire : une version plus récente que celle annoncée
-  // dans le libellé est parfaitement valable, c'est l'inverse qui pose problème.
-  const attendue = versionAttendue(piece.libelle);
-  const lue = versionLue(ex.version_cerfa);
-  if (attendue && lue && attendue.numero === lue.numero && lue.version < attendue.version) {
-    // En information : les tableaux du guide nomment le formulaire sans jamais
-    // exiger une version précise, et les deux versions circulent sans que
-    // l'administration les distingue à ce jour.
-    ajoute(
-      "cerfa_perime",
-      "basse",
-      `Le formulaire est en version ${lue.numero}*${String(lue.version).padStart(2, "0")}, alors que la version ${attendue.numero}*${String(attendue.version).padStart(2, "0")} est demandée.`,
     );
   }
 

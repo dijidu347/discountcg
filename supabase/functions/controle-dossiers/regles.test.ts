@@ -69,11 +69,6 @@ const carteGriseDatee = anomaliesPiece(
 );
 verifie("une carte grise ne perime pas", !carteGriseDatee.some((a) => a.code === "piece_perimee"));
 
-const cerfaAncienneVersion = anomaliesPiece(
-  piece({ libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { type_document: "certificat_cession", version_cerfa: "15776*01" } }),
-  contexte, maintenant,
-);
-verifie("version de cerfa : information, jamais bloquante", cerfaAncienneVersion.every((a) => a.gravite === "basse"));
 
 const doublon = anomaliesDossier(
   [piece({ document_id: "a", empreinte: "xyz", libelle: "Carte d'identité" }), piece({ document_id: "b", empreinte: "xyz", libelle: "Permis de conduire" })],
@@ -237,23 +232,8 @@ const memesDates = anomaliesDossier([
 verifie("memes dates : rien a signaler", !memesDates.some((a) => a.code === "dates_cession_differentes"));
 
 
-const cerfaPerime = anomaliesPiece(
-  piece({ libelle: "Certificat déclaration d'achat (cerfa 13751*02)", extraction: { type_document: "declaration_achat", version_cerfa: "13751*01" } }),
-  contexte, maintenant,
-);
-verifie("cerfa dans une version perimee", cerfaPerime.some((a) => a.code === "cerfa_perime"));
 
-const cerfaRecent = anomaliesPiece(
-  piece({ libelle: "Certificat de cession (cerfa 15776*01)", extraction: { type_document: "certificat_cession", version_cerfa: "15776*02" } }),
-  contexte, maintenant,
-);
-verifie("version plus recente que demandee : rien a dire", !cerfaRecent.some((a) => a.code === "cerfa_perime"));
 
-const autreCerfa = anomaliesPiece(
-  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { type_document: "mandat", immatriculations: ["AB-123-CD"], version_cerfa: "13750*05" } }),
-  contexte, maintenant,
-);
-verifie("deux formulaires differents : pas de comparaison", !autreCerfa.some((a) => a.code === "cerfa_perime"));
 
 const versoSeul = anomaliesPiece(
   piece({ type_document: "doc_2", libelle: "Carte d'identité du nouveau propriétaire", extraction: { type_document: "carte_identite", face: "verso" } }),
@@ -365,5 +345,17 @@ const cgPhotoSansMention = anomaliesPiece(
   contexte, maintenant,
 );
 verifie("photo : la mention de vente absente reste signalee", cgPhotoSansMention.some((a) => a.code === "cession_non_portee"));
+
+
+const signaturePdf = anomaliesPiece(
+  piece({
+    nom_fichier: "cession.pdf",
+    libelle: "Certificat de cession signé (cerfa 15776*02)",
+    extraction: { type_document: "certificat_cession", lisible: true, immatriculations: ["AB-123-CD"], champs_incomplets: ["signature vendeur", "signature acheteur", "kilométrage"] },
+  }),
+  contexte, maintenant,
+);
+verifie("PDF : on ne parle pas des signatures", !signaturePdf.some((a) => (a.message ?? "").toLowerCase().includes("signature")));
+verifie("PDF : les autres cases vides restent dites", signaturePdf.some((a) => (a.message ?? "").includes("kilométrage")));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
