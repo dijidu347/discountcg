@@ -79,8 +79,20 @@ function indexFields(form: ReturnType<PDFDocument["getForm"]>) {
   return map;
 }
 
+// Typage structurel volontaire : les génériques de SupabaseClient varient
+// selon la surcharge de createClient utilisée (avec ou sans options), ce qui
+// fait échouer la vérification de type sans raison réelle.
 async function downloadImage(
-  supabase: ReturnType<typeof createClient>,
+  supabase: {
+    storage: {
+      from: (bucket: string) => {
+        download: (path: string) => Promise<{
+          data: { arrayBuffer: () => Promise<ArrayBuffer> } | null;
+          error: { message: string } | null;
+        }>;
+      };
+    };
+  },
   path: string | undefined,
 ): Promise<Uint8Array | null> {
   if (!path) return null;
