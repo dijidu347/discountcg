@@ -363,4 +363,25 @@ const memeDateDeVente = anomaliesDossier([
 ], [], contexte, true);
 verifie("memes dates de vente : rien a signaler", !memeDateDeVente.some((a) => a.code === "dates_cession_differentes"));
 
+
+const daSansDate = anomaliesPiece(
+  piece({
+    nom_fichier: "da.jpg",
+    libelle: "Déclaration d'achat signée et tamponnée (cerfa 13751*02)",
+    extraction: { type_document: "declaration_achat", lisible: true, immatriculations: ["AB-123-CD"], dates: { emission: "2026-09-02" } },
+  }),
+  contexte, maintenant,
+);
+verifie("date de vente absente sur une DA : signalee", daSansDate.some((a) => a.code === "date_vente_absente"));
+
+const daAvecDate = anomaliesPiece(
+  piece({
+    nom_fichier: "da.jpg",
+    libelle: "Déclaration d'achat signée et tamponnée (cerfa 13751*02)",
+    extraction: { type_document: "declaration_achat", lisible: true, immatriculations: ["AB-123-CD"], dates: { cession: "2026-08-31" } },
+  }),
+  contexte, maintenant,
+);
+verifie("date de vente presente : rien a signaler", !daAvecDate.some((a) => a.code === "date_vente_absente"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

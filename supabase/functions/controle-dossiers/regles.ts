@@ -450,6 +450,18 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     ajoute("ratures", "moyenne", "La pièce comporte des ratures ou des surcharges.");
   }
 
+  // La date de vente est une case étoilée des écrans du SIV : sans elle,
+  // l'opérateur ne peut pas enregistrer la démarche. Sur un certificat de
+  // cession comme sur une déclaration d'achat, elle doit être portée.
+  const porteLaVente = /cession|15776|d[ée]claration d.achat|13751/i.test(piece.libelle);
+  if (porteLaVente && ex.lisible !== false && !ex.dates?.cession) {
+    ajoute(
+      "date_vente_absente",
+      "moyenne",
+      "Aucune date de vente n'est lisible sur la pièce : le SIV la réclame pour enregistrer la démarche.",
+    );
+  }
+
   // Le certificat de situation administrative ne vaut que s'il est vierge. Une
   // opposition, un gage, une saisie, une immatriculation suspendue ou un
   // certificat déclaré perdu arrêtent la démarche au SIV, et c'est justement ce
