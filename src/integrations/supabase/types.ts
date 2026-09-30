@@ -1177,6 +1177,8 @@ export type Database = {
           id: string
           is_gold: boolean | null
           is_verified: boolean | null
+          kbis_alerte_envoyee_le: string | null
+          kbis_valide_jusqu_au: string | null
           raison_sociale: string
           referral_source: string | null
           reseau: string | null
@@ -1203,6 +1205,8 @@ export type Database = {
           id?: string
           is_gold?: boolean | null
           is_verified?: boolean | null
+          kbis_alerte_envoyee_le?: string | null
+          kbis_valide_jusqu_au?: string | null
           raison_sociale: string
           referral_source?: string | null
           reseau?: string | null
@@ -1229,6 +1233,8 @@ export type Database = {
           id?: string
           is_gold?: boolean | null
           is_verified?: boolean | null
+          kbis_alerte_envoyee_le?: string | null
+          kbis_valide_jusqu_au?: string | null
           raison_sociale?: string
           referral_source?: string | null
           reseau?: string | null
@@ -2697,6 +2703,7 @@ export type Database = {
         }[]
       }
       type_sous_controle: { Args: { p_type: string }; Returns: boolean }
+      validite_kbis: { Args: { p_garage: string }; Returns: string }
       verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
     }
     Enums: {
