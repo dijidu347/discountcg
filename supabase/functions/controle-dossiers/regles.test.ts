@@ -52,10 +52,28 @@ const nonGage = anomaliesPiece(
 verifie("non-gage trop ancien", nonGage.some((a) => a.code === "piece_trop_ancienne"));
 
 const cniPerimee = anomaliesPiece(
-  piece({ libelle: "Carte d'identité", extraction: { correspond: true, lisible: true, dates: { validite: "2024-01-01" } } }),
+  piece({ libelle: "Carte d'identité", extraction: { correspond: true, lisible: true, type_document: "carte_identite", dates: { validite: "2024-01-01" } } }),
   contexte, maintenant,
 );
-verifie("piece perimee", cniPerimee.some((a) => a.code === "piece_perimee"));
+verifie("piece d'identite perimee", cniPerimee.some((a) => a.code === "piece_perimee"));
+
+// Cas de DEM-2026-08168 : une carte grise n'a pas de fin de validite, le modele
+// y avait range sa date d'emission.
+const carteGriseDatee = anomaliesPiece(
+  piece({
+    type_document: "doc_3", nom_fichier: "cg.jpg",
+    libelle: 'Carte grise barrée avec la mention "Vendu le", datée et signée du vendeur',
+    extraction: { type_document: "carte_grise", lisible: true, immatriculations: ["AB-123-CD"], dates: { validite: "2025-02-13", emission: "2025-02-13" } },
+  }),
+  contexte, maintenant,
+);
+verifie("une carte grise ne perime pas", !carteGriseDatee.some((a) => a.code === "piece_perimee"));
+
+const cerfaAncienneVersion = anomaliesPiece(
+  piece({ libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { type_document: "certificat_cession", version_cerfa: "15776*01" } }),
+  contexte, maintenant,
+);
+verifie("version de cerfa : information, jamais bloquante", cerfaAncienneVersion.every((a) => a.gravite === "basse"));
 
 const doublon = anomaliesDossier(
   [piece({ document_id: "a", empreinte: "xyz", libelle: "Carte d'identité" }), piece({ document_id: "b", empreinte: "xyz", libelle: "Permis de conduire" })],

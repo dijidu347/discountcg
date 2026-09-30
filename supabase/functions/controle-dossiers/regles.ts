@@ -246,6 +246,17 @@ export function horsSujet(libelle: string, typeDetecte?: string | null, correspo
   return !famille.acceptes.includes(typeDetecte);
 }
 
+// Documents qui portent une vraie date de fin de validité. Tout le reste est
+// daté sans expirer : on en juge la fraîcheur, pas la validité.
+const PIECES_QUI_EXPIRENT = new Set([
+  "carte_identite",
+  "passeport",
+  "titre_sejour",
+  "permis_conduire",
+  "attestation_assurance",
+  "controle_technique",
+]);
+
 // Pièces que le garage ajoute de lui-même, sous un intitulé qu'il choisit
 // (« Ci », « photo », « doc 2 »…). Aucun libellé de référence à leur opposer :
 // leur reprocher de ne pas correspondre n'aurait aucun sens.
@@ -395,8 +406,13 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   }
 
   // Validité et fraîcheur.
+  //
+  // Seuls certains documents expirent. Une carte grise, une cession, un mandat
+  // n'ont pas de fin de validité : le modèle range parfois leur date d'émission
+  // dans ce champ, et on annonçait alors une carte grise « périmée », ce qui ne
+  // veut rien dire.
   const finValidite = enDate(ex.dates?.validite);
-  if (finValidite && finValidite.getTime() < maintenant.getTime()) {
+  if (finValidite && PIECES_QUI_EXPIRENT.has(ex.type_document ?? "") && finValidite.getTime() < maintenant.getTime()) {
     ajoute("piece_perimee", "haute", `La pièce est périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`);
   }
 
@@ -477,9 +493,12 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   const attendue = versionAttendue(piece.libelle);
   const lue = versionLue(ex.version_cerfa);
   if (attendue && lue && attendue.numero === lue.numero && lue.version < attendue.version) {
+    // En information : les tableaux du guide nomment le formulaire sans jamais
+    // exiger une version précise, et les deux versions circulent sans que
+    // l'administration les distingue à ce jour.
     ajoute(
       "cerfa_perime",
-      "moyenne",
+      "basse",
       `Le formulaire est en version ${lue.numero}*${String(lue.version).padStart(2, "0")}, alors que la version ${attendue.numero}*${String(attendue.version).padStart(2, "0")} est demandée.`,
     );
   }
