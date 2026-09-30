@@ -113,6 +113,41 @@ export function memeAdresse(a: string, b: string): boolean {
   return true;
 }
 
+// Écart entre deux chaînes, plafonné : au-delà de la limite, inutile de
+// continuer à compter.
+export function ecart(a: string, b: string, limite: number): number {
+  if (a === b) return 0;
+  if (Math.abs(a.length - b.length) > limite) return limite + 1;
+  let precedent = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const courant = [i];
+    let minimum = i;
+    for (let j = 1; j <= b.length; j++) {
+      const valeur = a[i - 1] === b[j - 1]
+        ? precedent[j - 1]
+        : 1 + Math.min(precedent[j - 1], precedent[j], courant[j - 1]);
+      courant.push(valeur);
+      if (valeur < minimum) minimum = valeur;
+    }
+    if (minimum > limite) return limite + 1;
+    precedent = courant;
+  }
+  return precedent[b.length];
+}
+
+// Un VIN comporte 17 caractères où le 8 et le B, le 0 et le O, le 5 et le S se
+// confondent à la lecture. Sur de vrais dossiers, deux lectures d'un même VIN
+// s'écartent couramment de trois caractères. Au-delà on signale, mais sans en
+// faire une certitude : deux véhicules d'un même modèle partagent eux aussi
+// leurs premiers caractères, et rien ne permet de trancher à coup sûr. C'est la
+// plaque, courte et structurée, qui dit de façon fiable si la pièce concerne un
+// autre véhicule.
+const ECART_VIN = 3;
+
+export function vinsDifferents(a: string, b: string): boolean {
+  return ecart(a, b, ECART_VIN) > ECART_VIN;
+}
+
 function enDate(valeur?: string | null): Date | null {
   if (!valeur) return null;
   const date = new Date(valeur);
@@ -173,7 +208,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   for (const defaut of ex.defauts ?? []) {
     const texte = LIBELLE_DEFAUT[defaut];
     if (texte) {
-      ajoute(`qualite_${defaut}`, defaut === "tronque" ? "haute" : "moyenne", `À renvoyer : ${texte}.`);
+      ajoute(`qualite_${defaut}`, "moyenne", `À renvoyer : ${texte}.`);
     }
   }
 
@@ -197,8 +232,8 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
 
   const vinDossier = contexte.vin ? contexte.vin.toUpperCase().replace(/\s/g, "") : null;
   const vinLu = ex.vin ? ex.vin.toUpperCase().replace(/\s/g, "") : null;
-  if (vinDossier && vinLu && vinLu.length >= 15 && vinLu !== vinDossier) {
-    ajoute("vin_different", "haute", `Le VIN lu (${vinLu}) ne correspond pas à celui du dossier (${vinDossier}).`);
+  if (vinDossier && vinLu && vinLu.length >= 15 && vinsDifferents(vinLu, vinDossier)) {
+    ajoute("vin_different", "moyenne", `Le VIN lu (${vinLu}) ne correspond pas à celui du dossier (${vinDossier}). À confirmer à l'œil, ce peut être une erreur de lecture.`);
   }
 
   // Validité et fraîcheur.
@@ -283,39 +318,49 @@ export function anomaliesDossier(
     });
   }
 
-  // VIN lus sur des pièces différentes qui ne se recoupent pas.
-  const vins = new Map<string, string>();
+  // VIN lus sur des pièces différentes. Deux lectures d'un même numéro diffèrent
+  // souvent d'un caractère ou deux : seul un écart net dénonce deux véhicules.
+  const vins: { vin: string; piece: string }[] = [];
   for (const piece of pieces) {
     const vin = piece.extraction?.vin?.toUpperCase().replace(/\s/g, "");
-    if (vin && vin.length >= 15) vins.set(vin, piece.libelle);
+    if (vin && vin.length >= 15) vins.push({ vin, piece: piece.libelle });
   }
-  if (vins.size > 1) {
+  for (let i = 1; i < vins.length; i++) {
+    if (!vinsDifferents(vins[0].vin, vins[i].vin)) continue;
     anomalies.push({
       code: "vin_incoherent",
-      gravite: "haute",
-      message: `Deux VIN différents dans le dossier : ${[...vins.entries()].map(([vin, où]) => `${vin} (${où})`).join(" / ")}.`,
+      gravite: "moyenne",
+      message: `Deux VIN qui ne concordent pas : ${vins[0].vin} (${vins[0].piece}) et ${vins[i].vin} (${vins[i].piece}). À confirmer à l'œil, ce peut être une erreur de lecture.`,
+      piece: vins[i].piece,
     });
+    break;
   }
 
-  // Identité : le nom du titulaire doit être le même partout.
-  const identites: { nom: string; piece: string }[] = [];
-  for (const piece of pieces) {
-    for (const personne of piece.extraction?.personnes ?? []) {
-      if (!["titulaire", "acheteur", "mandant"].includes((personne.role ?? "").toLowerCase())) continue;
-      const nom = [personne.prenom, personne.nom].filter(Boolean).join(" ").trim();
-      if (nom) identites.push({ nom, piece: piece.libelle });
-    }
-  }
-  for (let i = 1; i < identites.length; i++) {
-    if (!memePersonne(identites[0].nom, identites[i].nom)) {
-      anomalies.push({
-        code: "nom_different",
-        gravite: "moyenne",
-        message: `Noms différents d'une pièce à l'autre : « ${identites[0].nom} » (${identites[0].piece}) et « ${identites[i].nom} » (${identites[i].piece}).`,
-        piece: identites[i].piece,
-      });
-      break;
-    }
+  // Identité de l'acquéreur : la pièce d'identité déposée doit être celle de
+  // l'acheteur porté sur la cession.
+  //
+  // On ne compare que ces deux-là. Rapprocher le mandant du titulaire de la
+  // carte grise n'aurait aucun sens sur une déclaration d'achat : le mandant est
+  // le garage, le titulaire est le particulier qui vend. Ce sont deux personnes
+  // différentes, et c'est parfaitement normal.
+  const nomComplet = (p: { nom?: string; prenom?: string }) => [p.prenom, p.nom].filter(Boolean).join(" ").trim();
+
+  const pieceIdentite = pieces.find((p) => /identit|passeport|titre de sejour|titre de séjour/i.test(p.libelle));
+  const titulairePiece = pieceIdentite?.extraction?.personnes?.map(nomComplet).find(Boolean);
+
+  const cession = pieces.find((p) => /cession/i.test(p.libelle));
+  const acheteur = cession?.extraction?.personnes
+    ?.filter((p) => (p.role ?? "").toLowerCase() === "acheteur")
+    .map(nomComplet)
+    .find(Boolean);
+
+  if (titulairePiece && acheteur && !memePersonne(titulairePiece, acheteur)) {
+    anomalies.push({
+      code: "nom_different",
+      gravite: "moyenne",
+      message: `La pièce d'identité est au nom de « ${titulairePiece} », mais la cession désigne « ${acheteur} » comme acquéreur.`,
+      piece: pieceIdentite?.libelle,
+    });
   }
 
   // Adresse du justificatif de domicile contre celle du mandat.

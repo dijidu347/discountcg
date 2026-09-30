@@ -70,11 +70,7 @@ verifie("niveau vert si rien de grave", niveauDossier(manquantes) === "vert");
 const manquantesFin = anomaliesDossier([], ["Mandat (cerfa 13757*03)"], contexte, true);
 verifie("depot termine = anomalie haute", manquantesFin[0].gravite === "haute");
 
-const nomsDifferents = anomaliesDossier([
-  piece({ document_id: "a", libelle: "Carte d'identité", extraction: { personnes: [{ role: "titulaire", nom: "DUPONT", prenom: "Jean" }] } }),
-  piece({ document_id: "b", libelle: "Mandat (cerfa 13757*03)", extraction: { personnes: [{ role: "mandant", nom: "LEROY", prenom: "Marc" }] } }),
-], [], contexte, true);
-verifie("noms differents entre pieces", nomsDifferents.some((a) => a.code === "nom_different"));
+
 
 
 const pieceLibre = anomaliesPiece(
@@ -100,5 +96,37 @@ const mandatSigne = anomaliesPiece(
   contexte, maintenant,
 );
 verifie("mandat signe : rien a signaler", mandatSigne.length === 0);
+
+
+import { vinsDifferents } from "./regles.ts";
+verifie("VIN mal lu : signale mais jamais bloquant", anomaliesDossier([
+  piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { vin: "VF3MC9HZJSJS50210" } }),
+  piece({ document_id: "b", libelle: "Mandat (cerfa 13757*03)", extraction: { vin: "VF3MCBHZWJS050200" } }),
+], [], contexte, true).every((a) => a.gravite !== "haute"));
+verifie("VIN vraiment different", vinsDifferents("VF1RFB00X12345678", "WVWZZZ1KZAW123456"));
+
+const vinsProches = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { vin: "VF7NX9HR8CY534320" } }),
+  piece({ document_id: "b", libelle: "Carte grise barrée", extraction: { vin: "VF7NX9HR8CL534201" } }),
+], [], contexte, true);
+verifie("deux lectures du meme VIN : rien a signaler", !vinsProches.some((a) => a.code === "vin_incoherent"));
+
+const mandantPro = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Mandat (cerfa 13757*03)", extraction: { personnes: [{ role: "mandant", nom: "EMPIRE AUTO" }] } }),
+  piece({ document_id: "b", libelle: "Carte grise avec la mention cédé le", extraction: { personnes: [{ role: "titulaire", nom: "BIBI", prenom: "Hassene" }] } }),
+], [], contexte, true);
+verifie("garage mandant vs vendeur particulier : normal", !mandantPro.some((a) => a.code === "nom_different"));
+
+const identiteFausse = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Carte d'identité du nouveau propriétaire", extraction: { personnes: [{ role: "titulaire", nom: "DUPONT", prenom: "Jean" }] } }),
+  piece({ document_id: "b", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { personnes: [{ role: "acheteur", nom: "LEROY", prenom: "Marc" }] } }),
+], [], contexte, true);
+verifie("identite qui ne correspond pas a l'acheteur", identiteFausse.some((a) => a.code === "nom_different"));
+
+const tronque = anomaliesPiece(
+  piece({ libelle: "Carte grise barrée", extraction: { correspond: true, lisible: true, defauts: ["tronque"] } }),
+  contexte, maintenant,
+);
+verifie("document coupe mais lisible : a verifier, pas bloquant", tronque.every((a) => a.gravite !== "haute"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
