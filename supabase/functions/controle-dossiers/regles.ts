@@ -187,6 +187,13 @@ const FAMILLES: { motif: RegExp; acceptes: string[] }[] = [
     motif: /cession/i,
     acceptes: ["certificat_cession", "accuse_enregistrement_cession", "certificat_vente_publique"],
   },
+  // « Dernière DA enregistrée » : c'est le récépissé sorti du SIV qui est
+  // attendu, pas le formulaire Cerfa rempli. Le guide y consacre un paragraphe :
+  // pour un changement de titulaire, c'est la DA que le client doit fournir.
+  {
+    motif: /derni[èe]re da|r[ée]c[ée]piss[ée]|da enregistr/i,
+    acceptes: ["accuse_enregistrement_achat", "declaration_achat"],
+  },
   {
     motif: /d[ée]claration d.achat|13751/i,
     acceptes: ["declaration_achat", "accuse_enregistrement_achat", "certificat_vente_publique"],
@@ -264,6 +271,14 @@ export function versionLue(valeur?: string | null): { numero: string; version: n
   if (!valeur) return null;
   const trouve = valeur.match(/(\d{4,5})\s*\*\s*(\d{1,2})/);
   return trouve ? { numero: trouve[1], version: Number(trouve[2]) } : null;
+}
+
+// Cases que le SIV exige pour enregistrer une cession ou un achat : elles
+// portent une étoile sur ses écrans de saisie.
+const CHAMPS_SIV = /heure|date|immatricul|plaque|identification du v|\bvin\b|identit[ée]|num[ée]ro de formule/i;
+
+export function champObligatoireSiv(champ: string): boolean {
+  return CHAMPS_SIV.test(champ);
 }
 
 // Contrôles d'une pièce prise isolément.
@@ -371,12 +386,13 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   const vinInutile = plaquesLues.length > 0;
   for (const champ of ex.champs_incomplets ?? []) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
-    // En information : l'heure de cession ou le kilométrage laissés vides sont
-    // bien un motif de refus chez nous (69 refus sur 758), mais ils passent
-    // beaucoup plus souvent qu'ils ne bloquent. Les signaler comme des points à
-    // vérifier ferait sortir un dossier sur deux pour une case que l'on accepte
-    // la plupart du temps.
-    ajoute("champ_vide", "basse", `Champ non rempli : ${champ}.`);
+    // Toutes les cases vides ne se valent pas. Les écrans « Inscrire la cession »
+    // et « Inscrire l'achat » du SIV marquent d'une étoile la date, l'heure, la
+    // plaque et le numéro d'identification : sans elles, l'opérateur ne peut pas
+    // valider l'écran, et il faudra de toute façon rappeler le garage. Le
+    // kilométrage ou une mention de confort, eux, n'empêchent rien : ils
+    // s'affichent pour information.
+    ajoute("champ_vide", champObligatoireSiv(champ) ? "moyenne" : "basse", `Champ non rempli : ${champ}.`);
   }
 
   // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun
@@ -495,6 +511,29 @@ export function anomaliesDossier(
       gravite: "moyenne",
       message: `La pièce d'identité est au nom de « ${titulairePiece} », mais la cession désigne « ${acheteur} » comme acquéreur.`,
       piece: pieceIdentite?.libelle,
+    });
+  }
+
+  // La date de vente portée sur la carte grise barrée doit être celle du
+  // certificat de cession. Le guide l'exige pour la déclaration de cession comme
+  // pour la déclaration d'achat : « la date doit être la même que sur le
+  // certificat de cession ». Deux dates différentes bloquent l'enregistrement.
+  const dateDe = (motif: RegExp): { date: string; piece: string } | null => {
+    for (const piece of pieces) {
+      if (!motif.test(piece.libelle)) continue;
+      const date = piece.extraction?.dates?.cession;
+      if (date) return { date, piece: piece.libelle };
+    }
+    return null;
+  };
+  const surCession = dateDe(/cession/i);
+  const surCarteGrise = dateDe(/carte grise|certificat d.immatriculation/i);
+  if (surCession && surCarteGrise && surCession.date !== surCarteGrise.date) {
+    anomalies.push({
+      code: "dates_cession_differentes",
+      gravite: "haute",
+      message: `La carte grise porte le ${surCarteGrise.date} et le certificat de cession le ${surCession.date} : les deux dates doivent être identiques.`,
+      piece: surCarteGrise.piece,
     });
   }
 

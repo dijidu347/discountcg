@@ -198,7 +198,25 @@ const heureManquante = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", champs_incomplets: ["heure de cession"] } }),
   contexte, maintenant,
 );
-verifie("case vide : information seulement", heureManquante.some((a) => a.code === "champ_vide") && heureManquante.every((a) => a.gravite === "basse"));
+verifie("heure de cession : case obligatoire du SIV, donc a verifier", heureManquante.some((a) => a.code === "champ_vide" && a.gravite === "moyenne"));
+
+const kilometrage = anomaliesPiece(
+  piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", immatriculations: ["AB-123-CD"], champs_incomplets: ["kilométrage"] } }),
+  contexte, maintenant,
+);
+verifie("kilometrage : le SIV ne le demande pas, information", kilometrage.every((a) => a.gravite === "basse"));
+
+const datesDiscordantes = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
+  piece({ document_id: "b", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-09-18" } } }),
+], [], contexte, true);
+verifie("dates de cession discordantes entre carte grise et cession", datesDiscordantes.some((a) => a.code === "dates_cession_differentes" && a.gravite === "haute"));
+
+const memesDates = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
+  piece({ document_id: "b", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-09-16" } } }),
+], [], contexte, true);
+verifie("memes dates : rien a signaler", !memesDates.some((a) => a.code === "dates_cession_differentes"));
 
 
 const cerfaPerime = anomaliesPiece(
