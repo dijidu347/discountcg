@@ -77,3 +77,6 @@ project_id = "oiotlgkfwuwshpwraneb"
 
   [functions.controle-dossiers]
     verify_jwt = false
+
+  [functions.expiration-kbis-garages]
+    verify_jwt = false
