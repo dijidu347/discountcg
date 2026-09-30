@@ -81,7 +81,10 @@ ${FORME_ATTENDUE}
 - vin : le numéro de série à 17 caractères (champ E de la carte grise).
 - personnes : titulaire, vendeur, acheteur, mandant. Recopie les noms et adresses tels qu'ils sont écrits.
 - dates : au format AAAA-MM-JJ. emission = date d'établissement du document, validite = date de fin de validité.
-  cession = la date de la VENTE, et elle seule. Sur une carte grise, c'est la date écrite À LA MAIN à côté de la mention « vendu le » ou « cédé le », jamais une date imprimée : ni la date d'émission du certificat, ni la date de première mise en circulation, ni la date d'une vente antérieure. Si la date manuscrite n'est pas lisible, mets null plutôt qu'une date imprimée.
+  cession = la date de la VENTE, et elle seule.
+  · Sur un certificat de cession ou une déclaration d'achat, c'est la date de la phrase « le véhicule a été cédé le … à …h… », avec son heure dans heure_cession. Ce n'est PAS la date de « Fait à …, le … », qui est celle où le document a été rempli et qui va dans emission. Les deux diffèrent souvent de plusieurs semaines : ne les confonds jamais.
+  · Sur une carte grise, c'est la date écrite À LA MAIN à côté de la mention « vendu le » ou « cédé le », jamais une date imprimée : ni la date d'émission du certificat, ni la date de première mise en circulation, ni la date d'une vente antérieure.
+  Si la date que tu cherches n'est pas lisible, mets null plutôt qu'une autre date.
 - signatures : true seulement si une signature manuscrite ou un tampon est bien visible à l'emplacement prévu, false si l'emplacement est vide. Omets le champ si le document ne prévoit pas de signature.
 - champs_incomplets : uniquement les cases obligatoires laissées vides alors qu'elles s'appliquent à ce document. N'y mets jamais une case sans objet : le SIRET d'un vendeur particulier, une rubrique réservée à un cas qui n'est pas celui du document.
   Sont toujours obligatoires, et donc à signaler si elles sont vides :
