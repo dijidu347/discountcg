@@ -384,4 +384,15 @@ const daAvecDate = anomaliesPiece(
 );
 verifie("date de vente presente : rien a signaler", !daAvecDate.some((a) => a.code === "date_vente_absente"));
 
+
+// Cas de DEM-2026-08141 : toutes les pieces refusees, renvoyees dans des cases
+// « correction » indifferenciees.
+import { appartientALaFamille } from "./regles.ts";
+verifie("une correction reconnue comme cession comble l'emplacement cession",
+  appartientALaFamille("Certificat de cession signé et tamponné (cerfa 15776*02)", "certificat_cession"));
+verifie("une declaration d'achat ne comble pas l'emplacement de la carte grise",
+  !appartientALaFamille('Carte grise barrée avec la mention "Vendu le"', "declaration_achat"));
+verifie("un accuse d'enregistrement comble l'emplacement du recepisse",
+  appartientALaFamille("Récépissé de déclaration d'achat du vendeur professionnel", "accuse_enregistrement_achat"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

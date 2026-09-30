@@ -16,6 +16,7 @@ import { lirePiece, type Source } from "./lecture.ts";
 import {
   anomaliesDossier,
   anomaliesPiece,
+  appartientALaFamille,
   estPieceLibre,
   niveauDossier,
   type Anomalie,
@@ -315,7 +316,7 @@ async function recontroler(supabase: any, demarcheId: string) {
 
   const { data: documents } = await supabase
     .from("documents")
-    .select("id, type_document, document_type, nom_fichier, taille_octets, created_at")
+    .select("id, type_document, document_type, nom_fichier, taille_octets, created_at, validation_status")
     .eq("demarche_id", demarcheId)
     .order("created_at", { ascending: true });
 
@@ -324,10 +325,17 @@ async function recontroler(supabase: any, demarcheId: string) {
   type Depot = {
     id: string; type_document: string; document_type: string | null;
     nom_fichier: string; taille_octets: number | null; created_at: string;
+    validation_status: string | null;
   };
   const derniere = new Map<string, Depot>();
+  // Une pièce déjà refusée est sortie du contrôle : elle a été jugée, le garage
+  // doit la remplacer, et continuer à la lire revient à commenter un document
+  // qui n'est plus dans le dossier. C'est ce qui faisait sortir des dates de
+  // 2017 et 2020 lues sur des photos floues déjà écartées.
+  const REFUSEES = ["rejected", "invalid"];
   for (const doc of (documents ?? []) as Depot[]) {
     if (doc.type_document?.startsWith("admin_")) continue;
+    if (REFUSEES.includes(doc.validation_status ?? "")) continue;
     derniere.set(doc.type_document, doc);
   }
   const retenus = [...derniere.values()];
@@ -371,7 +379,16 @@ async function recontroler(supabase: any, demarcheId: string) {
 
   const deposees = new Set(retenus.map((doc) => doc.type_document));
   const attendues = await pieceObligatoires(supabase, demarche.type, demarche.created_at ?? null);
-  const manquantes = attendues.filter((piece) => !deposees.has(piece.code)).map((piece) => piece.libelle);
+
+  // Après un refus, le garage renvoie ses pièces dans des cases « correction »
+  // indifférenciées : l'emplacement d'origine reste vide alors que la pièce est
+  // bien là. On rattache donc chaque pièce libre à l'emplacement qu'elle comble,
+  // d'après le document que le modèle y a reconnu.
+  const piecesLibres = pieces.filter((piece) => estPieceLibre(piece.type_document));
+  const manquantes = attendues
+    .filter((piece) => !deposees.has(piece.code))
+    .filter((piece) => !piecesLibres.some((libre) => appartientALaFamille(piece.libelle, libre.extraction?.type_document)))
+    .map((piece) => piece.libelle);
 
   const maintenant = new Date();
 

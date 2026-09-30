@@ -238,6 +238,16 @@ const FAMILLES: { motif: RegExp; acceptes: string[] }[] = [
 // true quand le document lu ne peut en aucun cas tenir lieu de la pièce
 // demandée. Un libellé qu'aucune famille ne reconnaît ne permet de rien
 // conclure : on s'en remet alors au jugement du modèle.
+// Le document lu peut-il tenir lieu de la pièce demandée ? Sert à rattacher une
+// pièce renvoyée après un refus à l'emplacement qu'elle vient combler : le
+// garage les dépose dans des cases « correction » indifférenciées, et seul son
+// contenu dit ce qu'elle remplace.
+export function appartientALaFamille(libelle: string, typeDetecte?: string | null): boolean {
+  if (!typeDetecte) return false;
+  const famille = FAMILLES.find((f) => f.motif.test(libelle));
+  return famille ? famille.acceptes.includes(typeDetecte) : false;
+}
+
 export function horsSujet(libelle: string, typeDetecte?: string | null, correspond?: boolean | null): boolean {
   const famille = FAMILLES.find((f) => f.motif.test(libelle));
   if (!famille) return correspond === false;
