@@ -205,7 +205,7 @@ serve(async (req) => {
 const cacheLibelles = new Map<string, Record<string, string>>();
 
 async function libellesDocN(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   typeDemarche: string,
 ): Promise<Record<string, string>> {
   const enCache = cacheLibelles.get(typeDemarche);
@@ -228,7 +228,7 @@ async function libellesDocN(
 }
 
 async function pieceObligatoires(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   typeDemarche: string,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
@@ -245,7 +245,7 @@ async function pieceObligatoires(
 }
 
 async function contexteDeLecture(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   demarcheId: string | null,
   typeDocument: string,
   nomLibre: string | null,
@@ -278,7 +278,7 @@ async function contexteDeLecture(
   };
 }
 
-async function recontroler(supabase: ReturnType<typeof createClient>, demarcheId: string) {
+async function recontroler(supabase: any, demarcheId: string) {
   const { data: demarche } = await supabase
     .from("demarches")
     .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id")
