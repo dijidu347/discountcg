@@ -17,7 +17,7 @@ export function extractCerfaNumber(text: string): string | null {
 
   // If version is missing, fallback to the latest known version we ship in /public/cerfas
   const latestByNumber: Record<string, string> = {
-    "15776": "15776_01",
+    "15776": "15776_02",
     "13751": "13751_02",
     "13750": "13750_05",
     "13757": "13757_03",
@@ -39,7 +39,7 @@ export function getCerfaUrl(cerfaNumber: string): string {
  * Check if a Cerfa file exists
  */
 export function cerfaExists(cerfaNumber: string): boolean {
-  const availableCerfas = ["15776_01", "13751_02", "13750_05", "13757_03", "13752_02", "13753_04"];
+  const availableCerfas = ["15776_02", "15776_01", "13751_02", "13750_05", "13757_03", "13752_02", "13753_04"];
   return availableCerfas.includes(cerfaNumber);
 }
 
