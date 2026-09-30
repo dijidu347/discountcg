@@ -586,17 +586,31 @@ export function anomaliesDossier(
     });
   }
 
-  // La comparaison des dates de vente est suspendue.
+  // La date de vente portée sur la carte grise doit être celle du certificat de
+  // cession : le guide l'exige dans ses trois tableaux, et une discordance
+  // bloque l'enregistrement.
   //
-  // Le guide l'exige dans ses trois tableaux : la date portée sur la carte grise
-  // doit être celle du certificat de cession. La règle est donc juste. Mais sur
-  // les deux seuls cas réels rencontrés, la lecture s'est trompée deux fois :
-  // une date imprimée prise pour la mention manuscrite, puis une année fausse de
-  // six ans sur un cerfa photographié. Une règle qui se trompe à chaque fois
-  // qu'on la regarde fait perdre plus de temps qu'elle n'en fait gagner.
-  //
-  // Les dates continuent d'être extraites et enregistrées : le jour où leur
-  // lecture sera mesurée fiable, il suffira de rétablir la comparaison.
+  // Signalée sans bloquer : ces dates sont manuscrites, sur un cerfa dont le
+  // siècle est pré-imprimé, et leur lecture reste la plus délicate de toutes.
+  // C'est à l'œil que la discordance se confirme, en quelques secondes.
+  const dateDe = (motif: RegExp): { date: string; piece: string } | null => {
+    for (const piece of pieces) {
+      if (!motif.test(piece.libelle)) continue;
+      const date = piece.extraction?.dates?.cession;
+      if (date) return { date, piece: piece.libelle };
+    }
+    return null;
+  };
+  const surCession = dateDe(/cession/i);
+  const surCarteGrise = dateDe(/carte grise|certificat d.immatriculation/i);
+  if (surCession && surCarteGrise && surCession.date !== surCarteGrise.date) {
+    anomalies.push({
+      code: "dates_cession_differentes",
+      gravite: "moyenne",
+      message: `Dates de vente différentes : ${surCarteGrise.date} sur la carte grise, ${surCession.date} sur le certificat de cession. Les deux doivent être identiques — à confirmer à l'œil.`,
+      piece: surCarteGrise.piece,
+    });
+  }
 
   // Adresse du justificatif de domicile contre celle du mandat.
   const adresseDe = (motif: RegExp): { adresse: string; piece: string } | null => {

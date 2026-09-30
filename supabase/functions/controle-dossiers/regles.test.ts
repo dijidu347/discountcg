@@ -350,4 +350,17 @@ verifie(
   })], [], contexte, true).some((a) => a.code === "cession_non_portee"),
 );
 
+
+const datesDeVenteDiscordantes = anomaliesDossier([
+  piece({ document_id: "a", nom_fichier: "cession.jpg", libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { dates: { cession: "2026-08-31" } } }),
+  piece({ document_id: "b", nom_fichier: "cg.jpg", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-08-14" } } }),
+], [], contexte, true);
+verifie("dates de vente discordantes : signalees sans bloquer", datesDeVenteDiscordantes.some((a) => a.code === "dates_cession_differentes" && a.gravite === "moyenne"));
+
+const memeDateDeVente = anomaliesDossier([
+  piece({ document_id: "a", nom_fichier: "cession.jpg", libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { dates: { cession: "2026-08-14" } } }),
+  piece({ document_id: "b", nom_fichier: "cg.jpg", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-08-14" } } }),
+], [], contexte, true);
+verifie("memes dates de vente : rien a signaler", !memeDateDeVente.some((a) => a.code === "dates_cession_differentes"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

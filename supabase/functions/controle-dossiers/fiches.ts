@@ -24,6 +24,7 @@ Il se lit en trois blocs, dans cet ordre :
 2. L'ANCIEN PROPRIÉTAIRE, c'est-à-dire le VENDEUR : « Je soussigné(e) », son nom ou sa raison sociale, son SIRET le cas échéant, son adresse complète. Puis la phrase qui porte la vente :
    « Certifie céder — Le ____ à ____ h le véhicule désigné ci-dessus. »
    → C'est ICI, et nulle part ailleurs, que se trouvent la DATE et l'HEURE DE LA CESSION. Mets-les dans dates.cession et dates.heure_cession.
+   ATTENTION À L'ANNÉE : sur ce formulaire, le siècle « 2 0 » est PRÉ-IMPRIMÉ et seuls les deux derniers chiffres sont écrits à la main. Une date manuscrite « 31 08 » suivie de « 26 » après le « 2 0 » imprimé se lit 2026-08-31, jamais 2020. Ne rends jamais une année 2020 sur ce seul motif : reconstitue-la en collant les deux chiffres manuscrits derrière le « 2 0 ».
    Le bloc se termine par « Fait à ______, le ______ » suivi de la signature de l'ancien propriétaire (pour une société : nom, qualité du signataire et cachet).
    → Cette date « Fait le » est celle de la RÉDACTION du document. Elle va dans dates.emission. Elle diffère souvent de la date de cession de plusieurs jours ou semaines : ne la confonds jamais avec elle.
 
@@ -36,6 +37,7 @@ const DECLARATION_ACHAT = `Ce document est la déclaration d'achat d'un véhicul
 1. En haut, l'ACQUÉREUR professionnel : une case cochée « professionnel du commerce de l'automobile » ou « assureur », son nom ou sa raison sociale, son SIREN, son adresse. Puis :
    « Déclare avoir acheté le [jour mois année] à [heures minutes] le véhicule désigné ci-dessous »
    → C'est la DATE et l'HEURE D'ACHAT. Mets-les dans dates.cession et dates.heure_cession.
+   Les jours, mois, années, heures et minutes sont inscrits dans des cases séparées : lis-les case par case et recompose la date. Si le siècle « 2 0 » est pré-imprimé, colle derrière lui les deux chiffres manuscrits de l'année.
 
 2. Le véhicule : (A) numéro d'immatriculation, (E) numéro d'identification, (D.1) marque, (D.2) type variante version, (D.3) dénomination commerciale, (J.1) genre national. Puis la présence du certificat d'immatriculation, avec soit sa date (I), soit son numéro de formule.
 
