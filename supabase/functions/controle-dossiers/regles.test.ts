@@ -209,17 +209,7 @@ const kilometrage = anomaliesPiece(
 );
 verifie("kilometrage : le SIV ne le demande pas, on n'en parle pas", !kilometrage.some((a) => a.code === "champ_vide"));
 
-const datesDiscordantes = anomaliesDossier([
-  piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
-  piece({ document_id: "b", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-09-18" } } }),
-], [], contexte, true);
-verifie("dates de cession discordantes : signalees sans bloquer", datesDiscordantes.some((a) => a.code === "dates_cession_differentes" && a.gravite === "moyenne"));
 
-const memesDates = anomaliesDossier([
-  piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
-  piece({ document_id: "b", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-09-16" } } }),
-], [], contexte, true);
-verifie("memes dates : rien a signaler", !memesDates.some((a) => a.code === "dates_cession_differentes"));
 
 
 

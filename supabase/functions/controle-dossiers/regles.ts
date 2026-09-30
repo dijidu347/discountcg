@@ -586,32 +586,17 @@ export function anomaliesDossier(
     });
   }
 
-  // La date de vente portée sur la carte grise barrée doit être celle du
-  // certificat de cession. Le guide l'exige pour la déclaration de cession comme
-  // pour la déclaration d'achat : « la date doit être la même que sur le
-  // certificat de cession ». Deux dates différentes bloquent l'enregistrement.
-  const dateDe = (motif: RegExp): { date: string; piece: string } | null => {
-    for (const piece of pieces) {
-      if (!motif.test(piece.libelle)) continue;
-      const date = piece.extraction?.dates?.cession;
-      if (date) return { date, piece: piece.libelle };
-    }
-    return null;
-  };
-  const surCession = dateDe(/cession/i);
-  const surCarteGrise = dateDe(/carte grise|certificat d.immatriculation/i);
-  if (surCession && surCarteGrise && surCession.date !== surCarteGrise.date) {
-    // Signalé sans bloquer : la date de la carte grise est manuscrite, et une
-    // écriture à la main se lit mal. Sur le premier cas réel, le modèle avait
-    // rapporté une date imprimée à la place. L'exigence du guide est réelle, sa
-    // lecture ne l'est pas encore.
-    anomalies.push({
-      code: "dates_cession_differentes",
-      gravite: "moyenne",
-      message: `La carte grise porterait le ${surCarteGrise.date} et le certificat de cession le ${surCession.date} : les deux dates doivent être identiques, à confirmer à l'œil.`,
-      piece: surCarteGrise.piece,
-    });
-  }
+  // La comparaison des dates de vente est suspendue.
+  //
+  // Le guide l'exige dans ses trois tableaux : la date portée sur la carte grise
+  // doit être celle du certificat de cession. La règle est donc juste. Mais sur
+  // les deux seuls cas réels rencontrés, la lecture s'est trompée deux fois :
+  // une date imprimée prise pour la mention manuscrite, puis une année fausse de
+  // six ans sur un cerfa photographié. Une règle qui se trompe à chaque fois
+  // qu'on la regarde fait perdre plus de temps qu'elle n'en fait gagner.
+  //
+  // Les dates continuent d'être extraites et enregistrées : le jour où leur
+  // lecture sera mesurée fiable, il suffira de rétablir la comparaison.
 
   // Adresse du justificatif de domicile contre celle du mandat.
   const adresseDe = (motif: RegExp): { adresse: string; piece: string } | null => {
