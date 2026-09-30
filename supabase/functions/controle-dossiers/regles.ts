@@ -215,16 +215,19 @@ export function estPieceLibre(typeDocument: string): boolean {
   return typeDocument.startsWith("autre_piece") || typeDocument.startsWith("correction");
 }
 
-// Gravité de chaque défaut d'image, réglée sur les décisions réellement prises :
-// sur les pièces déjà contrôlées à la main, un reflet, une ombre ou un doigt
-// n'ont jamais motivé un refus, alors qu'une photo floue ou coupée si. Les
-// premiers restent affichés, en information, sans peser sur le verdict.
+// Gravité de chaque défaut d'image, mesurée sur 218 pièces dont on connaît le
+// sort : part de celles que l'admin a effectivement refusées parmi celles que la
+// règle signale. Le hasard donnerait 46 %, puisque c'est la proportion de pièces
+// refusées dans l'échantillon. En dessous, la règle n'apprend rien.
+//   doigt 71 %, coupé 53 %, sombre 100 % (1 cas), reflet 31 %, flou 29 %.
+// Le flou et le reflet font donc moins bien que le hasard : ils restent
+// affichés, en information, sans jamais peser sur le verdict.
 const LIBELLE_DEFAUT: Record<string, { texte: string; gravite: Gravite }> = {
-  flou: { texte: "elle est floue", gravite: "moyenne" },
+  doigt: { texte: "un doigt masque une partie du document", gravite: "moyenne" },
   tronque: { texte: "elle est coupée", gravite: "moyenne" },
-  sombre: { texte: "elle est trop sombre", gravite: "basse" },
+  sombre: { texte: "elle est trop sombre", gravite: "moyenne" },
+  flou: { texte: "elle est floue", gravite: "basse" },
   reflet: { texte: "un reflet masque une partie du document", gravite: "basse" },
-  doigt: { texte: "un doigt masque une partie du document", gravite: "basse" },
 };
 
 // Contrôles d'une pièce prise isolément.
@@ -269,8 +272,8 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   if (attendCession && ex.mentions?.cede_le === false) {
     ajoute(
       "cession_non_portee",
-      "haute",
-      "La carte grise ne porte pas la mention « cédé le » : sans elle le dossier est refusé au SIV.",
+      "moyenne",
+      "La carte grise ne semble pas porter la mention « cédé le » : à confirmer à l'œil.",
     );
   }
 
@@ -319,7 +322,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   if (estMandat && ex.signatures) {
     const signe = ex.signatures.mandant ?? ex.signatures.vendeur;
     if (signe === false && ex.signatures.tampon !== true) {
-      ajoute("mandat_non_signe", "moyenne", "Le mandat ne semble ni signé ni tamponné.");
+      ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");
     }
   }
 
@@ -328,13 +331,13 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   const vinInutile = plaquesLues.length > 0;
   for (const champ of ex.champs_incomplets ?? []) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
-    ajoute("champ_vide", "basse", `Champ non rempli : ${champ}.`);
+    ajoute("champ_vide", "moyenne", `Champ non rempli : ${champ}.`);
   }
 
   // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun
   // véhicule.
   if (estMandat && plaquesLues.length === 0 && !vinLu) {
-    ajoute("vehicule_non_identifie", "moyenne", "Le mandat n'indique ni plaque ni VIN : le véhicule n'y est pas identifié.");
+    ajoute("vehicule_non_identifie", "haute", "Le mandat n'indique ni plaque ni VIN : le véhicule n'y est pas identifié.");
   }
 
   if (ex.ratures === true) {

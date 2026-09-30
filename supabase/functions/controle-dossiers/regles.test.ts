@@ -131,7 +131,7 @@ const cgNonBarree = anomaliesPiece(
   piece({ type_document: "doc_3", libelle: "Carte grise barrée signé avec la mention \"cédé le....\" recto/verso", extraction: { type_document: "carte_grise", mentions: { cede_le: false, barree: false } } }),
   contexte, maintenant,
 );
-verifie("carte grise sans mention cede le", cgNonBarree.some((a) => a.code === "cession_non_portee" && a.gravite === "haute"));
+verifie("carte grise sans mention cede le : signalee, jamais bloquante", cgNonBarree.some((a) => a.code === "cession_non_portee") && cgNonBarree.every((a) => a.gravite !== "haute"));
 
 const versoCg = anomaliesPiece(
   piece({ type_document: "doc_3_verso", libelle: "Carte grise barrée (verso)", extraction: { type_document: "carte_grise", mentions: { cede_le: false } } }),
@@ -176,7 +176,7 @@ const refletSeul = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", defauts: ["reflet"] } }),
   contexte, maintenant,
 );
-verifie("reflet : information, jamais bloquant", refletSeul.every((a) => a.gravite === "basse"));
+verifie("reflet : information seulement", refletSeul.every((a) => a.gravite === "basse"));
 
 const fichierVide = anomaliesPiece(piece({ taille_octets: 4000 }), contexte, maintenant);
 verifie("fichier minuscule : bloquant", fichierVide.some((a) => a.code === "fichier_trop_leger" && a.gravite === "haute"));
@@ -185,6 +185,6 @@ const heureManquante = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", champs_incomplets: ["heure de cession"] } }),
   contexte, maintenant,
 );
-verifie("case vide : information", heureManquante.every((a) => a.gravite === "basse"));
+verifie("case vide : a verifier, jamais bloquant", heureManquante.some((a) => a.code === "champ_vide") && heureManquante.every((a) => a.gravite !== "haute"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
