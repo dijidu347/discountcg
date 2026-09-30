@@ -589,10 +589,14 @@ export function anomaliesDossier(
   const surCession = dateDe(/cession/i);
   const surCarteGrise = dateDe(/carte grise|certificat d.immatriculation/i);
   if (surCession && surCarteGrise && surCession.date !== surCarteGrise.date) {
+    // Signalé sans bloquer : la date de la carte grise est manuscrite, et une
+    // écriture à la main se lit mal. Sur le premier cas réel, le modèle avait
+    // rapporté une date imprimée à la place. L'exigence du guide est réelle, sa
+    // lecture ne l'est pas encore.
     anomalies.push({
       code: "dates_cession_differentes",
-      gravite: "haute",
-      message: `La carte grise porte le ${surCarteGrise.date} et le certificat de cession le ${surCession.date} : les deux dates doivent être identiques.`,
+      gravite: "moyenne",
+      message: `La carte grise porterait le ${surCarteGrise.date} et le certificat de cession le ${surCession.date} : les deux dates doivent être identiques, à confirmer à l'œil.`,
       piece: surCarteGrise.piece,
     });
   }

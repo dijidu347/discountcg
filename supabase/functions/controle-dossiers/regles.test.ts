@@ -223,7 +223,7 @@ const datesDiscordantes = anomaliesDossier([
   piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
   piece({ document_id: "b", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-09-18" } } }),
 ], [], contexte, true);
-verifie("dates de cession discordantes entre carte grise et cession", datesDiscordantes.some((a) => a.code === "dates_cession_differentes" && a.gravite === "haute"));
+verifie("dates de cession discordantes : signalees sans bloquer", datesDiscordantes.some((a) => a.code === "dates_cession_differentes" && a.gravite === "moyenne"));
 
 const memesDates = anomaliesDossier([
   piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
