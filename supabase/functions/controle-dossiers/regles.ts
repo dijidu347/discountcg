@@ -32,6 +32,7 @@ export interface Extraction {
     heure_cession?: string | null;
   } | null;
   signatures?: { vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean } | null;
+  mentions?: { cede_le?: boolean; barree?: boolean } | null;
   champs_incomplets?: string[] | null;
   ratures?: boolean | null;
   siret?: string | null;
@@ -168,6 +169,45 @@ const FRAICHEUR: { motif: RegExp; jours: number; nom: string }[] = [
   { motif: /controle technique|contrôle technique/i, jours: 183, nom: "Le contrôle technique" },
 ];
 
+// Documents qui se valent pour une même pièce demandée.
+//
+// Un achat aux enchères se justifie par le certificat du commissaire-priseur et
+// non par un cerfa de cession ; un accusé d'enregistrement ANTS vaut preuve de
+// la cession ; un passeport ou un permis valent pièce d'identité. Sans cette
+// table, le contrôle reproche une « mauvaise pièce » là où le garage a déposé
+// le bon document.
+const FAMILLES: { motif: RegExp; acceptes: string[] }[] = [
+  {
+    motif: /identit|passeport|titre de s[ée]jour|permis/i,
+    acceptes: ["carte_identite", "passeport", "titre_sejour", "permis_conduire"],
+  },
+  {
+    motif: /cession/i,
+    acceptes: ["certificat_cession", "accuse_enregistrement_cession", "certificat_vente_publique"],
+  },
+  {
+    motif: /d[ée]claration d.achat|13751/i,
+    acceptes: ["declaration_achat", "accuse_enregistrement_achat", "certificat_vente_publique"],
+  },
+  { motif: /carte grise|certificat d.immatriculation/i, acceptes: ["carte_grise"] },
+  { motif: /mandat/i, acceptes: ["mandat"] },
+  { motif: /non.?gage|situation administrative/i, acceptes: ["certificat_non_gage"] },
+  { motif: /domicile|quittance/i, acceptes: ["justificatif_domicile"] },
+  { motif: /assurance/i, acceptes: ["attestation_assurance"] },
+  { motif: /kbis/i, acceptes: ["kbis"] },
+  { motif: /contr[ôo]le technique/i, acceptes: ["controle_technique"] },
+];
+
+// true quand le document lu ne peut en aucun cas tenir lieu de la pièce
+// demandée. Un libellé qu'aucune famille ne reconnaît ne permet de rien
+// conclure : on s'en remet alors au jugement du modèle.
+export function horsSujet(libelle: string, typeDetecte?: string | null, correspond?: boolean | null): boolean {
+  const famille = FAMILLES.find((f) => f.motif.test(libelle));
+  if (!famille) return correspond === false;
+  if (!typeDetecte || typeDetecte === "illisible") return false;
+  return !famille.acceptes.includes(typeDetecte);
+}
+
 // Pièces que le garage ajoute de lui-même, sous un intitulé qu'il choisit
 // (« Ci », « photo », « doc 2 »…). Aucun libellé de référence à leur opposer :
 // leur reprocher de ne pas correspondre n'aurait aucun sens.
@@ -212,9 +252,22 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     }
   }
 
-  if (ex.correspond === false && !estPieceLibre(piece.type_document)) {
+  if (!estPieceLibre(piece.type_document) && horsSujet(piece.libelle, ex.type_document, ex.correspond)) {
     const lu = ex.type_document ? ` (document lu : ${ex.type_document.replace(/_/g, " ")})` : "";
     ajoute("mauvaise_piece", "haute", `Ce n'est pas la pièce demandée${lu}.`);
+  }
+
+  // La mention « cédé le » et la barre sur la carte grise : c'est le geste qui
+  // acte la vente. Une carte grise intacte est le bon document mais pas la bonne
+  // pièce — ce n'est pas une erreur de dépôt, cela mérite son propre message.
+  // Le verso ne porte pas cette mention : on ne la cherche que sur le recto.
+  const attendCession = /barr[ée]|c[ée]d[ée] le/i.test(piece.libelle) && !piece.type_document.endsWith("_verso");
+  if (attendCession && ex.mentions?.cede_le === false) {
+    ajoute(
+      "cession_non_portee",
+      "haute",
+      "La carte grise ne porte pas la mention « cédé le » : sans elle le dossier est refusé au SIV.",
+    );
   }
 
   // Véhicule : une plaque ou un VIN lus sur la pièce et qui ne sont pas ceux du
@@ -266,8 +319,18 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     }
   }
 
+  // Le Cerfa identifie le véhicule par sa plaque OU par son VIN : réclamer le
+  // VIN alors que la plaque est inscrite serait un reproche sans objet.
+  const vinInutile = plaquesLues.length > 0;
   for (const champ of ex.champs_incomplets ?? []) {
+    if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
     ajoute("champ_vide", "moyenne", `Champ non rempli : ${champ}.`);
+  }
+
+  // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun
+  // véhicule.
+  if (estMandat && plaquesLues.length === 0 && !vinLu) {
+    ajoute("vehicule_non_identifie", "moyenne", "Le mandat n'indique ni plaque ni VIN : le véhicule n'y est pas identifié.");
   }
 
   if (ex.ratures === true) {

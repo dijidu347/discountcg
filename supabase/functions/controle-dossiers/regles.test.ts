@@ -92,10 +92,52 @@ const mandatNonSigne = anomaliesPiece(
 verifie("mandat non signe (champ mandant)", mandatNonSigne.some((a) => a.code === "mandat_non_signe"));
 
 const mandatSigne = anomaliesPiece(
-  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { correspond: true, lisible: true, signatures: { mandant: true, tampon: false } } }),
+  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { correspond: true, lisible: true, type_document: "mandat", immatriculations: ["AB-123-CD"], signatures: { mandant: true, tampon: false } } }),
   contexte, maintenant,
 );
 verifie("mandat signe : rien a signaler", mandatSigne.length === 0);
+
+const mandatSansVin = anomaliesPiece(
+  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { type_document: "mandat", immatriculations: ["AB-123-CD"], champs_incomplets: ["Numéro VIN"] } }),
+  contexte, maintenant,
+);
+verifie("VIN absent mais plaque presente : pas de reproche", !mandatSansVin.some((a) => a.code === "champ_vide"));
+
+const mandatSansRien = anomaliesPiece(
+  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { type_document: "mandat", immatriculations: [] } }),
+  contexte, maintenant,
+);
+verifie("mandat sans plaque ni VIN : vehicule non identifie", mandatSansRien.some((a) => a.code === "vehicule_non_identifie"));
+
+const venteEncheres = anomaliesPiece(
+  piece({ libelle: "Certificat de cession (cerfa 15776*01)", extraction: { correspond: false, lisible: true, type_document: "certificat_vente_publique" } }),
+  contexte, maintenant,
+);
+verifie("vente aux encheres vaut cession", !venteEncheres.some((a) => a.code === "mauvaise_piece"));
+
+const passeport = anomaliesPiece(
+  piece({ libelle: "Carte d'identité du nouveau propriétaire", extraction: { correspond: false, lisible: true, type_document: "passeport" } }),
+  contexte, maintenant,
+);
+verifie("passeport vaut piece d'identite", !passeport.some((a) => a.code === "mauvaise_piece"));
+
+const cgAuLieuDeJustif = anomaliesPiece(
+  piece({ libelle: "Justificatif de domicile", extraction: { correspond: true, lisible: true, type_document: "carte_grise" } }),
+  contexte, maintenant,
+);
+verifie("carte grise a la place du justificatif : mauvaise piece", cgAuLieuDeJustif.some((a) => a.code === "mauvaise_piece"));
+
+const cgNonBarree = anomaliesPiece(
+  piece({ type_document: "doc_3", libelle: "Carte grise barrée signé avec la mention \"cédé le....\" recto/verso", extraction: { type_document: "carte_grise", mentions: { cede_le: false, barree: false } } }),
+  contexte, maintenant,
+);
+verifie("carte grise sans mention cede le", cgNonBarree.some((a) => a.code === "cession_non_portee" && a.gravite === "haute"));
+
+const versoCg = anomaliesPiece(
+  piece({ type_document: "doc_3_verso", libelle: "Carte grise barrée (verso)", extraction: { type_document: "carte_grise", mentions: { cede_le: false } } }),
+  contexte, maintenant,
+);
+verifie("verso : on n'y cherche pas la mention", !versoCg.some((a) => a.code === "cession_non_portee"));
 
 
 import { vinsDifferents } from "./regles.ts";
