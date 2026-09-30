@@ -379,7 +379,11 @@ export default function AdminRevenus() {
       if (ttc > 0) return Math.max(0, ttc - Number(p.demarches?.prix_carte_grise || 0));
       return Number(p.demarches?.frais_dossier || 20);
     }
-    return Number(p.montant);
+    // Demarches pro : la taxe reversee a l'Etat n'est pas memorisee en base
+    // (WW provisoire, W garage, duplicata...). Sans cette deduction elle serait
+    // comptee en revenu alors qu'elle sort du compte.
+    const taxe = taxeEtat(p.demarches?.type) ?? 0;
+    return Math.max(0, Number(p.montant) - taxe);
   };
 
   // Filter data by period
@@ -420,6 +424,15 @@ export default function AdminRevenus() {
   const totalServiceFees = filteredPaiements.reduce((s, p) => s + getRevenueAmount(p), 0);
   const totalTokenRevenue = filteredTokens.reduce((s, t) => s + Number(t.amount), 0);
   const totalParticuliers = filteredGuestOrders.reduce((s, o) => s + revenuParticulier(o), 0);
+
+  // Ce qui part a l'Etat sur les demarches pro, et ce qu'on ne sait pas encore
+  // chiffrer : une taxe variable qu'aucune colonne ne memorise gonfle le revenu
+  // sans qu'on puisse la retrancher. Mieux vaut l'annoncer que la taire.
+  const totalTaxesEtat = filteredPaiements.reduce(
+    (s, p) => s + (taxeEtat(p.demarches?.type) ?? 0),
+    0,
+  );
+  const demarchesTaxeInconnue = filteredPaiements.filter((p) => taxeInconnue(p.demarches?.type)).length;
   const totalRevenue = totalServiceFees + totalTokenRevenue + totalParticuliers;
   // Commissions bancaires sur les encaissements de la periode : Stripe au
   // centime, Sogecommerce selon la grille et la carte utilisee.
@@ -769,12 +782,21 @@ export default function AdminRevenus() {
                   <td className="text-right">{filteredPaiements.length} paiements</td>
                 </tr>
                 <tr className="text-muted-foreground">
-                  <td className="pt-1 pb-2.5 pl-4">Ventes jetons</td>
+                  <td className="py-1 pl-4">Ventes jetons</td>
                   <td className="text-right">{eur(totalTokenRevenue)}</td>
                   <td></td>
                   <td></td>
                   <td className="text-right">{filteredTokens.length} achats</td>
                 </tr>
+                {totalTaxesEtat > 0 && (
+                  <tr className="text-muted-foreground">
+                    <td className="pt-1 pb-2.5 pl-4">Taxes reversées à l'État</td>
+                    <td className="text-right">−{eur(totalTaxesEtat)}</td>
+                    <td></td>
+                    <td></td>
+                    <td className="text-right">déjà déduites</td>
+                  </tr>
+                )}
                 <tr className="border-t">
                   <td className="py-2.5 font-semibold">Particuliers</td>
                   <td className="text-right font-semibold">{eur(totalParticuliers)}</td>
@@ -794,6 +816,11 @@ export default function AdminRevenus() {
             <p className="text-xs text-muted-foreground mt-3">
               Revenu = frais de service et options (pros et particuliers) et ventes de jetons. La taxe de carte grise reversée à l'État n'est jamais comptée. Frais bancaires comptés depuis le {FRAIS_BANCAIRES_DEPUIS}.
             </p>
+            {demarchesTaxeInconnue > 0 && (
+              <p className="text-xs text-amber-700 mt-2">
+                {demarchesTaxeInconnue} démarche{demarchesTaxeInconnue > 1 ? "s" : ""} (immatriculation définitive, véhicule neuf, succession, co-titulaire, cyclo) supporte{demarchesTaxeInconnue > 1 ? "nt" : ""} une taxe d'État variable, qui n'est pas mémorisée en base et n'a donc pas pu être déduite. Le revenu affiché est majoré d'autant.
+              </p>
+            )}
           </CardContent>
         </Card>
 
