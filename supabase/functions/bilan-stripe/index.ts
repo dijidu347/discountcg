@@ -31,7 +31,7 @@ function reponse(corps: unknown, status = 200): Response {
 
 const euros = (centimes: number) => Math.round(centimes) / 100;
 
-async function bilanCompte(nom: string, cle: string, supabase: ReturnType<typeof createClient>) {
+async function bilanCompte(nom: string, cle: string, supabase: any) {
   const stripe = new Stripe(cle, { apiVersion: "2025-08-27.basil" });
 
   let compte = nom;

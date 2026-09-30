@@ -63,7 +63,12 @@ function cheminStockage(url: string): { seau: string; chemin: string } | null {
 }
 
 async function empreinteDe(octets: Uint8Array): Promise<string> {
-  const condensat = await crypto.subtle.digest("SHA-256", octets);
+  // Le tampon sous-jacent peut être un ArrayBufferLike : on le restreint
+  // explicitement pour satisfaire la signature de `digest`.
+  const condensat = await crypto.subtle.digest(
+    "SHA-256",
+    octets.slice().buffer as ArrayBuffer,
+  );
   return [...new Uint8Array(condensat)].map((o) => o.toString(16).padStart(2, "0")).join("");
 }
 
