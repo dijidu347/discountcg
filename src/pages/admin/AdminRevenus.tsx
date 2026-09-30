@@ -255,6 +255,10 @@ export default function AdminRevenus() {
   const [customDateRange, setCustomDateRange] = useState<{ from?: Date; to?: Date }>({});
 
   useEffect(() => {
+    // Sans session, la page restait sur son voile de chargement indefiniment :
+    // rien ne se chargeait et rien ne renvoyait ailleurs. On renvoie vers la
+    // connexion, comme le font les autres pages de l'administration.
+    if (!authLoading && !user) { navigate("/login"); return; }
     if (!authLoading && user) checkAccessAndLoad();
   }, [user, authLoading]);
 
