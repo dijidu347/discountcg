@@ -219,20 +219,37 @@ export function estPieceLibre(typeDocument: string): boolean {
     || typeDocument.startsWith("demande_");
 }
 
-// Gravité de chaque défaut d'image, mesurée sur 218 pièces dont on connaît le
-// sort : part de celles que l'admin a effectivement refusées parmi celles que la
-// règle signale. Le hasard donnerait 46 %, puisque c'est la proportion de pièces
-// refusées dans l'échantillon. En dessous, la règle n'apprend rien.
-//   doigt 71 %, coupé 53 %, sombre 100 % (1 cas), reflet 31 %, flou 29 %.
-// Le flou et le reflet font donc moins bien que le hasard : ils restent
-// affichés, en information, sans jamais peser sur le verdict.
-const LIBELLE_DEFAUT: Record<string, { texte: string; gravite: Gravite }> = {
-  doigt: { texte: "un doigt masque une partie du document", gravite: "moyenne" },
-  tronque: { texte: "elle est coupée", gravite: "moyenne" },
-  sombre: { texte: "elle est trop sombre", gravite: "moyenne" },
-  flou: { texte: "elle est floue", gravite: "basse" },
-  reflet: { texte: "un reflet masque une partie du document", gravite: "basse" },
+// Un défaut d'image ne compte que s'il coûte une information.
+//
+// Règle donnée par l'exploitante le 30/09/2026 : une carte grise coupée n'est
+// pas un problème tant qu'on a tous les renseignements. Le cas qui l'a fait
+// trancher : une carte grise signalée « coupée » alors que la plaque, le VIN,
+// la mention « cédé le » et la barre y étaient tous lisibles. Le SIV ne demande
+// pas un cadrage parfait, il demande des informations.
+//
+// Les défauts restent donc affichés — ils expliquent pourquoi une pièce est
+// difficile à lire — mais en information seulement. Ils ne pèsent sur le verdict
+// que dans un cas : quand la pièce n'a rien livré du tout.
+const LIBELLE_DEFAUT: Record<string, string> = {
+  doigt: "un doigt masque une partie du document",
+  tronque: "elle est coupée",
+  sombre: "elle est trop sombre",
+  flou: "elle est floue",
+  reflet: "un reflet masque une partie du document",
 };
+
+// La pièce a-t-elle livré quelque chose d'exploitable ? Une plaque, un numéro de
+// série, une identité, une date : n'importe lequel suffit à dire que le défaut
+// d'image n'a pas empêché de lire.
+export function aLivreDesInformations(ex: Extraction): boolean {
+  if ((ex.immatriculations ?? []).length > 0) return true;
+  if (ex.vin) return true;
+  if ((ex.personnes ?? []).some((p) => p.nom || p.prenom || p.adresse)) return true;
+  const dates = ex.dates ?? {};
+  if (Object.values(dates).some(Boolean)) return true;
+  if (ex.siret) return true;
+  return false;
+}
 
 // Version du cerfa attendue, lue dans le libellé de la pièce : le site y écrit
 // déjà « cerfa 13751*02 », « cerfa 15776*01 ». Comparer la version imprimée sur
@@ -271,10 +288,14 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     ajoute("illisible", "haute", "La pièce n'est pas lisible.");
   }
 
+  const aLu = aLivreDesInformations(ex);
   for (const defaut of ex.defauts ?? []) {
-    const connu = LIBELLE_DEFAUT[defaut];
-    if (connu) {
-      ajoute(`qualite_${defaut}`, connu.gravite, `À renvoyer : ${connu.texte}.`);
+    const texte = LIBELLE_DEFAUT[defaut];
+    if (!texte) continue;
+    if (aLu) {
+      ajoute(`qualite_${defaut}`, "basse", `Pour information : ${texte}, mais les renseignements y sont.`);
+    } else {
+      ajoute(`qualite_${defaut}`, "moyenne", `À renvoyer : ${texte}, et rien n'a pu en être lu.`);
     }
   }
 
@@ -350,7 +371,12 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   const vinInutile = plaquesLues.length > 0;
   for (const champ of ex.champs_incomplets ?? []) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
-    ajoute("champ_vide", "moyenne", `Champ non rempli : ${champ}.`);
+    // En information : l'heure de cession ou le kilométrage laissés vides sont
+    // bien un motif de refus chez nous (69 refus sur 758), mais ils passent
+    // beaucoup plus souvent qu'ils ne bloquent. Les signaler comme des points à
+    // vérifier ferait sortir un dossier sur deux pour une case que l'on accepte
+    // la plupart du temps.
+    ajoute("champ_vide", "basse", `Champ non rempli : ${champ}.`);
   }
 
   // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun

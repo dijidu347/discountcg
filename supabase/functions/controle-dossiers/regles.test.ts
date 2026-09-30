@@ -165,18 +165,31 @@ const identiteFausse = anomaliesDossier([
 ], [], contexte, true);
 verifie("identite qui ne correspond pas a l'acheteur", identiteFausse.some((a) => a.code === "nom_different"));
 
-const tronque = anomaliesPiece(
-  piece({ libelle: "Carte grise barrée", extraction: { correspond: true, lisible: true, defauts: ["tronque"] } }),
-  contexte, maintenant,
-);
-verifie("document coupe mais lisible : a verifier, pas bloquant", tronque.every((a) => a.gravite !== "haute"));
 
 
-const refletSeul = anomaliesPiece(
-  piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", defauts: ["reflet"] } }),
+
+// Le cas de DEM-2026-08200 : carte grise signalee coupee, alors que la plaque,
+// le VIN et la mention « cede le » y etaient tous lisibles.
+const cgCoupeeMaisComplete = anomaliesPiece(
+  piece({
+    type_document: "doc_3",
+    libelle: "Carte grise avec la mention \"cédé le....\" recto/verso",
+    extraction: {
+      correspond: true, lisible: true, type_document: "carte_grise",
+      defauts: ["tronque", "reflet"],
+      immatriculations: ["AB-123-CD"], vin: "VF1RFB00X12345678",
+      mentions: { cede_le: true, barree: true },
+    },
+  }),
   contexte, maintenant,
 );
-verifie("reflet : information seulement", refletSeul.every((a) => a.gravite === "basse"));
+verifie("document coupe mais complet : information seulement", cgCoupeeMaisComplete.every((a) => a.gravite === "basse"));
+
+const cgCoupeeEtVide = anomaliesPiece(
+  piece({ extraction: { correspond: true, lisible: true, type_document: "carte_grise", defauts: ["tronque"] } }),
+  contexte, maintenant,
+);
+verifie("document coupe et illisible : a verifier", cgCoupeeEtVide.some((a) => a.code === "qualite_tronque" && a.gravite === "moyenne"));
 
 const fichierVide = anomaliesPiece(piece({ taille_octets: 4000 }), contexte, maintenant);
 verifie("fichier minuscule : bloquant", fichierVide.some((a) => a.code === "fichier_trop_leger" && a.gravite === "haute"));
@@ -185,7 +198,7 @@ const heureManquante = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", champs_incomplets: ["heure de cession"] } }),
   contexte, maintenant,
 );
-verifie("case vide : a verifier, jamais bloquant", heureManquante.some((a) => a.code === "champ_vide") && heureManquante.every((a) => a.gravite !== "haute"));
+verifie("case vide : information seulement", heureManquante.some((a) => a.code === "champ_vide") && heureManquante.every((a) => a.gravite === "basse"));
 
 
 const cerfaPerime = anomaliesPiece(
