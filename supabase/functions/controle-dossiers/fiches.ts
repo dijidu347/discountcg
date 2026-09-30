@@ -29,6 +29,7 @@ Lis-le EN ENTIER avant de répondre : la même page porte plusieurs dates, et on
      deux cases pour le jour, deux pour le mois, QUATRE pour l'année, puis deux pour l'heure et deux pour les minutes.
    Exemple réel : « Le |3|1| |0|8| |2|0|2|6| à |1|8| h |0|0| » se lit le 31 août 2026 à 18h00, soit dates.cession = "2026-08-31" et dates.heure_cession = "18:00".
    N'attrape JAMAIS les deux derniers chiffres de l'année pour en faire le jour : « 2026 » n'est pas « le 26 ». Compte les cases avant de conclure.
+   Un « 2 0 » pré-imprimé figure plus haut sur la page, dans le bloc du certificat d'immatriculation, à côté du numéro de formule et de la date (I). Il n'a aucun rapport avec la date de cession : ne le mélange pas avec elle.
    Le bloc se termine par « Fait à ______, le ______ » suivi de la signature de l'ancien propriétaire (pour une société : nom, qualité du signataire et cachet).
    → Cette date « Fait le » est celle de la RÉDACTION du document. Elle va dans dates.emission. Elle diffère souvent de la date de cession de plusieurs jours ou semaines : ne la confonds jamais avec elle.
 
