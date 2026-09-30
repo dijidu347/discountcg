@@ -22,6 +22,7 @@ export type Source =
 
 export interface ContexteLecture {
   libellePiece: string;
+  pieceLibre?: boolean;
   typeDemarche: string;
   immatriculation?: string | null;
   vin?: string | null;
@@ -38,7 +39,7 @@ const FORME_ATTENDUE = `{
   "vin": "VF1ABCDEF12345678" ou null,
   "personnes": [{ "role": "titulaire | vendeur | acheteur | mandant | mandataire | autre", "nom": "...", "prenom": "...", "adresse": "..." }],
   "dates": { "emission": "AAAA-MM-JJ", "validite": "AAAA-MM-JJ", "mise_en_circulation": "AAAA-MM-JJ", "cession": "AAAA-MM-JJ", "heure_cession": "HH:MM" },
-  "signatures": { "vendeur": true, "acheteur": true, "tampon": false },
+  "signatures": { "vendeur": true, "acheteur": true, "mandant": true, "tampon": false },
   "champs_incomplets": ["heure de cession"],
   "ratures": false,
   "siret": "12345678900012" ou null,
@@ -54,16 +55,23 @@ function consigne(contexte: ContexteLecture): string {
     contexte.titulaire ? `Titulaire annoncé : ${contexte.titulaire}` : null,
   ].filter(Boolean).join("\n");
 
+  // Une pièce ajoutée librement par le garage n'a pas de pièce de référence :
+  // lui demander si elle « correspond » produirait un reproche absurde, l'intitulé
+  // étant souvent une abréviation maison (« Ci », « photo 2 »).
+  const entete = contexte.pieceLibre
+    ? `Pièce ajoutée librement par le garage, sous l'intitulé « ${contexte.libellePiece} ». Elle ne correspond à aucune pièce imposée : mets toujours correspond = true.`
+    : `Pièce attendue à cet emplacement : « ${contexte.libellePiece} »`;
+
   return `Tu examines une pièce déposée par un garage français pour une démarche d'immatriculation (SIV).
 
-Pièce attendue à cet emplacement : « ${contexte.libellePiece} »
+${entete}
 ${dossier}
 
 Décris uniquement ce que tu vois, sans juger le dossier. Réponds par un objet JSON de cette forme, sans aucun texte autour :
 
 ${FORME_ATTENDUE}
 
-- correspond : false si le document n'est pas la pièce attendue ci-dessus (une carte grise déposée à la place d'un justificatif de domicile, par exemple). Un recto seul d'une pièce recto/verso correspond quand même.
+- correspond : false si le document n'est pas la pièce attendue ci-dessus (une carte grise déposée à la place d'un justificatif de domicile, par exemple). Un recto seul d'une pièce recto/verso correspond quand même. Pour une pièce ajoutée librement, toujours true.
 - lisible : false si le texte utile ne peut pas être lu.
 - defauts : liste vide si rien ne gêne la lecture. Ne signale un défaut que s'il gêne vraiment.
 - immatriculations : toutes les plaques françaises visibles (format AB-123-CD ou 123 ABC 45).

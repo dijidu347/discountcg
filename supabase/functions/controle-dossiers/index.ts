@@ -16,6 +16,7 @@ import { lirePiece, type Source } from "./lecture.ts";
 import {
   anomaliesDossier,
   anomaliesPiece,
+  estPieceLibre,
   niveauDossier,
   type Anomalie,
   type ContexteDossier,
@@ -263,6 +264,7 @@ async function contexteDeLecture(
 
   return {
     libellePiece: libellePiece(typeDocument, libelles, nomLibre),
+    pieceLibre: estPieceLibre(typeDocument),
     typeDemarche: typeDemarche || "démarche d'immatriculation",
     immatriculation: demarche?.immatriculation ?? null,
     vin,

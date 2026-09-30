@@ -31,7 +31,7 @@ export interface Extraction {
     cession?: string | null;
     heure_cession?: string | null;
   } | null;
-  signatures?: { vendeur?: boolean; acheteur?: boolean; tampon?: boolean } | null;
+  signatures?: { vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean } | null;
   champs_incomplets?: string[] | null;
   ratures?: boolean | null;
   siret?: string | null;
@@ -133,6 +133,13 @@ const FRAICHEUR: { motif: RegExp; jours: number; nom: string }[] = [
   { motif: /controle technique|contrôle technique/i, jours: 183, nom: "Le contrôle technique" },
 ];
 
+// Pièces que le garage ajoute de lui-même, sous un intitulé qu'il choisit
+// (« Ci », « photo », « doc 2 »…). Aucun libellé de référence à leur opposer :
+// leur reprocher de ne pas correspondre n'aurait aucun sens.
+export function estPieceLibre(typeDocument: string): boolean {
+  return typeDocument.startsWith("autre_piece") || typeDocument.startsWith("correction");
+}
+
 const LIBELLE_DEFAUT: Record<string, string> = {
   flou: "elle est floue",
   sombre: "elle est trop sombre",
@@ -170,7 +177,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     }
   }
 
-  if (ex.correspond === false) {
+  if (ex.correspond === false && !estPieceLibre(piece.type_document)) {
     const lu = ex.type_document ? ` (document lu : ${ex.type_document.replace(/_/g, " ")})` : "";
     ajoute("mauvaise_piece", "haute", `Ce n'est pas la pièce demandée${lu}.`);
   }
@@ -215,8 +222,13 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     if (ex.signatures.vendeur === false) ajoute("signature_manquante", "haute", "Le certificat de cession n'est pas signé par le vendeur.");
     if (ex.signatures.acheteur === false) ajoute("signature_manquante", "haute", "Le certificat de cession n'est pas signé par l'acheteur.");
   }
-  if (estMandat && ex.signatures?.vendeur === false && ex.signatures?.tampon === false) {
-    ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");
+  // Sur un mandat, le signataire est le mandant : le modèle le nomme tantôt
+  // « mandant », tantôt « vendeur » selon la façon dont le Cerfa est rempli.
+  if (estMandat && ex.signatures) {
+    const signe = ex.signatures.mandant ?? ex.signatures.vendeur;
+    if (signe === false && ex.signatures.tampon !== true) {
+      ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");
+    }
   }
 
   for (const champ of ex.champs_incomplets ?? []) {

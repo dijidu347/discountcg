@@ -76,4 +76,29 @@ const nomsDifferents = anomaliesDossier([
 ], [], contexte, true);
 verifie("noms differents entre pieces", nomsDifferents.some((a) => a.code === "nom_different"));
 
+
+const pieceLibre = anomaliesPiece(
+  piece({ type_document: "autre_piece_1", libelle: "Ci", extraction: { correspond: false, lisible: true } }),
+  contexte, maintenant,
+);
+verifie("piece ajoutee librement : pas de reproche de correspondance", !pieceLibre.some((a) => a.code === "mauvaise_piece"));
+
+const mauvaisePiece = anomaliesPiece(
+  piece({ type_document: "doc_2", libelle: "Carte d'identité", extraction: { correspond: false, lisible: true, type_document: "carte_grise" } }),
+  contexte, maintenant,
+);
+verifie("piece imposee : mauvaise piece signalee", mauvaisePiece.some((a) => a.code === "mauvaise_piece"));
+
+const mandatNonSigne = anomaliesPiece(
+  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { correspond: true, lisible: true, signatures: { mandant: false, tampon: false } } }),
+  contexte, maintenant,
+);
+verifie("mandat non signe (champ mandant)", mandatNonSigne.some((a) => a.code === "mandat_non_signe"));
+
+const mandatSigne = anomaliesPiece(
+  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { correspond: true, lisible: true, signatures: { mandant: true, tampon: false } } }),
+  contexte, maintenant,
+);
+verifie("mandat signe : rien a signaler", mandatSigne.length === 0);
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
