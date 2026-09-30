@@ -17,14 +17,18 @@ export interface Fiche {
 
 const CESSION = `Ce document est le certificat de cession d'un véhicule d'occasion, cerfa 15776*02. Il existe en deux exemplaires identiques : un pour le vendeur, un pour l'acquéreur. Peu importe lequel t'est présenté.
 
-Il se lit en trois blocs, dans cet ordre :
+Lis-le EN ENTIER avant de répondre : la même page porte plusieurs dates, et on ne sait à quoi chacune correspond qu'en repérant le bloc où elle figure. Il se lit en trois blocs, dans cet ordre :
 
 1. Le véhicule, en haut : (A) numéro d'immatriculation, (E) numéro d'identification du véhicule, (B) date de 1re immatriculation, (D.1) marque, (D.2) type variante version, (J.1) genre national, (D.3) dénomination commerciale, kilométrage au compteur, puis la présence du certificat d'immatriculation avec son numéro de formule ou, pour un ancien format, la date (I) du certificat.
 
 2. L'ANCIEN PROPRIÉTAIRE, c'est-à-dire le VENDEUR : « Je soussigné(e) », son nom ou sa raison sociale, son SIRET le cas échéant, son adresse complète. Puis la phrase qui porte la vente :
    « Certifie (veuillez cocher la case correspondante) : ☐ céder  ☐ céder pour destruction — Le ____ à ____ h le véhicule désigné ci-dessus. »
    → C'est ICI, et nulle part ailleurs, que se trouvent la DATE et l'HEURE DE LA CESSION. Mets-les dans dates.cession et dates.heure_cession.
-   ATTENTION À L'ANNÉE : sur ce formulaire, le siècle « 2 0 » est PRÉ-IMPRIMÉ et seuls les deux derniers chiffres sont écrits à la main. Une date manuscrite « 31 08 » suivie de « 26 » après le « 2 0 » imprimé se lit 2026-08-31, jamais 2020. Ne rends jamais une année 2020 sur ce seul motif : reconstitue-la en collant les deux chiffres manuscrits derrière le « 2 0 ».
+   CETTE LIGNE SE LIT CASE PAR CASE, dans cet ordre exact :
+     « Le [JJ] [MM] [AAAA] à [HH] h [MM] »
+     deux cases pour le jour, deux pour le mois, QUATRE pour l'année, puis deux pour l'heure et deux pour les minutes.
+   Exemple réel : « Le |3|1| |0|8| |2|0|2|6| à |1|8| h |0|0| » se lit le 31 août 2026 à 18h00, soit dates.cession = "2026-08-31" et dates.heure_cession = "18:00".
+   N'attrape JAMAIS les deux derniers chiffres de l'année pour en faire le jour : « 2026 » n'est pas « le 26 ». Compte les cases avant de conclure.
    Le bloc se termine par « Fait à ______, le ______ » suivi de la signature de l'ancien propriétaire (pour une société : nom, qualité du signataire et cachet).
    → Cette date « Fait le » est celle de la RÉDACTION du document. Elle va dans dates.emission. Elle diffère souvent de la date de cession de plusieurs jours ou semaines : ne la confonds jamais avec elle.
 
@@ -37,7 +41,7 @@ const DECLARATION_ACHAT = `Ce document est la déclaration d'achat d'un véhicul
 1. En haut, l'ACQUÉREUR professionnel : une case cochée « professionnel du commerce de l'automobile » ou « assureur », son nom ou sa raison sociale, son SIREN, son adresse. Puis :
    « Déclare avoir acheté le [jour mois année] à [heures minutes] le véhicule désigné ci-dessous »
    → C'est la DATE et l'HEURE D'ACHAT. Mets-les dans dates.cession et dates.heure_cession.
-   Les jours, mois, années, heures et minutes sont inscrits dans des cases séparées : lis-les case par case et recompose la date. Si le siècle « 2 0 » est pré-imprimé, colle derrière lui les deux chiffres manuscrits de l'année.
+   Cette ligne se lit case par case, dans l'ordre imprimé sous les cases : [Jour] [Mois] [Année] pour la date, puis [Heures] [Minutes]. L'année occupe quatre cases. N'attrape jamais les deux derniers chiffres de l'année pour en faire le jour.
 
 2. Le véhicule : (A) numéro d'immatriculation, (E) numéro d'identification, (D.1) marque, (D.2) type variante version, (D.3) dénomination commerciale, (J.1) genre national. Puis la présence du certificat d'immatriculation, avec soit sa date (I), soit son numéro de formule.
 
