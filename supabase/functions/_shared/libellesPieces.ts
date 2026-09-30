@@ -103,6 +103,9 @@ export function libellePiece(
   if (typeDocument.startsWith("correction")) {
     return nomLibre || "Pièce renvoyée après un refus";
   }
+  if (typeDocument.startsWith("demande_")) {
+    return nomLibre || "Pièce réclamée par l'administration";
+  }
   const verso = typeDocument.endsWith("_verso");
   const base = verso ? typeDocument.slice(0, -"_verso".length) : typeDocument;
   const libelle =

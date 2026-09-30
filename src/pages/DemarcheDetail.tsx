@@ -69,6 +69,9 @@ export default function DemarcheDetail() {
   const [loading, setLoading] = useState(true);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [uploadSlots, setUploadSlots] = useState<number[]>([1]);
+  // Pièces que l'administration réclame : chacune a son emplacement de dépôt,
+  // et rien de ce qui a déjà été envoyé n'est remis en cause.
+  const [piecesDemandees, setPiecesDemandees] = useState<{ id: string; libelle: string; motif: string | null }[]>([]);
   const [viewerState, setViewerState] = useState<{
     isOpen: boolean;
     url: string;
@@ -221,6 +224,14 @@ export default function DemarcheDetail() {
       .eq('demarche_id', id);
 
     setTrackingServices(trackingData || []);
+
+    const { data: demandesData } = await (supabase.from.bind(supabase) as unknown as (n: string) => any)("pieces_demandees")
+      .select("id, libelle, motif")
+      .eq("demarche_id", id)
+      .is("fournie_le", null)
+      .is("annulee_le", null)
+      .order("demandee_le", { ascending: true });
+    setPiecesDemandees(demandesData || []);
 
     // Load document labels from action_documents
     const { data: actionData } = await supabase
@@ -771,6 +782,38 @@ export default function DemarcheDetail() {
                       </>
                     )}
                   </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {piecesDemandees.length > 0 && (
+              <Card className="border-blue-300">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-blue-700">
+                    <Upload className="h-5 w-5" />
+                    {piecesDemandees.length > 1 ? "Pièces demandées" : "Pièce demandée"}
+                  </CardTitle>
+                  <CardDescription>
+                    Il nous manque {piecesDemandees.length > 1 ? "ces pièces" : "cette pièce"} pour avancer.
+                    Vos autres documents sont bien reçus, il n'y a rien à renvoyer.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {piecesDemandees.map((piece) => (
+                    <div key={piece.id} className="space-y-2">
+                      {piece.motif && (
+                        <p className="text-sm text-muted-foreground">{piece.motif}</p>
+                      )}
+                      <DocumentUpload
+                        demarcheId={demarche.id}
+                        documentType={`demande_${piece.id.replace(/-/g, "")}`}
+                        label={piece.libelle}
+                        customName={piece.libelle}
+                        onUploadComplete={loadData}
+                        pdfOnly={isPdfOnlyProDemarche(demarche.type)}
+                      />
+                    </div>
+                  ))}
                 </CardContent>
               </Card>
             )}

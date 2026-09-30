@@ -10,6 +10,7 @@ import { getExpressSurcharge } from "@/lib/expressOption";
 import { DetailsCollapse, carteGriseDetailFromColumns } from "@/components/simulateur/DetailsCollapse";
 import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { ControleAutomatique } from "@/components/admin/ControleAutomatique";
+import { DemanderPiece } from "@/components/admin/DemanderPiece";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1256,6 +1257,16 @@ export default function DemarcheDetail() {
             </Card>
 
             <ControleAutomatique demarcheId={id!} typeDemarche={demarche?.type} />
+
+            <DemanderPiece
+              demarcheId={id!}
+              reference={demarche?.numero_demarche}
+              immatriculation={demarche?.immatriculation}
+              emailGarage={garage?.email}
+              nomGarage={garage?.raison_sociale}
+              piecesConnues={Object.values(documentLabels)}
+              onChangement={loadDemarcheData}
+            />
 
             {/* Documents */}
             <Card>

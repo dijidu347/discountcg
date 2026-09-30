@@ -182,6 +182,35 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // Une pièce manque, sans que rien de ce qui a été déposé soit en cause.
+    // Le ton compte : « il nous manque » et non « votre document est refusé »,
+    // sinon le garage renvoie à l'identique une pièce qui était bonne.
+    case "piece_demandee":
+      return {
+        subject: `Il nous manque une pièce - ${data.tracking_number}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #1d4ed8;">Il nous manque une pièce</h1>
+            <p>Bonjour ${data.nom || ""},</p>
+            <p>Pour avancer sur votre démarche <strong>${data.tracking_number}</strong>${data.immatriculation ? ` (${data.immatriculation})` : ""}, il nous manque la pièce suivante :</p>
+
+            <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0;">
+              <p style="margin: 0; font-size: 16px;"><strong>${data.piece}</strong></p>
+              ${data.motif ? `<p style="margin: 8px 0 0; color: #1e40af;">${data.motif}</p>` : ""}
+            </div>
+
+            <p>Vos autres documents sont bien reçus, il n'y a rien à renvoyer. Un emplacement vous attend sur votre démarche pour déposer cette seule pièce.</p>
+
+            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Déposer la pièce
+            </a>
+
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+
     case "document_rejected":
       return {
         subject: `⚠️ Documents à fournir - ${data.tracking_number}`,

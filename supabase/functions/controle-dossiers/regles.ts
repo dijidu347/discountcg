@@ -214,7 +214,9 @@ export function horsSujet(libelle: string, typeDetecte?: string | null, correspo
 // (« Ci », « photo », « doc 2 »…). Aucun libellé de référence à leur opposer :
 // leur reprocher de ne pas correspondre n'aurait aucun sens.
 export function estPieceLibre(typeDocument: string): boolean {
-  return typeDocument.startsWith("autre_piece") || typeDocument.startsWith("correction");
+  return typeDocument.startsWith("autre_piece")
+    || typeDocument.startsWith("correction")
+    || typeDocument.startsWith("demande_");
 }
 
 // Gravité de chaque défaut d'image, mesurée sur 218 pièces dont on connaît le
