@@ -20,6 +20,7 @@ import {
   niveauDossier,
   type Anomalie,
   type ContexteDossier,
+  type Extraction,
   type Piece,
 } from "./regles.ts";
 
@@ -63,7 +64,12 @@ function cheminStockage(url: string): { seau: string; chemin: string } | null {
 }
 
 async function empreinteDe(octets: Uint8Array): Promise<string> {
-  const condensat = await crypto.subtle.digest("SHA-256", octets);
+  // Le tampon sous-jacent peut être un ArrayBufferLike : on le restreint
+  // explicitement pour satisfaire la signature de `digest`.
+  const condensat = await crypto.subtle.digest(
+    "SHA-256",
+    octets.slice().buffer as ArrayBuffer,
+  );
   return [...new Uint8Array(condensat)].map((o) => o.toString(16).padStart(2, "0")).join("");
 }
 
@@ -200,7 +206,7 @@ serve(async (req) => {
 const cacheLibelles = new Map<string, Record<string, string>>();
 
 async function libellesDocN(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   typeDemarche: string,
 ): Promise<Record<string, string>> {
   const enCache = cacheLibelles.get(typeDemarche);
@@ -214,7 +220,7 @@ async function libellesDocN(
       .select("nom_document, ordre, obligatoire")
       .eq("action_id", action.id)
       .order("ordre");
-    (pieces ?? []).forEach((piece, index) => {
+    (pieces ?? []).forEach((piece: any, index: number) => {
       libelles[`doc_${index + 1}`] = piece.nom_document;
     });
   }
@@ -223,7 +229,7 @@ async function libellesDocN(
 }
 
 async function pieceObligatoires(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   typeDemarche: string,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
@@ -234,13 +240,13 @@ async function pieceObligatoires(
     .eq("action_id", action.id)
     .order("ordre");
   return (pieces ?? [])
-    .map((piece, index) => ({ code: `doc_${index + 1}`, libelle: piece.nom_document, obligatoire: piece.obligatoire }))
-    .filter((piece) => piece.obligatoire)
-    .map(({ code, libelle }) => ({ code, libelle }));
+    .map((piece: any, index: number) => ({ code: `doc_${index + 1}`, libelle: piece.nom_document, obligatoire: piece.obligatoire }))
+    .filter((piece: any) => piece.obligatoire)
+    .map(({ code, libelle }: any) => ({ code, libelle }));
 }
 
 async function contexteDeLecture(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   demarcheId: string | null,
   typeDocument: string,
   nomLibre: string | null,
@@ -273,7 +279,7 @@ async function contexteDeLecture(
   };
 }
 
-async function recontroler(supabase: ReturnType<typeof createClient>, demarcheId: string) {
+async function recontroler(supabase: any, demarcheId: string) {
   const { data: demarche } = await supabase
     .from("demarches")
     .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id")
@@ -314,11 +320,12 @@ async function recontroler(supabase: ReturnType<typeof createClient>, demarcheId
     .from("analyses_documents")
     .select("document_id, statut, extraction, empreinte")
     .in("document_id", retenus.map((doc) => doc.id).slice(0, 200));
-  const parDocument = new Map((analyses ?? []).map((a) => [a.document_id, a]));
+  type Analyse = { statut?: string; extraction?: Extraction | null; empreinte?: string | null };
+  const parDocument = new Map((analyses ?? []).map((a: any) => [a.document_id, a] as [string, Analyse]));
 
   const libelles = await libellesDocN(supabase, demarche.type);
   const pieces: Piece[] = retenus.map((doc) => {
-    const analyse = parDocument.get(doc.id);
+    const analyse = parDocument.get(doc.id) as Analyse | undefined;
     return {
       document_id: doc.id,
       type_document: doc.type_document,
