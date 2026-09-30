@@ -97,8 +97,9 @@ serve(async (req) => {
   // 1. Les pièces qui attendent d'être lues.
   let requete = supabase
     .from("analyses_documents")
-    .select("id, document_id, demarche_id, tentatives, documents!inner(type_document, document_type, nom_fichier, url, taille_octets)")
+    .select("id, document_id, demarche_id, tentatives, documents!inner(type_document, document_type, nom_fichier, url, taille_octets), demarches!inner(status)")
     .eq("statut", "en_attente")
+    .not("demarches.status", "in", "(finalise,refuse,annule)")
     .lt("tentatives", TENTATIVES_MAX)
     .order("cree_le", { ascending: true })
     .limit(lot);
@@ -299,7 +300,7 @@ async function contexteDeLecture(
 async function recontroler(supabase: any, demarcheId: string) {
   const { data: demarche } = await supabase
     .from("demarches")
-    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, created_at")
+    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, created_at, status")
     .eq("id", demarcheId)
     .maybeSingle();
   if (!demarche) return;
@@ -313,6 +314,11 @@ async function recontroler(supabase: any, demarcheId: string) {
     .eq("type", demarche.type)
     .maybeSingle();
   if (actif?.actif !== true) return;
+
+  // Un dossier terminé ne se contrôle pas : il est parti au SIV, ou il a été
+  // refusé, ou annulé. Le relire ne sert à rien et coûte une lecture.
+  const TERMINES = ["finalise", "refuse", "annule"];
+  if (TERMINES.includes(demarche.status ?? "")) return;
 
   const { data: documents } = await supabase
     .from("documents")
