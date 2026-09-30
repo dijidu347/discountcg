@@ -140,17 +140,7 @@ const cgAuLieuDeJustif = anomaliesPiece(
 );
 verifie("carte grise a la place du justificatif : mauvaise piece", cgAuLieuDeJustif.some((a) => a.code === "mauvaise_piece"));
 
-const cgNonBarree = anomaliesPiece(
-  piece({ type_document: "doc_3", libelle: "Carte grise barrée signé avec la mention \"cédé le....\" recto/verso", extraction: { type_document: "carte_grise", mentions: { cede_le: false, barree: false } } }),
-  contexte, maintenant,
-);
-verifie("carte grise sans mention cede le : signalee, jamais bloquante", cgNonBarree.some((a) => a.code === "cession_non_portee") && cgNonBarree.every((a) => a.gravite !== "haute"));
 
-const versoCg = anomaliesPiece(
-  piece({ type_document: "doc_3_verso", libelle: "Carte grise barrée (verso)", extraction: { type_document: "carte_grise", mentions: { cede_le: false } } }),
-  contexte, maintenant,
-);
-verifie("verso : on n'y cherche pas la mention", !versoCg.some((a) => a.code === "cession_non_portee"));
 
 
 import { vinsDifferents } from "./regles.ts";
@@ -326,25 +316,7 @@ verifie("suites de caracteres qui ne sont pas des plaques : ignorees", !faussepl
 
 // Cas de DEM-2026-08168 : carte grise en PDF annoncee sans mention de vente,
 // alors que l'encre est invisible pour un texte ocerise.
-const cgPdfSansMention = anomaliesPiece(
-  piece({
-    nom_fichier: "CG RECTO-VERSO.pdf", type_document: "doc_3",
-    libelle: 'Carte grise barrée avec la mention "Vendu le", datée et signée du vendeur',
-    extraction: { type_document: "carte_grise", lisible: true, immatriculations: ["AB-123-CD"], mentions: { cede_le: false, barree: false } },
-  }),
-  contexte, maintenant,
-);
-verifie("PDF : on ne reproche pas une mention manuscrite invisible", !cgPdfSansMention.some((a) => a.code === "cession_non_portee"));
 
-const cgPhotoSansMention = anomaliesPiece(
-  piece({
-    nom_fichier: "cg.jpg", type_document: "doc_3",
-    libelle: 'Carte grise barrée avec la mention "Vendu le", datée et signée du vendeur',
-    extraction: { type_document: "carte_grise", lisible: true, immatriculations: ["AB-123-CD"], mentions: { cede_le: false, barree: false } },
-  }),
-  contexte, maintenant,
-);
-verifie("photo : la mention de vente absente reste signalee", cgPhotoSansMention.some((a) => a.code === "cession_non_portee"));
 
 
 const signaturePdf = anomaliesPiece(
@@ -357,5 +329,35 @@ const signaturePdf = anomaliesPiece(
 );
 verifie("PDF : on ne parle pas des signatures", !signaturePdf.some((a) => (a.message ?? "").toLowerCase().includes("signature")));
 verifie("PDF : les autres cases vides restent dites", signaturePdf.some((a) => (a.message ?? "").includes("kilométrage")));
+
+
+// La mention de vente est cherchee sur toutes les faces : le recto et le verso
+// arrivent souvent inverses (vu sur DEM-2026-07905).
+const faceSansMention = piece({
+  document_id: "a", nom_fichier: "cg1.jpg", type_document: "doc_3",
+  libelle: "Carte grise barrée avec la mention Vendu le — recto/verso",
+  extraction: { type_document: "carte_grise", mentions: { cede_le: false, barree: false } },
+});
+const faceAvecMention = piece({
+  document_id: "b", nom_fichier: "cg2.jpg", type_document: "doc_3_verso",
+  libelle: "Carte grise barrée avec la mention Vendu le — recto/verso (verso)",
+  extraction: { type_document: "carte_grise", mentions: { cede_le: true, barree: true } },
+});
+verifie(
+  "mention portee sur l'autre face : rien a signaler",
+  !anomaliesDossier([faceSansMention, faceAvecMention], [], contexte, true).some((a) => a.code === "cession_non_portee"),
+);
+verifie(
+  "aucune face ne porte la mention : signale",
+  anomaliesDossier([faceSansMention], [], contexte, true).some((a) => a.code === "cession_non_portee" && a.gravite === "moyenne"),
+);
+verifie(
+  "carte grise en PDF : on ne reproche pas une encre invisible",
+  !anomaliesDossier([piece({
+    document_id: "c", nom_fichier: "cg.pdf", type_document: "doc_3",
+    libelle: "Carte grise barrée avec la mention Vendu le — recto/verso",
+    extraction: { type_document: "carte_grise", mentions: { cede_le: false } },
+  })], [], contexte, true).some((a) => a.code === "cession_non_portee"),
+);
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

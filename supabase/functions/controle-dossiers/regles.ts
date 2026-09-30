@@ -355,21 +355,6 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   // acte la vente. Une carte grise intacte est le bon document mais pas la bonne
   // pièce — ce n'est pas une erreur de dépôt, cela mérite son propre message.
   // Le verso ne porte pas cette mention : on ne la cherche que sur le recto.
-  //
-  // Comme pour les signatures, la mention de vente est écrite à la main : sur un
-  // PDF océrisé, le modèle ne la voit pas et annonce qu'elle manque sur des
-  // cartes grises parfaitement barrées. On ne pose la question que sur les
-  // pièces dont il a vu la page.
-  const attendCession = /barr[ée]|vendu le|c[ée]d[ée] le/i.test(piece.libelle)
-    && !piece.type_document.endsWith("_verso");
-  if (pageVue && attendCession && ex.mentions?.cede_le === false) {
-    ajoute(
-      "cession_non_portee",
-      "moyenne",
-      "La carte grise ne semble porter aucune mention de vente datée : à confirmer à l'œil.",
-    );
-  }
-
   // Véhicule : une plaque ou un VIN lus sur la pièce et qui ne sont pas ceux du
   // dossier, c'est la pièce d'un autre véhicule — le motif de refus le plus
   // coûteux, parce qu'il n'apparaît qu'au moment de la saisie sur le SIV.
@@ -571,6 +556,26 @@ export function anomaliesDossier(
       gravite: "moyenne",
       message: `La pièce d'identité est au nom de « ${titulairePiece} », mais la cession désigne « ${acheteur} » comme acquéreur.`,
       piece: pieceIdentite?.libelle,
+    });
+  }
+
+  // La mention de vente est cherchée sur toutes les pièces de la carte grise, et
+  // pas seulement sur celle déposée au bon endroit : le recto et le verso
+  // arrivent souvent inversés, et la mention n'est alors pas là où on la
+  // croirait. Elle n'est réclamée que si au moins une de ces pièces a été vue
+  // comme une image — sur un PDF océrisé, l'encre est invisible.
+  const cartesGrises = pieces.filter((p) => /carte grise|certificat d.immatriculation/i.test(p.libelle));
+  const cartesVues = cartesGrises.filter((p) => !/\.pdf$/i.test(p.nom_fichier) && p.extraction);
+  if (
+    cartesVues.length > 0
+    && cartesVues.some((p) => p.extraction?.mentions?.cede_le === false)
+    && !cartesGrises.some((p) => p.extraction?.mentions?.cede_le === true)
+  ) {
+    anomalies.push({
+      code: "cession_non_portee",
+      gravite: "moyenne",
+      message: "Aucune des faces de la carte grise ne semble porter de mention de vente datée : à confirmer à l'œil.",
+      piece: cartesVues[0].libelle,
     });
   }
 
