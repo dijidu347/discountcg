@@ -1948,6 +1948,57 @@ export type Database = {
           },
         ]
       }
+      pieces_demandees: {
+        Row: {
+          annulee_le: string | null
+          demandee_le: string
+          demandee_par: string | null
+          demarche_id: string
+          document_id: string | null
+          fournie_le: string | null
+          id: string
+          libelle: string
+          motif: string | null
+        }
+        Insert: {
+          annulee_le?: string | null
+          demandee_le?: string
+          demandee_par?: string | null
+          demarche_id: string
+          document_id?: string | null
+          fournie_le?: string | null
+          id?: string
+          libelle: string
+          motif?: string | null
+        }
+        Update: {
+          annulee_le?: string | null
+          demandee_le?: string
+          demandee_par?: string | null
+          demarche_id?: string
+          document_id?: string | null
+          fournie_le?: string | null
+          id?: string
+          libelle?: string
+          motif?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pieces_demandees_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pieces_demandees_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pricing_config: {
         Row: {
           config_key: string
@@ -2436,6 +2487,7 @@ export type Database = {
         Args: { p_contenu: string; p_garage_id: string; p_rappel_le?: string }
         Returns: string
       }
+      annuler_piece_demandee: { Args: { p_id: string }; Returns: undefined }
       appel_de_confiance: { Args: never; Returns: boolean }
       bilan_compression: {
         Args: never
@@ -2465,6 +2517,10 @@ export type Database = {
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      demander_piece: {
+        Args: { p_demarche_id: string; p_libelle: string; p_motif?: string }
+        Returns: string
       }
       depense_par_garage: {
         Args: never
