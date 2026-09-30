@@ -850,6 +850,30 @@ export default function DemarcheDetail() {
     }
   };
 
+  // Pièces à proposer quand on en réclame une : seulement celles de cette
+  // démarche. `documentLabels` porte en plus les pièces de toutes les démarches
+  // pro, ce qui faisait apparaître la déclaration d'achat du W Garage au milieu
+  // d'un dossier de déclaration d'achat ordinaire, juste à côté de la vraie.
+  const PREFIXE_PAR_TYPE: Record<string, string> = {
+    WW_PROVISOIRE_PRO: "ww_",
+    W_GARAGE_PRO: "w_",
+    QUITUS_FISCAL_PRO: "qf_",
+    CHANGEMENT_ADRESSE_PRO: "ca_",
+    CHANGEMENT_ADRESSE_LOCATAIRE_PRO: "ca_",
+    DUPLICATA_CG_PRO: "dup_",
+    IMMAT_DEFINITIVE_PRO: "imd_",
+    SUCCESSION_HERITAGE_PRO: "sh_",
+    ANNULER_CORRIGER_DC_DA_PRO: "acd_",
+    CG_NEUF_PRO: "cgn_",
+  };
+  const prefixePro = PREFIXE_PAR_TYPE[demarche?.type ?? ""] ?? null;
+  const piecesDeCetteDemarche = Array.from(new Set(
+    Object.entries(documentLabels)
+      .filter(([cle]) => (prefixePro ? cle.startsWith(prefixePro) : cle.startsWith("doc_")))
+      .map(([, libelle]) => libelle)
+      .concat("Certificat de situation administrative (non-gage)"),
+  ));
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -1264,7 +1288,7 @@ export default function DemarcheDetail() {
               immatriculation={demarche?.immatriculation}
               emailGarage={garage?.email}
               nomGarage={garage?.raison_sociale}
-              piecesConnues={Object.values(documentLabels)}
+              piecesConnues={piecesDeCetteDemarche}
               onChangement={loadDemarcheData}
             />
 
