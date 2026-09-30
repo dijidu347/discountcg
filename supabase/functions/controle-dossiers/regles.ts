@@ -35,6 +35,7 @@ export interface Extraction {
   mentions?: { cede_le?: boolean; barree?: boolean } | null;
   version_cerfa?: string | null;
   face?: string | null;
+  situation_administrative?: { vierge?: boolean; mentions?: string[] } | null;
   champs_incomplets?: string[] | null;
   ratures?: boolean | null;
   siret?: string | null;
@@ -70,6 +71,22 @@ export function sansAccent(valeur: string): string {
 
 export function normalisePlaque(valeur: string): string {
   return sansAccent(valeur).toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+// Une plaque partiellement lue — masquée sur le document, tronquée à la prise de
+// vue — sort avec des caractères en moins, dans le bon ordre : « AS4QZ » pour
+// « AS-475-QZ ». C'est la même plaque mal lue, pas un autre véhicule. Une plaque
+// réellement différente, elle, a des caractères qui ne collent pas.
+export function lectureCompatible(lue: string, attendue: string): boolean {
+  if (lue === attendue) return true;
+  const [courte, longue] = lue.length <= attendue.length ? [lue, attendue] : [attendue, lue];
+  if (courte.length < 3) return false;
+  let i = 0;
+  for (const caractere of longue) {
+    if (caractere === courte[i]) i++;
+    if (i === courte.length) return true;
+  }
+  return false;
 }
 
 // Particules et titres : présents sur une pièce, absents sur une autre, ils
@@ -343,7 +360,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   // coûteux, parce qu'il n'apparaît qu'au moment de la saisie sur le SIV.
   const plaqueDossier = contexte.immatriculation ? normalisePlaque(contexte.immatriculation) : null;
   const plaquesLues = (ex.immatriculations ?? []).map(normalisePlaque).filter(Boolean);
-  if (plaqueDossier && plaquesLues.length > 0 && !plaquesLues.includes(plaqueDossier)) {
+  if (plaqueDossier && plaquesLues.length > 0 && !plaquesLues.some((p) => lectureCompatible(p, plaqueDossier))) {
     ajoute(
       "plaque_differente",
       "haute",
@@ -409,6 +426,23 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
 
   if (ex.ratures === true) {
     ajoute("ratures", "moyenne", "La pièce comporte des ratures ou des surcharges.");
+  }
+
+  // Le certificat de situation administrative ne vaut que s'il est vierge. Une
+  // opposition, un gage, une saisie, une immatriculation suspendue ou un
+  // certificat déclaré perdu arrêtent la démarche au SIV, et c'est justement ce
+  // que la pièce sert à prouver.
+  const estNonGage = /non.?gage|situation administrative/i.test(piece.libelle)
+    || ex.type_document === "certificat_non_gage";
+  if (estNonGage && ex.situation_administrative?.vierge === false) {
+    const mentions = (ex.situation_administrative.mentions ?? []).filter(Boolean);
+    ajoute(
+      "situation_non_vierge",
+      "haute",
+      mentions.length > 0
+        ? `Le certificat n'est pas vierge : ${mentions.join(", ")}.`
+        : "Le certificat de situation administrative n'est pas vierge.",
+    );
   }
 
   // Un cerfa dans une version périmée est refusé au SIV. On ne compare que des

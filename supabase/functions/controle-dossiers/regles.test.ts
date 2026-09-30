@@ -255,4 +255,44 @@ const emplacementVerso = anomaliesPiece(
 );
 verifie("emplacement prevu pour le verso : normal", !emplacementVerso.some((a) => a.code === "recto_manquant"));
 
+
+// Cas de DEM-2026-07688 : rapport Histovec signalant une immatriculation
+// suspendue et un certificat perdu, et plaque partiellement masquee.
+const nonGageCharge = anomaliesPiece(
+  piece({
+    type_document: "non_gage",
+    libelle: "Certificat de situation administrative (non-gage)",
+    extraction: {
+      type_document: "certificat_non_gage", lisible: true,
+      immatriculations: ["AS4QZ"],
+      situation_administrative: { vierge: false, mentions: ["immatriculation suspendue", "certificat perdu"] },
+      dates: { emission: "2026-09-29" },
+    },
+  }),
+  { ...contexte, immatriculation: "AS-475-QZ" }, maintenant,
+);
+verifie("non-gage non vierge : bloquant", nonGageCharge.some((a) => a.code === "situation_non_vierge" && a.gravite === "haute"));
+verifie("plaque partiellement lue : pas un autre vehicule", !nonGageCharge.some((a) => a.code === "plaque_differente"));
+
+const nonGageVierge = anomaliesPiece(
+  piece({
+    type_document: "non_gage",
+    libelle: "Certificat de situation administrative (non-gage)",
+    extraction: {
+      type_document: "certificat_non_gage", lisible: true,
+      immatriculations: ["AB-123-CD"],
+      situation_administrative: { vierge: true, mentions: [] },
+      dates: { emission: "2026-09-29" },
+    },
+  }),
+  contexte, maintenant,
+);
+verifie("non-gage vierge : rien a signaler", nonGageVierge.length === 0);
+
+const autrePlaque = anomaliesPiece(
+  piece({ extraction: { lisible: true, type_document: "certificat_cession", immatriculations: ["EF-456-GH"] } }),
+  contexte, maintenant,
+);
+verifie("plaque vraiment differente : toujours signalee", autrePlaque.some((a) => a.code === "plaque_differente"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
