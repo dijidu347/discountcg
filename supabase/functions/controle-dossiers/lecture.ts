@@ -41,6 +41,8 @@ const FORME_ATTENDUE = `{
   "dates": { "emission": "AAAA-MM-JJ", "validite": "AAAA-MM-JJ", "mise_en_circulation": "AAAA-MM-JJ", "cession": "AAAA-MM-JJ", "heure_cession": "HH:MM" },
   "signatures": { "vendeur": true, "acheteur": true, "mandant": true, "tampon": false },
   "mentions": { "cede_le": true, "barree": true },
+  "version_cerfa": "13751*02" ou null,
+  "face": "recto | verso | recto_verso" ou null,
   "champs_incomplets": ["heure de cession"],
   "ratures": false,
   "siret": "12345678900012" ou null,
@@ -80,7 +82,13 @@ ${FORME_ATTENDUE}
 - personnes : titulaire, vendeur, acheteur, mandant. Recopie les noms et adresses tels qu'ils sont écrits.
 - dates : au format AAAA-MM-JJ. emission = date d'établissement du document, validite = date de fin de validité, cession = date de vente.
 - signatures : true seulement si une signature manuscrite ou un tampon est bien visible à l'emplacement prévu, false si l'emplacement est vide. Omets le champ si le document ne prévoit pas de signature.
-- champs_incomplets : uniquement les cases obligatoires laissées vides alors qu'elles s'appliquent à ce document (heure de cession, kilométrage, adresse…). N'y mets jamais une case sans objet : le SIRET d'un vendeur particulier, une rubrique réservée à un cas qui n'est pas celui du document.
+- champs_incomplets : uniquement les cases obligatoires laissées vides alors qu'elles s'appliquent à ce document. N'y mets jamais une case sans objet : le SIRET d'un vendeur particulier, une rubrique réservée à un cas qui n'est pas celui du document.
+  Sont toujours obligatoires, et donc à signaler si elles sont vides :
+  · sur un certificat de cession : la date ET l'heure de la cession, le kilométrage, l'identité et l'adresse du vendeur comme de l'acheteur ;
+  · sur une déclaration d'achat : la date ET l'heure, l'identité du vendeur et celle de l'acheteur ;
+  · sur un mandat : le nom du mandant, celui du mandataire, la désignation du véhicule et la date.
+- version_cerfa : le numéro de version imprimé sur le formulaire, tel quel, par exemple « 13751*02 » ou « 15776*01 ». null si le document n'est pas un cerfa ou si le numéro n'est pas lisible.
+- face : pour une pièce d'identité, un permis ou une carte grise, indique si tu vois le recto seul, le verso seul, ou les deux. null pour les autres documents.
 - mentions : uniquement pour une carte grise. cede_le = true si la mention « cédé le » est écrite et datée sur le document, false si l'emplacement est vierge. barree = true si le document est barré d'un trait. Omets le champ pour tout autre document.
 - ratures : true si une mention est barrée, surchargée ou corrigée au stylo. La barre qui acte une cession sur une carte grise n'est pas une rature.
 - type_document : choisis le terme le plus juste de la liste. Un document établi par un commissaire-priseur pour une vente aux enchères est un certificat_vente_publique ; un récépissé ANTS confirmant l'enregistrement est un accuse_enregistrement_cession ou accuse_enregistrement_achat selon son objet.

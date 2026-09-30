@@ -33,6 +33,8 @@ export interface Extraction {
   } | null;
   signatures?: { vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean } | null;
   mentions?: { cede_le?: boolean; barree?: boolean } | null;
+  version_cerfa?: string | null;
+  face?: string | null;
   champs_incomplets?: string[] | null;
   ratures?: boolean | null;
   siret?: string | null;
@@ -230,6 +232,21 @@ const LIBELLE_DEFAUT: Record<string, { texte: string; gravite: Gravite }> = {
   reflet: { texte: "un reflet masque une partie du document", gravite: "basse" },
 };
 
+// Version du cerfa attendue, lue dans le libellé de la pièce : le site y écrit
+// déjà « cerfa 13751*02 », « cerfa 15776*01 ». Comparer la version imprimée sur
+// le document à celle-là évite d'inscrire dans le code des numéros qui
+// changeront, et suit automatiquement les mises à jour du libellé.
+export function versionAttendue(libelle: string): { numero: string; version: number } | null {
+  const trouve = libelle.match(/(\d{4,5})\s*\*\s*(\d{1,2})/);
+  return trouve ? { numero: trouve[1], version: Number(trouve[2]) } : null;
+}
+
+export function versionLue(valeur?: string | null): { numero: string; version: number } | null {
+  if (!valeur) return null;
+  const trouve = valeur.match(/(\d{4,5})\s*\*\s*(\d{1,2})/);
+  return trouve ? { numero: trouve[1], version: Number(trouve[2]) } : null;
+}
+
 // Contrôles d'une pièce prise isolément.
 export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintenant: Date): Anomalie[] {
   const anomalies: Anomalie[] = [];
@@ -342,6 +359,26 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
 
   if (ex.ratures === true) {
     ajoute("ratures", "moyenne", "La pièce comporte des ratures ou des surcharges.");
+  }
+
+  // Un cerfa dans une version périmée est refusé au SIV. On ne compare que des
+  // versions d'un même formulaire : une version plus récente que celle annoncée
+  // dans le libellé est parfaitement valable, c'est l'inverse qui pose problème.
+  const attendue = versionAttendue(piece.libelle);
+  const lue = versionLue(ex.version_cerfa);
+  if (attendue && lue && attendue.numero === lue.numero && lue.version < attendue.version) {
+    ajoute(
+      "cerfa_perime",
+      "moyenne",
+      `Le formulaire est en version ${lue.numero}*${String(lue.version).padStart(2, "0")}, alors que la version ${attendue.numero}*${String(attendue.version).padStart(2, "0")} est demandée.`,
+    );
+  }
+
+  // Verso seul sur une pièce qui n'est pas l'emplacement prévu pour le verso :
+  // le recto manque, et c'est lui qui porte l'identité.
+  const emplacementVerso = piece.type_document.endsWith("_verso") || /verso/i.test(piece.libelle);
+  if (!emplacementVerso && ex.face === "verso") {
+    ajoute("recto_manquant", "moyenne", "Seul le verso est visible : il manque le recto.");
   }
 
   return anomalies;

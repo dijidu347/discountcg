@@ -187,4 +187,35 @@ const heureManquante = anomaliesPiece(
 );
 verifie("case vide : a verifier, jamais bloquant", heureManquante.some((a) => a.code === "champ_vide") && heureManquante.every((a) => a.gravite !== "haute"));
 
+
+const cerfaPerime = anomaliesPiece(
+  piece({ libelle: "Certificat déclaration d'achat (cerfa 13751*02)", extraction: { type_document: "declaration_achat", version_cerfa: "13751*01" } }),
+  contexte, maintenant,
+);
+verifie("cerfa dans une version perimee", cerfaPerime.some((a) => a.code === "cerfa_perime"));
+
+const cerfaRecent = anomaliesPiece(
+  piece({ libelle: "Certificat de cession (cerfa 15776*01)", extraction: { type_document: "certificat_cession", version_cerfa: "15776*02" } }),
+  contexte, maintenant,
+);
+verifie("version plus recente que demandee : rien a dire", !cerfaRecent.some((a) => a.code === "cerfa_perime"));
+
+const autreCerfa = anomaliesPiece(
+  piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { type_document: "mandat", immatriculations: ["AB-123-CD"], version_cerfa: "13750*05" } }),
+  contexte, maintenant,
+);
+verifie("deux formulaires differents : pas de comparaison", !autreCerfa.some((a) => a.code === "cerfa_perime"));
+
+const versoSeul = anomaliesPiece(
+  piece({ type_document: "doc_2", libelle: "Carte d'identité du nouveau propriétaire", extraction: { type_document: "carte_identite", face: "verso" } }),
+  contexte, maintenant,
+);
+verifie("verso seul : recto manquant", versoSeul.some((a) => a.code === "recto_manquant"));
+
+const emplacementVerso = anomaliesPiece(
+  piece({ type_document: "doc_2_verso", libelle: "Carte d'identité (verso)", extraction: { type_document: "carte_identite", face: "verso" } }),
+  contexte, maintenant,
+);
+verifie("emplacement prevu pour le verso : normal", !emplacementVerso.some((a) => a.code === "recto_manquant"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
