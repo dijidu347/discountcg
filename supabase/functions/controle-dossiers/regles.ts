@@ -298,7 +298,9 @@ export function aLivreDesInformations(ex: Extraction): boolean {
 }
 
 // Cases que le SIV exige pour enregistrer une cession ou un achat : elles
-// portent une étoile sur ses écrans de saisie.
+// portent une étoile sur ses écrans de saisie. Tout ce qui n'y figure pas ne
+// conditionne pas l'enregistrement, et n'a donc pas à être signalé — le
+// kilométrage du cerfa, par exemple, n'apparaît sur aucun des deux écrans.
 const CHAMPS_SIV = /heure|date|immatricul|plaque|identification du v|\bvin\b|identit[ée]|num[ée]ro de formule/i;
 
 export function champObligatoireSiv(champ: string): boolean {
@@ -430,7 +432,12 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     // valider l'écran, et il faudra de toute façon rappeler le garage. Le
     // kilométrage ou une mention de confort, eux, n'empêchent rien : ils
     // s'affichent pour information.
-    ajoute("champ_vide", champObligatoireSiv(champ) ? "moyenne" : "basse", `Champ non rempli : ${champ}.`);
+    // Une case que le SIV ne réclame pas n'est pas signalée du tout. Le
+    // kilométrage, le SIRET d'un particulier, une commune incomplète : ces
+    // mentions figurent sur le cerfa sans conditionner l'enregistrement. Les
+    // afficher, même en information, revient à faire lire du bruit.
+    if (!champObligatoireSiv(champ)) continue;
+    ajoute("champ_vide", "moyenne", `Champ non rempli : ${champ}.`);
   }
 
   // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun

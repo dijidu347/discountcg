@@ -207,7 +207,7 @@ const kilometrage = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", immatriculations: ["AB-123-CD"], champs_incomplets: ["kilométrage"] } }),
   contexte, maintenant,
 );
-verifie("kilometrage : le SIV ne le demande pas, information", kilometrage.every((a) => a.gravite === "basse"));
+verifie("kilometrage : le SIV ne le demande pas, on n'en parle pas", !kilometrage.some((a) => a.code === "champ_vide"));
 
 const datesDiscordantes = anomaliesDossier([
   piece({ document_id: "a", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { dates: { cession: "2026-09-16" } } }),
@@ -328,7 +328,7 @@ const signaturePdf = anomaliesPiece(
   contexte, maintenant,
 );
 verifie("PDF : on ne parle pas des signatures", !signaturePdf.some((a) => (a.message ?? "").toLowerCase().includes("signature")));
-verifie("PDF : les autres cases vides restent dites", signaturePdf.some((a) => (a.message ?? "").includes("kilométrage")));
+verifie("PDF : le kilometrage ne ressort pas non plus", !signaturePdf.some((a) => (a.message ?? "").includes("kilométrage")));
 
 
 // La mention de vente est cherchee sur toutes les faces : le recto et le verso
