@@ -325,4 +325,27 @@ const fausseplaque = anomaliesPiece(
 );
 verifie("suites de caracteres qui ne sont pas des plaques : ignorees", !fausseplaque.some((a) => a.code === "plaque_differente"));
 
+
+// Cas de DEM-2026-08168 : carte grise en PDF annoncee sans mention de vente,
+// alors que l'encre est invisible pour un texte ocerise.
+const cgPdfSansMention = anomaliesPiece(
+  piece({
+    nom_fichier: "CG RECTO-VERSO.pdf", type_document: "doc_3",
+    libelle: 'Carte grise barrée avec la mention "Vendu le", datée et signée du vendeur',
+    extraction: { type_document: "carte_grise", lisible: true, immatriculations: ["AB-123-CD"], mentions: { cede_le: false, barree: false } },
+  }),
+  contexte, maintenant,
+);
+verifie("PDF : on ne reproche pas une mention manuscrite invisible", !cgPdfSansMention.some((a) => a.code === "cession_non_portee"));
+
+const cgPhotoSansMention = anomaliesPiece(
+  piece({
+    nom_fichier: "cg.jpg", type_document: "doc_3",
+    libelle: 'Carte grise barrée avec la mention "Vendu le", datée et signée du vendeur',
+    extraction: { type_document: "carte_grise", lisible: true, immatriculations: ["AB-123-CD"], mentions: { cede_le: false, barree: false } },
+  }),
+  contexte, maintenant,
+);
+verifie("photo : la mention de vente absente reste signalee", cgPhotoSansMention.some((a) => a.code === "cession_non_portee"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

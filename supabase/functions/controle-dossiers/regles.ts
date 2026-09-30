@@ -346,6 +346,11 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     }
   }
 
+  // Un PDF ne passe pas par le même chemin qu'une photo : il est océrisé, et le
+  // modèle n'en reçoit que le texte. Tout ce qui est écrit à la main — une
+  // signature, un cachet, la mention de vente — lui est alors invisible.
+  const pageVue = !/\.pdf$/i.test(piece.nom_fichier);
+
   if (!estPieceLibre(piece.type_document) && horsSujet(piece.libelle, ex.type_document, ex.correspond)) {
     const lu = ex.type_document ? ` (document lu : ${ex.type_document.replace(/_/g, " ")})` : "";
     ajoute("mauvaise_piece", "haute", `Ce n'est pas la pièce demandée${lu}.`);
@@ -355,12 +360,18 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   // acte la vente. Une carte grise intacte est le bon document mais pas la bonne
   // pièce — ce n'est pas une erreur de dépôt, cela mérite son propre message.
   // Le verso ne porte pas cette mention : on ne la cherche que sur le recto.
-  const attendCession = /barr[ée]|c[ée]d[ée] le/i.test(piece.libelle) && !piece.type_document.endsWith("_verso");
-  if (attendCession && ex.mentions?.cede_le === false) {
+  //
+  // Comme pour les signatures, la mention de vente est écrite à la main : sur un
+  // PDF océrisé, le modèle ne la voit pas et annonce qu'elle manque sur des
+  // cartes grises parfaitement barrées. On ne pose la question que sur les
+  // pièces dont il a vu la page.
+  const attendCession = /barr[ée]|vendu le|c[ée]d[ée] le/i.test(piece.libelle)
+    && !piece.type_document.endsWith("_verso");
+  if (pageVue && attendCession && ex.mentions?.cede_le === false) {
     ajoute(
       "cession_non_portee",
       "moyenne",
-      "La carte grise ne semble pas porter la mention « cédé le » : à confirmer à l'œil.",
+      "La carte grise ne semble porter aucune mention de vente datée : à confirmer à l'œil.",
     );
   }
 
@@ -404,7 +415,6 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   // sont des images, lui sont alors invisibles — il répond « non signé » sur des
   // documents parfaitement signés. On ne l'interroge donc sur les signatures que
   // lorsqu'il a réellement vu la page.
-  const pageVue = !/\.pdf$/i.test(piece.nom_fichier);
   const estCession = /cession/i.test(piece.libelle);
   const estMandat = /mandat/i.test(piece.libelle);
   if (pageVue && estCession && ex.signatures) {
