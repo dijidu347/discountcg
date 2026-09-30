@@ -538,10 +538,11 @@ export default function AllDemarches() {
                     <TableHead className="w-10"></TableHead>
                     <TableHead>N° Démarche</TableHead>
                     <TableHead>Immatriculation</TableHead>
-                    <TableHead>Garage</TableHead>
-                    {/* Colonne étroite : les codes pro (« WW PROVISOIRE PRO »)
-                        la faisaient déborder de l'écran. Ils passent désormais
-                        sur deux lignes. */}
+                    {/* Colonnes étroites : les raisons sociales et les codes
+                        pro (« WW PROVISOIRE PRO ») poussaient la ligne hors de
+                        l'écran. Elles passent désormais sur deux lignes, et la
+                        pastille « Vérifié » sous le nom plutôt qu'à côté. */}
+                    <TableHead className="w-32">Garage</TableHead>
                     <TableHead className="w-20">Type</TableHead>
                     <TableHead>Paiement</TableHead>
                     <TableHead>Montant</TableHead>
@@ -590,13 +591,11 @@ export default function AllDemarches() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {d.garages?.raison_sociale}
-                          {d.garages?.is_verified && (
-                            <Badge className="bg-green-500 text-xs">Vérifié</Badge>
-                          )}
-                        </div>
+                      <TableCell className="w-32 whitespace-normal break-words text-xs leading-tight">
+                        {d.garages?.raison_sociale}
+                        {d.garages?.is_verified && (
+                          <Badge className="bg-green-500 text-[10px] px-1.5 py-0 mt-1 block w-fit">Vérifié</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="w-20 whitespace-normal break-words text-xs leading-tight">
                         {String(d.type ?? "").replace(/_/g, " ")}
