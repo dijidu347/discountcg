@@ -73,6 +73,15 @@ export function normalisePlaque(valeur: string): string {
   return sansAccent(valeur).toUpperCase().replace(/[^A-Z0-9]/g, "");
 }
 
+// Une immatriculation française : deux lettres, trois chiffres, deux lettres
+// depuis 2009, ou l'ancien format numéro-lettres-département. Le modèle range
+// parfois dans cette rubrique le numéro de formule de la carte grise
+// (« 2022AV45464») ou une suite de caractères mal lue : les comparer à la
+// plaque du dossier ne prouve rien.
+export function estPlaqueFrancaise(valeur: string): boolean {
+  return /^[A-Z]{2}[0-9]{3}[A-Z]{2}$/.test(valeur) || /^[0-9]{1,4}[A-Z]{1,3}[0-9]{2,3}$/.test(valeur);
+}
+
 // Une plaque partiellement lue — masquée sur le document, tronquée à la prise de
 // vue — sort avec des caractères en moins, dans le bon ordre : « AS4QZ » pour
 // « AS-475-QZ ». C'est la même plaque mal lue, pas un autre véhicule. Une plaque
@@ -359,7 +368,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   // dossier, c'est la pièce d'un autre véhicule — le motif de refus le plus
   // coûteux, parce qu'il n'apparaît qu'au moment de la saisie sur le SIV.
   const plaqueDossier = contexte.immatriculation ? normalisePlaque(contexte.immatriculation) : null;
-  const plaquesLues = (ex.immatriculations ?? []).map(normalisePlaque).filter(Boolean);
+  const plaquesLues = (ex.immatriculations ?? []).map(normalisePlaque).filter(estPlaqueFrancaise);
   if (plaqueDossier && plaquesLues.length > 0 && !plaquesLues.some((p) => lectureCompatible(p, plaqueDossier))) {
     ajoute(
       "plaque_differente",
@@ -389,15 +398,22 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   }
 
   // Signatures et champs laissés vides : le deuxième motif de refus en volume.
+  //
+  // Un PDF ne passe pas par le même chemin qu'une photo : il est océrisé, et le
+  // modèle n'en reçoit que le texte. Une signature manuscrite ou un cachet, qui
+  // sont des images, lui sont alors invisibles — il répond « non signé » sur des
+  // documents parfaitement signés. On ne l'interroge donc sur les signatures que
+  // lorsqu'il a réellement vu la page.
+  const pageVue = !/\.pdf$/i.test(piece.nom_fichier);
   const estCession = /cession/i.test(piece.libelle);
   const estMandat = /mandat/i.test(piece.libelle);
-  if (estCession && ex.signatures) {
+  if (pageVue && estCession && ex.signatures) {
     if (ex.signatures.vendeur === false) ajoute("signature_manquante", "haute", "Le certificat de cession n'est pas signé par le vendeur.");
     if (ex.signatures.acheteur === false) ajoute("signature_manquante", "haute", "Le certificat de cession n'est pas signé par l'acheteur.");
   }
   // Sur un mandat, le signataire est le mandant : le modèle le nomme tantôt
   // « mandant », tantôt « vendeur » selon la façon dont le Cerfa est rempli.
-  if (estMandat && ex.signatures) {
+  if (pageVue && estMandat && ex.signatures) {
     const signe = ex.signatures.mandant ?? ex.signatures.vendeur;
     if (signe === false && ex.signatures.tampon !== true) {
       ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");

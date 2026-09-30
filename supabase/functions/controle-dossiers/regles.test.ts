@@ -295,4 +295,34 @@ const autrePlaque = anomaliesPiece(
 );
 verifie("plaque vraiment differente : toujours signalee", autrePlaque.some((a) => a.code === "plaque_differente"));
 
+
+// Cas de DEM-2026-08088 : mandat genere en PDF, signe et tamponne, que le
+// modele annoncait non signe faute de voir l'encre.
+const mandatPdf = anomaliesPiece(
+  piece({
+    nom_fichier: "Mandat_13757.pdf",
+    libelle: "Mandat signé et tamponné (cerfa 13757*03)",
+    extraction: { type_document: "mandat", lisible: true, immatriculations: ["AB-123-CD"], signatures: { mandant: false, tampon: false } },
+  }),
+  contexte, maintenant,
+);
+verifie("PDF : on ne juge pas une signature qu'on ne voit pas", !mandatPdf.some((a) => a.code === "mandat_non_signe"));
+
+const mandatPhoto = anomaliesPiece(
+  piece({
+    nom_fichier: "mandat.jpg",
+    libelle: "Mandat signé et tamponné (cerfa 13757*03)",
+    extraction: { type_document: "mandat", lisible: true, immatriculations: ["AB-123-CD"], signatures: { mandant: false, tampon: false } },
+  }),
+  contexte, maintenant,
+);
+verifie("photo : la signature absente reste signalee", mandatPhoto.some((a) => a.code === "mandat_non_signe"));
+
+// Cas de DEM-2026-07688 : le numero de formule range parmi les plaques.
+const fausseplaque = anomaliesPiece(
+  piece({ extraction: { lisible: true, type_document: "declaration_achat", immatriculations: ["BS47502", "2022AV45464"] } }),
+  { ...contexte, immatriculation: "AS-475-QZ" }, maintenant,
+);
+verifie("suites de caracteres qui ne sont pas des plaques : ignorees", !fausseplaque.some((a) => a.code === "plaque_differente"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
