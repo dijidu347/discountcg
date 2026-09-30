@@ -351,8 +351,17 @@ async function recontroler(supabase: ReturnType<typeof createClient>, demarcheId
   const manquantes = attendues.filter((piece) => !deposees.has(piece.code)).map((piece) => piece.libelle);
 
   const maintenant = new Date();
+
+  // Les anomalies sont aussi rangées pièce par pièce : c'est ce qui permet de
+  // confronter ce que le contrôle signale à ce que l'admin a réellement décidé
+  // sur la même pièce, et donc de régler les gravités sur des faits.
+  const parPiece = pieces.map((piece) => ({ piece, anomalies: anomaliesPiece(piece, contexte, maintenant) }));
+  for (const { piece, anomalies } of parPiece) {
+    await supabase.from("analyses_documents").update({ anomalies }).eq("document_id", piece.document_id);
+  }
+
   const anomalies: Anomalie[] = [
-    ...pieces.flatMap((piece) => anomaliesPiece(piece, contexte, maintenant)),
+    ...parPiece.flatMap((p) => p.anomalies),
     ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true),
   ];
 
