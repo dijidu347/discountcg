@@ -324,7 +324,7 @@ async function recontroler(supabase: any, demarcheId: string) {
 
   const libelles = await libellesDocN(supabase, demarche.type);
   const pieces: Piece[] = retenus.map((doc) => {
-    const analyse = parDocument.get(doc.id);
+    const analyse = parDocument.get(doc.id) as Analyse | undefined;
     return {
       document_id: doc.id,
       type_document: doc.type_document,
