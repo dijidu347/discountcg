@@ -351,17 +351,7 @@ verifie(
 );
 
 
-const datesDeVenteDiscordantes = anomaliesDossier([
-  piece({ document_id: "a", nom_fichier: "cession.jpg", libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { dates: { cession: "2026-08-31" } } }),
-  piece({ document_id: "b", nom_fichier: "cg.jpg", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-08-14" } } }),
-], [], contexte, true);
-verifie("dates de vente discordantes : bloquant", datesDeVenteDiscordantes.some((a) => a.code === "dates_cession_differentes" && a.gravite === "haute"));
 
-const memeDateDeVente = anomaliesDossier([
-  piece({ document_id: "a", nom_fichier: "cession.jpg", libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { dates: { cession: "2026-08-14" } } }),
-  piece({ document_id: "b", nom_fichier: "cg.jpg", libelle: "Carte grise barrée", extraction: { dates: { cession: "2026-08-14" } } }),
-], [], contexte, true);
-verifie("memes dates de vente : rien a signaler", !memeDateDeVente.some((a) => a.code === "dates_cession_differentes"));
 
 
 const daSansDate = anomaliesPiece(

@@ -608,32 +608,11 @@ export function anomaliesDossier(
     });
   }
 
-  // La date de vente portée sur la carte grise doit être celle du certificat de
-  // cession : le guide l'exige dans ses trois tableaux, et une discordance
-  // bloque l'enregistrement.
-  //
-  // Bloquant : le SIV refuse la démarche quand ces deux dates diffèrent, et la
-  // règle est posée par l'exploitante. La lecture de ces dates manuscrites reste
-  // la plus délicate de toutes — c'est pour cela que le message donne les deux
-  // dates lues, pour qu'un coup d'œil suffise à trancher.
-  const dateDe = (motif: RegExp): { date: string; piece: string } | null => {
-    for (const piece of pieces) {
-      if (!motif.test(piece.libelle)) continue;
-      const date = piece.extraction?.dates?.cession;
-      if (date) return { date, piece: piece.libelle };
-    }
-    return null;
-  };
-  const surCession = dateDe(/cession/i);
-  const surCarteGrise = dateDe(/carte grise|certificat d.immatriculation/i);
-  if (surCession && surCarteGrise && surCession.date !== surCarteGrise.date) {
-    anomalies.push({
-      code: "dates_cession_differentes",
-      gravite: "haute",
-      message: `Dates de vente différentes : ${surCarteGrise.date} sur la carte grise, ${surCession.date} sur le certificat de cession. Les deux doivent être identiques.`,
-      piece: surCarteGrise.piece,
-    });
-  }
+  // La comparaison des dates de vente est suspendue tant que leur lecture n'est
+  // pas mesurée. Le guide l'exige, la règle est juste, mais elle repose sur deux
+  // lectures manuscrites qui se sont trompées à chaque fois qu'on les a
+  // regardées. Les dates restent extraites : il suffira de rétablir la
+  // comparaison le jour où elles seront fiables.
 
   // Adresse du justificatif de domicile contre celle du mandat.
   const adresseDe = (motif: RegExp): { adresse: string; piece: string } | null => {
