@@ -34,7 +34,7 @@ const mauvaisePlaque = anomaliesPiece(
 verifie("plaque differente signalee", mauvaisePlaque.some((a) => a.code === "plaque_differente"));
 
 const bonnePlaque = anomaliesPiece(
-  piece({ extraction: { correspond: true, lisible: true, immatriculations: ["ab123cd"] } }),
+  piece({ extraction: { correspond: true, lisible: true, immatriculations: ["ab123cd"], dates: { cession: "2026-09-01" } } }),
   contexte, maintenant,
 );
 verifie("plaque identique non signalee", bonnePlaque.length === 0);
