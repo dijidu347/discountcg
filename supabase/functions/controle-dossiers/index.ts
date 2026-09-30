@@ -20,6 +20,7 @@ import {
   niveauDossier,
   type Anomalie,
   type ContexteDossier,
+  type Extraction,
   type Piece,
 } from "./regles.ts";
 
