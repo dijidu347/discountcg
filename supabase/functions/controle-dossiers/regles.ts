@@ -215,12 +215,16 @@ export function estPieceLibre(typeDocument: string): boolean {
   return typeDocument.startsWith("autre_piece") || typeDocument.startsWith("correction");
 }
 
-const LIBELLE_DEFAUT: Record<string, string> = {
-  flou: "elle est floue",
-  sombre: "elle est trop sombre",
-  tronque: "elle est coupée",
-  reflet: "un reflet masque une partie du document",
-  doigt: "un doigt masque une partie du document",
+// Gravité de chaque défaut d'image, réglée sur les décisions réellement prises :
+// sur les pièces déjà contrôlées à la main, un reflet, une ombre ou un doigt
+// n'ont jamais motivé un refus, alors qu'une photo floue ou coupée si. Les
+// premiers restent affichés, en information, sans peser sur le verdict.
+const LIBELLE_DEFAUT: Record<string, { texte: string; gravite: Gravite }> = {
+  flou: { texte: "elle est floue", gravite: "moyenne" },
+  tronque: { texte: "elle est coupée", gravite: "moyenne" },
+  sombre: { texte: "elle est trop sombre", gravite: "basse" },
+  reflet: { texte: "un reflet masque une partie du document", gravite: "basse" },
+  doigt: { texte: "un doigt masque une partie du document", gravite: "basse" },
 };
 
 // Contrôles d'une pièce prise isolément.
@@ -236,7 +240,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   }
 
   if (piece.taille_octets !== null && piece.taille_octets < 15_000) {
-    ajoute("fichier_trop_leger", "moyenne", "Le fichier est minuscule : la pièce est probablement vide ou tronquée.");
+    ajoute("fichier_trop_leger", "haute", "Le fichier est minuscule : la pièce est vide ou tronquée.");
   }
 
   if (!ex) return anomalies;
@@ -246,9 +250,9 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   }
 
   for (const defaut of ex.defauts ?? []) {
-    const texte = LIBELLE_DEFAUT[defaut];
-    if (texte) {
-      ajoute(`qualite_${defaut}`, "moyenne", `À renvoyer : ${texte}.`);
+    const connu = LIBELLE_DEFAUT[defaut];
+    if (connu) {
+      ajoute(`qualite_${defaut}`, connu.gravite, `À renvoyer : ${connu.texte}.`);
     }
   }
 
@@ -315,7 +319,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   if (estMandat && ex.signatures) {
     const signe = ex.signatures.mandant ?? ex.signatures.vendeur;
     if (signe === false && ex.signatures.tampon !== true) {
-      ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");
+      ajoute("mandat_non_signe", "moyenne", "Le mandat ne semble ni signé ni tamponné.");
     }
   }
 
@@ -324,7 +328,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   const vinInutile = plaquesLues.length > 0;
   for (const champ of ex.champs_incomplets ?? []) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
-    ajoute("champ_vide", "moyenne", `Champ non rempli : ${champ}.`);
+    ajoute("champ_vide", "basse", `Champ non rempli : ${champ}.`);
   }
 
   // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun

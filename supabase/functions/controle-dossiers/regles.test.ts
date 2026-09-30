@@ -171,4 +171,20 @@ const tronque = anomaliesPiece(
 );
 verifie("document coupe mais lisible : a verifier, pas bloquant", tronque.every((a) => a.gravite !== "haute"));
 
+
+const refletSeul = anomaliesPiece(
+  piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", defauts: ["reflet"] } }),
+  contexte, maintenant,
+);
+verifie("reflet : information, jamais bloquant", refletSeul.every((a) => a.gravite === "basse"));
+
+const fichierVide = anomaliesPiece(piece({ taille_octets: 4000 }), contexte, maintenant);
+verifie("fichier minuscule : bloquant", fichierVide.some((a) => a.code === "fichier_trop_leger" && a.gravite === "haute"));
+
+const heureManquante = anomaliesPiece(
+  piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", champs_incomplets: ["heure de cession"] } }),
+  contexte, maintenant,
+);
+verifie("case vide : information", heureManquante.every((a) => a.gravite === "basse"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
