@@ -166,7 +166,10 @@ function joursDepuis(valeur: string | null | undefined, reference: Date): number
 // Durée de validité attendue selon la nature de la pièce, en jours.
 const FRAICHEUR: { motif: RegExp; jours: number; nom: string }[] = [
   { motif: /non.?gage|situation administrative/i, jours: 15, nom: "Le certificat de non-gage" },
-  { motif: /domicile|quittance|facture (edf|energie)/i, jours: 92, nom: "Le justificatif de domicile" },
+  // Six mois, comme le tableau « documents obligatoires » du guide. La liste du
+  // site en réclamait trois : plus strict que le SIV, donc du travail en plus
+  // pour rien.
+  { motif: /domicile|quittance|facture (edf|energie)/i, jours: 183, nom: "Le justificatif de domicile" },
   { motif: /kbis/i, jours: 183, nom: "L'extrait Kbis" },
   { motif: /controle technique|contrôle technique/i, jours: 183, nom: "Le contrôle technique" },
 ];
