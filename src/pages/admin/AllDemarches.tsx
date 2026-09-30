@@ -539,7 +539,10 @@ export default function AllDemarches() {
                     <TableHead>N° Démarche</TableHead>
                     <TableHead>Immatriculation</TableHead>
                     <TableHead>Garage</TableHead>
-                    <TableHead>Type</TableHead>
+                    {/* Colonne étroite : les codes pro (« WW PROVISOIRE PRO »)
+                        la faisaient déborder de l'écran. Ils passent désormais
+                        sur deux lignes. */}
+                    <TableHead className="w-20">Type</TableHead>
                     <TableHead>Paiement</TableHead>
                     <TableHead>Montant</TableHead>
                     <TableHead>Date</TableHead>
@@ -595,7 +598,9 @@ export default function AllDemarches() {
                           )}
                         </div>
                       </TableCell>
-                      <TableCell>{d.type}</TableCell>
+                      <TableCell className="w-20 whitespace-normal break-words text-xs leading-tight">
+                        {String(d.type ?? "").replace(/_/g, " ")}
+                      </TableCell>
                       <TableCell>{getPaymentStatusBadge(d)}</TableCell>
                       <TableCell>{formatPrice(d.montant_ttc || 0)}€</TableCell>
                       <TableCell><TransactionDate row={d} /></TableCell>
