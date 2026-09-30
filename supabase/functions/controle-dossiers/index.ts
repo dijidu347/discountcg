@@ -228,20 +228,36 @@ async function libellesDocN(
   return libelles;
 }
 
+// Pièces obligatoires d'une démarche, telles qu'elles l'étaient le jour où elle
+// a été ouverte.
+//
+// Une exigence qui change ne vaut que pour la suite : les dossiers déjà déposés
+// l'ont été sur l'ancienne liste, et leur réclamer une pièce que personne ne
+// leur avait demandée serait leur faire payer notre correction. La date portée
+// sur la pièce dit à partir de quand elle compte.
 async function pieceObligatoires(
   supabase: any,
   typeDemarche: string,
+  ouvertLe: string | null,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
   if (!action?.id) return [];
   const { data: pieces } = await supabase
     .from("action_documents")
-    .select("nom_document, ordre, obligatoire")
+    .select("nom_document, ordre, obligatoire, obligatoire_depuis")
     .eq("action_id", action.id)
     .order("ordre");
+
+  const jourDuDossier = ouvertLe ? ouvertLe.slice(0, 10) : null;
   return (pieces ?? [])
-    .map((piece: any, index: number) => ({ code: `doc_${index + 1}`, libelle: piece.nom_document, obligatoire: piece.obligatoire }))
+    .map((piece: any, index: number) => ({
+      code: `doc_${index + 1}`,
+      libelle: piece.nom_document,
+      obligatoire: piece.obligatoire,
+      depuis: piece.obligatoire_depuis as string | null,
+    }))
     .filter((piece: any) => piece.obligatoire)
+    .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
     .map(({ code, libelle }: any) => ({ code, libelle }));
 }
 
@@ -282,7 +298,7 @@ async function contexteDeLecture(
 async function recontroler(supabase: any, demarcheId: string) {
   const { data: demarche } = await supabase
     .from("demarches")
-    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id")
+    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, created_at")
     .eq("id", demarcheId)
     .maybeSingle();
   if (!demarche) return;
@@ -354,7 +370,7 @@ async function recontroler(supabase: any, demarcheId: string) {
   };
 
   const deposees = new Set(retenus.map((doc) => doc.type_document));
-  const attendues = await pieceObligatoires(supabase, demarche.type);
+  const attendues = await pieceObligatoires(supabase, demarche.type, demarche.created_at ?? null);
   const manquantes = attendues.filter((piece) => !deposees.has(piece.code)).map((piece) => piece.libelle);
 
   const maintenant = new Date();
