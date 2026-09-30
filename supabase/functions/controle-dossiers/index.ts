@@ -219,7 +219,7 @@ async function libellesDocN(
       .select("nom_document, ordre, obligatoire")
       .eq("action_id", action.id)
       .order("ordre");
-    (pieces ?? []).forEach((piece, index) => {
+    (pieces ?? []).forEach((piece: any, index: number) => {
       libelles[`doc_${index + 1}`] = piece.nom_document;
     });
   }
@@ -239,9 +239,9 @@ async function pieceObligatoires(
     .eq("action_id", action.id)
     .order("ordre");
   return (pieces ?? [])
-    .map((piece, index) => ({ code: `doc_${index + 1}`, libelle: piece.nom_document, obligatoire: piece.obligatoire }))
-    .filter((piece) => piece.obligatoire)
-    .map(({ code, libelle }) => ({ code, libelle }));
+    .map((piece: any, index: number) => ({ code: `doc_${index + 1}`, libelle: piece.nom_document, obligatoire: piece.obligatoire }))
+    .filter((piece: any) => piece.obligatoire)
+    .map(({ code, libelle }: any) => ({ code, libelle }));
 }
 
 async function contexteDeLecture(
@@ -319,7 +319,7 @@ async function recontroler(supabase: any, demarcheId: string) {
     .from("analyses_documents")
     .select("document_id, statut, extraction, empreinte")
     .in("document_id", retenus.map((doc) => doc.id).slice(0, 200));
-  const parDocument = new Map((analyses ?? []).map((a) => [a.document_id, a]));
+  const parDocument = new Map((analyses ?? []).map((a: any) => [a.document_id, a] as [string, any]));
 
   const libelles = await libellesDocN(supabase, demarche.type);
   const pieces: Piece[] = retenus.map((doc) => {
