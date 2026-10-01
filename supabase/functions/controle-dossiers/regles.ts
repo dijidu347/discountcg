@@ -758,9 +758,12 @@ export function anomaliesDossier(
     anomalies.push({
       code: "piece_manquante",
       gravite: depotTermine ? "haute" : "basse",
+      // L'interface affiche déjà le nom de la pièce devant le message : le
+      // répéter laissait la place à la seule chose qu'on voulait savoir —
+      // est-elle obligatoire, et peut-on traiter le dossier sans elle.
       message: depotTermine
-        ? `Pièce obligatoire absente : ${libelle}.`
-        : `Pas encore déposée : ${libelle}.`,
+        ? "Obligatoire, et absente du dossier."
+        : "Obligatoire, pas encore déposée.",
       piece: libelle,
     });
   }
