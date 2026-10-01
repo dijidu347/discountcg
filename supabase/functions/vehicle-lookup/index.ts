@@ -41,12 +41,24 @@ function normalize(apiResponse: any): NormalizedVehicle {
     couleur: v?.AWN_couleur,
     puissance_fiscale: v?.AWN_puissance_fiscale,
     energie: v?.AWN_energie,
-    date_mec: v?.AWN_date_mise_en_circulation,
+    date_mec: dateIso(v?.AWN_date_mise_en_circulation),
     co2: v?.AWN_emission_co_2,
     immatriculation: v?.AWN_immat,
     vin: v?.AWN_vin,
     genre: v?.AWN_genre,
   };
+}
+
+// Les sources ne datent pas de la même façon : le revendeur rendait
+// « 2012-09-28 », l'accès direct rend « 28-09-2012 ». Une base de données
+// refuse la seconde, et un calcul d'ancienneté s'y trompe en silence. On rend
+// toujours la forme ISO, pour que le reste du site n'ait jamais à deviner.
+function dateIso(valeur: unknown): unknown {
+  if (typeof valeur !== 'string') return valeur;
+  const v = valeur.trim();
+  const jma = v.match(/^(\d{2})[-/](\d{2})[-/](\d{4})$/);
+  if (jma) return `${jma[3]}-${jma[2]}-${jma[1]}`;
+  return v;
 }
 
 function isFilled(value: unknown): boolean {
