@@ -507,4 +507,81 @@ verifie("une piece facultative absente ne vire pas au rouge",
 verifie("et le message dit qu'elle est facultative",
   avecFacultative.some((a) => a.code === "fichier_duplique" && a.message.includes("facultative")));
 
+// Le guide exige l'identite du VIN entre la carte grise et la cession, mais la
+// lecture de dix-sept caracteres sans separateur se trompe d'un caractere ou
+// deux. On distingue la coquille de l'autre vehicule.
+const vinCoquille = anomaliesPiece(
+  piece({ extraction: { type_document: "certificat_cession", lisible: true, vin: "VF1RFB0OX12345G78" } }),
+  contexte, maintenant,
+);
+verifie("une coquille de lecture sur le VIN ne declenche rien",
+  !vinCoquille.some((a) => a.code === "vin_different"));
+
+const vinAutreVehicule = anomaliesPiece(
+  piece({ extraction: { type_document: "certificat_cession", lisible: true, vin: "WVWZZZ1KZAW123456" } }),
+  contexte, maintenant,
+);
+verifie("un VIN franchement different est signale",
+  vinAutreVehicule.some((a) => a.code === "vin_different" && a.gravite === "haute"));
+
+const vinTronque = anomaliesPiece(
+  piece({ extraction: { type_document: "certificat_cession", lisible: true, vin: "VF1RFB00X" } }),
+  contexte, maintenant,
+);
+verifie("un VIN tronque n'est pas compare",
+  !vinTronque.some((a) => a.code === "vin_different"));
+
+// « Verifier la coherence du Siret » (guide SIV, annexe 5).
+const contexteSociete: ContexteDossier = {
+  ...contexte, mandat_data: { mandant_siret: "123 456 789 00012" },
+};
+const mandat = (siret: string | null) => piece({
+  type_document: "doc_5", libelle: "Mandat signé et tamponné (cerfa 13757*03)", nom_fichier: "mandat.jpg",
+  extraction: { type_document: "mandat", lisible: true, siret },
+});
+verifie("un Siret etranger au mandant est signale",
+  anomaliesPiece(mandat("98765432100019"), contexteSociete, maintenant)
+    .some((a) => a.code === "siret_different" && a.gravite === "haute"));
+verifie("le meme Siren depuis un autre etablissement passe",
+  !anomaliesPiece(mandat("12345678900038"), contexteSociete, maintenant)
+    .some((a) => a.code === "siret_different"));
+verifie("un Siren a neuf chiffres se compare au Siret",
+  !anomaliesPiece(mandat("123456789"), contexteSociete, maintenant)
+    .some((a) => a.code === "siret_different"));
+verifie("un numero mal lu n'est pas compare",
+  !anomaliesPiece(mandat("1234"), contexteSociete, maintenant)
+    .some((a) => a.code === "siret_different"));
+verifie("sans Siret au dossier, rien n'est reproche",
+  !anomaliesPiece(mandat("98765432100019"), contexte, maintenant)
+    .some((a) => a.code === "siret_different"));
+
+// « Co-titulaire : double signature » (guide SIV, annexe 5).
+const avecCoTitulaire = (secondVendeur: boolean | undefined): Piece[] => [
+  piece({
+    document_id: "cg", type_document: "doc_3", nom_fichier: "cg.jpg", libelle: "Carte grise",
+    extraction: { type_document: "carte_grise", lisible: true, co_titulaire: true },
+  }),
+  piece({
+    document_id: "ce", type_document: "doc_1", nom_fichier: "cession.jpg",
+    libelle: "Certificat de cession signé et tamponné (cerfa 15776*02)",
+    extraction: {
+      type_document: "certificat_cession", lisible: true,
+      signatures: { vendeur: true, acheteur: true, second_vendeur: secondVendeur },
+    },
+  }),
+];
+verifie("co-titulaire sans seconde signature : signale",
+  anomaliesDossier(avecCoTitulaire(false), [], contexte, true, [])
+    .some((a) => a.code === "double_signature_manquante"));
+verifie("co-titulaire avec les deux signatures : rien",
+  !anomaliesDossier(avecCoTitulaire(true), [], contexte, true, [])
+    .some((a) => a.code === "double_signature_manquante"));
+verifie("lecture ancienne sans l'information : on n'invente rien",
+  !anomaliesDossier(avecCoTitulaire(undefined), [], contexte, true, [])
+    .some((a) => a.code === "double_signature_manquante"));
+verifie("sans co-titulaire, aucune double signature exigee",
+  !anomaliesDossier(
+    [piece({ extraction: { type_document: "certificat_cession", lisible: true, signatures: { second_vendeur: false } } })],
+    [], contexte, true, []).some((a) => a.code === "double_signature_manquante"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

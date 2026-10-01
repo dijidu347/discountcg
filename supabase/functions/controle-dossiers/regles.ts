@@ -35,7 +35,13 @@ export interface Extraction {
     cession?: string | null;
     heure_cession?: string | null;
   } | null;
-  signatures?: { vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean } | null;
+  signatures?: {
+    vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean;
+    /** Deux signatures distinctes dans le cadre du vendeur : exigé quand la carte grise porte un co-titulaire. */
+    second_vendeur?: boolean;
+  } | null;
+  /** Le document nomme deux titulaires ou deux vendeurs. */
+  co_titulaire?: boolean | null;
   mentions?: { cede_le?: boolean; barree?: boolean } | null;
   face?: string | null;
   situation_administrative?: { vierge?: boolean; mentions?: string[] } | null;
@@ -175,6 +181,32 @@ export function ecart(a: string, b: string, limite: number): number {
 // plaque, courte et structurée, qui dit de façon fiable si la pièce concerne un
 // autre véhicule.
 const ECART_VIN = 3;
+
+// Un Siret compte quatorze chiffres, un Siren les neuf premiers. Le modèle lit
+// parfois l'un là où l'autre est écrit, et un numéro mal cadré n'a ni l'une ni
+// l'autre longueur : on ne compare que ce qui a la forme d'un numéro.
+export function normaliseSiret(valeur: unknown): string | null {
+  if (typeof valeur !== "string" && typeof valeur !== "number") return null;
+  const chiffres = String(valeur).replace(/\D/g, "");
+  return chiffres.length === 9 || chiffres.length === 14 ? chiffres : null;
+}
+
+// Deux numéros désignent la même entreprise quand leurs neuf premiers chiffres
+// coïncident : le Siren identifie la société, les cinq derniers l'établissement.
+// Un garage qui signe depuis un autre de ses établissements reste le même
+// mandant.
+export function memeEtablissement(a: string, b: string): boolean {
+  return a.slice(0, 9) === b.slice(0, 9);
+}
+
+// Un VIN n'a que des lettres et des chiffres, et il en a toujours dix-sept.
+// Tout ce qui n'a pas cette forme est une lecture ratée, pas un numéro : la
+// comparer reviendrait à comparer du bruit.
+export function normaliseVin(valeur: string | null | undefined): string | null {
+  if (!valeur) return null;
+  const propre = valeur.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return propre.length === 17 ? propre : null;
+}
 
 export function vinsDifferents(a: string, b: string): boolean {
   return ecart(a, b, ECART_VIN) > ECART_VIN;
@@ -392,6 +424,22 @@ export function anomaliesPiece(
     );
   }
 
+  // Le guide SIV exige que le VIN de la carte grise soit identique à celui porté
+  // sur la cession. La règle avait été retirée : sur dix-sept caractères sans
+  // séparateur, un Z lu 2 et un O lu 0 produisaient quatorze désaccords
+  // imaginaires sur vingt dossiers. Elle revient avec une tolérance — au-delà de
+  // trois caractères d'écart, ce n'est plus une erreur de lecture, c'est un
+  // autre véhicule.
+  const vinDossier = normaliseVin(contexte.vin);
+  const vinLu = normaliseVin(ex.vin);
+  if (vinDossier && vinLu && vinsDifferents(vinLu, vinDossier)) {
+    ajoute(
+      "vin_different",
+      "haute",
+      `Le numéro de série lu sur la pièce (${vinLu}) n'est pas celui du dossier (${vinDossier}).`,
+    );
+  }
+
   // Validité et fraîcheur.
   //
   // Seuls certains documents expirent. Une carte grise, une cession, un mandat
@@ -430,6 +478,22 @@ export function anomaliesPiece(
     const signe = ex.signatures.mandant ?? ex.signatures.vendeur;
     if (signe === false && ex.signatures.tampon !== true) {
       ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");
+    }
+  }
+
+  // « Vérifier la cohérence du Siret » : le mandat d'une société doit porter le
+  // Siret de cette société. Un Siret qui ne correspond pas, c'est un mandat
+  // signé par quelqu'un d'autre — le SIV le refuse à la saisie, et c'est
+  // exactement ce qu'un contrôle de préfecture regarde.
+  if (estMandat) {
+    const siretDossier = normaliseSiret(contexte.mandat_data?.mandant_siret);
+    const siretLu = normaliseSiret(ex.siret);
+    if (siretDossier && siretLu && !memeEtablissement(siretLu, siretDossier)) {
+      ajoute(
+        "siret_different",
+        "haute",
+        `Le Siret porté sur le mandat (${siretLu}) n'est pas celui du mandant (${siretDossier}).`,
+      );
     }
   }
 
@@ -547,6 +611,30 @@ export function anomaliesDossier(
         : `Pas encore déposée : ${libelle}.`,
       piece: libelle,
     });
+  }
+
+  // « Co-titulaire : double signature » (guide SIV, annexe 5). La carte grise dit
+  // s'il y a deux titulaires, la cession doit alors porter deux signatures de
+  // vendeur. Les deux informations sont sur deux pièces différentes, donc la
+  // règle ne peut se juger qu'ici.
+  //
+  // Gravité moyenne et non haute : le co-titulaire est reconnu par le modèle, et
+  // une carte grise mal cadrée peut lui en faire voir un qui n'existe pas. On le
+  // fait regarder, on ne l'affirme pas.
+  const coTitulaire = pieces.some((p) => p.extraction?.co_titulaire === true);
+  if (coTitulaire) {
+    const cession = pieces.find((p) =>
+      p.extraction?.type_document === "certificat_cession"
+      && !/\.pdf$/i.test(p.nom_fichier));
+    if (cession && cession.extraction?.signatures?.second_vendeur === false) {
+      anomalies.push({
+        code: "double_signature_manquante",
+        gravite: "moyenne",
+        message: "La carte grise porte un co-titulaire : la cession doit être signée par les deux, et une seule signature est visible.",
+        piece: cession.libelle,
+        document_id: cession.document_id,
+      });
+    }
   }
 
   // Même fichier déposé sur deux pièces différentes. Un seul fichier pour deux
