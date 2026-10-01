@@ -238,10 +238,39 @@ async function libellesDocN(
 // l'ont été sur l'ancienne liste, et leur réclamer une pièce que personne ne
 // leur avait demandée serait leur faire payer notre correction. La date portée
 // sur la pièce dit à partir de quand elle compte.
+// Le contrôle technique n'est exigé qu'au-delà de quatre ans d'âge (guide SIV,
+// annexe 5). Réclamer le procès-verbal d'une voiture de deux ans serait un
+// reproche sans objet, et sans date de mise en circulation nous n'avons rien
+// pour l'affirmer : dans le doute, on ne demande pas.
+function controleTechniqueExigible(dateMec: string | null): boolean {
+  if (!dateMec) return false;
+  const mec = new Date(dateMec);
+  if (Number.isNaN(mec.getTime())) return false;
+  const quatreAns = new Date(mec);
+  quatreAns.setFullYear(quatreAns.getFullYear() + 4);
+  return quatreAns.getTime() < Date.now();
+}
+
+// Le cerfa 13751 exige, « en cas d'achat du véhicule à un autre professionnel »,
+// la copie du récépissé de la précédente déclaration d'achat. Entre particulier
+// et garage, il n'existe pas : le réclamer systématiquement reviendrait à
+// signaler un manque sur la majorité des ventes. La question est posée au garage
+// au moment de la démarche, et c'est sa réponse qui décide.
+async function venduParUnProfessionnel(supabase: any, demarcheId: string): Promise<boolean> {
+  const { data } = await supabase
+    .from("demarche_questionnaire_responses")
+    .select("question_text, answer_text")
+    .eq("demarche_id", demarcheId);
+  const reponse = (data ?? []).find((r: any) => /professionnel/i.test(r.question_text ?? ""));
+  return /oui/i.test(reponse?.answer_text ?? "");
+}
+
 async function pieceObligatoires(
   supabase: any,
   typeDemarche: string,
   ouvertLe: string | null,
+  dateMec: string | null = null,
+  venduParPro = false,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
   if (!action?.id) return [];
@@ -261,6 +290,10 @@ async function pieceObligatoires(
     }))
     .filter((piece: any) => piece.obligatoire)
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
+    .filter((piece: any) =>
+      !/contr[ôo]le technique/i.test(piece.libelle) || controleTechniqueExigible(dateMec))
+    .filter((piece: any) =>
+      !/r[ée]c[ée]piss[ée]/i.test(piece.libelle) || venduParPro)
     .map(({ code, libelle }: any) => ({ code, libelle }));
 }
 
@@ -370,9 +403,12 @@ async function recontroler(supabase: any, demarcheId: string) {
   });
 
   let vin: string | null = null;
+  let dateMec: string | null = null;
   if (demarche.vehicule_id) {
-    const { data: vehicule } = await supabase.from("vehicules").select("vin").eq("id", demarche.vehicule_id).maybeSingle();
+    const { data: vehicule } = await supabase
+      .from("vehicules").select("vin, date_mec").eq("id", demarche.vehicule_id).maybeSingle();
     vin = vehicule?.vin ?? null;
+    dateMec = vehicule?.date_mec ?? null;
   }
 
   const contexte: ContexteDossier = {
@@ -395,7 +431,10 @@ async function recontroler(supabase: any, demarcheId: string) {
     piece.extraction?.type_document,
     ...(piece.extraction?.autres_documents ?? []),
   ]);
-  const attendues = await pieceObligatoires(supabase, demarche.type, demarche.created_at ?? null);
+  const attendues = await pieceObligatoires(
+    supabase, demarche.type, demarche.created_at ?? null, dateMec,
+    await venduParUnProfessionnel(supabase, demarcheId),
+  );
 
   // Après un refus, le garage renvoie ses pièces dans des cases « correction »
   // indifférenciées : l'emplacement d'origine reste vide alors que la pièce est
