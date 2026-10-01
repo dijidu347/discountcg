@@ -605,18 +605,16 @@ export function anomaliesPiece(
   // lorsqu'il a réellement vu la page.
   const estCession = /cession/i.test(piece.libelle);
   const estMandat = /mandat/i.test(piece.libelle);
-  if (pageVue && estCession && ex.signatures) {
-    if (ex.signatures.vendeur === false) ajoute("signature_manquante", "haute", "Le certificat de cession n'est pas signé par le vendeur.");
-    if (ex.signatures.acheteur === false) ajoute("signature_manquante", "haute", "Le certificat de cession n'est pas signé par l'acheteur.");
-  }
-  // Sur un mandat, le signataire est le mandant : le modèle le nomme tantôt
-  // « mandant », tantôt « vendeur » selon la façon dont le Cerfa est rempli.
-  if (pageVue && estMandat && ex.signatures) {
-    const signe = ex.signatures.mandant ?? ex.signatures.vendeur;
-    if (signe === false && ex.signatures.tampon !== true) {
-      ajoute("mandat_non_signe", "haute", "Le mandat n'est ni signé ni tamponné.");
-    }
-  }
+
+  // Les signatures ne sont plus jugées automatiquement.
+  //
+  // Même sur une photo, le modèle devine l'encre plus qu'il ne la lit : sur
+  // DEM-2026-07941 il a annoncé une cession non signée par l'acheteur alors
+  // qu'elle l'était. Le guide exige ces signatures — vendeur et acquéreur sur la
+  // cession, mandant sur le mandat, les deux titulaires s'il y a un
+  // co-titulaire — et elles figurent donc dans la liste des vérifications
+  // laissées à l'œil, affichée sous les signalements. Mieux vaut dire « regardez
+  // ceci » que se tromper une fois sur deux et faire rouvrir un dossier sain.
 
   // « Vérifier la cohérence du Siret » : le mandat d'une société doit porter le
   // Siret de cette société. Un Siret qui ne correspond pas, c'est un mandat
@@ -864,29 +862,10 @@ export function anomaliesDossier(
     }
   }
 
-  // « Co-titulaire : double signature » (guide SIV, annexe 5). La carte grise dit
-  // s'il y a deux titulaires, la cession doit alors porter deux signatures de
-  // vendeur. Les deux informations sont sur deux pièces différentes, donc la
-  // règle ne peut se juger qu'ici.
-  //
-  // Gravité moyenne et non haute : le co-titulaire est reconnu par le modèle, et
-  // une carte grise mal cadrée peut lui en faire voir un qui n'existe pas. On le
-  // fait regarder, on ne l'affirme pas.
-  const coTitulaire = pieces.some((p) => p.extraction?.co_titulaire === true);
-  if (coTitulaire) {
-    const cession = pieces.find((p) =>
-      p.extraction?.type_document === "certificat_cession"
-      && !/\.pdf$/i.test(p.nom_fichier));
-    if (cession && cession.extraction?.signatures?.second_vendeur === false) {
-      anomalies.push({
-        code: "double_signature_manquante",
-        gravite: "moyenne",
-        message: "La carte grise porte un co-titulaire : la cession doit être signée par les deux, et une seule signature est visible.",
-        piece: cession.libelle,
-        document_id: cession.document_id,
-      });
-    }
-  }
+  // « Co-titulaire : double signature » relève de la même limite : compter les
+  // signatures dans un cadre revient à les lire, et le modèle ne sait pas le
+  // faire de façon sûre. Ce point rejoint lui aussi les vérifications laissées
+  // à l'œil.
 
   // Même fichier déposé sur deux pièces différentes. Un seul fichier pour deux
   // emplacements, c'est un seul fait : une pièce a bien été fournie, l'autre

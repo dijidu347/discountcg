@@ -43,7 +43,11 @@ const nonSignee = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, signatures: { vendeur: false, acheteur: true } } }),
   contexte, maintenant,
 );
-verifie("cession non signee", nonSignee.some((a) => a.code === "signature_manquante"));
+// Les signatures sont passees dans l'encadre « A verifier vous-meme » : sur
+// DEM-2026-07941 le modele annoncait une cession non signee par l'acheteur
+// alors qu'elle l'etait. Il devine l'encre plus qu'il ne la lit.
+verifie("une signature n'est plus jugee automatiquement",
+  !nonSignee.some((a) => a.code === "signature_manquante"));
 
 const nonGage = anomaliesPiece(
   piece({ libelle: "Certificat de situation administrative (non-gage)", extraction: { correspond: true, lisible: true, dates: { emission: "2026-08-01" } } }),
@@ -102,7 +106,7 @@ const mandatNonSigne = anomaliesPiece(
   piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { correspond: true, lisible: true, signatures: { mandant: false, tampon: false } } }),
   contexte, maintenant,
 );
-verifie("mandat non signe (champ mandant)", mandatNonSigne.some((a) => a.code === "mandat_non_signe"));
+verifie("ni celle du mandat", !mandatNonSigne.some((a) => a.code === "mandat_non_signe"));
 
 const mandatSigne = anomaliesPiece(
   piece({ libelle: "Mandat (cerfa 13757*03)", extraction: { correspond: true, lisible: true, type_document: "mandat", immatriculations: ["AB-123-CD"], signatures: { mandant: true, tampon: false } } }),
@@ -314,7 +318,8 @@ const mandatPhoto = anomaliesPiece(
   }),
   contexte, maintenant,
 );
-verifie("photo : la signature absente reste signalee", mandatPhoto.some((a) => a.code === "mandat_non_signe"));
+verifie("meme vue sur une photo, la signature reste a l'oeil",
+  !mandatPhoto.some((a) => a.code === "mandat_non_signe"));
 
 // Cas de DEM-2026-07688 : le numero de formule range parmi les plaques.
 const fausseplaque = anomaliesPiece(
@@ -559,7 +564,9 @@ verifie("sans Siret au dossier, rien n'est reproche",
   !anomaliesPiece(mandat("98765432100019"), contexte, maintenant)
     .some((a) => a.code === "siret_different"));
 
-// « Co-titulaire : double signature » (guide SIV, annexe 5).
+// « Co-titulaire : double signature » releve de la meme limite que les autres
+// signatures : compter des traits d'encre dans un cadre revient a les lire. Le
+// point est passe dans les verifications laissees a l'oeil.
 const avecCoTitulaire = (secondVendeur: boolean | undefined): Piece[] => [
   piece({
     document_id: "cg", type_document: "doc_3", nom_fichier: "cg.jpg", libelle: "Carte grise",
@@ -574,19 +581,9 @@ const avecCoTitulaire = (secondVendeur: boolean | undefined): Piece[] => [
     },
   }),
 ];
-verifie("co-titulaire sans seconde signature : signale",
-  anomaliesDossier(avecCoTitulaire(false), [], contexte, true, [])
+verifie("la double signature n'est plus jugee automatiquement",
+  !anomaliesDossier(avecCoTitulaire(false), [], contexte, true, [])
     .some((a) => a.code === "double_signature_manquante"));
-verifie("co-titulaire avec les deux signatures : rien",
-  !anomaliesDossier(avecCoTitulaire(true), [], contexte, true, [])
-    .some((a) => a.code === "double_signature_manquante"));
-verifie("lecture ancienne sans l'information : on n'invente rien",
-  !anomaliesDossier(avecCoTitulaire(undefined), [], contexte, true, [])
-    .some((a) => a.code === "double_signature_manquante"));
-verifie("sans co-titulaire, aucune double signature exigee",
-  !anomaliesDossier(
-    [piece({ extraction: { type_document: "certificat_cession", lisible: true, signatures: { second_vendeur: false } } })],
-    [], contexte, true, []).some((a) => a.code === "double_signature_manquante"));
 
 // Cas de DEM-2026-08088 : chaque Z d'un VIN Volkswagen lu comme un 2.
 const vinZeroDeux = anomaliesPiece(

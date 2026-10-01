@@ -218,6 +218,14 @@ export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: 
             <li className="flex gap-2">
               <Eye className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
+                <span className="font-medium">Les signatures</span> : vendeur et acquéreur sur la
+                cession, mandant sur le mandat, et les deux titulaires s'il y a un co-titulaire.
+                Le modèle devine l'encre plus qu'il ne la lit.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
                 <span className="font-medium">L'heure de cession</span> figure sur le certificat :
                 le SIV la réclame à la saisie.
               </span>
