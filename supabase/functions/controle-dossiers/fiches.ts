@@ -80,10 +80,30 @@ const MANDAT = `Ce document est le mandat pour effectuer les formalités d'immat
 
 const NON_GAGE = `Ce document est un certificat de situation administrative, appelé aussi non-gage. Il est délivré par le ministère de l'Intérieur, soit depuis le site du SIV, soit par le service Histovec : les deux sont officiels et se valent.
 
-Il porte l'immatriculation du véhicule, son numéro d'identification, l'identité du titulaire, et surtout la situation administrative du véhicule à sa date d'édition.
+Il commence par l'identification du véhicule — numéro d'immatriculation, numéro VIN, marque — puis vient la rubrique « Situation administrative du véhicule ».
 
+LIS CETTE RUBRIQUE AVEC LA PLUS GRANDE ATTENTION, SA MISE EN PAGE PIÈGE :
+chaque situation possible est écrite en TITRE, et sa VALEUR figure SUR LA LIGNE EN DESSOUS. Le titre est toujours là, même quand il n'y a rien à signaler. C'est la ligne en dessous, et elle seule, qui dit ce qu'il en est.
+
+La page ressemble à ceci :
+    Opposition au transfert du certificat d'immatriculation (OTCI)
+    Aucune
+    Opposition véhicule endommagé
+    Aucune
+    Déclaration valant saisie
+    Aucune
+    Gage
+    Aucun
+    Immatriculation suspendue
+    Non
+    Véhicule volé
+    Non
+
+Ici, le véhicule est parfaitement en règle : chaque rubrique répond « Aucune », « Aucun » ou « Non ». Ne prends JAMAIS un titre de rubrique pour un constat.
+
+→ situation_administrative.vierge = true quand toutes les valeurs sont « Aucune », « Aucun », « Non », « Néant » ou équivalentes.
+→ vierge = false uniquement quand une valeur dit le contraire : un nombre d'oppositions, un « Oui », le nom d'un créancier gagiste, une date de saisie, une mention de suspension ou de vol. Recopie alors dans situation_administrative.mentions la rubrique ET sa valeur, par exemple « Gage : établissement X ».
 → dates.emission = la date d'édition du certificat. Elle compte : le document n'est recevable que quinze jours.
-→ situation_administrative.vierge = true seulement si le document ne signale absolument rien. false dès qu'il mentionne une opposition, un gage, une saisie, un vol, une procédure VE ou VGE, une immatriculation suspendue, un certificat perdu ou déclaré en duplicata. Recopie chacune de ces mentions dans situation_administrative.mentions.
 → Un document Histovec qui présente l'historique du véhicule sans conclure sur la situation administrative n'est pas un certificat de situation administrative : dis-le dans la remarque.`;
 
 const IDENTITE = `Ce document est une pièce d'identité : carte nationale d'identité, passeport ou titre de séjour.
