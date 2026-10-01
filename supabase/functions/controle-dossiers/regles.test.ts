@@ -823,4 +823,19 @@ verifie("depot termine, elle est absente et c'est grave",
     && a.message === "Obligatoire, et absente du dossier."
     && a.gravite === "haute"));
 
+// Cas de DEM-2026-07557 : vehicule etranger, mandat portant « PC5467 ». Le
+// controle affirmait que le vehicule n'y etait pas identifie -- il l'etait, par
+// une plaque qui n'a pas le format francais.
+const mandatAvec = (immatriculations: string[]) => anomaliesPiece(
+  piece({
+    type_document: "doc_5", libelle: "Mandat signé et tamponné (cerfa 13757*03)", nom_fichier: "mandat.jpg",
+    extraction: { type_document: "mandat", lisible: true, immatriculations },
+  }),
+  { ...contexte, immatriculation: null }, maintenant,
+);
+verifie("une plaque etrangere identifie le vehicule",
+  !mandatAvec(["PC5467"]).some((a) => a.code === "vehicule_non_identifie"));
+verifie("un mandat sans aucun identifiant reste signale",
+  mandatAvec([]).some((a) => a.code === "vehicule_non_identifie"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

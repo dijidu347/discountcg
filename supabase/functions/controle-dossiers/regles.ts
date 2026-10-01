@@ -659,9 +659,16 @@ export function anomaliesPiece(
     ajoute("champ_vide", "moyenne", `Champ non rempli : ${champ}.`);
   }
 
-  // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun
+  // En revanche, un mandat qui ne porte aucun identifiant ne désigne aucun
   // véhicule.
-  if (estMandat && plaquesLues.length === 0 && !ex.vin) {
+  //
+  // On accepte ici n'importe quelle immatriculation, et non les seules plaques
+  // françaises : sur DEM-2026-07557, le mandat portait « PC5467 », la carte
+  // grise disait « véhicule non immatriculé », et le contrôle affirmait que le
+  // véhicule n'y était pas identifié. Il l'était — par une plaque étrangère.
+  // Le propos de la règle est l'absence d'identifiant, pas sa nationalité.
+  const aUnIdentifiant = (ex.immatriculations ?? []).some((i) => (i ?? "").trim().length >= 4);
+  if (estMandat && !aUnIdentifiant && !ex.vin) {
     ajoute("vehicule_non_identifie", "haute", "Le mandat n'indique ni plaque ni VIN : le véhicule n'y est pas identifié.");
   }
 
