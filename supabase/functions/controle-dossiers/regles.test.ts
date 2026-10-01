@@ -708,4 +708,31 @@ verifie("une piece en cours de validite ne declenche rien",
   !identite({ validite: "2035-04-01", naissance: "2000-11-20" })
     .some((a) => a.code === "piece_perimee"));
 
+// Cas de DEM-2026-05442 : ancienne carte d'identite deposee recto seul. La date
+// d'expiration est au verso, donc la validite est invérifiable -- et ce n'est
+// pas « perimee » qu'il faut dire, mais qu'il manque une face.
+const rectoSeul = (extra: Partial<Piece>[] = []): Piece[] => [
+  piece({
+    document_id: "r", type_document: "doc_2", nom_fichier: "cni.jpg",
+    libelle: "Pièce d'identité du vendeur (recto/verso)",
+    extraction: { type_document: "carte_identite", lisible: true, face: "recto", dates: { naissance: "1980-12-17" } },
+  }),
+  ...extra.map((e) => piece(e)),
+];
+verifie("une identite recto seul sans date de validite : on reclame le verso",
+  anomaliesDossier(rectoSeul(), [], contexte, true, [])
+    .some((a) => a.code === "verso_manquant" && a.gravite === "moyenne"));
+verifie("le verso depose a part suffit",
+  !anomaliesDossier(rectoSeul([{
+    document_id: "v", type_document: "doc_2_verso", nom_fichier: "cni2.jpg",
+    libelle: "Pièce d'identité du vendeur (recto/verso) (verso)",
+    extraction: { type_document: "carte_identite", lisible: true, face: "verso" },
+  }]), [], contexte, true, []).some((a) => a.code === "verso_manquant"));
+verifie("une nouvelle carte, dont la validite se lit au recto, ne declenche rien",
+  !anomaliesDossier([piece({
+    document_id: "n", type_document: "doc_2", nom_fichier: "cni.jpg",
+    libelle: "Pièce d'identité du vendeur (recto/verso)",
+    extraction: { type_document: "carte_identite", lisible: true, face: "recto", dates: { validite: "2035-04-01" } },
+  })], [], contexte, true, []).some((a) => a.code === "verso_manquant"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

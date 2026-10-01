@@ -684,6 +684,36 @@ export function anomaliesDossier(
     });
   }
 
+  // Sur une ancienne carte nationale d'identité, la date d'expiration est au
+  // verso. Déposée recto seul — comme sur DEM-2026-05442 — sa validité est
+  // invérifiable, et le contrôle avait pris la seule date visible, celle de
+  // naissance, pour une péremption. Le guide exige « documents en cours de
+  // validité » et « pièce d'identité recto/verso » : le bon constat n'est pas
+  // « périmée », c'est qu'il manque une face.
+  //
+  // Le verso arrive souvent dans son propre emplacement, donc la question ne se
+  // tranche qu'ici, où l'on voit toutes les pièces du dossier.
+  const identitesRecto = pieces.filter((p) =>
+    /identit|passeport|titre de s[ée]jour|permis/i.test(p.libelle)
+    && !p.type_document.endsWith("_verso")
+    && p.extraction?.face === "recto"
+    && !p.extraction?.dates?.validite);
+
+  for (const recto of identitesRecto) {
+    const versoDepose = pieces.some((p) =>
+      p !== recto
+      && (p.type_document === `${recto.type_document}_verso` || p.extraction?.face === "verso")
+      && /identit|passeport|titre de s[ée]jour|permis/i.test(p.libelle));
+    if (versoDepose) continue;
+    anomalies.push({
+      code: "verso_manquant",
+      gravite: "moyenne",
+      message: "Seul le recto de la pièce d'identité est déposé : sur une ancienne carte, la date de validité est au verso, et rien ne permet de vérifier qu'elle est en cours.",
+      piece: recto.libelle,
+      document_id: recto.document_id,
+    });
+  }
+
   // Une plaque étrangère au dossier, dite une fois par pièce, remplissait la
   // liste de trois lignes identiques pour un seul fait. Et le nombre de pièces
   // qui s'accordent est justement ce qui permet de trancher : trois documents
