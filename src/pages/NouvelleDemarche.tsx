@@ -352,24 +352,10 @@ export default function NouvelleDemarche() {
   // technique au-delà de quatre ans d'âge. La case « obligatoire » de la
   // configuration ne sait pas exprimer cela — elle vaut pour tout le monde ou
   // pour personne — donc la condition se juge au moment du dépôt.
-  const dateMecVehicule = useMemo(
-    () => vehiculeMandat?.date_mec ?? vehicleInfoPro?.date_mec ?? null,
-    [vehiculeMandat, vehicleInfoPro],
-  );
-
   const venduParUnPro = useMemo(() => {
     if (!questionVendeurProId) return false;
     return /^oui$/i.test((questionnaireAnswerTexts[questionVendeurProId] ?? "").trim());
   }, [questionnaireAnswerTexts, questionVendeurProId]);
-
-  const plusDeQuatreAns = useMemo(() => {
-    if (!dateMecVehicule) return false;
-    const mec = new Date(dateMecVehicule);
-    if (Number.isNaN(mec.getTime())) return false;
-    const quatreAns = new Date(mec);
-    quatreAns.setFullYear(quatreAns.getFullYear() + 4);
-    return quatreAns.getTime() < Date.now();
-  }, [dateMecVehicule]);
 
   // L'ordre d'affichage des pièces, qui n'est pas celui de la configuration :
   // les rangs y valent « doc_1 », « doc_2 »… et les changer renommerait toutes
@@ -388,9 +374,11 @@ export default function NouvelleDemarche() {
     if (doc.obligatoire) return true;
     const nom = doc.nom_document ?? "";
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro;
-    if (/contr[ôo]le technique/i.test(nom)) return plusDeQuatreAns;
+    // Le contrôle technique n'est pas une pièce de DA ni de DC : le guide ne le
+    // liste pas dans leurs documents obligatoires. L'avoir rendu bloquant a
+    // pousse trois garages sur trois a deposer autre chose pour passer l'envoi.
     return false;
-  }, [venduParUnPro, plusDeQuatreAns]);
+  }, [venduParUnPro]);
 
   // Tout ce qui manque pour payer, dans l'ordre de la page. Le bouton Payer
   // reste cliquable : au clic, cette liste s'affiche et chaque bloc concerne

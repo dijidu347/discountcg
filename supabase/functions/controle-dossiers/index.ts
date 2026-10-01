@@ -238,19 +238,6 @@ async function libellesDocN(
 // l'ont été sur l'ancienne liste, et leur réclamer une pièce que personne ne
 // leur avait demandée serait leur faire payer notre correction. La date portée
 // sur la pièce dit à partir de quand elle compte.
-// Le contrôle technique n'est exigé qu'au-delà de quatre ans d'âge (guide SIV,
-// annexe 5). Réclamer le procès-verbal d'une voiture de deux ans serait un
-// reproche sans objet, et sans date de mise en circulation nous n'avons rien
-// pour l'affirmer : dans le doute, on ne demande pas.
-function controleTechniqueExigible(dateMec: string | null): boolean {
-  if (!dateMec) return false;
-  const mec = new Date(dateMec);
-  if (Number.isNaN(mec.getTime())) return false;
-  const quatreAns = new Date(mec);
-  quatreAns.setFullYear(quatreAns.getFullYear() + 4);
-  return quatreAns.getTime() < Date.now();
-}
-
 // Le cerfa 13751 exige, « en cas d'achat du véhicule à un autre professionnel »,
 // la copie du récépissé de la précédente déclaration d'achat. Entre particulier
 // et garage, il n'existe pas : le réclamer systématiquement reviendrait à
@@ -269,7 +256,6 @@ async function pieceObligatoires(
   supabase: any,
   typeDemarche: string,
   ouvertLe: string | null,
-  dateMec: string | null = null,
   venduParPro = false,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
@@ -293,13 +279,22 @@ async function pieceObligatoires(
     // démarches, y compris celles où la condition n'est pas remplie, faute de
     // connaître l'âge du véhicule ou la nature du vendeur. Le contrôle, lui, le
     // sait — c'est donc lui qui porte l'exigence, en signalant sans bloquer.
+    // Le récépissé de la précédente déclaration d'achat est la seule pièce que le
+    // SIV exige sous condition : le cerfa 13751 la réclame « en cas d'achat du
+    // véhicule à un autre professionnel ». Le formulaire de dépôt ne peut pas
+    // l'exprimer — sa case « obligatoire » vaut pour tout le monde ou pour
+    // personne — donc c'est le contrôle qui porte l'exigence.
+    //
+    // Le contrôle technique, lui, n'est PAS une pièce de DA ni de DC : les listes
+    // de documents obligatoires du guide (pages 13 et 16) ne le mentionnent pas.
+    // Il figure seulement dans la check-list de l'annexe 5, qui dit ce qu'il faut
+    // vérifier sur les documents présents. L'avoir rendu obligatoire le 1er
+    // octobre a produit l'inverse de l'effet voulu : trois garages sur trois ont
+    // déposé autre chose à sa place pour passer l'envoi.
     .filter((piece: any) =>
       piece.obligatoire
-      || (/contr[ôo]le technique/i.test(piece.libelle) && controleTechniqueExigible(dateMec))
       || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro))
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
-    .filter((piece: any) =>
-      !/contr[ôo]le technique/i.test(piece.libelle) || controleTechniqueExigible(dateMec))
     .filter((piece: any) =>
       !/r[ée]c[ée]piss[ée]/i.test(piece.libelle) || venduParPro)
     .map(({ code, libelle }: any) => ({ code, libelle }));
@@ -446,7 +441,7 @@ async function recontroler(supabase: any, demarcheId: string) {
     ...(piece.extraction?.autres_documents ?? []),
   ]);
   const attendues = await pieceObligatoires(
-    supabase, demarche.type, demarche.created_at ?? null, dateMec,
+    supabase, demarche.type, demarche.created_at ?? null,
     await venduParUnProfessionnel(supabase, demarcheId),
   );
 
