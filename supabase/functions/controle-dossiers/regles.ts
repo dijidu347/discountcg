@@ -302,6 +302,13 @@ const FAMILLES: { motif: RegExp; acceptes: string[] }[] = [
 // contenu dit ce qu'elle remplace.
 // Une plaque se lit avec ses tirets. On la compare sans, mais on l'affiche comme
 // elle est écrite sur le document — « ES-949-FD » et non « ES949FD ».
+// Une date se lit JJ/MM/AAAA pour qui la vérifie sur un document français.
+function enFrancais(iso: string | null): string {
+  if (!iso) return "";
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+}
+
 export function formatePlaque(plaque: string): string {
   const m = plaque.match(/^([A-Z]{2})([0-9]{3})([A-Z]{2})$/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : plaque;
@@ -684,6 +691,58 @@ export function anomaliesDossier(
         message: `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`,
         piece: concernees[0].libelle,
         document_id: concernees[0].document_id,
+      });
+    }
+  }
+
+  // « La date doit être la même que sur le certificat de cession » — le guide le
+  // répète pour la DA comme pour la DC. C'est le motif de refus SIV le plus
+  // courant : deux dates qui divergent, et l'opérateur ne peut pas enregistrer.
+  //
+  // La règle avait été retirée après des lectures fausses : le modèle prenait
+  // les deux derniers chiffres de l'année pour un jour. Elle revient avec deux
+  // garde-fous. La mention « vendu le » est manuscrite, donc invisible sur un
+  // PDF océrisé : on ne compare que ce qui a été vu sur une image. Et la gravité
+  // reste moyenne — on fait regarder deux dates, on n'affirme pas.
+  const dateDe = (p: Piece) => p.extraction?.dates?.cession ?? null;
+  const surImage = (p: Piece) => !/\.pdf$/i.test(p.nom_fichier);
+  const cessionDatee = pieces.find((p) =>
+    p.extraction?.type_document === "certificat_cession" && dateDe(p));
+  const carteGriseDatee = pieces.find((p) =>
+    p.extraction?.type_document === "carte_grise" && dateDe(p) && surImage(p));
+
+  if (cessionDatee && carteGriseDatee && dateDe(cessionDatee) !== dateDe(carteGriseDatee)) {
+    anomalies.push({
+      code: "dates_cession_differentes",
+      gravite: "moyenne",
+      message: `La carte grise porte la vente au ${enFrancais(dateDe(carteGriseDatee))} et le certificat de cession au ${enFrancais(dateDe(cessionDatee))} : le SIV exige la même date sur les deux.`,
+      piece: carteGriseDatee.libelle,
+      document_id: carteGriseDatee.document_id,
+    });
+  }
+
+  // « Vous devez expressément être mandaté par l'ancien titulaire du véhicule
+  // pour déclarer la cession, et non par un tiers » (guide SIV, page 12). Un
+  // mandat signé par l'acheteur, ou par un intermédiaire, ne vaut rien pour une
+  // déclaration de cession.
+  if (contexte.type === "DC") {
+    const mandat = pieces.find((p) => p.extraction?.type_document === "mandat");
+    const cession = pieces.find((p) => p.extraction?.type_document === "certificat_cession");
+    const nomDe = (p: Piece | undefined, role: string) => {
+      const personne = (p?.extraction?.personnes ?? []).find((x) => x.role === role);
+      if (!personne) return null;
+      const complet = `${personne.prenom ?? ""} ${personne.nom ?? ""}`.trim();
+      return complet || null;
+    };
+    const mandant = nomDe(mandat, "mandant");
+    const vendeur = nomDe(cession, "vendeur");
+    if (mandant && vendeur && !memePersonne(mandant, vendeur)) {
+      anomalies.push({
+        code: "mandant_different",
+        gravite: "moyenne",
+        message: `Le mandat est donné par « ${mandant} » alors que la cession désigne « ${vendeur} » comme vendeur : seul l'ancien titulaire peut mandater la déclaration de cession.`,
+        piece: mandat!.libelle,
+        document_id: mandat!.document_id,
       });
     }
   }
