@@ -352,7 +352,12 @@ export default function NouvelleDemarche() {
     if (!formData.type) return liste;
     const estPro = PRO_DEMARCHE_TYPES.includes(formData.type);
 
-    if (estPro && nbQuestions !== 0 && !questionnaireCompleted) {
+    // La réponse décide des pièces à fournir — le récépissé n'est dû que si le
+    // vendeur est un professionnel. Afficher les emplacements avant d'avoir
+    // répondu reviendrait à montrer une liste qui va changer sous les yeux du
+    // garage. Vaut pour toutes les démarches qui portent des questions, pas
+    // seulement les démarches pro.
+    if (nbQuestions !== 0 && !questionnaireCompleted) {
       liste.push({ cle: "questionnaire", libelle: "Répondre aux questions préalables" });
       return liste; // les pieces n'apparaissent qu'apres le questionnaire
     }
@@ -1749,7 +1754,9 @@ export default function NouvelleDemarche() {
                   {/* ====== DÉMARCHES CLASSIQUES ====== */}
                   {!PRO_DEMARCHE_TYPES.includes(formData.type) && (
                     /* Pour les démarches classiques */
-                    documentsRequis.length > 0 && (formData.type === 'CG' ? carteGrisePrice > 0 : true) && (
+                    documentsRequis.length > 0
+                    && (formData.type === 'CG' ? carteGrisePrice > 0 : true)
+                    && (nbQuestions === 0 || questionnaireCompleted) && (
                       <div className="space-y-6">
                         {/* Pièces justificatives */}
                         <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
