@@ -385,6 +385,15 @@ async function recontroler(supabase: any, demarcheId: string) {
   };
 
   const deposees = new Set(retenus.map((doc) => doc.type_document));
+
+  // Un fichier peut contenir deux pièces à la fois : sur DEM-2026-08141, la
+  // carte grise barrée était photographiée posée sur la déclaration d'achat.
+  // Tout ce que le modèle a reconnu sur une photo compte, pas seulement le
+  // document principal.
+  const typesVus = pieces.flatMap((piece) => [
+    piece.extraction?.type_document,
+    ...(piece.extraction?.autres_documents ?? []),
+  ]);
   const attendues = await pieceObligatoires(supabase, demarche.type, demarche.created_at ?? null);
 
   // Après un refus, le garage renvoie ses pièces dans des cases « correction »
@@ -394,7 +403,7 @@ async function recontroler(supabase: any, demarcheId: string) {
   const piecesLibres = pieces.filter((piece) => estPieceLibre(piece.type_document));
   const manquantes = attendues
     .filter((piece) => !deposees.has(piece.code))
-    .filter((piece) => !piecesLibres.some((libre) => appartientALaFamille(piece.libelle, libre.extraction?.type_document)))
+    .filter((piece) => !typesVus.some((type) => appartientALaFamille(piece.libelle, type)))
     .map((piece) => piece.libelle);
 
   const maintenant = new Date();

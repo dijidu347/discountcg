@@ -18,6 +18,10 @@ export interface Anomalie {
 // illisible ne renseigne presque rien, et c'est une information en soi.
 export interface Extraction {
   type_document?: string | null;
+  // Une photo porte parfois deux pièces à la fois : une carte grise posée sur
+  // une déclaration d'achat, un recto et un verso côte à côte. Le document
+  // principal est dans type_document, les autres ici.
+  autres_documents?: string[] | null;
   correspond?: boolean | null;
   lisible?: boolean | null;
   defauts?: string[] | null;

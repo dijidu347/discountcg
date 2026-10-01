@@ -33,6 +33,7 @@ export interface ContexteLecture {
 
 const FORME_ATTENDUE = `{
   "type_document": "une valeur parmi : carte_grise, certificat_cession, accuse_enregistrement_cession, certificat_vente_publique, declaration_achat, accuse_enregistrement_achat, demande_immatriculation, mandat, carte_identite, passeport, titre_sejour, permis_conduire, justificatif_domicile, attestation_assurance, controle_technique, certificat_non_gage, kbis, facture, certificat_conformite, quitus_fiscal, autre, illisible",
+  "autres_documents": "liste des autres pièces visibles sur la même image, avec les mêmes valeurs que type_document, ou liste vide",
   "correspond": "booléen",
   "lisible": "booléen",
   "defauts": "liste, vide la plupart du temps, parmi : flou, sombre, tronque, reflet, doigt",
@@ -104,7 +105,9 @@ ${FORME_ATTENDUE}
 - ratures : true si une mention est barrée, surchargée ou corrigée au stylo. La barre qui acte une cession sur une carte grise n'est pas une rature.
 - type_document : choisis le terme le plus juste de la liste. Un document établi par un commissaire-priseur pour une vente aux enchères est un certificat_vente_publique ; un récépissé ANTS confirmant l'enregistrement est un accuse_enregistrement_cession ou accuse_enregistrement_achat selon son objet.
 
-Une pièce arrive parfois à un emplacement qui ne lui correspond pas : un recto déposé à la place du verso, deux faces dans un même fichier, une pièce rangée sous un autre intitulé. Décris toujours ce que tu vois réellement, sans te laisser guider par l'emplacement attendu.
+Une pièce arrive parfois à un emplacement qui ne lui correspond pas : un recto déposé à la place du verso, une pièce rangée sous un autre intitulé. Décris toujours ce que tu vois réellement, sans te laisser guider par l'emplacement attendu.
+
+UN MÊME FICHIER CONTIENT SOUVENT PLUSIEURS DOCUMENTS : une carte grise posée sur un cerfa et photographiée avec lui, un recto et un verso côte à côte, deux pièces scannées l'une sous l'autre. Mets dans type_document celui qui occupe l'essentiel de l'image, et dans autres_documents TOUS les autres que tu distingues, même partiellement — un titre lisible en arrière-plan suffit. Ne les passe jamais sous silence : c'est ainsi qu'on sait qu'une pièce attendue est bien là.
 
 TOUTES LES DATES DE CES DOCUMENTS SONT ÉCRITES À LA FRANÇAISE : jour, puis mois, puis année. « 05/07/2026 » est le 5 juillet 2026, jamais le 7 mai. « 11/06/2026 » est le 11 juin. Ne lis jamais une date à l'américaine, même quand le jour et le mois sont tous deux inférieurs à 13. Tu les restitues ensuite au format AAAA-MM-JJ.
 
