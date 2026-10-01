@@ -556,13 +556,45 @@ export function anomaliesDossier(
     const lu = liste[0].extraction?.type_document ?? null;
     const fournie = lu ? liste.find((p) => appartientALaFamille(p.libelle, lu)) : undefined;
     const absentes = liste.filter((p) => p !== fournie);
+
+    // Un emplacement nommé dit lui-même ce qu'il attendait : si le fichier
+    // déposé est la pièce de l'un, les autres emplacements sont restés vides, et
+    // on peut nommer précisément ce qu'il faut réclamer.
+    if (fournie) {
+      anomalies.push({
+        code: "fichier_duplique",
+        gravite: "haute",
+        message: `Le même fichier a été déposé pour ${liste.length} pièces : il manque donc ${absentes.map((p) => p.libelle).join(", ")}.`,
+        piece: absentes[0].libelle,
+        document_id: liste[0].document_id,
+      });
+      continue;
+    }
+
+    // Sinon les emplacements sont anonymes — les cases « correction » où le
+    // garage renvoie ses pièces après un refus. L'inventaire tranche : si
+    // aucune pièce obligatoire ne manque, le dossier est complet et ce doublon
+    // n'est qu'un dépôt en double, pas un défaut. Le marquer en rouge envoyait
+    // relire un dossier qui n'avait rien (DEM-2026-08144).
+    if (manquantes.length === 0) {
+      anomalies.push({
+        code: "fichier_duplique",
+        gravite: "basse",
+        message: `Le même document a été déposé deux fois (${liste.map((p) => p.libelle).join(", ")}) : rien ne manque au dossier.`,
+        piece: liste[0].libelle,
+        document_id: liste[0].document_id,
+      });
+      continue;
+    }
+
+    // Une pièce manque bel et bien, mais rien ne dit que ce doublon en soit la
+    // cause : « pièce obligatoire absente » le signale déjà et le nomme. On se
+    // contente ici de constater le double dépôt, sans le compter deux fois.
     anomalies.push({
       code: "fichier_duplique",
-      gravite: "haute",
-      message: fournie
-        ? `Le même fichier a été déposé pour ${liste.length} pièces : il manque donc ${absentes.map((p) => p.libelle).join(", ")}.`
-        : `Le même fichier a été déposé pour ${liste.length} pièces : ${liste.map((p) => p.libelle).join(", ")}.`,
-      piece: (absentes[0] ?? liste[0]).libelle,
+      gravite: "basse",
+      message: `Le même fichier a été déposé pour ${liste.length} pièces : ${liste.map((p) => p.libelle).join(", ")}.`,
+      piece: liste[0].libelle,
       document_id: liste[0].document_id,
     });
   }

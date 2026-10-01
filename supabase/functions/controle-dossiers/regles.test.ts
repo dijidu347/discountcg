@@ -438,4 +438,29 @@ const horsDoublon = anomaliesPiece(
 verifie("hors doublon, la mauvaise piece est toujours signalee",
   horsDoublon.some((a) => a.code === "mauvaise_piece"));
 
+// Cas de DEM-2026-08144 : le non-gage refuse a ete redepose deux fois dans des
+// cases « correction » anonymes. L'inventaire est complet, donc rien ne manque
+// et le dossier ne doit pas virer au rouge pour une maladresse.
+const redepotEnDouble: Piece[] = [
+  piece({
+    document_id: "c1", type_document: "correction_1", empreinte: "zz", libelle: "correction_1",
+    extraction: { type_document: "certificat_non_gage", lisible: true },
+  }),
+  piece({
+    document_id: "c2", type_document: "correction_2", empreinte: "zz", libelle: "correction_2",
+    extraction: { type_document: "certificat_non_gage", lisible: true },
+  }),
+];
+const dossierComplet = anomaliesDossier(redepotEnDouble, [], contexte, true);
+verifie("un redepot en double sans piece manquante ne vire pas au rouge",
+  niveauDossier(dossierComplet) !== "rouge");
+verifie("et il le dit : rien ne manque",
+  dossierComplet.some((a) => a.code === "fichier_duplique" && a.message.includes("rien ne manque")));
+
+const dossierIncomplet = anomaliesDossier(redepotEnDouble, ["Mandat signé"], contexte, true);
+verifie("une piece reellement absente reste signalee a part",
+  dossierIncomplet.some((a) => a.code === "piece_manquante" && a.message.includes("Mandat signé")));
+verifie("le doublon anonyme n'accuse personne a sa place",
+  !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("il manque donc")));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
