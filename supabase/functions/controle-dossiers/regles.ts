@@ -583,13 +583,28 @@ export function anomaliesPiece(
     || ex.type_document === "certificat_non_gage";
   if (estNonGage && ex.situation_administrative?.vierge === false) {
     const mentions = (ex.situation_administrative.mentions ?? []).filter(Boolean);
-    ajoute(
-      "situation_non_vierge",
-      "haute",
-      mentions.length > 0
-        ? `Le certificat n'est pas vierge : ${mentions.join(", ")}.`
-        : "Le certificat de situation administrative n'est pas vierge.",
-    );
+    // Le guide ne retient que trois motifs d'arrêt : opposition, gage, saisie.
+    // Un certificat d'immatriculation perdu ou édité en duplicata n'est pas une
+    // charge sur le véhicule, c'est l'histoire du titre : la démarche passe. Il
+    // reste à vérifier que la carte grise déposée est bien le duplicata et non
+    // l'original perdu, qui n'a plus de valeur — un coup d'œil, pas un refus.
+    const BLOQUANTES = /opposition|otci|gage|saisie|suspend|vol|destruction|retrait/i;
+    const arretent = mentions.filter((m) => BLOQUANTES.test(m));
+    const titreRefait = mentions.some((m) => /perdu|duplicata|vol[ée]/i.test(m));
+
+    if (arretent.length > 0) {
+      ajoute("situation_non_vierge", "haute", `Le certificat n'est pas vierge : ${arretent.join(", ")}.`);
+    } else if (titreRefait) {
+      ajoute(
+        "titre_refait",
+        "moyenne",
+        `Le certificat mentionne ${mentions.join(", ")} : rien n'empêche la démarche, mais vérifiez que la carte grise déposée est bien le duplicata et non l'original perdu.`,
+      );
+    } else if (mentions.length > 0) {
+      ajoute("situation_non_vierge", "haute", `Le certificat n'est pas vierge : ${mentions.join(", ")}.`);
+    } else {
+      ajoute("situation_non_vierge", "haute", "Le certificat de situation administrative n'est pas vierge.");
+    }
   }
 
   // Le guide n'exige les deux faces que pour les pièces d'identité et le permis.

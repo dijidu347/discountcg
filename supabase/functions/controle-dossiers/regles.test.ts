@@ -633,4 +633,30 @@ const plaqueConforme = anomaliesDossier(troisPieces, [], { ...contexte, immatric
 verifie("plaque conforme : rien a signaler",
   !plaqueConforme.some((a) => a.code === "plaque_differente"));
 
+// Cas de DEM-2026-08216 : le non-gage mentionne « certificat perdu » et
+// « duplicata ». Le guide n'arrete la demarche que sur opposition, gage ou
+// saisie : le vehicule est libre, il reste a verifier qu'on depose le duplicata.
+const certificatSituation = (mentions: string[]) => anomaliesPiece(
+  piece({
+    libelle: "Certificat de situation administrative (non-gage)", nom_fichier: "ng.jpg",
+    extraction: {
+      type_document: "certificat_non_gage", lisible: true,
+      situation_administrative: { vierge: false, mentions },
+    },
+  }),
+  contexte, maintenant,
+);
+verifie("perdu et duplicata n'arretent pas la demarche",
+  !certificatSituation(["Certificat d'immatriculation perdu", "Certificat d'immatriculation duplicata"])
+    .some((a) => a.code === "situation_non_vierge"));
+verifie("mais on previent de verifier le duplicata",
+  certificatSituation(["Certificat d'immatriculation perdu"])
+    .some((a) => a.code === "titre_refait" && a.gravite === "moyenne"));
+verifie("une opposition arrete toujours",
+  certificatSituation(["Opposition au transfert du certificat d'immatriculation (OTCI)"])
+    .some((a) => a.code === "situation_non_vierge" && a.gravite === "haute"));
+verifie("un gage aussi, meme accompagne d'un duplicata",
+  certificatSituation(["Certificat d'immatriculation duplicata", "Gage"])
+    .some((a) => a.code === "situation_non_vierge" && a.gravite === "haute"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
