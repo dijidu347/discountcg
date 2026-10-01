@@ -789,4 +789,29 @@ verifie("la date de cession reste exigee",
 verifie("l'identite du vendeur aussi",
   champObligatoireSiv("identité du vendeur"));
 
+// Cas de DEM-2026-08238 : la carte d'identite deposee en deux fichiers. Le recto
+// donnait 09/02/2035, le verso avait ete mal lu 10/02/2025 -- le controle avait
+// la bonne date sous les yeux et signalait l'autre.
+const faceMalLue = anomaliesPiece(
+  piece({
+    libelle: "Pièce d'identité du vendeur (recto/verso)", nom_fichier: "IMG_0754.jpg",
+    validiteAilleurs: true,
+    extraction: { type_document: "carte_identite", lisible: true, dates: { validite: "2025-02-10" } },
+  }),
+  contexte, maintenant,
+);
+verifie("une face valable couvre la face mal lue",
+  !faceMalLue.some((a) => a.code === "piece_perimee"));
+
+const vraimentPerimee = anomaliesPiece(
+  piece({
+    libelle: "Pièce d'identité du vendeur (recto/verso)", nom_fichier: "cni.jpg",
+    validiteAilleurs: false,
+    extraction: { type_document: "carte_identite", lisible: true, dates: { validite: "2022-06-12" } },
+  }),
+  contexte, maintenant,
+);
+verifie("sans autre face valable, la peremption reste signalee",
+  vraimentPerimee.some((a) => a.code === "piece_perimee"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

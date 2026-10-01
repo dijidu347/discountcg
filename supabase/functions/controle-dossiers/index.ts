@@ -469,6 +469,25 @@ async function recontroler(supabase: any, demarcheId: string) {
   // signalée « ce n'est pas la bonne » est celle qui manque, et le doublon le
   // dit déjà. On le sait ici, où l'on voit toutes les pièces à la fois.
   const enDoublon = new Set(doublonsParFichier(pieces).flat().map((p) => p.document_id));
+
+  // Les deux faces d'une carte d'identité arrivent dans deux emplacements —
+  // « doc_2 » et « doc_2_verso » — donc en deux pièces pour le contrôle, alors
+  // que c'est un seul titre. Sur DEM-2026-08238, le recto donnait 09/02/2035 et
+  // le verso avait été mal lu 10/02/2025 : le contrôle avait la bonne date sous
+  // les yeux et signalait l'autre. Une validité encore en cours sur une face
+  // vaut pour tout le document.
+  const racine = (type: string) => type.replace(/_(recto|verso)$/i, "");
+  const encoreValide = new Set(
+    pieces
+      .filter((p) => {
+        const fin = p.extraction?.dates?.validite;
+        return !!fin && new Date(fin).getTime() > maintenant.getTime();
+      })
+      .map((p) => racine(p.type_document)),
+  );
+  for (const piece of pieces) {
+    piece.validiteAilleurs = encoreValide.has(racine(piece.type_document));
+  }
   const parPiece = pieces.map((piece) => ({
     piece,
     anomalies: anomaliesPiece(piece, contexte, maintenant, enDoublon.has(piece.document_id)),

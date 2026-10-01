@@ -65,6 +65,13 @@ export interface Piece {
   nom_fichier: string;
   taille_octets: number | null;
   empreinte?: string | null;
+  /**
+   * Une autre face du même document porte une validité encore en cours. Les deux
+   * fichiers d'une carte d'identité sont deux pièces pour le contrôle, mais un
+   * seul titre : si l'un donne une date valable, la date passée lue sur l'autre
+   * est une erreur de lecture, pas une péremption.
+   */
+  validiteAilleurs?: boolean;
   extraction?: Extraction | null;
 }
 
@@ -535,6 +542,7 @@ export function anomaliesPiece(
     && finValidite.getTime() < maintenant.getTime()
     && !confonduAvecLaNaissance
     && !tropAncienne
+    && !piece.validiteAilleurs
   ) {
     ajoute("piece_perimee", "haute", `La pièce est périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`);
   }
