@@ -32,7 +32,8 @@ export interface ContexteLecture {
 }
 
 const FORME_ATTENDUE = `{
-  "type_document": "une valeur parmi : carte_grise, certificat_cession, accuse_enregistrement_cession, certificat_vente_publique, declaration_achat, accuse_enregistrement_achat, demande_immatriculation, mandat, carte_identite, passeport, titre_sejour, permis_conduire, justificatif_domicile, attestation_assurance, controle_technique, certificat_non_gage, kbis, facture, certificat_conformite, quitus_fiscal, autre, illisible",
+  "type_document": "une valeur parmi : carte_grise, fiche_identification_vehicule, certificat_cession, accuse_enregistrement_cession, certificat_vente_publique, declaration_achat, accuse_enregistrement_achat, demande_immatriculation, mandat, carte_identite, passeport, titre_sejour, permis_conduire, justificatif_domicile, attestation_assurance, controle_technique, certificat_non_gage, kbis, facture, certificat_conformite, quitus_fiscal, autre, illisible",
+  "precision_type": "une fiche d'identification du véhicule (FIV) n'est PAS une carte grise : elle en reprend les informations sur un feuillet édité par l'administration, sans la mention « certificat d'immatriculation » ni les cases A à Z numérotées. La reconnaître comme fiche_identification_vehicule",
   "autres_documents": "liste des autres pièces visibles sur la même image, avec les mêmes valeurs que type_document, ou liste vide",
   "correspond": "booléen",
   "lisible": "booléen",

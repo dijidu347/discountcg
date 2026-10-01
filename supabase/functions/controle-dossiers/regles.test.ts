@@ -1,7 +1,7 @@
 // Vérification des règles de contrôle, sans base ni réseau.
 // Lancement : npx sucrase-node supabase/functions/controle-dossiers/regles.test.ts
 
-import { anomaliesPiece, anomaliesDossier, champObligatoireSiv, doublonsParFichier, memePersonne, memeAdresse, niveauDossier, type Piece, type ContexteDossier } from "./regles.ts";
+import { anomaliesPiece, anomaliesDossier, appartientALaFamille as _af, champObligatoireSiv, doublonsParFichier, horsSujet, memePersonne, memeAdresse, niveauDossier, type Piece, type ContexteDossier } from "./regles.ts";
 
 let echecs = 0;
 const verifie = (nom: string, condition: boolean) => {
@@ -626,10 +626,35 @@ verifie("une seule ligne pour trois pieces d'accord", plaques.length === 1);
 verifie("et elle compte les pieces",
   plaques[0]?.message === "Le dossier dit ES-949-RD alors que 3 documents disent ES-949-FD.");
 
+// Une seule piece manuscrite qui diverge, c'est peut-etre une mauvaise lecture :
+// on fait regarder, on n'affirme pas (cas de DEM-2026-07473).
 const unePiece = anomaliesDossier([troisPieces[0]], [], { ...contexte, immatriculation: "ES-949-RD" }, true, []);
-verifie("au singulier quand une seule piece diverge",
-  unePiece.find((a) => a.code === "plaque_differente")?.message
-    === "Le dossier dit ES-949-RD alors que 1 document dit ES-949-FD.");
+verifie("une seule piece manuscrite : on invite a verifier",
+  unePiece.find((a) => a.code === "plaque_differente")?.gravite === "moyenne");
+
+// Sur un imprime -- carte grise, non-gage, recepisse -- la plaque se lit surement.
+const surImprime = anomaliesDossier(
+  [piece({
+    document_id: "ng", nom_fichier: "ng.jpg", libelle: "Certificat de situation administrative (non-gage)",
+    extraction: { type_document: "certificat_non_gage", lisible: true, immatriculations: ["FL-741-FY"] },
+  })],
+  [], { ...contexte, immatriculation: "BK-691-CG" }, true, [],
+);
+verifie("sur un imprime, le desaccord est affirme",
+  surImprime.find((a) => a.code === "plaque_differente")?.gravite === "haute");
+
+// Deux lectures differentes d'une meme plaque : du bruit, pas un desaccord.
+const lecturesDiscordantes = anomaliesDossier(
+  [
+    piece({ document_id: "a", nom_fichier: "a.jpg", libelle: "Certificat de cession",
+      extraction: { type_document: "certificat_cession", lisible: true, immatriculations: ["ER-664-UN"] } }),
+    piece({ document_id: "b", nom_fichier: "b.jpg", libelle: "Déclaration d'achat",
+      extraction: { type_document: "declaration_achat", lisible: true, immatriculations: ["EB-664-UN"] } }),
+  ],
+  [], { ...contexte, immatriculation: "EB-664-VN" }, true, [],
+);
+verifie("deux lectures qui se contredisent ne virent pas au rouge",
+  lecturesDiscordantes.filter((a) => a.code === "plaque_differente").every((a) => a.gravite === "moyenne"));
 
 const plaqueConforme = anomaliesDossier(troisPieces, [], { ...contexte, immatriculation: "ES-949-FD" }, true, []);
 verifie("plaque conforme : rien a signaler",
@@ -872,5 +897,29 @@ const qualite = illisibleEtFloue.filter((a) => a.code === "illisible" || a.code.
 verifie("une seule ligne pour une piece illisible", qualite.length === 1);
 verifie("et elle dit pourquoi",
   qualite[0]?.message.includes("floue") && qualite[0]?.message.includes("sombre"));
+
+// Cas de DEM-2026-07355 : le modele repondait « illisible » tout en listant huit
+// rubriques non remplies. Enumerer les cases vides d'un formulaire, c'est l'avoir
+// lu -- et le dossier virait au rouge sur un document lisible a l'oeil.
+const ditIllisibleMaisLu = anomaliesPiece(
+  piece({
+    nom_fichier: "Document numérisé 4.pdf",
+    libelle: "Déclaration d'achat signée et tamponnée (cerfa 13751*02)",
+    extraction: {
+      type_document: "declaration_achat", lisible: false,
+      champs_incomplets: ["date de cession (vendeur)", "kilométrage"],
+    },
+  }),
+  contexte, maintenant,
+);
+verifie("un formulaire dont on lit les cases n'est pas illisible",
+  !ditIllisibleMaisLu.some((a) => a.code === "illisible"));
+
+// Cas de DEM-2026-07473 : une FIV deposee a la place de la carte grise. Ce n'est
+// pas le meme document, et l'emplacement reste donc a combler.
+verifie("une FIV ne comble pas l'emplacement de la carte grise",
+  !appartientALaFamille('Carte grise barrée avec la mention "Vendu le"', "fiche_identification_vehicule"));
+verifie("et elle est signalee comme n'etant pas la piece demandee",
+  horsSujet('Carte grise barrée avec la mention "Vendu le"', "fiche_identification_vehicule"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

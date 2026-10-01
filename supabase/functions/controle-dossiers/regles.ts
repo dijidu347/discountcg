@@ -442,6 +442,12 @@ export function aLivreDesInformations(ex: Extraction): boolean {
   const dates = ex.dates ?? {};
   if (Object.values(dates).some(Boolean)) return true;
   if (ex.siret) return true;
+  // Énumérer les cases vides d'un formulaire, c'est l'avoir lu : sur
+  // DEM-2026-07355 le modèle répondait « illisible » tout en listant huit
+  // rubriques non remplies. Il se contredisait, et le dossier virait au rouge
+  // sur un document que l'administration lisait sans peine.
+  if ((ex.champs_incomplets ?? []).length > 0) return true;
+  if (ex.situation_administrative) return true;
   return false;
 }
 
@@ -508,7 +514,10 @@ export function anomaliesPiece(
     ? []
     : (ex.defauts ?? []).map((d) => LIBELLE_DEFAUT[d]).filter(Boolean);
 
-  if (ex.lisible === false) {
+  // « Illisible » n'est retenu que si la pièce n'a effectivement rien livré. Le
+  // modèle emploie le mot pour dire « difficile à lire », puis en extrait le
+  // contenu : ce n'est pas la même chose, et seule la seconde compte.
+  if (ex.lisible === false && !aLivreDesInformations(ex)) {
     ajoute(
       "illisible",
       "haute",
@@ -841,12 +850,34 @@ export function anomaliesDossier(
         parPlaque.set(lue, liste);
       }
     }
+    // Reste à savoir si ce désaccord est digne de foi.
+    //
+    // Deux signaux le disent. D'abord, les documents qui contredisent le dossier
+    // se contredisent-ils entre eux ? Sur DEM-2026-07473, l'un lisait ER-664-UN
+    // et l'autre EB-664-UN pour une plaque qui était la bonne partout : deux
+    // lectures différentes d'un même numéro, c'est du bruit. Sur DEM-2026-08218,
+    // trois documents disaient exactement la même chose, et le dossier avait tort.
+    //
+    // Ensuite, où la plaque est-elle écrite ? Sur une carte grise, un non-gage ou
+    // un récépissé, elle est imprimée et se lit sûrement. Sur une cession ou une
+    // déclaration d'achat, elle est manuscrite, dans une case étroite — et c'est
+    // précisément ce que vous nous demandez de faire vérifier à l'œil plutôt que
+    // d'affirmer.
+    const IMPRIMEE = /carte grise|certificat d.immatriculation|non.?gage|situation administrative|r[ée]c[ée]piss[ée]|kbis/i;
+    const lecturesDiscordantes = parPlaque.size > 1;
+
     for (const [lue, concernees] of parPlaque) {
       const nombre = concernees.length;
+      const surUnImprime = concernees.some((p) => IMPRIMEE.test(p.libelle));
+      const sur = surUnImprime || nombre > 1;
+      const certain = sur && !lecturesDiscordantes;
+
       anomalies.push({
         code: "plaque_differente",
-        gravite: "haute",
-        message: `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`,
+        gravite: certain ? "haute" : "moyenne",
+        message: certain
+          ? `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`
+          : `À vérifier : ${formatePlaque(lue)} a été lu sur une pièce manuscrite, le dossier dit ${contexte.immatriculation}.`,
         piece: concernees[0].libelle,
         document_id: concernees[0].document_id,
       });
