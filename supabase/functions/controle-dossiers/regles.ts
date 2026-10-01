@@ -532,6 +532,7 @@ export function anomaliesDossier(
   manquantes: string[],
   contexte: ContexteDossier,
   depotTermine: boolean,
+  obligatoires: string[] = [],
 ): Anomalie[] {
   const anomalies: Anomalie[] = [];
 
@@ -562,6 +563,12 @@ export function anomaliesDossier(
     // deux copies portent souvent des noms différents (« fw.jpg » et
     // « FW NOUVELLE.jpg ») alors que le contenu est identique, donc on cite
     // chacune avec l'emplacement où elle a été déposée.
+    // Le recto et le verso d'une même pièce dans un seul PDF de deux pages :
+    // c'est la façon normale de scanner une carte grise, pas un doublon. Les
+    // deux emplacements désignent la même pièce, rien ne manque.
+    const socle = (libelle: string) => libelle.replace(/\s*\((recto|verso)\)\s*$/i, "").trim();
+    if (liste.every((p) => socle(p.libelle) === socle(liste[0].libelle))) continue;
+
     const memeNom = liste.every((p) => p.nom_fichier === liste[0].nom_fichier);
     const emplacements = liste.map((p) => p.libelle).join(" et ");
     const constat = memeNom
@@ -573,10 +580,15 @@ export function anomaliesDossier(
     // déposé est la pièce de l'un, les autres emplacements sont restés vides, et
     // on peut nommer précisément ce qu'il faut réclamer.
     if (fournie) {
+      // Une pièce facultative non fournie n'arrête rien : on le dit sans
+      // allumer le rouge, qui est réservé à ce qui bloque la démarche.
+      const bloquantes = absentes.filter((p) => obligatoires.some((o) => o === p.libelle));
       anomalies.push({
         code: "fichier_duplique",
-        gravite: "haute",
-        message: `${constat} Il manque donc ${absentes.map((p) => p.libelle).join(", ")}.`,
+        gravite: bloquantes.length > 0 ? "haute" : "basse",
+        message: bloquantes.length > 0
+          ? `${constat} Il manque donc ${bloquantes.map((p) => p.libelle).join(", ")}.`
+          : `${constat} ${absentes.map((p) => p.libelle).join(", ")} n'a donc pas été fournie, mais elle est facultative.`,
         piece: absentes[0].libelle,
         document_id: liste[0].document_id,
       });

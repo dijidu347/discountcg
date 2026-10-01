@@ -414,7 +414,11 @@ const memeFichier: Piece[] = [
     extraction: { type_document: "declaration_achat", lisible: true },
   }),
 ];
-const surDossier = anomaliesDossier(memeFichier, [], contexte, true);
+const obligatoiresDA = [
+  "Déclaration d'achat signée et tamponnée (cerfa 13751*02)",
+  "Certificat de cession signé et tamponné (cerfa 15776*02)",
+];
+const surDossier = anomaliesDossier(memeFichier, [], contexte, true, obligatoiresDA);
 const doublonTrouve = surDossier.find((a) => a.code === "fichier_duplique");
 verifie("le doublon nomme la piece qui manque",
   !!doublonTrouve && doublonTrouve.message.includes("Il manque donc") && doublonTrouve.message.includes("Certificat de cession"));
@@ -455,16 +459,52 @@ const redepotEnDouble: Piece[] = [
     extraction: { type_document: "certificat_non_gage", lisible: true },
   }),
 ];
-const dossierComplet = anomaliesDossier(redepotEnDouble, [], contexte, true);
+const dossierComplet = anomaliesDossier(redepotEnDouble, [], contexte, true, obligatoiresDA);
 verifie("un redepot en double sans piece manquante ne vire pas au rouge",
   niveauDossier(dossierComplet) !== "rouge");
 verifie("et il le dit : rien ne manque",
   dossierComplet.some((a) => a.code === "fichier_duplique" && a.message.includes("Rien ne manque")));
 
-const dossierIncomplet = anomaliesDossier(redepotEnDouble, ["Mandat signé"], contexte, true);
+const dossierIncomplet = anomaliesDossier(redepotEnDouble, ["Mandat signé"], contexte, true, obligatoiresDA);
 verifie("une piece reellement absente reste signalee a part",
   dossierIncomplet.some((a) => a.code === "piece_manquante" && a.message.includes("Mandat signé")));
 verifie("le doublon anonyme n'accuse personne a sa place",
   !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("Il manque donc")));
+
+// Cas de DEM-2026-02459 : un PDF de deux pages depose pour le recto et le verso
+// de la carte grise. C'est la facon normale de scanner une carte grise.
+const rectoVerso: Piece[] = [
+  piece({
+    document_id: "rv1", type_document: "doc_3", empreinte: "cg", nom_fichier: "Carte grise Clio.pdf",
+    libelle: 'Carte grise barrée avec la mention "Vendu le" — recto/verso',
+    extraction: { type_document: "carte_grise", lisible: true },
+  }),
+  piece({
+    document_id: "rv2", type_document: "doc_3_verso", empreinte: "cg", nom_fichier: "Carte grise Clio.pdf",
+    libelle: 'Carte grise barrée avec la mention "Vendu le" — recto/verso (verso)',
+    extraction: { type_document: "carte_grise", lisible: true },
+  }),
+];
+verifie("un PDF recto-verso n'est pas un doublon",
+  !anomaliesDossier(rectoVerso, [], contexte, true, []).some((a) => a.code === "fichier_duplique"));
+
+// Cas de DEM-2026-00674 : la piece absente est facultative, rien ne bloque.
+const versPieceFacultative: Piece[] = [
+  piece({
+    document_id: "f1", type_document: "doc_2", empreinte: "ff", nom_fichier: "IMG_3461.jpeg",
+    libelle: "Déclaration d'achat signée et tamponnée (cerfa 13751*02)",
+    extraction: { type_document: "declaration_achat", lisible: true },
+  }),
+  piece({
+    document_id: "f2", type_document: "doc_4", empreinte: "ff", nom_fichier: "IMG_3461.jpeg",
+    libelle: "Récépissé de déclaration d'achat du vendeur professionnel",
+    extraction: { type_document: "declaration_achat", lisible: true },
+  }),
+];
+const avecFacultative = anomaliesDossier(versPieceFacultative, [], contexte, true, obligatoiresDA);
+verifie("une piece facultative absente ne vire pas au rouge",
+  niveauDossier(avecFacultative) !== "rouge");
+verifie("et le message dit qu'elle est facultative",
+  avecFacultative.some((a) => a.code === "fichier_duplique" && a.message.includes("facultative")));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

@@ -426,7 +426,7 @@ async function recontroler(supabase: any, demarcheId: string) {
 
   const anomalies: Anomalie[] = [
     ...parPiece.flatMap((p) => p.anomalies),
-    ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true),
+    ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true, attendues.map((p) => p.libelle)),
   ];
 
   const analysees = pieces.filter((piece) => piece.extraction).length;
