@@ -493,22 +493,31 @@ export function anomaliesPiece(
 
   if (!ex) return anomalies;
 
-  if (ex.lisible === false) {
-    ajoute("illisible", "haute", "La pièce n'est pas lisible.");
-  }
-
-  // Les défauts d'image ne sont signalés que lorsque la pièce n'a rien livré.
+  // Une pièce illisible est un seul fait, et les défauts d'image en sont la
+  // raison, pas des reproches à part : sur DEM-2026-08276, un même fichier
+  // produisait trois lignes — « n'est pas lisible », « elle est floue », « elle
+  // est trop sombre ». Une phrase, qui dit quoi redemander et pourquoi.
   //
-  // Le modèle les invente trop souvent pour qu'on les affiche autrement : sur
-  // DEM-2026-08200 il a annoncé une carte grise « coupée » avec un « reflet »,
-  // alors qu'elle n'avait ni l'un ni l'autre. La mesure le disait déjà — reflet
-  // 31 %, flou 29 % de justesse, sous le hasard. Quand la plaque, le VIN et les
-  // mentions ont été lus, le cadrage de la photo n'apprend rien à personne.
-  if (!aLivreDesInformations(ex)) {
-    for (const defaut of ex.defauts ?? []) {
-      const texte = LIBELLE_DEFAUT[defaut];
-      if (texte) ajoute(`qualite_${defaut}`, "moyenne", `À renvoyer : ${texte}, et rien n'a pu en être lu.`);
-    }
+  // Les défauts ne sont d'ailleurs cités que lorsque la pièce n'a rien livré :
+  // le modèle les invente trop souvent pour les afficher autrement. Sur
+  // DEM-2026-08200 il a annoncé une carte grise « coupée » avec un « reflet »
+  // qu'elle n'avait pas, et la mesure le disait déjà — reflet 31 %, flou 29 %
+  // de justesse, sous le hasard. Quand la plaque, le VIN et les mentions ont été
+  // lus, le cadrage de la photo n'apprend rien à personne.
+  const defautsVus = aLivreDesInformations(ex)
+    ? []
+    : (ex.defauts ?? []).map((d) => LIBELLE_DEFAUT[d]).filter(Boolean);
+
+  if (ex.lisible === false) {
+    ajoute(
+      "illisible",
+      "haute",
+      defautsVus.length > 0
+        ? `À redemander : rien n'a pu être lu — ${defautsVus.join(", ")}.`
+        : "La pièce n'est pas lisible.",
+    );
+  } else if (defautsVus.length > 0) {
+    ajoute("qualite", "moyenne", `À redemander : rien n'a pu en être lu — ${defautsVus.join(", ")}.`);
   }
 
   // Un PDF ne passe pas par le même chemin qu'une photo : il est océrisé, et le

@@ -210,7 +210,8 @@ const cgCoupeeEtVide = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "carte_grise", defauts: ["tronque"] } }),
   contexte, maintenant,
 );
-verifie("document coupe et illisible : a verifier", cgCoupeeEtVide.some((a) => a.code === "qualite_tronque" && a.gravite === "moyenne"));
+verifie("document coupe et illisible : a verifier",
+  cgCoupeeEtVide.some((a) => a.code === "qualite" && a.gravite === "moyenne" && a.message.includes("coupée")));
 
 const fichierVide = anomaliesPiece(piece({ taille_octets: 4000 }), contexte, maintenant);
 verifie("fichier minuscule : bloquant", fichierVide.some((a) => a.code === "fichier_trop_leger" && a.gravite === "haute"));
@@ -857,5 +858,19 @@ verifie("on ne juge pas l'anciennete d'un document qui n'est pas la piece attend
     }),
     contexte, maintenant,
   ).some((a) => a.code === "piece_trop_ancienne"));
+
+// Cas de DEM-2026-08276 : un meme fichier produisait trois lignes -- « n'est pas
+// lisible », « elle est floue », « elle est trop sombre ». Un seul fait.
+const illisibleEtFloue = anomaliesPiece(
+  piece({
+    nom_fichier: "image.jpg",
+    extraction: { type_document: "autre", correspond: true, lisible: false, defauts: ["flou", "sombre"] },
+  }),
+  contexte, maintenant,
+);
+const qualite = illisibleEtFloue.filter((a) => a.code === "illisible" || a.code.startsWith("qualite"));
+verifie("une seule ligne pour une piece illisible", qualite.length === 1);
+verifie("et elle dit pourquoi",
+  qualite[0]?.message.includes("floue") && qualite[0]?.message.includes("sombre"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
