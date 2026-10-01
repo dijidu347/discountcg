@@ -838,4 +838,24 @@ verifie("une plaque etrangere identifie le vehicule",
 verifie("un mandat sans aucun identifiant reste signale",
   mandatAvec([]).some((a) => a.code === "vehicule_non_identifie"));
 
+// Suite de DEM-2026-07557 : deux reproches qui decoulaient de la meme hypothese
+// d'un vehicule francais et d'une piece conforme.
+verifie("une plaque etrangere dispense de reclamer le VIN",
+  !anomaliesPiece(
+    piece({
+      type_document: "doc_5", libelle: "Mandat signé et tamponné (cerfa 13757*03)", nom_fichier: "m.jpg",
+      extraction: { type_document: "mandat", lisible: true, immatriculations: ["PC5467"], champs_incomplets: ["VIN"] },
+    }),
+    { ...contexte, immatriculation: null }, maintenant,
+  ).some((a) => a.code === "champ_vide"));
+
+verifie("on ne juge pas l'anciennete d'un document qui n'est pas la piece attendue",
+  !anomaliesPiece(
+    piece({
+      libelle: "Certificat de situation administrative (non-gage)", nom_fichier: "autre.jpg",
+      extraction: { type_document: "autre", correspond: false, lisible: true, dates: { emission: "2024-03-01" } },
+    }),
+    contexte, maintenant,
+  ).some((a) => a.code === "piece_trop_ancienne"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

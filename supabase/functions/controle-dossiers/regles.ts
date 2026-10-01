@@ -588,7 +588,14 @@ export function anomaliesPiece(
     ajoute("piece_perimee", "haute", `La pièce est périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`);
   }
 
+  // La fraîcheur et la validité ne se jugent que sur la pièce attendue. Sur
+  // DEM-2026-07557, le contrôle disait d'un même document « ce n'est pas un
+  // non-gage » puis « ce non-gage date de 933 jours » : deux reproches dont le
+  // second n'a pas de sens si le premier est vrai.
+  const estLaPieceAttendue = !horsSujet(piece.libelle, ex.type_document, ex.correspond);
+
   for (const regle of FRAICHEUR) {
+    if (!estLaPieceAttendue) break;
     if (!regle.motif.test(piece.libelle)) continue;
     const age = joursDepuis(ex.dates?.emission, maintenant);
     if (age !== null && age > regle.jours) {
@@ -638,7 +645,10 @@ export function anomaliesPiece(
   // Une carte grise n'a pas d'« heure de cession » : le modèle y appliquait les
   // rubriques du cerfa et réclamait une case qui n'existe pas.
   const PORTE_DES_CASES = new Set(["certificat_cession", "declaration_achat", "mandat", "demande_immatriculation"]);
-  const vinInutile = plaquesLues.length > 0;
+  // Le cerfa identifie par plaque OU par VIN, et une plaque étrangère est une
+  // plaque : sur DEM-2026-07557 le mandat portait « PC5467 » et le contrôle
+  // réclamait quand même le VIN.
+  const vinInutile = (ex.immatriculations ?? []).some((i) => (i ?? "").trim().length >= 4);
   for (const champ of (PORTE_DES_CASES.has(ex.type_document ?? "") ? ex.champs_incomplets ?? [] : [])) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
     // Sur un PDF, une case « signature » vide ne veut rien dire : le modèle lit
