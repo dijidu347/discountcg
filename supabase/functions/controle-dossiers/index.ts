@@ -100,7 +100,7 @@ serve(async (req) => {
     .from("analyses_documents")
     .select("id, document_id, demarche_id, tentatives, documents!inner(type_document, document_type, nom_fichier, url, taille_octets), demarches!inner(status)")
     .eq("statut", "en_attente")
-    .not("demarches.status", "in", "(finalise,refuse)")
+    .not("demarches.status", "in", "(finalise,refuse,en_saisie)")
     .lt("tentatives", TENTATIVES_MAX)
     .order("cree_le", { ascending: true })
     .limit(lot);
@@ -360,8 +360,14 @@ async function recontroler(supabase: any, demarcheId: string) {
   // Un dossier terminé ne se contrôle pas : il est parti au SIV, ou il a été
   // refusé, ou annulé. Le relire ne sert à rien et coûte une lecture.
   // Les seuls statuts terminaux de l'énumération : il n'existe pas d'« annulé ».
-  const TERMINES = ["finalise", "refuse"];
-  if (TERMINES.includes(demarche.status ?? "")) return;
+  //
+  // « En saisie » non plus : le garage remplit encore son dossier, il ne l'a pas
+  // envoyé, et il n'apparaît nulle part chez l'administration. Sur 129 dossiers
+  // contrôlés le 1er octobre, 34 étaient dans ce cas — un quart des lectures
+  // payées pour des dossiers que personne ne traitera, et treize faux rouges
+  // dans une liste censée ne contenir que du travail réel.
+  const HORS_PERIMETRE = ["finalise", "refuse", "en_saisie"];
+  if (HORS_PERIMETRE.includes(demarche.status ?? "")) return;
 
   const { data: documents } = await supabase
     .from("documents")
@@ -472,7 +478,10 @@ async function recontroler(supabase: any, demarcheId: string) {
   }
 
   const anomalies: Anomalie[] = [
-    ...parPiece.flatMap((p) => p.anomalies),
+    // La plaque est jugée au niveau du dossier, en une seule phrase qui compte
+    // les pièces d'accord. Chaque pièce garde la sienne dans analyses_documents,
+    // où elle sert à confronter le contrôle aux décisions de l'administration.
+    ...parPiece.flatMap((p) => p.anomalies.filter((a) => a.code !== "plaque_differente")),
     ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true, attendues.map((p) => p.libelle)),
   ];
 

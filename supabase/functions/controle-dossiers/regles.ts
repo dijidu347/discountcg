@@ -300,6 +300,13 @@ const FAMILLES: { motif: RegExp; acceptes: string[] }[] = [
 // pièce renvoyée après un refus à l'emplacement qu'elle vient combler : le
 // garage les dépose dans des cases « correction » indifférenciées, et seul son
 // contenu dit ce qu'elle remplace.
+// Une plaque se lit avec ses tirets. On la compare sans, mais on l'affiche comme
+// elle est écrite sur le document — « ES-949-FD » et non « ES949FD ».
+export function formatePlaque(plaque: string): string {
+  const m = plaque.match(/^([A-Z]{2})([0-9]{3})([A-Z]{2})$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : plaque;
+}
+
 export function appartientALaFamille(libelle: string, typeDetecte?: string | null): boolean {
   if (!typeDetecte) return false;
   const famille = FAMILLES.find((f) => f.motif.test(libelle));
@@ -633,6 +640,37 @@ export function anomaliesDossier(
         : `Pas encore déposée : ${libelle}.`,
       piece: libelle,
     });
+  }
+
+  // Une plaque étrangère au dossier, dite une fois par pièce, remplissait la
+  // liste de trois lignes identiques pour un seul fait. Et le nombre de pièces
+  // qui s'accordent est justement ce qui permet de trancher : trois documents
+  // contre le dossier, c'est le dossier qui a une faute de frappe ; un seul,
+  // c'est souvent une lettre mal lue. On le dit donc en une phrase, qui porte
+  // ce nombre.
+  const plaqueDossier = contexte.immatriculation ? normalisePlaque(contexte.immatriculation) : null;
+  if (plaqueDossier) {
+    const parPlaque = new Map<string, Piece[]>();
+    for (const piece of pieces) {
+      const lues = (piece.extraction?.immatriculations ?? []).map(normalisePlaque).filter(estPlaqueFrancaise);
+      if (lues.length === 0) continue;
+      if (lues.some((p) => lectureCompatible(p, plaqueDossier))) continue;
+      for (const lue of new Set(lues)) {
+        const liste = parPlaque.get(lue) ?? [];
+        liste.push(piece);
+        parPlaque.set(lue, liste);
+      }
+    }
+    for (const [lue, concernees] of parPlaque) {
+      const nombre = concernees.length;
+      anomalies.push({
+        code: "plaque_differente",
+        gravite: "haute",
+        message: `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`,
+        piece: concernees[0].libelle,
+        document_id: concernees[0].document_id,
+      });
+    }
   }
 
   // « Co-titulaire : double signature » (guide SIV, annexe 5). La carte grise dit

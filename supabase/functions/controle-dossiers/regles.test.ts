@@ -610,4 +610,27 @@ verifie("le Siret du mandataire n'est plus confondu avec celui du mandant",
     { ...contexte, mandat_data: { mandant_siret: "10247419400010" } }, maintenant,
   ).some((a) => a.code === "siret_different"));
 
+// Cas de DEM-2026-08218 : trois pieces portent la meme plaque, le dossier une
+// autre. Un seul fait, donc une seule phrase -- et le nombre de pieces d'accord
+// est ce qui permet de trancher entre faute de frappe au dossier et lettre mal
+// lue sur une piece.
+const troisPieces: Piece[] = ["p1", "p2", "p3"].map((id) => piece({
+  document_id: id, nom_fichier: `${id}.jpg`,
+  extraction: { type_document: "certificat_cession", lisible: true, immatriculations: ["ES-949-FD"] },
+}));
+const surPlaque = anomaliesDossier(troisPieces, [], { ...contexte, immatriculation: "ES-949-RD" }, true, []);
+const plaques = surPlaque.filter((a) => a.code === "plaque_differente");
+verifie("une seule ligne pour trois pieces d'accord", plaques.length === 1);
+verifie("et elle compte les pieces",
+  plaques[0]?.message === "Le dossier dit ES-949-RD alors que 3 documents disent ES-949-FD.");
+
+const unePiece = anomaliesDossier([troisPieces[0]], [], { ...contexte, immatriculation: "ES-949-RD" }, true, []);
+verifie("au singulier quand une seule piece diverge",
+  unePiece.find((a) => a.code === "plaque_differente")?.message
+    === "Le dossier dit ES-949-RD alors que 1 document dit ES-949-FD.");
+
+const plaqueConforme = anomaliesDossier(troisPieces, [], { ...contexte, immatriculation: "ES-949-FD" }, true, []);
+verifie("plaque conforme : rien a signaler",
+  !plaqueConforme.some((a) => a.code === "plaque_differente"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
