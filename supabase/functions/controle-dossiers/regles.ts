@@ -695,31 +695,14 @@ export function anomaliesDossier(
     }
   }
 
-  // « La date doit être la même que sur le certificat de cession » — le guide le
-  // répète pour la DA comme pour la DC. C'est le motif de refus SIV le plus
-  // courant : deux dates qui divergent, et l'opérateur ne peut pas enregistrer.
-  //
-  // La règle avait été retirée après des lectures fausses : le modèle prenait
-  // les deux derniers chiffres de l'année pour un jour. Elle revient avec deux
-  // garde-fous. La mention « vendu le » est manuscrite, donc invisible sur un
-  // PDF océrisé : on ne compare que ce qui a été vu sur une image. Et la gravité
-  // reste moyenne — on fait regarder deux dates, on n'affirme pas.
-  const dateDe = (p: Piece) => p.extraction?.dates?.cession ?? null;
-  const surImage = (p: Piece) => !/\.pdf$/i.test(p.nom_fichier);
-  const cessionDatee = pieces.find((p) =>
-    p.extraction?.type_document === "certificat_cession" && dateDe(p));
-  const carteGriseDatee = pieces.find((p) =>
-    p.extraction?.type_document === "carte_grise" && dateDe(p) && surImage(p));
-
-  if (cessionDatee && carteGriseDatee && dateDe(cessionDatee) !== dateDe(carteGriseDatee)) {
-    anomalies.push({
-      code: "dates_cession_differentes",
-      gravite: "moyenne",
-      message: `La carte grise porte la vente au ${enFrancais(dateDe(carteGriseDatee))} et le certificat de cession au ${enFrancais(dateDe(cessionDatee))} : le SIV exige la même date sur les deux.`,
-      piece: carteGriseDatee.libelle,
-      document_id: carteGriseDatee.document_id,
-    });
-  }
+  // La cohérence des dates de vente entre la carte grise et la cession est
+  // exigée par le guide, mais elle n'est pas contrôlable à la lecture : la
+  // mention « vendu le » est manuscrite, dans une case étroite, et le modèle y
+  // a lu 26/08 là où le document portait 31/08 — les deux derniers chiffres de
+  // l'année pris pour un jour. Un contrôle qui se trompe une fois sur deux
+  // coûte plus cher qu'un contrôle qui s'abstient : il fait rouvrir des
+  // dossiers sains. Ce point figure donc dans la liste des vérifications
+  // laissées à l'œil, affichée sous les signalements.
 
   // « Vous devez expressément être mandaté par l'ancien titulaire du véhicule
   // pour déclarer la cession, et non par un tiers » (guide SIV, page 12). Un

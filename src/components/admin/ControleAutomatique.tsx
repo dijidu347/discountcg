@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { AlertTriangle, CheckCircle2, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Eye, Info, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 
 // Tables et fonction ajoutées après la dernière génération des types Supabase :
@@ -194,6 +194,43 @@ export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: 
             })}
           </div>
         )}
+
+        {/* Ce que le contrôle ne sait pas faire, dit explicitement.
+            Deux exigences du guide SIV reposent sur des mentions manuscrites,
+            dans des cases étroites, que la lecture automatique confond : sur un
+            dossier, « vendu le 31/08 » a été lu « 26/08 », les deux derniers
+            chiffres de l'année pris pour un jour. Plutôt qu'un signalement faux
+            une fois sur deux — qui fait rouvrir des dossiers sains — on nomme
+            ces points et on les laisse à l'œil. */}
+        <div className="mt-4 rounded-lg border border-dashed p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            À vérifier vous-même
+          </p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            <li className="flex gap-2">
+              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <span className="font-medium">La date de vente</span> doit être la même sur la carte
+                grise barrée et sur le certificat de cession. Écrite à la main, elle se lit mal
+                automatiquement.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <span className="font-medium">L'heure de cession</span> figure sur le certificat :
+                le SIV la réclame à la saisie.
+              </span>
+            </li>
+            <li className="flex gap-2">
+              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                <span className="font-medium">Le numéro de formule</span> de la carte grise, en bas
+                du recto, doit être lisible : il est demandé à la saisie SIV.
+              </span>
+            </li>
+          </ul>
+        </div>
       </CardContent>
     </Card>
   );

@@ -659,35 +659,6 @@ verifie("un gage aussi, meme accompagne d'un duplicata",
   certificatSituation(["Certificat d'immatriculation duplicata", "Gage"])
     .some((a) => a.code === "situation_non_vierge" && a.gravite === "haute"));
 
-// « La date doit etre la meme que sur le certificat de cession » (guide SIV,
-// pages 13 et 16). La mention « vendu le » etant manuscrite, elle est invisible
-// sur un PDF ocerise : on ne compare que ce qui a ete vu sur une image.
-const paireDates = (dateCg: string | null, dateCession: string, pdf = false): Piece[] => [
-  piece({
-    document_id: "cg", nom_fichier: pdf ? "cg.pdf" : "cg.jpg", libelle: "Carte grise barrée",
-    extraction: { type_document: "carte_grise", lisible: true, dates: dateCg ? { cession: dateCg } : {} },
-  }),
-  piece({
-    document_id: "ce", nom_fichier: "cession.jpg", libelle: "Certificat de cession",
-    extraction: { type_document: "certificat_cession", lisible: true, dates: { cession: dateCession } },
-  }),
-];
-verifie("deux dates de vente differentes : signalees",
-  anomaliesDossier(paireDates("2026-08-26", "2026-08-31"), [], contexte, true, [])
-    .some((a) => a.code === "dates_cession_differentes" && a.gravite === "moyenne"));
-verifie("le message donne les deux dates en clair",
-  (anomaliesDossier(paireDates("2026-08-26", "2026-08-31"), [], contexte, true, [])
-    .find((a) => a.code === "dates_cession_differentes")?.message.includes("26/08/2026") ?? false));
-verifie("memes dates : rien a signaler",
-  !anomaliesDossier(paireDates("2026-08-31", "2026-08-31"), [], contexte, true, [])
-    .some((a) => a.code === "dates_cession_differentes"));
-verifie("carte grise en PDF : on ne compare pas une encre invisible",
-  !anomaliesDossier(paireDates("2026-08-26", "2026-08-31", true), [], contexte, true, [])
-    .some((a) => a.code === "dates_cession_differentes"));
-verifie("date absente sur la carte grise : rien a comparer",
-  !anomaliesDossier(paireDates(null, "2026-08-31"), [], contexte, true, [])
-    .some((a) => a.code === "dates_cession_differentes"));
-
 // « Vous devez expressement etre mandate par l'ancien titulaire » (page 12).
 const mandatEtCession = (nomMandant: string): Piece[] => [
   piece({
