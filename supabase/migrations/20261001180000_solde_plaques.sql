@@ -32,22 +32,15 @@ create policy "solde lisible par les admins"
 
 -- Écriture par la fonction de relevé seule, qui passe par la clé de service.
 
--- Une fois par jour à 7 h : de quoi voir l'alerte en arrivant.
-select cron.unschedule('solde-plaques-quotidien')
- where exists (select 1 from cron.job where jobname = 'solde-plaques-quotidien');
-
-select cron.schedule(
-  'solde-plaques-quotidien',
-  '0 7 * * *',
-  $job$
-  select net.http_post(
-    url := 'https://oiotlgkfwuwshpwraneb.supabase.co/functions/v1/solde-plaques',
-    headers := jsonb_build_object(
-      'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'service_role_key' limit 1)
-    ),
-    body := '{}'::jsonb,
-    timeout_milliseconds := 20000
-  );
-  $job$
-);
+-- La tâche planifiée de 7 h est posée à part : elle doit lire la clé de
+-- service dans le coffre des secrets, ce qu'une migration n'a pas le droit de
+-- faire ici. Elle est créée une fois, directement sur la base.
+--
+--   select cron.schedule('solde-plaques-quotidien', '0 7 * * *', $job$
+--     select net.http_post(
+--       url := '.../functions/v1/solde-plaques',
+--       headers := jsonb_build_object('Content-Type','application/json',
+--         'Authorization','Bearer ' || (select decrypted_secret
+--            from vault.decrypted_secrets where name = 'service_role_key' limit 1)),
+--       body := '{}'::jsonb, timeout_milliseconds := 20000);
+--   $job$);
