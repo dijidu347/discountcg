@@ -288,7 +288,15 @@ async function pieceObligatoires(
       obligatoire: piece.obligatoire,
       depuis: piece.obligatoire_depuis as string | null,
     }))
-    .filter((piece: any) => piece.obligatoire)
+    // Deux pièces que le SIV exige sous condition, et que le formulaire de dépôt
+    // ne peut pas rendre obligatoires : il bloquerait l'envoi de toutes les
+    // démarches, y compris celles où la condition n'est pas remplie, faute de
+    // connaître l'âge du véhicule ou la nature du vendeur. Le contrôle, lui, le
+    // sait — c'est donc lui qui porte l'exigence, en signalant sans bloquer.
+    .filter((piece: any) =>
+      piece.obligatoire
+      || (/contr[ôo]le technique/i.test(piece.libelle) && controleTechniqueExigible(dateMec))
+      || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro))
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
     .filter((piece: any) =>
       !/contr[ôo]le technique/i.test(piece.libelle) || controleTechniqueExigible(dateMec))
