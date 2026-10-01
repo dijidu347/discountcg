@@ -537,7 +537,7 @@ const contexteSociete: ContexteDossier = {
 };
 const mandat = (siret: string | null) => piece({
   type_document: "doc_5", libelle: "Mandat signé et tamponné (cerfa 13757*03)", nom_fichier: "mandat.jpg",
-  extraction: { type_document: "mandat", lisible: true, siret },
+  extraction: { type_document: "mandat", lisible: true, siret_mandant: siret },
 });
 verifie("un Siret etranger au mandant est signale",
   anomaliesPiece(mandat("98765432100019"), contexteSociete, maintenant)
@@ -583,5 +583,31 @@ verifie("sans co-titulaire, aucune double signature exigee",
   !anomaliesDossier(
     [piece({ extraction: { type_document: "certificat_cession", lisible: true, signatures: { second_vendeur: false } } })],
     [], contexte, true, []).some((a) => a.code === "double_signature_manquante"));
+
+// Cas de DEM-2026-08088 : chaque Z d'un VIN Volkswagen lu comme un 2.
+const vinZeroDeux = anomaliesPiece(
+  piece({ extraction: { type_document: "carte_grise", lisible: true, vin: "WVW222522A4155754" } }),
+  { ...contexte, vin: "WVWZZZ5ZZA4155754" }, maintenant,
+);
+verifie("les Z lus 2 ne font pas un autre vehicule",
+  !vinZeroDeux.some((a) => a.code === "vin_different"));
+
+const vinVraimentAutre = anomaliesPiece(
+  piece({ extraction: { type_document: "carte_grise", lisible: true, vin: "F2AX21CT2H2AA151C" } }),
+  { ...contexte, vin: "W1K3F1CB8PN296533" }, maintenant,
+);
+verifie("un VIN d'un autre vehicule reste signale",
+  vinVraimentAutre.some((a) => a.code === "vin_different"));
+
+// Le Siret du mandataire est pre-imprime sur le cerfa : le lire a la place de
+// celui du mandant accusait sept dossiers d'affilee du meme numero.
+verifie("le Siret du mandataire n'est plus confondu avec celui du mandant",
+  !anomaliesPiece(
+    piece({
+      type_document: "doc_5", libelle: "Mandat signé et tamponné (cerfa 13757*03)", nom_fichier: "m.jpg",
+      extraction: { type_document: "mandat", lisible: true, siret: "83088827700027" },
+    }),
+    { ...contexte, mandat_data: { mandant_siret: "10247419400010" } }, maintenant,
+  ).some((a) => a.code === "siret_different"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

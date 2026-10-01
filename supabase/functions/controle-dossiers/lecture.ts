@@ -49,6 +49,7 @@ const FORME_ATTENDUE = `{
   "champs_incomplets": "liste des cases obligatoires laissées vides, ou liste vide",
   "ratures": "booléen",
   "siret": "le numéro tel qu'il est écrit, ou null",
+  "siret_mandant": "sur un mandat seulement : le Siret inscrit dans le cadre du MANDANT, celui qui donne mandat. Ne jamais reprendre le Siret du mandataire, qui est pré-imprimé plus haut. null si le cadre du mandant n'en porte pas",
   "remarque": "une phrase au maximum"
 }`;
 

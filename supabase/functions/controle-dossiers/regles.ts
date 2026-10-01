@@ -48,6 +48,8 @@ export interface Extraction {
   champs_incomplets?: string[] | null;
   ratures?: boolean | null;
   siret?: string | null;
+  /** Le Siret du mandant seul : celui du mandataire est pré-imprimé sur le cerfa. */
+  siret_mandant?: string | null;
   remarque?: string | null;
 }
 
@@ -208,8 +210,28 @@ export function normaliseVin(valeur: string | null | undefined): string | null {
   return propre.length === 17 ? propre : null;
 }
 
+// Les caractères qui se ressemblent une fois imprimés en petit. Sur
+// DEM-2026-08088, chaque Z d'un VIN Volkswagen avait été lu 2 : cinq écarts
+// annoncés pour un seul et même véhicule. Les confondre volontairement avant de
+// comparer, c'est ne laisser subsister que les vraies différences.
+//
+// La norme interdit I, O et Q dans un VIN : les y voir est toujours une erreur
+// de lecture, jamais un caractère réel.
+const CONFUSIONS: Record<string, string> = {
+  O: "0", Q: "0", D: "0",
+  I: "1", L: "1",
+  Z: "2",
+  S: "5",
+  G: "6",
+  B: "8",
+};
+
+function sansConfusion(vin: string): string {
+  return [...vin].map((c) => CONFUSIONS[c] ?? c).join("");
+}
+
 export function vinsDifferents(a: string, b: string): boolean {
-  return ecart(a, b, ECART_VIN) > ECART_VIN;
+  return ecart(sansConfusion(a), sansConfusion(b), ECART_VIN) > ECART_VIN;
 }
 
 function enDate(valeur?: string | null): Date | null {
@@ -487,7 +509,7 @@ export function anomaliesPiece(
   // exactement ce qu'un contrôle de préfecture regarde.
   if (estMandat) {
     const siretDossier = normaliseSiret(contexte.mandat_data?.mandant_siret);
-    const siretLu = normaliseSiret(ex.siret);
+    const siretLu = normaliseSiret(ex.siret_mandant);
     if (siretDossier && siretLu && !memeEtablissement(siretLu, siretDossier)) {
       ajoute(
         "siret_different",
