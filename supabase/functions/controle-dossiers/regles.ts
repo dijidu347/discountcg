@@ -27,7 +27,11 @@ export interface Extraction {
   defauts?: string[] | null;
   immatriculations?: string[] | null;
   vin?: string | null;
-  personnes?: { role?: string; nom?: string; prenom?: string; adresse?: string }[] | null;
+  personnes?: {
+    role?: string; nom?: string; prenom?: string; adresse?: string;
+    /** Le cerfa coche « personne physique » ou « personne morale » : une société ne se compare pas à un nom. */
+    est_une_societe?: boolean | null;
+  }[] | null;
   dates?: {
     emission?: string | null;
     validite?: string | null;
@@ -124,6 +128,19 @@ export function motsDuNom(valeur: string): string[] {
 // Deux écritures d'un même nom partagent toujours au moins un mot significatif.
 // On ne signale donc que l'absence totale de recoupement : un second prénom ou
 // un nom d'usage en plus ne déclenche rien.
+// Une raison sociale n'est pas un nom de personne : le cerfa coche « personne
+// morale », et le modèle le rapporte. Les lectures antérieures à cette consigne
+// n'ont pas l'information, d'où ce repli sur les marques d'une société — forme
+// juridique ou vocabulaire du métier. Il ne rattrape pas tout : une concession
+// nommée d'après une rue ou une personne y échappe, et c'est le champ rapporté
+// par le modèle qui tranche alors.
+const MARQUES_DE_SOCIETE =
+  /\b(SAS|SASU|SARL|EURL|SA|SCI|SNC|SELARL|SCOP|EI|EIRL)\b|\b(AUTOS?|MOTORS?|GARAGE|CONCESSION|AUTOMOBILES?|CARS?|VO|NEGOCE|DISTRIBUTION|TRUCKS?)\b/i;
+
+export function estUneRaisonSociale(nom: string): boolean {
+  return MARQUES_DE_SOCIETE.test(sansAccent(nom).toUpperCase());
+}
+
 export function memePersonne(a: string, b: string): boolean {
   const motsA = motsDuNom(a);
   const motsB = motsDuNom(b);
@@ -927,7 +944,17 @@ export function anomaliesDossier(
       .map(nomComplet)
       .find(Boolean);
 
-    if (surLaPiece && partie && !memePersonne(surLaPiece, partie)) {
+    // Quand la partie est une société, la pièce fournie est celle de son
+    // dirigeant : le guide l'exige ainsi (« extrait Kbis + pièce d'identité du
+    // dirigeant »). Comparer le nom du gérant à la raison sociale de sa société
+    // ne peut que produire un faux signalement — dix-huit sur vingt le 1er
+    // octobre 2026, de « Damien THORAL » contre « H2A AUTO » à six dossiers
+    // contre « SASU 4 ROUES ».
+    const partieEstUneSociete = cession?.extraction?.personnes
+      ?.some((p) => (p.role ?? "").toLowerCase() === roleAttendu
+        && (p.est_une_societe === true || estUneRaisonSociale(nomComplet(p))));
+
+    if (surLaPiece && partie && !partieEstUneSociete && !memePersonne(surLaPiece, partie)) {
       anomalies.push({
         code: "nom_different",
         gravite: "moyenne",

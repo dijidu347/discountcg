@@ -39,7 +39,7 @@ const FORME_ATTENDUE = `{
   "defauts": "liste, vide la plupart du temps, parmi : flou, sombre, tronque, reflet, doigt",
   "immatriculations": "liste des plaques françaises lues, ou liste vide",
   "vin": "le numéro de série à 17 caractères tel qu'il est écrit, ou null",
-  "personnes": "liste d'objets { role, nom, prenom, adresse }, role parmi : titulaire, vendeur, acheteur, mandant, mandataire, autre",
+  "personnes": "liste d'objets { role, nom, prenom, adresse, est_une_societe }, role parmi : titulaire, vendeur, acheteur, mandant, mandataire, autre. est_une_societe vaut vrai quand le cerfa coche « personne morale » pour cette partie, ou quand le nom inscrit est une raison sociale et non un nom de personne",
   "dates": "objet { emission, validite, mise_en_circulation, cession, heure_cession, naissance }, chaque date au format AAAA-MM-JJ et l'heure au format HH:MM, null quand elle n'est pas lisible. Sur une pièce d'identité, validite est la date d'EXPIRATION du titre et naissance la date de naissance du porteur : ne jamais mettre l'une à la place de l'autre",
   "signatures": "objet { vendeur, acheteur, mandant, tampon, second_vendeur }, booléens, champ omis quand le document ne prévoit pas de signature. second_vendeur vaut vrai seulement si DEUX signatures distinctes figurent dans le cadre du vendeur",
   "co_titulaire": "booléen : vrai seulement si le document nomme deux titulaires ou deux vendeurs, faux sinon",

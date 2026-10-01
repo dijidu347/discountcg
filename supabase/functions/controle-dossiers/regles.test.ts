@@ -735,4 +735,39 @@ verifie("une nouvelle carte, dont la validite se lit au recto, ne declenche rien
     extraction: { type_document: "carte_identite", lisible: true, face: "recto", dates: { validite: "2035-04-01" } },
   })], [], contexte, true, []).some((a) => a.code === "verso_manquant"));
 
+// Quand le vendeur est une societe, la piece fournie est celle du dirigeant :
+// le guide l'exige ainsi. Comparer son nom a la raison sociale produisait
+// dix-huit faux signalements sur vingt.
+const identiteContre = (vendeur: { nom: string; est_une_societe?: boolean }): Piece[] => [
+  piece({
+    document_id: "i", type_document: "doc_2", nom_fichier: "cni.jpg",
+    libelle: "Pièce d'identité du vendeur (recto/verso)",
+    extraction: {
+      type_document: "carte_identite", lisible: true, face: "recto_verso",
+      dates: { validite: "2035-01-01" },
+      personnes: [{ role: "titulaire", nom: "THORAL", prenom: "Damien" }],
+    },
+  }),
+  piece({
+    document_id: "c", type_document: "doc_1", nom_fichier: "cession.jpg",
+    libelle: "Certificat de cession signé (cerfa 15776*02)",
+    extraction: {
+      type_document: "certificat_cession", lisible: true,
+      personnes: [{ role: "vendeur", nom: vendeur.nom, est_une_societe: vendeur.est_une_societe }],
+    },
+  }),
+];
+verifie("le gerant face a sa societe ne declenche rien",
+  !anomaliesDossier(identiteContre({ nom: "H2A AUTO" }), [], contexte, true, [])
+    .some((a) => a.code === "nom_different"));
+verifie("une societe annoncee par le modele non plus",
+  !anomaliesDossier(identiteContre({ nom: "DUMONT D'URVILLE", est_une_societe: true }), [], contexte, true, [])
+    .some((a) => a.code === "nom_different"));
+verifie("deux personnes physiques differentes restent signalees",
+  anomaliesDossier(identiteContre({ nom: "MASSOUDI", est_une_societe: false }), [], contexte, true, [])
+    .some((a) => a.code === "nom_different"));
+verifie("la meme personne ne declenche rien",
+  !anomaliesDossier(identiteContre({ nom: "THORAL" }), [], contexte, true, [])
+    .some((a) => a.code === "nom_different"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
