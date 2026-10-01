@@ -214,6 +214,35 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // Le solde de crédits qui sert à identifier les plaques, avant la panne et
+    // non après : le 1er octobre 2026, l'identification s'est arrêtée sur tout
+    // le site et les clients l'ont découvert avant nous.
+    case "solde_plaques_bas":
+      return {
+        subject: data.seuil <= 50
+          ? `Identification des plaques : plus que ${data.solde} crédits`
+          : `Identification des plaques : ${data.solde} crédits restants`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: ${Number(data.seuil) <= 50 ? "#b91c1c" : "#b45309"};">
+              ${data.solde} crédits restants
+            </h1>
+            <p>Le compte qui identifie les véhicules à partir de leur plaque arrive en fin de crédits.</p>
+            <p>À la consommation actuelle, cela représente environ <strong>${data.jours} jours</strong>.</p>
+            <p>Sans crédits, le site n'identifie plus les véhicules : les clients doivent saisir eux-mêmes
+               leur carte grise, et les commandes en souffrent.</p>
+
+            <a href="${data.lien}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Recharger le compte
+            </a>
+
+            <p style="color: #6b7280; font-size: 13px;">
+              Ce message ne part qu'une fois par seuil franchi. Un rechargement le réarme.
+            </p>
+          </div>
+        `,
+      };
+
     case "piece_demandee":
       return {
         subject: `Il nous manque une pièce - ${data.tracking_number}`,
