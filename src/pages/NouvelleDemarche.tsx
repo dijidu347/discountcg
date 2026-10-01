@@ -162,6 +162,9 @@ export default function NouvelleDemarche() {
   const [nbQuestions, setNbQuestions] = useState<number | null>(null);
   // Textes des réponses au questionnaire (pour DocumentsNecessaires)
   const [questionnaireAnswerTexts, setQuestionnaireAnswerTexts] = useState<Record<string, string>>({});
+  // Identifiant de la question « acheté auprès d'un professionnel ? », qui décide
+  // si le récépissé de la précédente déclaration d'achat est dû.
+  const [questionVendeurProId, setQuestionVendeurProId] = useState<string | null>(null);
   // Payment mode state
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("pro_pays_all");
   const [clientEmail, setClientEmail] = useState<string | undefined>();
@@ -354,10 +357,10 @@ export default function NouvelleDemarche() {
     [vehiculeMandat, vehicleInfoPro],
   );
 
-  const venduParUnPro = useMemo(
-    () => Object.values(questionnaireAnswerTexts).some((reponse) => /^oui$/i.test(reponse.trim())),
-    [questionnaireAnswerTexts],
-  );
+  const venduParUnPro = useMemo(() => {
+    if (!questionVendeurProId) return false;
+    return /^oui$/i.test((questionnaireAnswerTexts[questionVendeurProId] ?? "").trim());
+  }, [questionnaireAnswerTexts, questionVendeurProId]);
 
   const plusDeQuatreAns = useMemo(() => {
     if (!dateMecVehicule) return false;
@@ -367,6 +370,19 @@ export default function NouvelleDemarche() {
     quatreAns.setFullYear(quatreAns.getFullYear() + 4);
     return quatreAns.getTime() < Date.now();
   }, [dateMecVehicule]);
+
+  // L'ordre d'affichage des pièces, qui n'est pas celui de la configuration :
+  // les rangs y valent « doc_1 », « doc_2 »… et les changer renommerait toutes
+  // les pièces déjà déposées. On réordonne donc à l'écran seulement, en gardant
+  // le rang d'origine de chaque ligne.
+  //
+  // Ce qui est dû d'abord, le facultatif en bas ; et le contrôle technique
+  // juste après le récépissé, puisqu'ils vont de pair dans l'esprit du garage.
+  const rangVoulu = (nom: string): number => {
+    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return 1;
+    if (/contr[ôo]le technique/i.test(nom)) return 2;
+    return 0;
+  };
 
   const pieceDue = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null }) => {
     if (doc.obligatoire) return true;
@@ -623,11 +639,18 @@ export default function NouvelleDemarche() {
       // Compte des questions avant tout rendu : le bandeau "Questions
       // prealables" ne doit pas apparaitre, meme brievement, sur les demarches
       // qui n'en ont aucune (9 des 18 demarches pro actives, dont CG/DA/DC).
-      const { count } = await supabase
+      const { data: questions, count } = await supabase
         .from('action_questions')
-        .select('id', { count: 'exact', head: true })
+        .select('id, question_text', { count: 'exact' })
         .eq('action_id', action.id);
       setNbQuestions(count ?? 0);
+
+      // La question qui décide du récépissé, retenue par son identifiant : la
+      // chercher parmi les réponses par leur contenu marcherait tant qu'il n'y a
+      // qu'une question, et se tromperait dès la deuxième.
+      const vendeur = (questions ?? []).find((q: { question_text?: string | null }) =>
+        /professionnel/i.test(q.question_text ?? ""));
+      setQuestionVendeurProId(vendeur?.id ?? null);
 
       const { data: docs } = await supabase
         .from('action_documents')
@@ -1811,7 +1834,40 @@ export default function NouvelleDemarche() {
                             {/* Mandat 13757 en premier : c'est la premiere piece a
                                 traiter, et son mode conditionne la suite. */}
                             {blocMandat}
-                            {documentsRequis.map((doc, idx) => {
+                          {/* Certificat de non-gage (CG/DA/DC uniquement).
+                                Le dépôt s'ouvre dans la carte « Je fournis le certificat ». */}
+                            <NonGageChoice
+                              demarcheType={formData.type}
+                              audience="pro"
+                              value={nonGageMode}
+                              onChange={handleNonGageChange}
+                              enErreur={enErreur("non_gage")}
+                              uploadSlot={
+                                <div className="space-y-2">
+                                  <Label className="text-sm font-medium">
+                                    {NON_GAGE_DOCUMENT_LABEL}
+                                    <span className="text-destructive text-base font-bold">&nbsp;*</span>
+                                  </Label>
+                                  <DocumentUpload
+                                    demarcheId={demarcheId}
+                                    documentType="non_gage"
+                                    customName={NON_GAGE_DOCUMENT_LABEL}
+                                    label=""
+                                    onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
+                                  />
+                                </div>
+                              }
+                            />
+                            {documentsRequis
+                              .map((doc, rang) => ({ doc, rang }))
+                              .sort((a, b) =>
+                                (pieceDue(a.doc) === pieceDue(b.doc)
+                                  ? 0
+                                  : pieceDue(a.doc) ? -1 : 1)
+                                || (rangVoulu(a.doc.nom_document ?? "") - rangVoulu(b.doc.nom_document ?? ""))
+                                || (a.rang - b.rang))
+                              .map(({ doc, rang }) => {
+                              const idx = rang;
                               // Le mandat a sa propre carte, qui le genere pre-rempli.
                               // On saute sa ligne ici pour ne pas proposer en meme temps
                               // le Cerfa vierge a imprimer. On ne FILTRE pas le tableau :
@@ -1927,32 +1983,6 @@ export default function NouvelleDemarche() {
                               );
                             })}
                           </div>
-
-                          {/* Certificat de non-gage (CG/DA/DC uniquement).
-                              Le dépôt s'ouvre dans la carte « Je fournis le certificat ». */}
-                          <NonGageChoice
-                            demarcheType={formData.type}
-                            audience="pro"
-                            value={nonGageMode}
-                            onChange={handleNonGageChange}
-                            enErreur={enErreur("non_gage")}
-                            uploadSlot={
-                              <div className="space-y-2">
-                                <Label className="text-sm font-medium">
-                                  {NON_GAGE_DOCUMENT_LABEL}
-                                  <span className="text-destructive text-base font-bold">&nbsp;*</span>
-                                </Label>
-                                <DocumentUpload
-                                  demarcheId={demarcheId}
-                                  documentType="non_gage"
-                                  customName={NON_GAGE_DOCUMENT_LABEL}
-                                  label=""
-                                  onUploadComplete={() => handleDocumentUploadComplete('non_gage')}
-                                />
-                              </div>
-                            }
-                          />
-
 
                           <p className="text-xs text-muted-foreground pt-1">
                             <span className="text-destructive font-bold">*</span> = Document obligatoire
