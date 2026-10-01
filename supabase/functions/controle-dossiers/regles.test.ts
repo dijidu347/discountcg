@@ -426,14 +426,12 @@ const obligatoiresDA = [
 ];
 const surDossier = anomaliesDossier(memeFichier, [], contexte, true, obligatoiresDA);
 const doublonTrouve = surDossier.find((a) => a.code === "fichier_duplique");
-verifie("le doublon nomme la piece qui manque",
-  !!doublonTrouve && doublonTrouve.message.includes("Il manque donc") && doublonTrouve.message.includes("Certificat de cession"));
-verifie("le doublon nomme le fichier et les deux emplacements",
-  !!doublonTrouve && doublonTrouve.message.includes("cession.jpg")
-    && doublonTrouve.message.includes("Déclaration d'achat")
-    && doublonTrouve.message.includes("Certificat de cession"));
+verifie("le doublon nomme la piece qui manque, en abrege",
+  !!doublonTrouve && doublonTrouve.message.includes("il manque la DC"));
+verifie("et il nomme le fichier en cause",
+  !!doublonTrouve && doublonTrouve.message.includes("cession.jpg"));
 verifie("le doublon n'accuse pas la piece qui a bien ete fournie",
-  !!doublonTrouve && !doublonTrouve.message.includes("Il manque donc Déclaration"));
+  !!doublonTrouve && !doublonTrouve.message.includes("il manque la DA"));
 
 const doublonsDeDocuments = new Set(doublonsParFichier(memeFichier).flat().map((p) => p.document_id));
 const piecesDuDoublon = memeFichier.flatMap((p) =>
@@ -469,13 +467,13 @@ const dossierComplet = anomaliesDossier(redepotEnDouble, [], contexte, true, obl
 verifie("un redepot en double sans piece manquante ne vire pas au rouge",
   niveauDossier(dossierComplet) !== "rouge");
 verifie("et il le dit : rien ne manque",
-  dossierComplet.some((a) => a.code === "fichier_duplique" && a.message.includes("Rien ne manque")));
+  dossierComplet.some((a) => a.code === "fichier_duplique" && a.message.includes("rien ne manque")));
 
 const dossierIncomplet = anomaliesDossier(redepotEnDouble, ["Mandat signé"], contexte, true, obligatoiresDA);
 verifie("une piece reellement absente reste signalee a part",
   dossierIncomplet.some((a) => a.code === "piece_manquante" && a.message.includes("Mandat signé")));
 verifie("le doublon anonyme n'accuse personne a sa place",
-  !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("Il manque donc")));
+  !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("il manque")));
 
 // Cas de DEM-2026-02459 : un PDF de deux pages depose pour le recto et le verso
 // de la carte grise. C'est la facon normale de scanner une carte grise.
@@ -511,7 +509,7 @@ const avecFacultative = anomaliesDossier(versPieceFacultative, [], contexte, tru
 verifie("une piece facultative absente ne vire pas au rouge",
   niveauDossier(avecFacultative) !== "rouge");
 verifie("et le message dit qu'elle est facultative",
-  avecFacultative.some((a) => a.code === "fichier_duplique" && a.message.includes("facultative")));
+  avecFacultative.some((a) => a.code === "fichier_duplique" && a.message.includes("facultatif")));
 
 // Le guide exige l'identite du VIN entre la carte grise et la cession, mais la
 // lecture de dix-sept caracteres sans separateur se trompe d'un caractere ou

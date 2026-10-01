@@ -334,6 +334,47 @@ function enFrancais(iso: string | null): string {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
 }
 
+// Le nom court d'une pièce, pour les phrases qui en citent plusieurs. Les
+// intitulés de la configuration sont faits pour guider un dépôt — « Contrôle
+// technique de moins de 6 mois (véhicule de plus de 4 ans) » — et répéter cela
+// deux fois dans un constat le rend illisible.
+// Les abréviations du métier, celles que l'administration emploie entre elle :
+// une phrase qui dit « il manque le CT » se lit d'un coup d'œil là où « Contrôle
+// technique de moins de 6 mois (véhicule de plus de 4 ans) » demande qu'on
+// s'arrête. L'article est inclus pour que les phrases restent justes sans avoir
+// à accorder.
+//
+// « CI » est volontairement absent : il désigne le certificat d'immatriculation
+// dans le guide SIV et la carte d'identité dans l'usage courant. Entre les deux,
+// on écrit la pièce d'identité en toutes lettres.
+const ABREVIATIONS: { motif: RegExp; court: string }[] = [
+  { motif: /13751|d[ée]claration d.achat/i, court: "la DA" },
+  { motif: /15776|certificat de cession|d[ée]claration de cession/i, court: "la DC" },
+  { motif: /contr[ôo]le technique/i, court: "le CT" },
+  { motif: /carte grise|certificat d.immatriculation/i, court: "la CG" },
+  { motif: /r[ée]c[ée]piss[ée]/i, court: "le récépissé de DA" },
+  { motif: /non.?gage|situation administrative/i, court: "le non-gage" },
+  { motif: /13757|mandat/i, court: "le mandat" },
+  { motif: /kbis/i, court: "le Kbis" },
+  { motif: /identit[ée] du vendeur/i, court: "la pièce d'identité du vendeur" },
+  { motif: /identit[ée] de l.acqu[ée]reur|identit[ée] de l.acheteur/i, court: "la pièce d'identité de l'acquéreur" },
+  { motif: /identit[ée] du dirigeant/i, court: "la pièce d'identité du dirigeant" },
+  { motif: /domicile|quittance/i, court: "le justificatif de domicile" },
+];
+
+export function libelleCourt(libelle: string): string {
+  const connue = ABREVIATIONS.find((a) => a.motif.test(libelle));
+  if (connue) return connue.court;
+  // Les pièces libres et les emplacements de correction n'ont pas d'abréviation :
+  // on se contente d'élaguer ce que l'intitulé porte pour guider un dépôt.
+  return libelle
+    .split(/\s*[(—]/)[0]
+    .replace(/\s*,.*$/, "")
+    .replace(/\s+de moins de .*$/i, "")
+    .replace(/\s+(sign[ée]e?|tamponn[ée]e?|dat[ée]e?)(\s+et\s+\S+)*\s*$/i, "")
+    .trim();
+}
+
 export function formatePlaque(plaque: string): string {
   const m = plaque.match(/^([A-Z]{2})([0-9]{3})([A-Z]{2})$/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : plaque;
@@ -865,11 +906,10 @@ export function anomaliesDossier(
     if (liste.every((p) => socle(p.libelle) === socle(liste[0].libelle))) continue;
 
     const memeNom = liste.every((p) => p.nom_fichier === liste[0].nom_fichier);
-    const emplacements = liste.map((p) => p.libelle).join(" et ");
+    const combien = liste.length === 2 ? "deux" : String(liste.length);
     const constat = memeNom
-      ? `« ${liste[0].nom_fichier} » a été déposé ${liste.length} fois : pour ${emplacements}.`
-      : `Un même document a été déposé ${liste.length} fois : `
-        + liste.map((p) => `« ${p.nom_fichier} » pour ${p.libelle}`).join(" et ") + ".";
+      ? `« ${liste[0].nom_fichier} » a servi pour ${combien} pièces`
+      : `${liste.map((p) => `« ${p.nom_fichier} »`).join(" et ")} sont le même document`;
 
     // Un emplacement nommé dit lui-même ce qu'il attendait : si le fichier
     // déposé est la pièce de l'un, les autres emplacements sont restés vides, et
@@ -882,8 +922,8 @@ export function anomaliesDossier(
         code: "fichier_duplique",
         gravite: bloquantes.length > 0 ? "haute" : "basse",
         message: bloquantes.length > 0
-          ? `${constat} Il manque donc ${bloquantes.map((p) => p.libelle).join(", ")}.`
-          : `${constat} ${absentes.map((p) => p.libelle).join(", ")} n'a donc pas été fournie, mais elle est facultative.`,
+          ? `${constat} : il manque ${bloquantes.map((p) => libelleCourt(p.libelle)).join(", ")}.`
+          : `${constat} : il manque ${absentes.map((p) => libelleCourt(p.libelle)).join(", ")} (facultatif).`,
         piece: absentes[0].libelle,
         document_id: liste[0].document_id,
       });
@@ -899,7 +939,7 @@ export function anomaliesDossier(
       anomalies.push({
         code: "fichier_duplique",
         gravite: "basse",
-        message: `${constat} Rien ne manque au dossier.`,
+        message: `${constat} : rien ne manque.`,
         piece: liste[0].libelle,
         document_id: liste[0].document_id,
       });
@@ -912,7 +952,7 @@ export function anomaliesDossier(
     anomalies.push({
       code: "fichier_duplique",
       gravite: "basse",
-      message: constat,
+      message: `${constat}.`,
       piece: liste[0].libelle,
       document_id: liste[0].document_id,
     });
