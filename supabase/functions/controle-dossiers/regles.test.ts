@@ -417,9 +417,13 @@ const memeFichier: Piece[] = [
 const surDossier = anomaliesDossier(memeFichier, [], contexte, true);
 const doublonTrouve = surDossier.find((a) => a.code === "fichier_duplique");
 verifie("le doublon nomme la piece qui manque",
-  !!doublonTrouve && doublonTrouve.message.includes("il manque donc") && doublonTrouve.message.includes("Certificat de cession"));
+  !!doublonTrouve && doublonTrouve.message.includes("Il manque donc") && doublonTrouve.message.includes("Certificat de cession"));
+verifie("le doublon nomme le fichier et les deux emplacements",
+  !!doublonTrouve && doublonTrouve.message.includes("cession.jpg")
+    && doublonTrouve.message.includes("Déclaration d'achat")
+    && doublonTrouve.message.includes("Certificat de cession"));
 verifie("le doublon n'accuse pas la piece qui a bien ete fournie",
-  !!doublonTrouve && !doublonTrouve.message.includes("il manque donc Déclaration"));
+  !!doublonTrouve && !doublonTrouve.message.includes("Il manque donc Déclaration"));
 
 const doublonsDeDocuments = new Set(doublonsParFichier(memeFichier).flat().map((p) => p.document_id));
 const piecesDuDoublon = memeFichier.flatMap((p) =>
@@ -455,12 +459,12 @@ const dossierComplet = anomaliesDossier(redepotEnDouble, [], contexte, true);
 verifie("un redepot en double sans piece manquante ne vire pas au rouge",
   niveauDossier(dossierComplet) !== "rouge");
 verifie("et il le dit : rien ne manque",
-  dossierComplet.some((a) => a.code === "fichier_duplique" && a.message.includes("rien ne manque")));
+  dossierComplet.some((a) => a.code === "fichier_duplique" && a.message.includes("Rien ne manque")));
 
 const dossierIncomplet = anomaliesDossier(redepotEnDouble, ["Mandat signé"], contexte, true);
 verifie("une piece reellement absente reste signalee a part",
   dossierIncomplet.some((a) => a.code === "piece_manquante" && a.message.includes("Mandat signé")));
 verifie("le doublon anonyme n'accuse personne a sa place",
-  !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("il manque donc")));
+  !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("Il manque donc")));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

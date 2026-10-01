@@ -557,6 +557,14 @@ export function anomaliesDossier(
     const fournie = lu ? liste.find((p) => appartientALaFamille(p.libelle, lu)) : undefined;
     const absentes = liste.filter((p) => p !== fournie);
 
+    // Nommer le fichier et les emplacements : sans cela, il faut ouvrir le
+    // dossier et comparer les pièces une à une pour retrouver le doublon. Les
+    // deux copies portent souvent des noms différents (« fw.jpg » et
+    // « FW NOUVELLE.jpg ») alors que le contenu est identique, donc on cite
+    // chacune avec l'emplacement où elle a été déposée.
+    const ou = liste.map((p) => `« ${p.nom_fichier} » pour ${p.libelle}`).join(" et ");
+    const constat = `Un même document a été déposé ${liste.length} fois : ${ou}.`;
+
     // Un emplacement nommé dit lui-même ce qu'il attendait : si le fichier
     // déposé est la pièce de l'un, les autres emplacements sont restés vides, et
     // on peut nommer précisément ce qu'il faut réclamer.
@@ -564,7 +572,7 @@ export function anomaliesDossier(
       anomalies.push({
         code: "fichier_duplique",
         gravite: "haute",
-        message: `Le même fichier a été déposé pour ${liste.length} pièces : il manque donc ${absentes.map((p) => p.libelle).join(", ")}.`,
+        message: `${constat} Il manque donc ${absentes.map((p) => p.libelle).join(", ")}.`,
         piece: absentes[0].libelle,
         document_id: liste[0].document_id,
       });
@@ -580,7 +588,7 @@ export function anomaliesDossier(
       anomalies.push({
         code: "fichier_duplique",
         gravite: "basse",
-        message: `Le même document a été déposé deux fois (${liste.map((p) => p.libelle).join(", ")}) : rien ne manque au dossier.`,
+        message: `${constat} Rien ne manque au dossier.`,
         piece: liste[0].libelle,
         document_id: liste[0].document_id,
       });
@@ -593,7 +601,7 @@ export function anomaliesDossier(
     anomalies.push({
       code: "fichier_duplique",
       gravite: "basse",
-      message: `Le même fichier a été déposé pour ${liste.length} pièces : ${liste.map((p) => p.libelle).join(", ")}.`,
+      message: constat,
       piece: liste[0].libelle,
       document_id: liste[0].document_id,
     });
