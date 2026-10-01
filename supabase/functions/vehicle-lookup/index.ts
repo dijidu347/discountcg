@@ -143,7 +143,12 @@ serve(async (req) => {
 
     if (!response.ok) {
       const status = response.status;
-      console.error(`RapidAPI error status=${status} plate=${cleanPlate}`);
+      // Le corps dit *pourquoi* on est refusé, et la raison n'est pas la même
+      // selon qu'il s'agit de la passerelle RapidAPI (« you are not subscribed »,
+      // « quota exceeded ») ou du fournisseur lui-même. Sans ce détail, un 403
+      // ressemble à une panne alors que c'est souvent un abonnement à refaire.
+      const detail = (await response.text().catch(() => '')).slice(0, 300);
+      console.error(`RapidAPI error status=${status} plate=${cleanPlate} detail=${detail}`);
 
       // 404 explicite = véhicule inconnu -> cache négatif 24h
       if (status === 404 && admin) {
@@ -161,6 +166,10 @@ serve(async (req) => {
           success: false,
           indisponible: status !== 404,
           error: status === 404 ? 'Véhicule inconnu' : `Service indisponible (${status})`,
+          // Jamais affiché au client : seul un appel explicitement marqué
+          // « diagnostic » le reçoit, pour qu'on puisse lire la cause depuis
+          // l'extérieur sans avoir accès aux journaux.
+          ...(body?.diagnostic === true ? { detail } : {}),
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
