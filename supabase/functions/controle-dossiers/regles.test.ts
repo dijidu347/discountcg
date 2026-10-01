@@ -164,9 +164,23 @@ verifie("garage mandant vs vendeur particulier : normal", !mandantPro.some((a) =
 
 const identiteFausse = anomaliesDossier([
   piece({ document_id: "a", libelle: "Carte d'identité du nouveau propriétaire", extraction: { personnes: [{ role: "titulaire", nom: "DUPONT", prenom: "Jean" }] } }),
-  piece({ document_id: "b", libelle: "Certificat de cession (cerfa 15776*01)", extraction: { personnes: [{ role: "acheteur", nom: "LEROY", prenom: "Marc" }] } }),
+  piece({ document_id: "b", libelle: "Certificat de cession (cerfa 15776*02)", extraction: { personnes: [{ role: "acheteur", nom: "LEROY", prenom: "Marc" }] } }),
 ], [], contexte, true);
-verifie("identite qui ne correspond pas a l'acheteur", identiteFausse.some((a) => a.code === "nom_different"));
+verifie("identite de l'acquereur qui ne correspond pas", identiteFausse.some((a) => a.code === "nom_different"));
+
+// Sur une declaration de cession, la piece d'identite est celle du VENDEUR :
+// la comparer a l'acquereur revenait a reprocher a l'un de ne pas etre l'autre.
+const identiteDuVendeur = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Pièce d'identité du vendeur (recto/verso)", extraction: { personnes: [{ role: "titulaire", nom: "CHAIX", prenom: "Damien" }] } }),
+  piece({ document_id: "b", libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { personnes: [{ role: "vendeur", nom: "CHAIX", prenom: "Damien" }, { role: "acheteur", nom: "DUMAS", prenom: "Cédric" }] } }),
+], [], contexte, true);
+verifie("piece du vendeur comparee au vendeur : rien a signaler", !identiteDuVendeur.some((a) => a.code === "nom_different"));
+
+const vendeurQuiNeColle = anomaliesDossier([
+  piece({ document_id: "a", libelle: "Pièce d'identité du vendeur (recto/verso)", extraction: { personnes: [{ role: "titulaire", nom: "MARTIN", prenom: "Paul" }] } }),
+  piece({ document_id: "b", libelle: "Certificat de cession signé (cerfa 15776*02)", extraction: { personnes: [{ role: "vendeur", nom: "CHAIX", prenom: "Damien" }] } }),
+], [], contexte, true);
+verifie("piece du vendeur qui ne correspond pas au vendeur : signalee", vendeurQuiNeColle.some((a) => a.code === "nom_different"));
 
 
 

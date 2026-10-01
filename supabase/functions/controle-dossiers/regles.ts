@@ -380,12 +380,6 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
     );
   }
 
-  const vinDossier = contexte.vin ? contexte.vin.toUpperCase().replace(/\s/g, "") : null;
-  const vinLu = ex.vin ? ex.vin.toUpperCase().replace(/\s/g, "") : null;
-  if (vinDossier && vinLu && vinLu.length >= 15 && vinsDifferents(vinLu, vinDossier)) {
-    ajoute("vin_different", "moyenne", `Le VIN lu (${vinLu}) ne correspond pas à celui du dossier (${vinDossier}). À confirmer à l'œil, ce peut être une erreur de lecture.`);
-  }
-
   // Validité et fraîcheur.
   //
   // Seuls certains documents expirent. Une carte grise, une cession, un mandat
@@ -429,8 +423,12 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
 
   // Le Cerfa identifie le véhicule par sa plaque OU par son VIN : réclamer le
   // VIN alors que la plaque est inscrite serait un reproche sans objet.
+  // Les cases obligatoires ne se reprochent qu'aux formulaires qui en portent.
+  // Une carte grise n'a pas d'« heure de cession » : le modèle y appliquait les
+  // rubriques du cerfa et réclamait une case qui n'existe pas.
+  const PORTE_DES_CASES = new Set(["certificat_cession", "declaration_achat", "mandat", "demande_immatriculation"]);
   const vinInutile = plaquesLues.length > 0;
-  for (const champ of ex.champs_incomplets ?? []) {
+  for (const champ of (PORTE_DES_CASES.has(ex.type_document ?? "") ? ex.champs_incomplets ?? [] : [])) {
     if (vinInutile && /\bvin\b|identification du v[ée]hicule/i.test(champ)) continue;
     // Sur un PDF, une case « signature » vide ne veut rien dire : le modèle lit
     // le texte, pas l'encre. Annoncer qu'elle manque revient à accuser au
@@ -452,7 +450,7 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
 
   // En revanche, un mandat qui ne porte ni plaque ni VIN ne désigne aucun
   // véhicule.
-  if (estMandat && plaquesLues.length === 0 && !vinLu) {
+  if (estMandat && plaquesLues.length === 0 && !ex.vin) {
     ajoute("vehicule_non_identifie", "haute", "Le mandat n'indique ni plaque ni VIN : le véhicule n'y est pas identifié.");
   }
 
@@ -543,50 +541,10 @@ export function anomaliesDossier(
     });
   }
 
-  // VIN lus sur des pièces différentes. Deux lectures d'un même numéro diffèrent
-  // souvent d'un caractère ou deux : seul un écart net dénonce deux véhicules.
-  const vins: { vin: string; piece: string }[] = [];
-  for (const piece of pieces) {
-    const vin = piece.extraction?.vin?.toUpperCase().replace(/\s/g, "");
-    if (vin && vin.length >= 15) vins.push({ vin, piece: piece.libelle });
-  }
-  for (let i = 1; i < vins.length; i++) {
-    if (!vinsDifferents(vins[0].vin, vins[i].vin)) continue;
-    anomalies.push({
-      code: "vin_incoherent",
-      gravite: "moyenne",
-      message: `Deux VIN qui ne concordent pas : ${vins[0].vin} (${vins[0].piece}) et ${vins[i].vin} (${vins[i].piece}). À confirmer à l'œil, ce peut être une erreur de lecture.`,
-      piece: vins[i].piece,
-    });
-    break;
-  }
-
-  // Identité de l'acquéreur : la pièce d'identité déposée doit être celle de
-  // l'acheteur porté sur la cession.
-  //
-  // On ne compare que ces deux-là. Rapprocher le mandant du titulaire de la
-  // carte grise n'aurait aucun sens sur une déclaration d'achat : le mandant est
-  // le garage, le titulaire est le particulier qui vend. Ce sont deux personnes
-  // différentes, et c'est parfaitement normal.
-  const nomComplet = (p: { nom?: string; prenom?: string }) => [p.prenom, p.nom].filter(Boolean).join(" ").trim();
-
-  const pieceIdentite = pieces.find((p) => /identit|passeport|titre de sejour|titre de séjour/i.test(p.libelle));
-  const titulairePiece = pieceIdentite?.extraction?.personnes?.map(nomComplet).find(Boolean);
-
-  const cession = pieces.find((p) => /cession/i.test(p.libelle));
-  const acheteur = cession?.extraction?.personnes
-    ?.filter((p) => (p.role ?? "").toLowerCase() === "acheteur")
-    .map(nomComplet)
-    .find(Boolean);
-
-  if (titulairePiece && acheteur && !memePersonne(titulairePiece, acheteur)) {
-    anomalies.push({
-      code: "nom_different",
-      gravite: "moyenne",
-      message: `La pièce d'identité est au nom de « ${titulairePiece} », mais la cession désigne « ${acheteur} » comme acquéreur.`,
-      piece: pieceIdentite?.libelle,
-    });
-  }
+  // Le recoupement des VIN entre pièces est abandonné. Sur vingt dossiers il a
+  // signalé quatorze désaccords, presque tous dus à la lecture : dix-sept
+  // caractères sans séparateur, où un Z devient un 2 et un O un 0. Ce qui dit de
+  // façon fiable qu'une pièce concerne un autre véhicule, c'est la plaque.
 
   // La mention de vente est cherchée sur toutes les pièces de la carte grise, et
   // pas seulement sur celle déposée au bon endroit : le recto et le verso
@@ -613,6 +571,34 @@ export function anomaliesDossier(
   // lectures manuscrites qui se sont trompées à chaque fois qu'on les a
   // regardées. Les dates restent extraites : il suffira de rétablir la
   // comparaison le jour où elles seront fiables.
+
+  // Identité : on compare la pièce d'identité à la partie qu'elle est censée
+  // identifier, et son libellé le dit — « pièce d'identité du vendeur » sur une
+  // déclaration de cession, « du nouveau propriétaire » ailleurs. Les confondre
+  // revenait à reprocher au vendeur de ne pas être l'acheteur.
+  const nomComplet = (p: { nom?: string; prenom?: string }) => [p.prenom, p.nom].filter(Boolean).join(" ").trim();
+  const pieceIdentite = pieces.find((p) => /identit|passeport|titre de sejour|titre de séjour/i.test(p.libelle));
+  if (pieceIdentite) {
+    const celleDuVendeur = /vendeur|ancien (propri[ée]taire|titulaire)|c[ée]dant/i.test(pieceIdentite.libelle);
+    const roleAttendu = celleDuVendeur ? "vendeur" : "acheteur";
+    const motRole = celleDuVendeur ? "le vendeur" : "l'acquéreur";
+
+    const surLaPiece = pieceIdentite.extraction?.personnes?.map(nomComplet).find(Boolean);
+    const cession = pieces.find((p) => /cession/i.test(p.libelle));
+    const partie = cession?.extraction?.personnes
+      ?.filter((p) => (p.role ?? "").toLowerCase() === roleAttendu)
+      .map(nomComplet)
+      .find(Boolean);
+
+    if (surLaPiece && partie && !memePersonne(surLaPiece, partie)) {
+      anomalies.push({
+        code: "nom_different",
+        gravite: "moyenne",
+        message: `La pièce d'identité est au nom de « ${surLaPiece} », mais la cession désigne « ${partie} » comme ${motRole}.`,
+        piece: pieceIdentite.libelle,
+      });
+    }
+  }
 
   // Adresse du justificatif de domicile contre celle du mandat.
   const adresseDe = (motif: RegExp): { adresse: string; piece: string } | null => {
