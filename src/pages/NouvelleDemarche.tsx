@@ -373,12 +373,12 @@ export default function NouvelleDemarche() {
   const pieceDue = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null }) => {
     if (doc.obligatoire) return true;
     const nom = doc.nom_document ?? "";
-    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro;
+    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro && formData.type === "DA";
     // Le contrôle technique n'est pas une pièce de DA ni de DC : le guide ne le
     // liste pas dans leurs documents obligatoires. L'avoir rendu bloquant a
     // pousse trois garages sur trois a deposer autre chose pour passer l'envoi.
     return false;
-  }, [venduParUnPro]);
+  }, [venduParUnPro, formData.type]);
 
   // Tout ce qui manque pour payer, dans l'ordre de la page. Le bouton Payer
   // reste cliquable : au clic, cette liste s'affiche et chaque bloc concerne

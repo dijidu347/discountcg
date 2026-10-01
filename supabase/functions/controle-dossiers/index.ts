@@ -280,8 +280,10 @@ async function pieceObligatoires(
     // connaître l'âge du véhicule ou la nature du vendeur. Le contrôle, lui, le
     // sait — c'est donc lui qui porte l'exigence, en signalant sans bloquer.
     // Le récépissé de la précédente déclaration d'achat est la seule pièce que le
-    // SIV exige sous condition : le cerfa 13751 la réclame « en cas d'achat du
-    // véhicule à un autre professionnel ». Le formulaire de dépôt ne peut pas
+    // SIV exige sous condition, et seulement sur une DA : la page 16 la réclame
+    // « en cas d'achat du véhicule à un autre professionnel ». La page 13, qui
+    // liste les pièces d'une DC, ne la mentionne pas — l'y exiger était une
+    // invention de plus. Le formulaire de dépôt ne peut pas
     // l'exprimer — sa case « obligatoire » vaut pour tout le monde ou pour
     // personne — donc c'est le contrôle qui porte l'exigence.
     //
@@ -293,10 +295,10 @@ async function pieceObligatoires(
     // déposé autre chose à sa place pour passer l'envoi.
     .filter((piece: any) =>
       piece.obligatoire
-      || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro))
+      || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro && typeDemarche === "DA"))
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
     .filter((piece: any) =>
-      !/r[ée]c[ée]piss[ée]/i.test(piece.libelle) || venduParPro)
+      !/r[ée]c[ée]piss[ée]/i.test(piece.libelle) || (venduParPro && typeDemarche === "DA"))
     .map(({ code, libelle }: any) => ({ code, libelle }));
 }
 
