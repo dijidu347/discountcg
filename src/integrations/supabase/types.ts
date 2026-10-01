@@ -2071,6 +2071,27 @@ export type Database = {
         }
         Relationships: []
       }
+      solde_plaques: {
+        Row: {
+          id: number
+          releve_le: string
+          seuil_alerte_le: number | null
+          solde: number
+        }
+        Insert: {
+          id?: number
+          releve_le?: string
+          seuil_alerte_le?: number | null
+          solde: number
+        }
+        Update: {
+          id?: number
+          releve_le?: string
+          seuil_alerte_le?: number | null
+          solde?: number
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           created_at: string | null
