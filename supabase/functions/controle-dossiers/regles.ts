@@ -562,8 +562,12 @@ export function anomaliesDossier(
     // deux copies portent souvent des noms différents (« fw.jpg » et
     // « FW NOUVELLE.jpg ») alors que le contenu est identique, donc on cite
     // chacune avec l'emplacement où elle a été déposée.
-    const ou = liste.map((p) => `« ${p.nom_fichier} » pour ${p.libelle}`).join(" et ");
-    const constat = `Un même document a été déposé ${liste.length} fois : ${ou}.`;
+    const memeNom = liste.every((p) => p.nom_fichier === liste[0].nom_fichier);
+    const emplacements = liste.map((p) => p.libelle).join(" et ");
+    const constat = memeNom
+      ? `« ${liste[0].nom_fichier} » a été déposé ${liste.length} fois : pour ${emplacements}.`
+      : `Un même document a été déposé ${liste.length} fois : `
+        + liste.map((p) => `« ${p.nom_fichier} » pour ${p.libelle}`).join(" et ") + ".";
 
     // Un emplacement nommé dit lui-même ce qu'il attendait : si le fichier
     // déposé est la pièce de l'un, les autres emplacements sont restés vides, et
