@@ -676,8 +676,8 @@ verifie("deux dates de vente differentes : signalees",
   anomaliesDossier(paireDates("2026-08-26", "2026-08-31"), [], contexte, true, [])
     .some((a) => a.code === "dates_cession_differentes" && a.gravite === "moyenne"));
 verifie("le message donne les deux dates en clair",
-  anomaliesDossier(paireDates("2026-08-26", "2026-08-31"), [], contexte, true, [])
-    .find((a) => a.code === "dates_cession_differentes")?.message.includes("26/08/2026"));
+  (anomaliesDossier(paireDates("2026-08-26", "2026-08-31"), [], contexte, true, [])
+    .find((a) => a.code === "dates_cession_differentes")?.message.includes("26/08/2026") ?? false));
 verifie("memes dates : rien a signaler",
   !anomaliesDossier(paireDates("2026-08-31", "2026-08-31"), [], contexte, true, [])
     .some((a) => a.code === "dates_cession_differentes"));
