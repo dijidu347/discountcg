@@ -1,13 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { sourcesDisponibles } from "./sources.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const RAPIDAPI_KEY = Deno.env.get('RAPIDAPI_KEY');
-const RAPIDAPI_HOST = 'api-de-plaque-d-immatriculation-france.p.rapidapi.com';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -33,8 +31,10 @@ type NormalizedVehicle = {
 };
 
 function normalize(apiResponse: any): NormalizedVehicle {
-  // Support both wrapped ({ data: { AWN_... } }) and flat ({ AWN_... }) structures
-  const v = apiResponse?.data ?? apiResponse;
+  // Les trois formes rencontrées selon la source : les champs à la racine, sous
+  // « data », ou sous « data » dans un tableau d'un seul élément.
+  let v = apiResponse?.data ?? apiResponse;
+  if (Array.isArray(v)) v = v[0];
   return {
     marque: v?.AWN_marque,
     modele: v?.AWN_modele,
@@ -62,6 +62,10 @@ serve(async (req) => {
     const body = await req.json();
     const plate = body?.plate;
     const force = body?.force === true;
+    // Jamais pour un client : un appel explicitement marqué « diagnostic »
+    // reçoit la raison brute de chaque refus, ce qui permet de distinguer de
+    // l'extérieur une panne de fournisseur d'un abonnement à refaire.
+    const diagnostic = body?.diagnostic === true;
 
     if (!plate || typeof plate !== 'string') {
       console.error('Invalid plate provided');
@@ -112,95 +116,74 @@ serve(async (req) => {
       }
     }
 
-    // ---- 2) Appel RapidAPI ----
-    if (!RAPIDAPI_KEY) {
-      // Panne de config: ne rien écrire dans le cache
-      console.error('RAPIDAPI_KEY not configured');
+    // ---- 2) Les sources, dans l'ordre, jusqu'à ce que l'une réponde ----
+    const sources = sourcesDisponibles();
+
+    if (sources.length === 0) {
+      // Panne de configuration: ne rien écrire dans le cache
+      console.error('aucune source de plaques configurée');
       return new Response(
         JSON.stringify({ success: false, indisponible: true, error: 'Service non configuré' }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let response: Response;
-    try {
-      response = await fetch(`https://${RAPIDAPI_HOST}/?plaque=${cleanPlate}`, {
-        method: 'GET',
-        headers: {
-          'plaque': cleanPlate,
-          'x-rapidapi-host': RAPIDAPI_HOST,
-          'x-rapidapi-key': RAPIDAPI_KEY,
-        },
-      });
-    } catch (e) {
-      // Erreur réseau: ne rien écrire dans le cache
-      console.error('RapidAPI network error:', e instanceof Error ? e.message : e);
-      return new Response(
-        JSON.stringify({ success: false, indisponible: true, error: 'Service indisponible' }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const pannes: string[] = [];
 
-    if (!response.ok) {
-      const status = response.status;
-      // Le corps dit *pourquoi* on est refusé, et la raison n'est pas la même
-      // selon qu'il s'agit de la passerelle RapidAPI (« you are not subscribed »,
-      // « quota exceeded ») ou du fournisseur lui-même. Sans ce détail, un 403
-      // ressemble à une panne alors que c'est souvent un abonnement à refaire.
-      const detail = (await response.text().catch(() => '')).slice(0, 300);
-      console.error(`RapidAPI error status=${status} plate=${cleanPlate} detail=${detail}`);
+    for (const source of sources) {
+      const issue = await source.interroger(cleanPlate);
 
-      // 404 explicite = véhicule inconnu -> cache négatif 24h
-      if (status === 404 && admin) {
-        await writeCache(cleanPlate, false, null, TTL_NOT_FOUND_MS);
+      if (issue.sorte === 'panne') {
+        console.error(`vehicle-lookup ${cleanPlate} source=${source.nom} panne: ${issue.detail}`);
+        pannes.push(`${source.nom}: ${issue.detail}`);
+        continue;
       }
-      // 5xx, 401/403, 429... -> ne rien écrire
 
-      // Un 404 veut dire « ce véhicule est inconnu ». Tout le reste — clé
-      // rejetée, quota épuisé, panne — veut dire « le service ne répond pas »,
-      // et il ne faut surtout pas annoncer au client que son véhicule n'existe
-      // pas. On répond 200 pour que le corps parvienne au navigateur, avec un
-      // drapeau qui permet de le dire autrement.
+      // Toutes les sources lisent le même fichier national : un véhicule
+      // qu'elles ne connaissent pas, aucune autre ne le connaîtra. On s'arrête.
+      if (issue.sorte === 'inconnu') {
+        console.log(`vehicle-lookup ${cleanPlate} source=${source.nom} found=false`);
+        if (admin) await writeCache(cleanPlate, false, null, TTL_NOT_FOUND_MS);
+        return new Response(
+          JSON.stringify({ success: false, indisponible: false, error: 'Véhicule inconnu' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const normalizedData = normalize(issue.brut);
+      const found = isFilled(normalizedData.marque) || isFilled(normalizedData.puissance_fiscale);
+
+      console.log(`vehicle-lookup ${cleanPlate} source=${source.nom} found=${found}`);
+
+      // ---- 3) Écriture du cache ----
+      if (admin) {
+        await writeCache(
+          cleanPlate,
+          found,
+          found ? normalizedData : null,
+          found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS
+        );
+      }
+
+      // Contrat de réponse inchangé
       return new Response(
-        JSON.stringify({
-          success: false,
-          indisponible: status !== 404,
-          error: status === 404 ? 'Véhicule inconnu' : `Service indisponible (${status})`,
-          // Jamais affiché au client : seul un appel explicitement marqué
-          // « diagnostic » le reçoit, pour qu'on puisse lire la cause depuis
-          // l'extérieur sans avoir accès aux journaux.
-          ...(body?.diagnostic === true ? { detail } : {}),
-        }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, data: normalizedData }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    let apiResponse: any = null;
-    try {
-      apiResponse = await response.json();
-    } catch {
-      apiResponse = null;
-    }
-
-    const normalizedData = normalize(apiResponse);
-    const found = isFilled(normalizedData.marque) || isFilled(normalizedData.puissance_fiscale);
-
-    console.log(`vehicle-lookup ${cleanPlate} source=api found=${found}`);
-
-    // ---- 3) Écriture du cache ----
-    if (admin) {
-      await writeCache(
-        cleanPlate,
-        found,
-        found ? normalizedData : null,
-        found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS
-      );
-    }
-
-    // Contrat de réponse inchangé
+    // Toutes les sources ont échoué. Surtout ne pas annoncer au client que son
+    // véhicule n'existe pas, et ne rien écrire dans le cache : le dire
+    // autrement, pour qu'il saisisse ses informations à la main.
+    console.error(`vehicle-lookup ${cleanPlate} toutes les sources en panne`);
     return new Response(
-      JSON.stringify({ success: true, data: normalizedData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({
+        success: false,
+        indisponible: true,
+        error: 'Service indisponible',
+        ...(diagnostic ? { detail: pannes.join(' | ') } : {}),
+      }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
