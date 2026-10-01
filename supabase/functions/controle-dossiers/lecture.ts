@@ -9,7 +9,7 @@
 // chercher lui-même (il les passe à son OCR avant de les donner au modèle).
 
 import type { Extraction } from "./regles.ts";
-import { ficheDe } from "./fiches.ts";
+import { ficheDe, MEMO_PIECE_LIBRE } from "./fiches.ts";
 
 const URL_API = "https://api.mistral.ai/v1/chat/completions";
 
@@ -69,7 +69,7 @@ function consigne(contexte: ContexteLecture): string {
   // La fiche du document attendu, quand on en a une : elle dit où se trouve
   // chaque champ sur le formulaire réel, ce qui évite au modèle de choisir au
   // hasard entre quatre dates imprimées sur la même page.
-  const fiche = contexte.pieceLibre ? null : ficheDe(contexte.libellePiece);
+  const fiche = contexte.pieceLibre ? MEMO_PIECE_LIBRE : ficheDe(contexte.libellePiece);
 
   return `Tu examines une pièce déposée par un garage français pour une démarche d'immatriculation (SIV).
 

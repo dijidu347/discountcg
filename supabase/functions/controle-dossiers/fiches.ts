@@ -129,6 +129,17 @@ export const FICHES: Fiche[] = [
   { motif: /identit|passeport|titre de s[ée]jour/i, texte: IDENTITE },
 ];
 
+// Mémo joint aux pièces déposées librement — corrections après un refus, pièces
+// complémentaires. Elles n'ont pas de fiche, puisqu'on ignore ce qu'elles sont ;
+// mais c'est leur nature qui dira quel emplacement elles comblent, et deux
+// documents se confondent facilement : le formulaire qu'on remplit et le
+// récépissé que le SIV édite une fois la démarche faite.
+export const MEMO_PIECE_LIBRE = `Nomme le document avec précision, c'est ce qui permettra de savoir quelle pièce il remplace. Deux confusions à éviter absolument :
+- le certificat de cession (cerfa 15776, rempli à la main par le vendeur et l'acquéreur) n'est pas l'accusé d'enregistrement de cession (édité par le SIV après la démarche) : certificat_cession dans un cas, accuse_enregistrement_cession dans l'autre ;
+- la déclaration d'achat (cerfa 13751, rempli et tamponné par le professionnel) n'est pas le récépissé de déclaration d'achat (édité par le SIV, souvent intitulé « Récépissé de déclaration d'achat ») : declaration_achat dans un cas, accuse_enregistrement_achat dans l'autre.
+Si le document porte le mot « récépissé » ou « accusé d'enregistrement » dans son titre, c'est une pièce éditée par le SIV, jamais un formulaire cerfa.
+Une carte grise barrée reste une carte_grise, même déposée à un emplacement quelconque.`;
+
 export function ficheDe(libellePiece: string): string | null {
   return FICHES.find((f) => f.motif.test(libellePiece))?.texte ?? null;
 }
