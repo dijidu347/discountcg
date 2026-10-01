@@ -322,7 +322,12 @@ export function champObligatoireSiv(champ: string): boolean {
 }
 
 // Contrôles d'une pièce prise isolément.
-export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintenant: Date): Anomalie[] {
+export function anomaliesPiece(
+  piece: Piece,
+  contexte: ContexteDossier,
+  maintenant: Date,
+  dansUnDoublon = false,
+): Anomalie[] {
   const anomalies: Anomalie[] = [];
   const ex = piece.extraction;
   const ajoute = (code: string, gravite: Gravite, message: string) =>
@@ -362,7 +367,10 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
   // signature, un cachet, la mention de vente — lui est alors invisible.
   const pageVue = !/\.pdf$/i.test(piece.nom_fichier);
 
-  if (!estPieceLibre(piece.type_document) && horsSujet(piece.libelle, ex.type_document, ex.correspond)) {
+  // Quand le fichier a servi à deux emplacements, « ce n'est pas la bonne pièce »
+  // n'ajoute rien : c'est la même histoire que le doublon, qui dit déjà laquelle
+  // manque. Deux signalements pour un seul document absent brouillent la lecture.
+  if (!dansUnDoublon && !estPieceLibre(piece.type_document) && horsSujet(piece.libelle, ex.type_document, ex.correspond)) {
     const lu = ex.type_document ? ` (document lu : ${ex.type_document.replace(/_/g, " ")})` : "";
     ajoute("mauvaise_piece", "haute", `Ce n'est pas la pièce demandée${lu}.`);
   }
@@ -505,6 +513,20 @@ export function anomaliesPiece(piece: Piece, contexte: ContexteDossier, maintena
 }
 
 // Contrôles qui ne se voient qu'en comparant les pièces entre elles.
+// Les pièces qui partagent le même fichier, groupées. Deux emplacements servis
+// par un seul dépôt : c'est la même observation pour tout le monde, elle doit
+// donc se calculer au même endroit.
+export function doublonsParFichier(pieces: Piece[]): Piece[][] {
+  const parEmpreinte = new Map<string, Piece[]>();
+  for (const piece of pieces) {
+    if (!piece.empreinte) continue;
+    const liste = parEmpreinte.get(piece.empreinte) ?? [];
+    liste.push(piece);
+    parEmpreinte.set(piece.empreinte, liste);
+  }
+  return [...parEmpreinte.values()].filter((liste) => liste.length >= 2);
+}
+
 export function anomaliesDossier(
   pieces: Piece[],
   manquantes: string[],
@@ -526,21 +548,21 @@ export function anomaliesDossier(
     });
   }
 
-  // Même fichier déposé sur deux pièces différentes.
-  const parEmpreinte = new Map<string, Piece[]>();
-  for (const piece of pieces) {
-    if (!piece.empreinte) continue;
-    const liste = parEmpreinte.get(piece.empreinte) ?? [];
-    liste.push(piece);
-    parEmpreinte.set(piece.empreinte, liste);
-  }
-  for (const liste of parEmpreinte.values()) {
-    if (liste.length < 2) continue;
+  // Même fichier déposé sur deux pièces différentes. Un seul fichier pour deux
+  // emplacements, c'est un seul fait : une pièce a bien été fournie, l'autre
+  // manque. On le dit en une phrase et en nommant celle qui manque, plutôt que
+  // de compter deux anomalies pour un seul document absent.
+  for (const liste of doublonsParFichier(pieces)) {
+    const lu = liste[0].extraction?.type_document ?? null;
+    const fournie = lu ? liste.find((p) => appartientALaFamille(p.libelle, lu)) : undefined;
+    const absentes = liste.filter((p) => p !== fournie);
     anomalies.push({
       code: "fichier_duplique",
       gravite: "haute",
-      message: `Le même fichier a été déposé pour ${liste.length} pièces : ${liste.map((p) => p.libelle).join(", ")}.`,
-      piece: liste[0].libelle,
+      message: fournie
+        ? `Le même fichier a été déposé pour ${liste.length} pièces : il manque donc ${absentes.map((p) => p.libelle).join(", ")}.`
+        : `Le même fichier a été déposé pour ${liste.length} pièces : ${liste.map((p) => p.libelle).join(", ")}.`,
+      piece: (absentes[0] ?? liste[0]).libelle,
       document_id: liste[0].document_id,
     });
   }

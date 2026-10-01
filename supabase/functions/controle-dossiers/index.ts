@@ -16,6 +16,7 @@ import { lirePiece, type Source } from "./lecture.ts";
 import {
   anomaliesDossier,
   anomaliesPiece,
+  doublonsParFichier,
   appartientALaFamille,
   estPieceLibre,
   niveauDossier,
@@ -411,7 +412,14 @@ async function recontroler(supabase: any, demarcheId: string) {
   // Les anomalies sont aussi rangées pièce par pièce : c'est ce qui permet de
   // confronter ce que le contrôle signale à ce que l'admin a réellement décidé
   // sur la même pièce, et donc de régler les gravités sur des faits.
-  const parPiece = pieces.map((piece) => ({ piece, anomalies: anomaliesPiece(piece, contexte, maintenant) }));
+  // Un fichier servant deux emplacements est une seule histoire : la pièce
+  // signalée « ce n'est pas la bonne » est celle qui manque, et le doublon le
+  // dit déjà. On le sait ici, où l'on voit toutes les pièces à la fois.
+  const enDoublon = new Set(doublonsParFichier(pieces).flat().map((p) => p.document_id));
+  const parPiece = pieces.map((piece) => ({
+    piece,
+    anomalies: anomaliesPiece(piece, contexte, maintenant, enDoublon.has(piece.document_id)),
+  }));
   for (const { piece, anomalies } of parPiece) {
     await supabase.from("analyses_documents").update({ anomalies }).eq("document_id", piece.document_id);
   }

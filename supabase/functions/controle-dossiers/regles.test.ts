@@ -1,7 +1,7 @@
 // Vérification des règles de contrôle, sans base ni réseau.
 // Lancement : npx sucrase-node supabase/functions/controle-dossiers/regles.test.ts
 
-import { anomaliesPiece, anomaliesDossier, memePersonne, memeAdresse, niveauDossier, type Piece, type ContexteDossier } from "./regles.ts";
+import { anomaliesPiece, anomaliesDossier, doublonsParFichier, memePersonne, memeAdresse, niveauDossier, type Piece, type ContexteDossier } from "./regles.ts";
 
 let echecs = 0;
 const verifie = (nom: string, condition: boolean) => {
@@ -398,5 +398,44 @@ verifie("une declaration d'achat ne comble pas l'emplacement de la carte grise",
   !appartientALaFamille('Carte grise barrée avec la mention "Vendu le"', "declaration_achat"));
 verifie("un accuse d'enregistrement comble l'emplacement du recepisse",
   appartientALaFamille("Récépissé de déclaration d'achat du vendeur professionnel", "accuse_enregistrement_achat"));
+
+// Cas de DEM-2026-08088 et DEM-2026-08215 : un seul fichier depose sur deux
+// emplacements. C'est un seul fait — une piece fournie, une piece absente — et
+// il doit se lire en une phrase qui nomme celle qui manque.
+const memeFichier: Piece[] = [
+  piece({
+    document_id: "dup1", type_document: "doc_1", empreinte: "abc",
+    libelle: "Déclaration d'achat signée et tamponnée (cerfa 13751*02)",
+    extraction: { type_document: "declaration_achat", lisible: true },
+  }),
+  piece({
+    document_id: "dup2", type_document: "doc_2", empreinte: "abc",
+    libelle: "Certificat de cession signé et tamponné (cerfa 15776*02)",
+    extraction: { type_document: "declaration_achat", lisible: true },
+  }),
+];
+const surDossier = anomaliesDossier(memeFichier, [], contexte, true);
+const doublonTrouve = surDossier.find((a) => a.code === "fichier_duplique");
+verifie("le doublon nomme la piece qui manque",
+  !!doublonTrouve && doublonTrouve.message.includes("il manque donc") && doublonTrouve.message.includes("Certificat de cession"));
+verifie("le doublon n'accuse pas la piece qui a bien ete fournie",
+  !!doublonTrouve && !doublonTrouve.message.includes("il manque donc Déclaration"));
+
+const doublonsDeDocuments = new Set(doublonsParFichier(memeFichier).flat().map((p) => p.document_id));
+const piecesDuDoublon = memeFichier.flatMap((p) =>
+  anomaliesPiece(p, contexte, maintenant, doublonsDeDocuments.has(p.document_id)));
+verifie("un seul signalement pour un seul document absent",
+  !piecesDuDoublon.some((a) => a.code === "mauvaise_piece"));
+
+// Hors doublon, « ce n'est pas la bonne piece » reste signale.
+const horsDoublon = anomaliesPiece(
+  piece({
+    libelle: "Certificat de cession signé et tamponné (cerfa 15776*02)",
+    extraction: { type_document: "declaration_achat", lisible: true },
+  }),
+  contexte, maintenant,
+);
+verifie("hors doublon, la mauvaise piece est toujours signalee",
+  horsDoublon.some((a) => a.code === "mauvaise_piece"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
