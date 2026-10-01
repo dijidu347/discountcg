@@ -125,7 +125,7 @@ export default function NouvelleDemarche() {
   const [mandatMode, setMandatMode] = useState<MandatMode | null>(null);
   // VIN et plaque du vehicule retenu. Le formulaire PRO ne les porte que pour
   // quelques types ; la fiche vehicule, elle, les a toujours.
-  const [vehiculeMandat, setVehiculeMandat] = useState<{ vin: string | null; immatriculation: string | null; marque: string | null } | null>(null);
+  const [vehiculeMandat, setVehiculeMandat] = useState<{ vin: string | null; immatriculation: string | null; marque: string | null; date_mec: string | null } | null>(null);
   // Marque retenue par le formulaire vehicule pour la plaque en cours. En
   // etat (et non dans un ref) : le mandat doit se reafficher des qu'elle change.
   const [marqueConnue, setMarqueConnue] = useState<string | null>(null);
@@ -271,7 +271,7 @@ export default function NouvelleDemarche() {
     }
     supabase
       .from('vehicules')
-      .select('vin, immatriculation, marque')
+      .select('vin, immatriculation, marque, date_mec')
       .eq('id', selectedVehicleId)
       .maybeSingle()
       .then(({ data }) => setVehiculeMandat(data ?? null));
@@ -343,6 +343,39 @@ export default function NouvelleDemarche() {
     return Boolean(plaque || vin);
   }, [formData.type, vehiculeMandat, selectedImmatriculation, vehicleInfoPro]);
 
+  // Deux pièces du guide SIV ne sont dues que sous condition, et la condition
+  // n'est connue qu'ici : le récépissé de la précédente déclaration d'achat
+  // quand le véhicule a été acheté à un autre professionnel, le contrôle
+  // technique au-delà de quatre ans d'âge. La case « obligatoire » de la
+  // configuration ne sait pas exprimer cela — elle vaut pour tout le monde ou
+  // pour personne — donc la condition se juge au moment du dépôt.
+  const dateMecVehicule = useMemo(
+    () => vehiculeMandat?.date_mec ?? vehicleInfoPro?.date_mec ?? null,
+    [vehiculeMandat, vehicleInfoPro],
+  );
+
+  const venduParUnPro = useMemo(
+    () => Object.values(questionnaireAnswerTexts).some((reponse) => /^oui$/i.test(reponse.trim())),
+    [questionnaireAnswerTexts],
+  );
+
+  const plusDeQuatreAns = useMemo(() => {
+    if (!dateMecVehicule) return false;
+    const mec = new Date(dateMecVehicule);
+    if (Number.isNaN(mec.getTime())) return false;
+    const quatreAns = new Date(mec);
+    quatreAns.setFullYear(quatreAns.getFullYear() + 4);
+    return quatreAns.getTime() < Date.now();
+  }, [dateMecVehicule]);
+
+  const pieceDue = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null }) => {
+    if (doc.obligatoire) return true;
+    const nom = doc.nom_document ?? "";
+    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro;
+    if (/contr[ôo]le technique/i.test(nom)) return plusDeQuatreAns;
+    return false;
+  }, [venduParUnPro, plusDeQuatreAns]);
+
   // Tout ce qui manque pour payer, dans l'ordre de la page. Le bouton Payer
   // reste cliquable : au clic, cette liste s'affiche et chaque bloc concerne
   // s'encadre en rouge (cle = identifiant du bloc ou de la piece).
@@ -357,6 +390,13 @@ export default function NouvelleDemarche() {
     // répondu reviendrait à montrer une liste qui va changer sous les yeux du
     // garage. Vaut pour toutes les démarches qui portent des questions, pas
     // seulement les démarches pro.
+    // Le véhicule d'abord : son âge décide du contrôle technique, et tant qu'il
+    // n'est pas identifié la liste des pièces ne peut pas être juste.
+    if (!vehiculeIdentifie) {
+      liste.push({ cle: "vehicule", libelle: "Indiquer la plaque du véhicule" });
+      return liste;
+    }
+
     if (nbQuestions !== 0 && !questionnaireCompleted) {
       liste.push({ cle: "questionnaire", libelle: "Répondre aux questions préalables" });
       return liste; // les pieces n'apparaissent qu'apres le questionnaire
@@ -393,7 +433,7 @@ export default function NouvelleDemarche() {
       });
       documentsRequis.forEach((doc, idx) => {
         const cle = `doc_${idx + 1}`;
-        if (!doc.obligatoire || cle === mandatDocumentType) return;
+        if (!pieceDue(doc) || cle === mandatDocumentType) return;
         if (mandatRequis && /13757/.test(doc.nom_document ?? "")) return;
         const depose = uploadedDocuments.has(cle) || (idx === premiereCarteGrise && uploadedDocuments.has(`${cle}_recto`));
         if (!depose) liste.push({ cle: `piece-${cle}`, libelle: doc.nom_document });
@@ -1000,7 +1040,7 @@ export default function NouvelleDemarche() {
         return;
       }
     } else {
-      const requiredDocs = documentsRequis.filter(doc => doc.obligatoire);
+      const requiredDocs = documentsRequis.filter(pieceDue);
       
       // Trouver l'index de la première carte grise à dédoubler (sans recto/verso dans le nom)
       const firstCarteGriseIdx = documentsRequis.findIndex(d => {
@@ -1330,7 +1370,7 @@ export default function NouvelleDemarche() {
     );
   }
 
-  const requiredDocsCount = documentsRequis.filter(doc => doc.obligatoire).length;
+  const requiredDocsCount = documentsRequis.filter(pieceDue).length;
   const allDocsUploaded = uploadedDocuments.size >= requiredDocsCount;
 
   // Choix du mandat 13757 : deposer le sien, ou le remplir en ligne. Un seul
@@ -1646,7 +1686,7 @@ export default function NouvelleDemarche() {
               {/* Questions conditionnelles - Repliable (et modifiable).
                   Masque tant qu'on ne sait pas s'il y a des questions, et si
                   la demarche n'en a aucune. */}
-              {actionDetails?.id && (nbQuestions ?? 0) > 0 && (
+              {actionDetails?.id && (nbQuestions ?? 0) > 0 && vehiculeIdentifie && (
                 <Collapsible
                   id="bloc-questionnaire"
                   open={isQuestionnaireOpen || enErreur("questionnaire")}
@@ -1756,6 +1796,7 @@ export default function NouvelleDemarche() {
                     /* Pour les démarches classiques */
                     documentsRequis.length > 0
                     && (formData.type === 'CG' ? carteGrisePrice > 0 : true)
+                    && vehiculeIdentifie
                     && (nbQuestions === 0 || questionnaireCompleted) && (
                       <div className="space-y-6">
                         {/* Pièces justificatives */}
@@ -1838,7 +1879,7 @@ export default function NouvelleDemarche() {
                                   <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`space-y-3 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
                                     <div className="flex items-center gap-4">
                                       <div className="flex-1">
-                                        {renderDocLabel(doc.nom_document, doc.obligatoire)}
+                                        {renderDocLabel(doc.nom_document, pieceDue(doc))}
                                       </div>
                                       <div className="w-[400px]">
                                         <DocumentUpload
@@ -1872,7 +1913,7 @@ export default function NouvelleDemarche() {
                               return (
                                 <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`flex items-center gap-4 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
                                   <div className="flex-1">
-                                    {renderDocLabel(doc.nom_document, doc.obligatoire)}
+                                    {renderDocLabel(doc.nom_document, pieceDue(doc))}
                                   </div>
                                   <div className="w-[400px]">
                                     <DocumentUpload
