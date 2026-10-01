@@ -1,7 +1,7 @@
 // Vérification des règles de contrôle, sans base ni réseau.
 // Lancement : npx sucrase-node supabase/functions/controle-dossiers/regles.test.ts
 
-import { anomaliesPiece, anomaliesDossier, doublonsParFichier, memePersonne, memeAdresse, niveauDossier, type Piece, type ContexteDossier } from "./regles.ts";
+import { anomaliesPiece, anomaliesDossier, champObligatoireSiv, doublonsParFichier, memePersonne, memeAdresse, niveauDossier, type Piece, type ContexteDossier } from "./regles.ts";
 
 let echecs = 0;
 const verifie = (nom: string, condition: boolean) => {
@@ -215,7 +215,13 @@ const heureManquante = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", champs_incomplets: ["heure de cession"] } }),
   contexte, maintenant,
 );
-verifie("heure de cession : case obligatoire du SIV, donc a verifier", heureManquante.some((a) => a.code === "champ_vide" && a.gravite === "moyenne"));
+// L'heure de cession est bien une case du SIV, mais elle est passee dans
+// l'encadre « A verifier vous-meme » : ecrite a la main dans une case minuscule,
+// le modele la declarait vide vingt-huit fois sur quarante-cinq signalements de
+// champ, et l'administration ne l'a jamais reprochee du temps du controle
+// manuel. Elle reste exigee du dossier, elle n'est plus reprochee au garage.
+verifie("heure de cession : laissee a l'oeil, plus signalee comme champ vide",
+  !heureManquante.some((a) => a.code === "champ_vide"));
 
 const kilometrage = anomaliesPiece(
   piece({ extraction: { correspond: true, lisible: true, type_document: "certificat_cession", immatriculations: ["AB-123-CD"], champs_incomplets: ["kilométrage"] } }),
@@ -769,5 +775,18 @@ verifie("deux personnes physiques differentes restent signalees",
 verifie("la meme personne ne declenche rien",
   !anomaliesDossier(identiteContre({ nom: "THORAL" }), [], contexte, true, [])
     .some((a) => a.code === "nom_different"));
+
+// L'heure de cession est passee dans l'encadre « A verifier vous-meme » : la
+// signaler aussi comme champ vide la comptait deux fois, dont une a tort.
+verifie("l'heure de cession n'est plus reprochee comme champ vide",
+  !champObligatoireSiv("heure de cession"));
+verifie("ni dans ses variantes",
+  !champObligatoireSiv("heure de cession (acheteur)"));
+verifie("une case que le modele dit sans objet non plus",
+  !champObligatoireSiv("date de naissance de l'acheteur (non applicable ici)"));
+verifie("la date de cession reste exigee",
+  champObligatoireSiv("date de cession"));
+verifie("l'identite du vendeur aussi",
+  champObligatoireSiv("identité du vendeur"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

@@ -403,7 +403,22 @@ export function aLivreDesInformations(ex: Extraction): boolean {
 // kilométrage du cerfa, par exemple, n'apparaît sur aucun des deux écrans.
 const CHAMPS_SIV = /heure|date|immatricul|plaque|identification du v|\bvin\b|identit[ée]|num[ée]ro de formule/i;
 
+// Deux exceptions, pour des raisons opposées.
+//
+// L'heure de cession est bien une case du SIV, mais elle figure desormais dans
+// l'encadré « À vérifier vous-même » : écrite à la main dans une case minuscule,
+// le modèle la déclarait vide vingt-huit fois sur quarante-cinq signalements de
+// champ, et l'administration ne l'a jamais reprochée du temps du contrôle
+// manuel. La signaler deux fois, dont une a tort, n'aide personne.
+//
+// Et quand le modèle annonce lui-même qu'une case ne s'applique pas, il ne faut
+// pas la reprocher : il décrit le formulaire, il ne constate pas un oubli.
+const CHAMPS_LAISSES_A_L_OEIL = /heure/i;
+const CASE_SANS_OBJET = /non applicable|sans objet|n\/a/i;
+
 export function champObligatoireSiv(champ: string): boolean {
+  if (CHAMPS_LAISSES_A_L_OEIL.test(champ)) return false;
+  if (CASE_SANS_OBJET.test(champ)) return false;
   return CHAMPS_SIV.test(champ);
 }
 
