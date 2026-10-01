@@ -124,8 +124,10 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
           immatriculation: plateToSearch.toUpperCase()
         }));
         toast({
-          title: "Véhicule non trouvé",
-          description: "Veuillez saisir les informations manuellement",
+          title: result.indisponible ? "Service d'identification indisponible" : "Véhicule non trouvé",
+          description: result.indisponible
+            ? "Nos serveurs d'identification des plaques ne répondent pas. Ce n'est pas votre véhicule qui est en cause : saisissez les informations à la main, elles figurent sur la carte grise."
+            : "Veuillez saisir les informations manuellement",
           variant: "destructive"
         });
       }

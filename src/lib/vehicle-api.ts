@@ -16,6 +16,8 @@ export interface NormalizedVehicleData {
 
 interface VehicleApiResponse {
   success: boolean;
+  /** Le service d'identification n'a pas répondu : le véhicule n'est pas en cause. */
+  indisponible?: boolean;
   data?: NormalizedVehicleData;
   error?: string;
 }
@@ -38,6 +40,9 @@ export async function getVehicleByPlate(plate: string): Promise<VehicleApiRespon
     }
 
     if (!data.success) {
+      if (data.indisponible) {
+        return { success: false, indisponible: true, error: data.error || 'Service indisponible' };
+      }
       return {
         success: false,
         error: data.error || 'Erreur inconnue',

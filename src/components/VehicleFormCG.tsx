@@ -118,10 +118,18 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
             variant: "destructive",
           });
         }
+      } else if (result.indisponible) {
+        // Le service ne répond pas : annoncer au client que son véhicule
+        // n'existe pas serait faux, et il repartirait sans commander.
+        toast({
+          title: "Service d'identification indisponible",
+          description: "Nos serveurs d'identification des plaques ne répondent pas. Ce n'est pas votre véhicule qui est en cause : saisissez les informations à la main, elles figurent sur la carte grise.",
+          variant: "destructive"
+        });
       } else {
         toast({
           title: "Véhicule non trouvé",
-          description: "Impossible de récupérer les données du véhicule",
+          description: "Vérifiez la plaque saisie",
           variant: "destructive"
         });
       }

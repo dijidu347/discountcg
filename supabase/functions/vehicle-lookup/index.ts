@@ -117,8 +117,8 @@ serve(async (req) => {
       // Panne de config: ne rien écrire dans le cache
       console.error('RAPIDAPI_KEY not configured');
       return new Response(
-        JSON.stringify({ success: false, error: 'Service non configuré' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, indisponible: true, error: 'Service non configuré' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -136,8 +136,8 @@ serve(async (req) => {
       // Erreur réseau: ne rien écrire dans le cache
       console.error('RapidAPI network error:', e instanceof Error ? e.message : e);
       return new Response(
-        JSON.stringify({ success: false, error: 'Erreur réseau API' }),
-        { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: false, indisponible: true, error: 'Service indisponible' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -151,9 +151,18 @@ serve(async (req) => {
       }
       // 5xx, 401/403, 429... -> ne rien écrire
 
+      // Un 404 veut dire « ce véhicule est inconnu ». Tout le reste — clé
+      // rejetée, quota épuisé, panne — veut dire « le service ne répond pas »,
+      // et il ne faut surtout pas annoncer au client que son véhicule n'existe
+      // pas. On répond 200 pour que le corps parvienne au navigateur, avec un
+      // drapeau qui permet de le dire autrement.
       return new Response(
-        JSON.stringify({ success: false, error: `Erreur API: ${status}` }),
-        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({
+          success: false,
+          indisponible: status !== 404,
+          error: status === 404 ? 'Véhicule inconnu' : `Service indisponible (${status})`,
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
