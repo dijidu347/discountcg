@@ -156,18 +156,27 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
           // Parcours carte grise - besoin de l'API véhicule
           const apiResponse = await getVehicleByPlate(plaque);
 
-          if (!apiResponse.success || !apiResponse.data) {
+          if (apiResponse.success && apiResponse.data) {
+            vehicleData = {
+              dateMiseEnCirculation: apiResponse.data.date_mec,
+              chevauxFiscaux: apiResponse.data.puissance_fiscale,
+              genre: apiResponse.data.genre,
+            };
+
+            if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {
+              throw new Error('Données du véhicule incomplètes');
+            }
+          } else if (apiResponse.indisponible) {
+            // Le service d'identification ne répond pas. Renvoyer le client
+            // reviendrait à perdre la commande : on le laisse avancer, et il
+            // saisira la puissance fiscale et la date de mise en circulation à
+            // l'étape suivante, comme pour une démarche sans plaque.
+            toast({
+              title: "Identification automatique indisponible",
+              description: "Vous pourrez saisir les caractéristiques du véhicule à l'étape suivante : elles figurent sur la carte grise.",
+            });
+          } else {
             throw new Error(apiResponse.error || 'Impossible de récupérer les informations du véhicule');
-          }
-
-          vehicleData = {
-            dateMiseEnCirculation: apiResponse.data.date_mec,
-            chevauxFiscaux: apiResponse.data.puissance_fiscale,
-            genre: apiResponse.data.genre,
-          };
-
-          if (!vehicleData.dateMiseEnCirculation || !vehicleData.chevauxFiscaux) {
-            throw new Error('Données du véhicule incomplètes');
           }
         }
 
