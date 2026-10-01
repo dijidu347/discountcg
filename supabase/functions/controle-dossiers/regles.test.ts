@@ -687,4 +687,25 @@ verifie("hors DC, la regle ne s'applique pas",
   !anomaliesDossier(mandatEtCession("Marc LEROY"), [], { ...contexte, type: "DA" }, true, [])
     .some((a) => a.code === "mandant_different"));
 
+// Cas de DEM-2026-05309 : le modele avait lu la date de naissance a la place de
+// la fin de validite, et annoncait une carte « perimee depuis le 20/11/2000 »
+// alors qu'elle expire le 01/04/2035.
+const identite = (dates: Record<string, string>) => anomaliesPiece(
+  piece({
+    libelle: "Pièce d'identité du vendeur (recto/verso)", nom_fichier: "cni.jpg",
+    extraction: { type_document: "carte_identite", lisible: true, dates },
+  }),
+  contexte, maintenant,
+);
+verifie("une date de naissance prise pour une expiration ne perime rien",
+  !identite({ validite: "2000-11-20", naissance: "2000-11-20" })
+    .some((a) => a.code === "piece_perimee"));
+verifie("une expiration vieille de plus de quinze ans est une mauvaise lecture",
+  !identite({ validite: "1980-12-17" }).some((a) => a.code === "piece_perimee"));
+verifie("une piece reellement perimee reste signalee",
+  identite({ validite: "2025-02-10" }).some((a) => a.code === "piece_perimee"));
+verifie("une piece en cours de validite ne declenche rien",
+  !identite({ validite: "2035-04-01", naissance: "2000-11-20" })
+    .some((a) => a.code === "piece_perimee"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

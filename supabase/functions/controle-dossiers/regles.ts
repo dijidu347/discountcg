@@ -34,6 +34,7 @@ export interface Extraction {
     mise_en_circulation?: string | null;
     cession?: string | null;
     heure_cession?: string | null;
+    naissance?: string | null;
   } | null;
   signatures?: {
     vendeur?: boolean; acheteur?: boolean; mandant?: boolean; tampon?: boolean;
@@ -482,8 +483,27 @@ export function anomaliesPiece(
   // n'ont pas de fin de validité : le modèle range parfois leur date d'émission
   // dans ce champ, et on annonçait alors une carte grise « périmée », ce qui ne
   // veut rien dire.
+  //
+  // Et sur une pièce d'identité, le modèle confond la fin de validité avec la
+  // date de naissance : sur DEM-2026-05309 il a annoncé une carte « périmée
+  // depuis le 20/11/2000 » alors qu'elle expire le 01/04/2035. Deux garde-fous
+  // désormais : la date de naissance, qu'on lui demande séparément, n'est jamais
+  // prise pour une expiration ; et aucun titre d'identité ne reste présenté
+  // quinze ans après sa péremption — une date aussi ancienne est une mauvaise
+  // lecture, pas une pièce périmée.
+  const ANS_15 = 15 * 365.25 * JOUR;
   const finValidite = enDate(ex.dates?.validite);
-  if (finValidite && PIECES_QUI_EXPIRENT.has(ex.type_document ?? "") && finValidite.getTime() < maintenant.getTime()) {
+  const naissance = ex.dates?.naissance ?? null;
+  const confonduAvecLaNaissance = !!naissance && naissance === ex.dates?.validite;
+  const tropAncienne = !!finValidite && maintenant.getTime() - finValidite.getTime() > ANS_15;
+
+  if (
+    finValidite
+    && PIECES_QUI_EXPIRENT.has(ex.type_document ?? "")
+    && finValidite.getTime() < maintenant.getTime()
+    && !confonduAvecLaNaissance
+    && !tropAncienne
+  ) {
     ajoute("piece_perimee", "haute", `La pièce est périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`);
   }
 
