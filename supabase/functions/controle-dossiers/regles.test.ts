@@ -433,11 +433,11 @@ const obligatoiresDA = [
 const surDossier = anomaliesDossier(memeFichier, [], contexte, true, obligatoiresDA);
 const doublonTrouve = surDossier.find((a) => a.code === "fichier_duplique");
 verifie("le doublon nomme la piece qui manque, en abrege",
-  !!doublonTrouve && doublonTrouve.message.includes("il manque la DC"));
+  !!doublonTrouve && doublonTrouve.message.includes("il manque le certificat de cession"));
 verifie("et il nomme le fichier en cause",
   !!doublonTrouve && doublonTrouve.message.includes("cession.jpg"));
 verifie("le doublon n'accuse pas la piece qui a bien ete fournie",
-  !!doublonTrouve && !doublonTrouve.message.includes("il manque la DA"));
+  !!doublonTrouve && !doublonTrouve.message.includes("il manque la déclaration d'achat"));
 
 const doublonsDeDocuments = new Set(doublonsParFichier(memeFichier).flat().map((p) => p.document_id));
 const piecesDuDoublon = memeFichier.flatMap((p) =>
@@ -521,21 +521,21 @@ verifie("et le message dit qu'elle est facultative",
 // lecture de dix-sept caracteres sans separateur se trompe d'un caractere ou
 // deux. On distingue la coquille de l'autre vehicule.
 const vinCoquille = anomaliesPiece(
-  piece({ extraction: { type_document: "certificat_cession", lisible: true, vin: "VF1RFB0OX12345G78" } }),
+  piece({ libelle: "Carte grise barrée", extraction: { type_document: "carte_grise", lisible: true, vin: "VF1RFB0OX12345G78" } }),
   contexte, maintenant,
 );
 verifie("une coquille de lecture sur le VIN ne declenche rien",
   !vinCoquille.some((a) => a.code === "vin_different"));
 
 const vinAutreVehicule = anomaliesPiece(
-  piece({ extraction: { type_document: "certificat_cession", lisible: true, vin: "WVWZZZ1KZAW123456" } }),
+  piece({ libelle: "Carte grise barrée", extraction: { type_document: "carte_grise", lisible: true, vin: "WVWZZZ1KZAW123456" } }),
   contexte, maintenant,
 );
 verifie("un VIN franchement different est signale",
   vinAutreVehicule.some((a) => a.code === "vin_different" && a.gravite === "haute"));
 
 const vinTronque = anomaliesPiece(
-  piece({ extraction: { type_document: "certificat_cession", lisible: true, vin: "VF1RFB00X" } }),
+  piece({ libelle: "Carte grise barrée", extraction: { type_document: "carte_grise", lisible: true, vin: "VF1RFB00X" } }),
   contexte, maintenant,
 );
 verifie("un VIN tronque n'est pas compare",
@@ -588,14 +588,14 @@ verifie("la double signature n'est plus jugee automatiquement",
 
 // Cas de DEM-2026-08088 : chaque Z d'un VIN Volkswagen lu comme un 2.
 const vinZeroDeux = anomaliesPiece(
-  piece({ extraction: { type_document: "carte_grise", lisible: true, vin: "WVW222522A4155754" } }),
+  piece({ libelle: "Carte grise barrée", extraction: { type_document: "carte_grise", lisible: true, vin: "WVW222522A4155754" } }),
   { ...contexte, vin: "WVWZZZ5ZZA4155754" }, maintenant,
 );
 verifie("les Z lus 2 ne font pas un autre vehicule",
   !vinZeroDeux.some((a) => a.code === "vin_different"));
 
 const vinVraimentAutre = anomaliesPiece(
-  piece({ extraction: { type_document: "carte_grise", lisible: true, vin: "F2AX21CT2H2AA151C" } }),
+  piece({ libelle: "Carte grise barrée", extraction: { type_document: "carte_grise", lisible: true, vin: "F2AX21CT2H2AA151C" } }),
   { ...contexte, vin: "W1K3F1CB8PN296533" }, maintenant,
 );
 verifie("un VIN d'un autre vehicule reste signale",
@@ -629,8 +629,8 @@ verifie("et elle compte les pieces",
 // Une seule piece manuscrite qui diverge, c'est peut-etre une mauvaise lecture :
 // on fait regarder, on n'affirme pas (cas de DEM-2026-07473).
 const unePiece = anomaliesDossier([troisPieces[0]], [], { ...contexte, immatriculation: "ES-949-RD" }, true, []);
-verifie("une seule piece manuscrite : on invite a verifier",
-  unePiece.find((a) => a.code === "plaque_differente")?.gravite === "moyenne");
+verifie("une seule piece manuscrite : on ne signale plus rien",
+  !unePiece.some((a) => a.code === "plaque_differente"));
 
 // Sur un imprime -- carte grise, non-gage, recepisse -- la plaque se lit surement.
 const surImprime = anomaliesDossier(
@@ -653,8 +653,8 @@ const lecturesDiscordantes = anomaliesDossier(
   ],
   [], { ...contexte, immatriculation: "EB-664-VN" }, true, [],
 );
-verifie("deux lectures qui se contredisent ne virent pas au rouge",
-  lecturesDiscordantes.filter((a) => a.code === "plaque_differente").every((a) => a.gravite === "moyenne"));
+verifie("deux lectures qui se contredisent ne signalent rien",
+  !lecturesDiscordantes.some((a) => a.code === "plaque_differente"));
 
 const plaqueConforme = anomaliesDossier(troisPieces, [], { ...contexte, immatriculation: "ES-949-FD" }, true, []);
 verifie("plaque conforme : rien a signaler",

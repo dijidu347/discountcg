@@ -368,8 +368,12 @@ function enFrancais(iso: string | null): string {
 // dans le guide SIV et la carte d'identité dans l'usage courant. Entre les deux,
 // on écrit la pièce d'identité en toutes lettres.
 const ABREVIATIONS: { motif: RegExp; court: string }[] = [
-  { motif: /13751|d[ée]claration d.achat/i, court: "la DA" },
-  { motif: /15776|certificat de cession|d[ée]claration de cession/i, court: "la DC" },
+  // « DA » et « DC » désignent des démarches, pas des pièces : une déclaration de
+  // cession ne se dépose pas dans un dossier de déclaration d'achat. Les pièces
+  // gardent leur nom de métier. « La DA » reste réservé au récépissé, qui est ce
+  // que le guide et les garages appellent ainsi.
+  { motif: /13751|d[ée]claration d.achat/i, court: "la déclaration d'achat" },
+  { motif: /15776|certificat de cession/i, court: "le certificat de cession" },
   { motif: /contr[ôo]le technique/i, court: "le CT" },
   { motif: /carte grise|certificat d.immatriculation/i, court: "la CG" },
   { motif: /r[ée]c[ée]piss[ée]/i, court: "le récépissé de DA" },
@@ -605,9 +609,17 @@ export function anomaliesPiece(
   // imaginaires sur vingt dossiers. Elle revient avec une tolérance — au-delà de
   // trois caractères d'écart, ce n'est plus une erreur de lecture, c'est un
   // autre véhicule.
+  // Le VIN ne se compare que sur un document imprimé.
+  //
+  // Sur DEM-2026-04873, le modèle a pris la case « type variante version » d'une
+  // déclaration d'achat pour le numéro de série : dix-sept caractères recopiés à
+  // la main, dans un formulaire où plusieurs cases se ressemblent. Sur une carte
+  // grise, le VIN est imprimé en case E et se lit sûrement.
+  const vinImprime = /carte grise|certificat d.immatriculation|non.?gage|situation administrative/i
+    .test(piece.libelle);
   const vinDossier = normaliseVin(contexte.vin);
   const vinLu = normaliseVin(ex.vin);
-  if (vinDossier && vinLu && vinsDifferents(vinLu, vinDossier)) {
+  if (vinImprime && vinDossier && vinLu && vinsDifferents(vinLu, vinDossier)) {
     ajoute(
       "vin_different",
       "haute",
@@ -988,12 +1000,19 @@ export function anomaliesDossier(
       const sur = surUnImprime || nombre > 1;
       const certain = sur && !lecturesDiscordantes;
 
+      // Une plaque recopiée à la main ne se signale pas.
+      //
+      // Sur DEM-2026-04873 et DEM-2026-03426, le contrôle annonçait un désaccord
+      // là où la plaque était la même partout : six caractères manuscrits dans
+      // une case étroite se lisent mal, et le dire dossier par dossier fait
+      // ouvrir des dossiers sains. Ces relectures appartiennent à la liste des
+      // vérifications laissées à l'œil, affichée sous les signalements.
+      if (!certain) continue;
+
       anomalies.push({
         code: "plaque_differente",
-        gravite: certain ? "haute" : "moyenne",
-        message: certain
-          ? `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`
-          : `À vérifier : ${formatePlaque(lue)} a été lu sur une pièce manuscrite, le dossier dit ${contexte.immatriculation}.`,
+        gravite: "haute",
+        message: `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`,
         piece: libelleCourt(concernees[0].libelle),
         document_id: concernees[0].document_id,
       });

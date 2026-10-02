@@ -59,6 +59,7 @@ const ORDRE: Gravite[] = ["haute", "moyenne", "basse"];
 // l'écran : elle a été lue une fois, elle encombrerait ensuite.
 const VERIFICATIONS_A_L_OEIL = [
   "La date de vente, identique sur la CG et la cession",
+  "Les plaques et numéros de série recopiés à la main sur la cession ou la déclaration d'achat",
   "Les signatures : vendeur et acquéreur sur la cession, mandant sur le mandat",
   "L'heure de cession sur le certificat",
   "Le numéro de formule, en bas du recto de la CG",
