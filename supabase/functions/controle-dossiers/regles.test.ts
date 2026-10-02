@@ -1021,4 +1021,22 @@ verifie("une vraie expiration, a une autre date, reste signalee",
   identite({ naissance: "1969-05-02", validite: "2022-06-12" })
     .some((a) => a.code === "piece_perimee"));
 
+// Le modele doit montrer l'etiquette qu'il a lue a cote de la date. Sans
+// mention, la date vient d'ailleurs et ne vaut rien.
+const identiteAvecMention = (dates: Record<string, string>, libelle: string | null) => anomaliesPiece(
+  piece({
+    libelle: "Pièce d'identité du vendeur (recto/verso)", nom_fichier: "cni.jpg",
+    extraction: { type_document: "carte_identite", lisible: true, dates, libelle_validite: libelle },
+  }),
+  contexte, maintenant,
+);
+verifie("sans mention lue, la date de validite est ignoree",
+  !identiteAvecMention({ validite: "2022-06-12" }, null)
+    .some((a) => a.code === "piece_perimee"));
+verifie("avec la mention, la peremption est signalee",
+  identiteAvecMention({ validite: "2022-06-12" }, "CARTE VALABLE JUSQU'AU")
+    .some((a) => a.code === "piece_perimee"));
+verifie("une lecture ancienne, sans ce champ, garde ses autres garde-fous",
+  identite({ validite: "2022-06-12" }).some((a) => a.code === "piece_perimee"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

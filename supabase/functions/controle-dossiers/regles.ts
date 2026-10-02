@@ -45,6 +45,8 @@ export interface Extraction {
     /** Deux signatures distinctes dans le cadre du vendeur : exigé quand la carte grise porte un co-titulaire. */
     second_vendeur?: boolean;
   } | null;
+  /** La mention lue à côté de la date de validité, sur un titre d'identité. */
+  libelle_validite?: string | null;
   /** Le document nomme deux titulaires ou deux vendeurs. */
   co_titulaire?: boolean | null;
   mentions?: { cede_le?: boolean; barree?: boolean } | null;
@@ -641,6 +643,15 @@ export function anomaliesPiece(
   const confonduAvecLaNaissance = memeJourEtMois(naissance, ex.dates?.validite);
   const tropAncienne = !!finValidite && maintenant.getTime() - finValidite.getTime() > ANS_15;
 
+  // Le modèle doit montrer l'étiquette, pas seulement la date : « CARTE VALABLE
+  // JUSQU'AU », « Valable jusqu'au », « EXPIRY DATE ». Sans mention lue à côté,
+  // la date vient d'ailleurs — d'un numéro de carte sur DEM-2026-04906, d'une
+  // date de naissance sur DEM-2026-04168 — et ne vaut rien.
+  //
+  // Les lectures antérieures à cette consigne n'ont pas ce champ : on ne peut
+  // pas leur reprocher de ne pas l'avoir, elles gardent leurs autres garde-fous.
+  const sansMentionLue = ex.libelle_validite === null;
+
   // Un titre d'identité vaut dix ans, quinze pour une carte d'adulte : sa date
   // de validité se situe donc à quelques années de sa délivrance. Quand l'écart
   // n'a pas cette forme, l'une des deux dates est mal lue et l'autre ne vaut
@@ -660,6 +671,7 @@ export function anomaliesPiece(
     && !confonduAvecLaNaissance
     && !tropAncienne
     && !dureeInvraisemblable
+    && !sansMentionLue
     && !piece.validiteAilleurs
   ) {
     // Le constat invite à regarder, il n'affirme plus.
