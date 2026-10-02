@@ -477,7 +477,7 @@ verifie("et il le dit : rien ne manque",
 
 const dossierIncomplet = anomaliesDossier(redepotEnDouble, ["Mandat signé"], contexte, true, obligatoiresDA);
 verifie("une piece reellement absente reste signalee a part",
-  dossierIncomplet.some((a) => a.code === "piece_manquante" && a.piece === "Mandat signé"));
+  dossierIncomplet.some((a) => a.code === "piece_manquante" && a.piece === "le mandat"));
 verifie("le doublon anonyme n'accuse personne a sa place",
   !dossierIncomplet.some((a) => a.code === "fichier_duplique" && a.message.includes("il manque")));
 
@@ -841,7 +841,7 @@ const manquePendantDepot = anomaliesDossier([], ["Pièce d'identité du dirigean
 verifie("pendant le depot, on dit qu'elle est obligatoire et attendue",
   manquePendantDepot.some((a) => a.code === "piece_manquante"
     && a.message === "Obligatoire, pas encore déposée."
-    && a.piece === "Pièce d'identité du dirigeant (recto/verso)"));
+    && a.piece === "la pièce d'identité du dirigeant"));
 
 const manqueApresDepot = anomaliesDossier([], ["Pièce d'identité du dirigeant (recto/verso)"], contexte, true, []);
 verifie("depot termine, elle est absente et c'est grave",

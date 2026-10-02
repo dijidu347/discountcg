@@ -16,6 +16,7 @@ import { lirePiece, type Source } from "./lecture.ts";
 import {
   anomaliesDossier,
   anomaliesPiece,
+  libelleCourt,
   memePersonne,
   doublonsParFichier,
   appartientALaFamille,
@@ -518,6 +519,16 @@ async function recontroler(supabase: any, demarcheId: string) {
     piece,
     anomalies: anomaliesPiece(piece, contexte, maintenant, enDoublon.has(piece.document_id)),
   }));
+  // Les intitulés de la configuration guident un dépôt ; devant un constat ils
+  // encombrent. L'interface affiche ce nom avant le message : on l'abrège, en
+  // gardant la face, car « la CG » et « la CG (verso) » ne désignent pas le même
+  // emplacement.
+  for (const { anomalies } of parPiece) {
+    for (const anomalie of anomalies) {
+      if (anomalie.piece) anomalie.piece = libelleCourt(anomalie.piece);
+    }
+  }
+
   for (const { piece, anomalies } of parPiece) {
     await supabase.from("analyses_documents").update({ anomalies }).eq("document_id", piece.document_id);
   }

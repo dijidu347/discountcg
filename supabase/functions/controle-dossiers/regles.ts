@@ -381,8 +381,12 @@ const ABREVIATIONS: { motif: RegExp; court: string }[] = [
 ];
 
 export function libelleCourt(libelle: string): string {
+  // La face se garde : « la CG » et « la CG (verso) » ne désignent pas le même
+  // emplacement de dépôt.
+  const face = libelle.match(/\((recto|verso)\)\s*$/i);
+  const suffixe = face ? ` (${face[1].toLowerCase()})` : "";
   const connue = ABREVIATIONS.find((a) => a.motif.test(libelle));
-  if (connue) return connue.court;
+  if (connue) return connue.court + suffixe;
   // Les pièces libres et les emplacements de correction n'ont pas d'abréviation :
   // on se contente d'élaguer ce que l'intitulé porte pour guider un dépôt.
   return libelle
@@ -535,16 +539,24 @@ export function anomaliesPiece(
   // « Illisible » n'est retenu que si la pièce n'a effectivement rien livré. Le
   // modèle emploie le mot pour dire « difficile à lire », puis en extrait le
   // contenu : ce n'est pas la même chose, et seule la seconde compte.
+  //
+  // Et même alors, le constat invite à regarder sans affirmer. Les deux fois où
+  // il a été jugé — DEM-2026-07355 et DEM-2026-05563 — le document se lisait
+  // parfaitement à l'œil : une fois un formulaire dont le modèle énumérait
+  // pourtant les cases vides, une fois le verso d'une carte grise qui porte
+  // toutes les données du véhicule. Que le modèle échoue sur une pièce ne dit
+  // pas que la pièce est mauvaise, et redemander au garage un document correct
+  // coûte un aller-retour pour rien.
   if (ex.lisible === false && !aLivreDesInformations(ex)) {
     ajoute(
       "illisible",
-      "haute",
+      "moyenne",
       defautsVus.length > 0
-        ? `À redemander : rien n'a pu être lu — ${defautsVus.join(", ")}.`
-        : "La pièce n'est pas lisible.",
+        ? `Le contrôle n'a rien pu lire sur cette pièce — ${defautsVus.join(", ")}. À regarder avant de la redemander.`
+        : "Le contrôle n'a rien pu lire sur cette pièce. À regarder avant de la redemander.",
     );
   } else if (defautsVus.length > 0) {
-    ajoute("qualite", "moyenne", `À redemander : rien n'a pu en être lu — ${defautsVus.join(", ")}.`);
+    ajoute("qualite", "moyenne", `Le contrôle n'a rien pu lire sur cette pièce — ${defautsVus.join(", ")}. À regarder avant de la redemander.`);
   }
 
   // Un PDF ne passe pas par le même chemin qu'une photo : il est océrisé, et le
@@ -842,7 +854,7 @@ export function anomaliesDossier(
       message: depotTermine
         ? "Obligatoire, et absente du dossier."
         : "Obligatoire, pas encore déposée.",
-      piece: libelle,
+      piece: libelleCourt(libelle),
     });
   }
 
@@ -871,7 +883,7 @@ export function anomaliesDossier(
       code: "verso_manquant",
       gravite: "moyenne",
       message: "Seul le recto de la pièce d'identité est déposé : sur une ancienne carte, la date de validité est au verso, et rien ne permet de vérifier qu'elle est en cours.",
-      piece: recto.libelle,
+      piece: libelleCourt(recto.libelle),
       document_id: recto.document_id,
     });
   }
@@ -932,7 +944,7 @@ export function anomaliesDossier(
         message: certain
           ? `Le dossier dit ${contexte.immatriculation} alors que ${nombre} document${nombre > 1 ? "s disent" : " dit"} ${formatePlaque(lue)}.`
           : `À vérifier : ${formatePlaque(lue)} a été lu sur une pièce manuscrite, le dossier dit ${contexte.immatriculation}.`,
-        piece: concernees[0].libelle,
+        piece: libelleCourt(concernees[0].libelle),
         document_id: concernees[0].document_id,
       });
     }
@@ -977,7 +989,7 @@ export function anomaliesDossier(
         code: "mandant_different",
         gravite: "moyenne",
         message: `Le mandat est donné par « ${mandant} » alors que la cession désigne « ${vendeur} » comme vendeur : c'est au vendeur de mandater la déclaration de cession.`,
-        piece: mandat!.libelle,
+        piece: libelleCourt(mandat!.libelle),
         document_id: mandat!.document_id,
       });
     }
@@ -1027,7 +1039,7 @@ export function anomaliesDossier(
         message: bloquantes.length > 0
           ? `${constat} : il manque ${bloquantes.map((p) => libelleCourt(p.libelle)).join(", ")}.`
           : `${constat} : il manque ${absentes.map((p) => libelleCourt(p.libelle)).join(", ")} (facultatif).`,
-        piece: absentes[0].libelle,
+        piece: libelleCourt(absentes[0].libelle),
         document_id: liste[0].document_id,
       });
       continue;
@@ -1043,7 +1055,7 @@ export function anomaliesDossier(
         code: "fichier_duplique",
         gravite: "basse",
         message: `${constat} : rien ne manque.`,
-        piece: liste[0].libelle,
+        piece: libelleCourt(liste[0].libelle),
         document_id: liste[0].document_id,
       });
       continue;
@@ -1056,7 +1068,7 @@ export function anomaliesDossier(
       code: "fichier_duplique",
       gravite: "basse",
       message: `${constat}.`,
-      piece: liste[0].libelle,
+      piece: libelleCourt(liste[0].libelle),
       document_id: liste[0].document_id,
     });
   }
