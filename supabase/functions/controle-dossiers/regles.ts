@@ -45,6 +45,10 @@ export interface Extraction {
     /** Deux signatures distinctes dans le cadre du vendeur : exigé quand la carte grise porte un co-titulaire. */
     second_vendeur?: boolean;
   } | null;
+  /** Le titre imprimé en haut du document. */
+  titre_lu?: string | null;
+  /** Le numéro de formulaire imprimé — 15776*02, 13751*02… — qui dit ce qu'est la pièce. */
+  numero_cerfa?: string | null;
   /** La mention lue à côté de la date de validité, sur un titre d'identité. */
   libelle_validite?: string | null;
   /** Le document nomme deux titulaires ou deux vendeurs. */
@@ -406,6 +410,36 @@ export function libelleCourt(libelle: string): string {
 export function formatePlaque(plaque: string): string {
   const m = plaque.match(/^([A-Z]{2})([0-9]{3})([A-Z]{2})$/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : plaque;
+}
+
+// Le numéro de cerfa dit ce qu'est le formulaire, mieux que le modèle.
+//
+// Sur DEM-2026-03426 il a classé « demande d'immatriculation » un document dont
+// il avait pourtant lu le titre : sa propre remarque disait « Document intitulé
+// 'Certificat de cession d'un véhicule d'occasion' mais correspondant à une
+// demande d'immatriculation ». Les formulaires de l'administration se
+// ressemblent, et leur numéro est imprimé dessus : on s'y fie plutôt qu'à un
+// jugement.
+const TYPE_PAR_CERFA: { motif: RegExp; type: string }[] = [
+  { motif: /15776/, type: "certificat_cession" },
+  { motif: /13751/, type: "declaration_achat" },
+  { motif: /13757/, type: "mandat" },
+  { motif: /13750/, type: "demande_immatriculation" },
+  { motif: /13754/, type: "certificat_vente_publique" },
+];
+
+export function typeSelonCerfa(numero: string | null | undefined): string | null {
+  if (!numero) return null;
+  const chiffres = numero.replace(/\D/g, "");
+  return TYPE_PAR_CERFA.find((c) => c.motif.test(chiffres))?.type ?? null;
+}
+
+/** L'extraction, corrigée par le numéro de formulaire quand il a été lu. */
+export function selonLeCerfa(ex: Extraction | null | undefined): Extraction | null {
+  if (!ex) return ex ?? null;
+  const type = typeSelonCerfa(ex.numero_cerfa);
+  if (!type || type === ex.type_document) return ex;
+  return { ...ex, type_document: type, correspond: undefined };
 }
 
 export function appartientALaFamille(libelle: string, typeDetecte?: string | null): boolean {

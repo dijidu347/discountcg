@@ -17,6 +17,7 @@ import {
   anomaliesDossier,
   anomaliesPiece,
   libelleCourt,
+  selonLeCerfa,
   memePersonne,
   doublonsParFichier,
   appartientALaFamille,
@@ -411,7 +412,7 @@ async function recontroler(supabase: any, demarcheId: string) {
       nom_fichier: doc.nom_fichier,
       taille_octets: doc.taille_octets,
       empreinte: analyse?.empreinte ?? null,
-      extraction: analyse?.statut === "ok" ? analyse.extraction : null,
+      extraction: analyse?.statut === "ok" ? selonLeCerfa(analyse.extraction) : null,
     };
   });
 

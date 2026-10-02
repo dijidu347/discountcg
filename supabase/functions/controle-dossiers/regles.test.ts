@@ -1039,4 +1039,29 @@ verifie("avec la mention, la peremption est signalee",
 verifie("une lecture ancienne, sans ce champ, garde ses autres garde-fous",
   identite({ validite: "2022-06-12" }).some((a) => a.code === "piece_perimee"));
 
+// Cas de DEM-2026-03426 : le modele avait lu le titre « Certificat de cession
+// d'un vehicule d'occasion » et classe le document « demande d'immatriculation »
+// quand meme. Le numero imprime tranche.
+import { selonLeCerfa, typeSelonCerfa } from "./regles.ts";
+verifie("le numero 15776 designe un certificat de cession",
+  typeSelonCerfa("15776*02") === "certificat_cession");
+verifie("le numero 13751 designe une declaration d'achat",
+  typeSelonCerfa("N° 13751*02") === "declaration_achat");
+verifie("le numero 13757 designe un mandat", typeSelonCerfa("13757*03") === "mandat");
+verifie("sans numero, on ne corrige rien", typeSelonCerfa(null) === null);
+
+const malClasse = selonLeCerfa({
+  type_document: "demande_immatriculation", correspond: false, lisible: true,
+  numero_cerfa: "15776*02",
+});
+verifie("l'extraction est corrigee par le numero",
+  malClasse?.type_document === "certificat_cession");
+verifie("et le jugement « ne correspond pas » du modele est ecarte",
+  malClasse?.correspond === undefined);
+
+const bienClasse = selonLeCerfa({
+  type_document: "certificat_cession", correspond: true, lisible: true, numero_cerfa: "15776*02",
+});
+verifie("un classement deja juste n'est pas touche", bienClasse?.correspond === true);
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
