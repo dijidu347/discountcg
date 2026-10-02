@@ -993,4 +993,17 @@ verifie("quand le vendeur n'est pas le garage, l'identite reste exigee",
   anomaliesDossier([], ["Pièce d'identité du vendeur (recto/verso)"], contexte, true, [])
     .some((a) => a.code === "piece_manquante"));
 
+// Cas de DEM-2026-04906 : ancienne carte d'identite, recto seul. Elle n'a pas de
+// date d'expiration dans la zone de lecture automatique, et le modele en a
+// fabrique une a partir du numero de carte -- delivree en 1961, valable
+// jusqu'en 2026. Un titre vaut dix a quinze ans, pas soixante-cinq.
+verifie("une duree de validite invraisemblable n'est pas retenue",
+  !identite({ emission: "1961-04-03", validite: "2026-07-06", naissance: "1951-04-03" })
+    .some((a) => a.code === "piece_perimee"));
+verifie("une duree normale reste jugee",
+  identite({ emission: "2012-06-13", validite: "2022-06-12" })
+    .some((a) => a.code === "piece_perimee"));
+verifie("sans date de delivrance, les autres garde-fous suffisent",
+  identite({ validite: "2025-02-10" }).some((a) => a.code === "piece_perimee"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

@@ -633,12 +633,25 @@ export function anomaliesPiece(
   const confonduAvecLaNaissance = !!naissance && naissance === ex.dates?.validite;
   const tropAncienne = !!finValidite && maintenant.getTime() - finValidite.getTime() > ANS_15;
 
+  // Un titre d'identité vaut dix ans, quinze pour une carte d'adulte : sa date
+  // de validité se situe donc à quelques années de sa délivrance. Quand l'écart
+  // n'a pas cette forme, l'une des deux dates est mal lue et l'autre ne vaut
+  // rien. Sur DEM-2026-04906, le modèle annonçait une carte délivrée en 1961 et
+  // valable jusqu'en 2026 — soixante-cinq ans — parce qu'il avait pris un
+  // fragment du numéro de carte pour une date.
+  const emission = enDate(ex.dates?.emission);
+  const ecartAnnees = finValidite && emission
+    ? (finValidite.getTime() - emission.getTime()) / (365.25 * JOUR)
+    : null;
+  const dureeInvraisemblable = ecartAnnees !== null && (ecartAnnees < 5 || ecartAnnees > 20);
+
   if (
     finValidite
     && PIECES_QUI_EXPIRENT.has(ex.type_document ?? "")
     && finValidite.getTime() < maintenant.getTime()
     && !confonduAvecLaNaissance
     && !tropAncienne
+    && !dureeInvraisemblable
     && !piece.validiteAilleurs
   ) {
     ajoute("piece_perimee", "haute", `La pièce est périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`);
