@@ -1102,7 +1102,7 @@ verifie("un garage sans verification, Kbis perime : signale",
     .some((a) => a.code === "garage_non_verifie" && a.gravite === "moyenne"));
 verifie("le message dit la date et ce qu'il doit faire",
   anomaliesDossier([], [], ctxKbisPerime, true, [], maintenant)
-    .find((a) => a.code === "garage_non_verifie")?.message.includes("01/05/2026"));
+    .find((a) => a.code === "garage_non_verifie")?.message.includes("01/05/2026") === true);
 verifie("un garage verifie ne declenche rien",
   !anomaliesDossier([], [], { ...ctxKbisPerime, garage_verifie: true }, true, [], maintenant)
     .some((a) => a.code === "garage_non_verifie"));
