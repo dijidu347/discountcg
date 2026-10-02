@@ -654,7 +654,24 @@ export function anomaliesPiece(
     && !dureeInvraisemblable
     && !piece.validiteAilleurs
   ) {
-    ajoute("piece_perimee", "haute", `La pièce est périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`);
+    // Le constat invite à regarder, il n'affirme plus.
+    //
+    // Sur neuf dossiers jugés, six fois la date lue était fausse. Quatre causes
+    // ont été corrigées — date de naissance prise pour une expiration, deux
+    // faces comptées comme deux pièces, numéro de carte transformé en date,
+    // expiration absente du recto d'une ancienne carte. Mais deux restent hors
+    // d'atteinte : sur DEM-2026-07509 et DEM-2026-04604, un chiffre de décennie
+    // mal lu a produit deux dates cohérentes entre elles — délivrée en 2014,
+    // valable jusqu'en 2024, pour une carte qui expire en 2034. Rien ne permet
+    // de les mettre en doute.
+    //
+    // Envoyer réclamer une pièce d'identité neuve à un client dont le titre est
+    // valable coûte plus qu'un coup d'œil.
+    ajoute(
+      "piece_perimee",
+      "moyenne",
+      `À vérifier : la pièce semble périmée depuis le ${finValidite.toLocaleDateString("fr-FR")}.`,
+    );
   }
 
   // La fraîcheur et la validité ne se jugent que sur la pièce attendue. Sur

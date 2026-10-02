@@ -729,8 +729,10 @@ verifie("une date de naissance prise pour une expiration ne perime rien",
     .some((a) => a.code === "piece_perimee"));
 verifie("une expiration vieille de plus de quinze ans est une mauvaise lecture",
   !identite({ validite: "1980-12-17" }).some((a) => a.code === "piece_perimee"));
-verifie("une piece reellement perimee reste signalee",
-  identite({ validite: "2025-02-10" }).some((a) => a.code === "piece_perimee"));
+verifie("une piece perimee est signalee, en invitant a verifier",
+  identite({ validite: "2025-02-10" })
+    .some((a) => a.code === "piece_perimee" && a.gravite === "moyenne"
+      && a.message.startsWith("À vérifier")));
 verifie("une piece en cours de validite ne declenche rien",
   !identite({ validite: "2035-04-01", naissance: "2000-11-20" })
     .some((a) => a.code === "piece_perimee"));
