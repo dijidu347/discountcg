@@ -1091,4 +1091,23 @@ verifie("le recepisse n'est pas nomme « la declaration d'achat »",
 verifie("et le formulaire 13751 garde son nom",
   _lc("Déclaration d'achat signée et tamponnée (cerfa 13751*02)") === "la déclaration d'achat");
 
+// Un garage dont la verification est tombee faute de Kbis recent : il faut le
+// savoir au moment de traiter sa demarche, pas en consultant sa fiche.
+const ctxKbisPerime: ContexteDossier = {
+  ...contexte, garage_nom: "GARAGE DUPONT", garage_verifie: false,
+  kbis_valide_jusqu_au: "2026-05-01",
+};
+verifie("un garage sans verification, Kbis perime : signale",
+  anomaliesDossier([], [], ctxKbisPerime, true, [], maintenant)
+    .some((a) => a.code === "garage_non_verifie" && a.gravite === "moyenne"));
+verifie("le message dit la date et ce qu'il doit faire",
+  anomaliesDossier([], [], ctxKbisPerime, true, [], maintenant)
+    .find((a) => a.code === "garage_non_verifie")?.message.includes("01/05/2026"));
+verifie("un garage verifie ne declenche rien",
+  !anomaliesDossier([], [], { ...ctxKbisPerime, garage_verifie: true }, true, [], maintenant)
+    .some((a) => a.code === "garage_non_verifie"));
+verifie("un Kbis encore valable non plus",
+  !anomaliesDossier([], [], { ...ctxKbisPerime, kbis_valide_jusqu_au: "2027-05-01" }, true, [], maintenant)
+    .some((a) => a.code === "garage_non_verifie"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

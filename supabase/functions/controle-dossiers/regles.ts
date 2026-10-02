@@ -94,6 +94,8 @@ export interface ContexteDossier {
   garage_nom?: string | null;
   /** Son compte est vérifié : son Kbis et la pièce d'identité de son dirigeant sont chez nous. */
   garage_verifie?: boolean;
+  /** Fin de validité de son Kbis : au-delà, sa vérification est tombée. */
+  kbis_valide_jusqu_au?: string | null;
   /**
    * Le garage vend son propre véhicule, et son compte est vérifié.
    *
@@ -962,6 +964,7 @@ export function anomaliesDossier(
   contexte: ContexteDossier,
   depotTermine: boolean,
   obligatoires: string[] = [],
+  maintenant: Date = new Date(),
 ): Anomalie[] {
   const anomalies: Anomalie[] = [];
 
@@ -1022,6 +1025,23 @@ export function anomaliesDossier(
   // laquelle il a acquis le véhicule, comme preuve de sa propriété. La règle
   // signalait dix-huit dossiers normaux. Sur DEM-2026-08215 le type était bien
   // faux, mais cela se voit au dossier, pas à la présence d'une pièce.
+
+  // Un garage dont la vérification est tombée faute de Kbis récent.
+  //
+  // Le guide exige un extrait Kbis de moins de six mois au dossier. Le nôtre est
+  // collecté une fois, à la vérification du compte, et il vieillit sans que rien
+  // ne le signale. Quand il a dépassé six mois, la vérification du garage est
+  // retirée — et il faut le savoir ici, au moment de traiter sa démarche, pas en
+  // allant consulter sa fiche.
+  const kbis = enDate(contexte.kbis_valide_jusqu_au);
+  if (contexte.garage_verifie === false && kbis && kbis.getTime() < maintenant.getTime()) {
+    anomalies.push({
+      code: "garage_non_verifie",
+      gravite: "moyenne",
+      message: `Le garage n'est plus vérifié : son extrait Kbis a dépassé six mois le ${kbis.toLocaleDateString("fr-FR")}. Il doit en déposer un récent.`,
+      piece: contexte.garage_nom ?? "Garage",
+    });
+  }
 
   // Une plaque étrangère au dossier, dite une fois par pièce, remplissait la
   // liste de trois lignes identiques pour un seul fait. Et le nombre de pièces

@@ -342,7 +342,7 @@ async function contexteDeLecture(
 async function recontroler(supabase: any, demarcheId: string) {
   const { data: demarche } = await supabase
     .from("demarches")
-    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, garage_id, created_at, status, garages(raison_sociale, is_verified)")
+    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, garage_id, created_at, status, garages(raison_sociale, is_verified, kbis_valide_jusqu_au)")
     .eq("id", demarcheId)
     .maybeSingle();
   if (!demarche) return;
@@ -438,7 +438,7 @@ async function recontroler(supabase: any, demarcheId: string) {
   // une société — ces deux pièces sont déjà chez nous, et les redemander au
   // dossier n'aurait aucun sens.
   const garage = (demarche as Record<string, unknown>).garages as
-    { raison_sociale?: string | null; is_verified?: boolean | null } | null;
+    { raison_sociale?: string | null; is_verified?: boolean | null; kbis_valide_jusqu_au?: string | null } | null;
 
   const vendeurDeLaCession = pieces
     .find((p) => p.extraction?.type_document === "certificat_cession")
@@ -448,6 +448,7 @@ async function recontroler(supabase: any, demarcheId: string) {
   const contexte: ContexteDossier = {
     garage_nom: garage?.raison_sociale ?? null,
     garage_verifie: garage?.is_verified === true,
+    kbis_valide_jusqu_au: garage?.kbis_valide_jusqu_au ?? null,
     le_garage_vend: garage?.is_verified === true
       && !!garage?.raison_sociale
       && !!nomDuVendeur
@@ -534,7 +535,7 @@ async function recontroler(supabase: any, demarcheId: string) {
     // les pièces d'accord. Chaque pièce garde la sienne dans analyses_documents,
     // où elle sert à confronter le contrôle aux décisions de l'administration.
     ...parPiece.flatMap((p) => p.anomalies.filter((a) => a.code !== "plaque_differente")),
-    ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true, attendues.map((p) => p.libelle)),
+    ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true, attendues.map((p) => p.libelle), maintenant),
   ];
 
   // Les intitulés de la configuration guident un dépôt ; devant un constat ils
