@@ -50,6 +50,20 @@ const APPARENCE: Record<Gravite, { fond: string; texte: string; icone: typeof Al
 
 const ORDRE: Gravite[] = ["haute", "moyenne", "basse"];
 
+// Ce que la lecture automatique ne sait pas faire, dit en quatre lignes.
+//
+// Chacun de ces points est une exigence du guide SIV que le modèle lit mal :
+// une date manuscrite dans une case étroite, de l'encre de signature, une heure
+// griffonnée, une suite de onze caractères en bas de page. Mieux vaut les
+// nommer que de se tromper une fois sur deux. La raison n'est pas répétée à
+// l'écran : elle a été lue une fois, elle encombrerait ensuite.
+const VERIFICATIONS_A_L_OEIL = [
+  "La date de vente, identique sur la CG et la cession",
+  "Les signatures : vendeur et acquéreur sur la cession, mandant sur le mandat",
+  "L'heure de cession sur le certificat",
+  "Le numéro de formule, en bas du recto de la CG",
+];
+
 export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: string; typeDemarche?: string | null }) {
   const [controle, setControle] = useState<Controle | null>(null);
   const [chargement, setChargement] = useState(true);
@@ -207,36 +221,12 @@ export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: 
             À vérifier vous-même
           </p>
           <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
-            <li className="flex gap-2">
-              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="font-medium">La date de vente</span> doit être la même sur la carte
-                grise barrée et sur le certificat de cession. Écrite à la main, elle se lit mal
-                automatiquement.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="font-medium">Les signatures</span> : vendeur et acquéreur sur la
-                cession, mandant sur le mandat, et les deux titulaires s'il y a un co-titulaire.
-                Le modèle devine l'encre plus qu'il ne la lit.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="font-medium">L'heure de cession</span> figure sur le certificat :
-                le SIV la réclame à la saisie.
-              </span>
-            </li>
-            <li className="flex gap-2">
-              <Eye className="mt-0.5 h-4 w-4 shrink-0" />
-              <span>
-                <span className="font-medium">Le numéro de formule</span> de la carte grise, en bas
-                du recto, doit être lisible : il est demandé à la saisie SIV.
-              </span>
-            </li>
+            {VERIFICATIONS_A_L_OEIL.map((point) => (
+              <li key={point} className="flex gap-2">
+                <Eye className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{point}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </CardContent>
