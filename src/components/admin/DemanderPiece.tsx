@@ -159,7 +159,7 @@ export function DemanderPiece({
             <CardDescription>
               {enAttente.length > 0
                 ? `${enAttente.length} pièce(s) en attente du garage.`
-                : "Réclamer une pièce absente sans refuser celles qui sont bonnes."}
+                : "Réclamer une pièce manquante, sans rien refuser."}
             </CardDescription>
           </div>
 
@@ -174,8 +174,7 @@ export function DemanderPiece({
               <DialogHeader>
                 <DialogTitle>Demander une pièce</DialogTitle>
                 <DialogDescription>
-                  Le garage recevra un e-mail « il nous manque une pièce » et un emplacement pour la déposer.
-                  Aucun de ses documents déjà envoyés n'est remis en cause.
+                  Le garage reçoit un e-mail et un emplacement pour la déposer. Ses autres pièces ne bougent pas.
                 </DialogDescription>
               </DialogHeader>
 
