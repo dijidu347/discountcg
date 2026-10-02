@@ -906,13 +906,22 @@ export function anomaliesDossier(
       const complet = `${personne.prenom ?? ""} ${personne.nom ?? ""}`.trim();
       return complet || null;
     };
+    // La référence est le titulaire porté sur la carte grise : c'est lui
+    // « l'ancien titulaire » au sens du guide, et son nom y est imprimé — donc
+    // plus sûr qu'une mention manuscrite sur la cession. À défaut, on se rabat
+    // sur le vendeur désigné par la cession.
+    const carteGrise = pieces.find((p) => p.extraction?.type_document === "carte_grise");
     const mandant = nomDe(mandat, "mandant");
+    const titulaire = nomDe(carteGrise, "titulaire");
     const vendeur = nomDe(cession, "vendeur");
-    if (mandant && vendeur && !memePersonne(mandant, vendeur)) {
+    const ancienTitulaire = titulaire ?? vendeur;
+    const ou = titulaire ? "la carte grise" : "la cession";
+
+    if (mandant && ancienTitulaire && !memePersonne(mandant, ancienTitulaire)) {
       anomalies.push({
         code: "mandant_different",
         gravite: "moyenne",
-        message: `Le mandat est donné par « ${mandant} » alors que la cession désigne « ${vendeur} » comme vendeur : seul l'ancien titulaire peut mandater la déclaration de cession.`,
+        message: `Le mandat est donné par « ${mandant} » alors que ${ou} désigne « ${ancienTitulaire} » : seul l'ancien titulaire peut mandater la déclaration de cession.`,
         piece: mandat!.libelle,
         document_id: mandat!.document_id,
       });

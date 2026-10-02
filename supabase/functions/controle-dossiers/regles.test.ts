@@ -922,4 +922,29 @@ verifie("une FIV ne comble pas l'emplacement de la carte grise",
 verifie("et elle est signalee comme n'etant pas la piece demandee",
   horsSujet('Carte grise barrée avec la mention "Vendu le"', "fiche_identification_vehicule"));
 
+// « L'ancien titulaire » au sens du guide, c'est celui que porte la carte grise,
+// et son nom y est imprime -- plus sur qu'une mention manuscrite sur la cession.
+const avecCarteGrise = (titulaire: string, mandantNom: string): Piece[] => [
+  piece({
+    document_id: "cg", type_document: "doc_3", nom_fichier: "cg.jpg", libelle: "Carte grise barrée",
+    extraction: {
+      type_document: "carte_grise", lisible: true,
+      personnes: [{ role: "titulaire", nom: titulaire, est_une_societe: true }],
+    },
+  }),
+  piece({
+    document_id: "m", type_document: "doc_5", nom_fichier: "mandat.jpg", libelle: "Mandat signé du vendeur",
+    extraction: {
+      type_document: "mandat", lisible: true,
+      personnes: [{ role: "mandant", nom: mandantNom, est_une_societe: true }],
+    },
+  }),
+];
+verifie("le mandat d'un tiers est confronte au titulaire de la carte grise",
+  anomaliesDossier(avecCarteGrise("LEASYS FRANCE", "MOTRYX AUTOMOBILES"), [], ctxDC, true, [])
+    .some((a) => a.code === "mandant_different" && a.message.includes("la carte grise")));
+verifie("le mandat du titulaire lui-meme passe",
+  !anomaliesDossier(avecCarteGrise("LEASYS FRANCE", "LEASYS FRANCE"), [], ctxDC, true, [])
+    .some((a) => a.code === "mandant_different"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
