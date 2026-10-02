@@ -523,11 +523,6 @@ async function recontroler(supabase: any, demarcheId: string) {
   // encombrent. L'interface affiche ce nom avant le message : on l'abrège, en
   // gardant la face, car « la CG » et « la CG (verso) » ne désignent pas le même
   // emplacement.
-  for (const { anomalies } of parPiece) {
-    for (const anomalie of anomalies) {
-      if (anomalie.piece) anomalie.piece = libelleCourt(anomalie.piece);
-    }
-  }
 
   for (const { piece, anomalies } of parPiece) {
     await supabase.from("analyses_documents").update({ anomalies }).eq("document_id", piece.document_id);
@@ -540,6 +535,14 @@ async function recontroler(supabase: any, demarcheId: string) {
     ...parPiece.flatMap((p) => p.anomalies.filter((a) => a.code !== "plaque_differente")),
     ...anomaliesDossier(pieces, manquantes, contexte, demarche.documents_complets === true, attendues.map((p) => p.libelle)),
   ];
+
+  // Les intitulés de la configuration guident un dépôt ; devant un constat ils
+  // encombrent. L'interface affiche ce nom avant le message : on l'abrège, en
+  // gardant la face, car « la CG » et « la CG (verso) » ne désignent pas le même
+  // emplacement. Fait ici pour que les constats du dossier en profitent aussi.
+  for (const anomalie of anomalies) {
+    if (anomalie.piece) anomalie.piece = libelleCourt(anomalie.piece);
+  }
 
   const analysees = pieces.filter((piece) => piece.extraction).length;
 

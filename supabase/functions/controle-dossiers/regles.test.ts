@@ -1008,4 +1008,17 @@ verifie("une duree normale reste jugee",
 verifie("sans date de delivrance, les autres garde-fous suffisent",
   identite({ validite: "2025-02-10" }).some((a) => a.code === "piece_perimee"));
 
+// Cas de DEM-2026-04168 : les deux cartes du dossier portaient une « validite »
+// au jour et au mois de la naissance. Une carte n'expire pas le jour
+// anniversaire de son porteur.
+verifie("une validite au jour anniversaire vient de la naissance",
+  !identite({ naissance: "1969-05-02", validite: "2026-05-02" })
+    .some((a) => a.code === "piece_perimee"));
+verifie("et l'autre carte du meme dossier non plus",
+  !identite({ naissance: "1945-09-22", validite: "2029-09-22" })
+    .some((a) => a.code === "piece_perimee"));
+verifie("une vraie expiration, a une autre date, reste signalee",
+  identite({ naissance: "1969-05-02", validite: "2022-06-12" })
+    .some((a) => a.code === "piece_perimee"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

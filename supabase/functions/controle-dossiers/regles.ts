@@ -630,7 +630,15 @@ export function anomaliesPiece(
   const ANS_15 = 15 * 365.25 * JOUR;
   const finValidite = enDate(ex.dates?.validite);
   const naissance = ex.dates?.naissance ?? null;
-  const confonduAvecLaNaissance = !!naissance && naissance === ex.dates?.validite;
+  // Le modèle ne lit pas toujours une expiration : il reprend parfois le jour et
+  // le mois de la naissance en changeant l'année. Sur DEM-2026-04168, les deux
+  // cartes du dossier portaient « née le 02/05/1969, valable jusqu'au
+  // 02/05/2026 » et « née le 22/09/1945, valable jusqu'au 22/09/2029 ». Une
+  // carte n'expire pas le jour anniversaire de son porteur : quand le jour et le
+  // mois coïncident, la date est reprise de la naissance.
+  const memeJourEtMois = (a: string | null | undefined, b: string | null | undefined) =>
+    !!a && !!b && a.slice(5) === b.slice(5);
+  const confonduAvecLaNaissance = memeJourEtMois(naissance, ex.dates?.validite);
   const tropAncienne = !!finValidite && maintenant.getTime() - finValidite.getTime() > ANS_15;
 
   // Un titre d'identité vaut dix ans, quinze pour une carte d'adulte : sa date
