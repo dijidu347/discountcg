@@ -363,9 +363,12 @@ verifie(
   "mention portee sur l'autre face : rien a signaler",
   !anomaliesDossier([faceSansMention, faceAvecMention], [], contexte, true).some((a) => a.code === "cession_non_portee"),
 );
+// La mention de vente passe dans les verifications laissees a l'oeil : barrer la
+// carte et ecrire « vendu le » est un geste manuscrit, et les vingt-cinq
+// signalements soumis a l'administration etaient tous faux (DEM-2026-03076).
 verifie(
-  "aucune face ne porte la mention : signale",
-  anomaliesDossier([faceSansMention], [], contexte, true).some((a) => a.code === "cession_non_portee" && a.gravite === "moyenne"),
+  "aucune face ne porte la mention : on ne signale plus",
+  !anomaliesDossier([faceSansMention], [], contexte, true).some((a) => a.code === "cession_non_portee"),
 );
 verifie(
   "carte grise en PDF : on ne reproche pas une encre invisible",

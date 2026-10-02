@@ -1211,25 +1211,17 @@ export function anomaliesDossier(
   // caractères sans séparateur, où un Z devient un 2 et un O un 0. Ce qui dit de
   // façon fiable qu'une pièce concerne un autre véhicule, c'est la plaque.
 
-  // La mention de vente est cherchée sur toutes les pièces de la carte grise, et
-  // pas seulement sur celle déposée au bon endroit : le recto et le verso
-  // arrivent souvent inversés, et la mention n'est alors pas là où on la
-  // croirait. Elle n'est réclamée que si au moins une de ces pièces a été vue
-  // comme une image — sur un PDF océrisé, l'encre est invisible.
-  const cartesGrises = pieces.filter((p) => /carte grise|certificat d.immatriculation/i.test(p.libelle));
-  const cartesVues = cartesGrises.filter((p) => !/\.pdf$/i.test(p.nom_fichier) && p.extraction);
-  if (
-    cartesVues.length > 0
-    && cartesVues.some((p) => p.extraction?.mentions?.cede_le === false)
-    && !cartesGrises.some((p) => p.extraction?.mentions?.cede_le === true)
-  ) {
-    anomalies.push({
-      code: "cession_non_portee",
-      gravite: "moyenne",
-      message: "Aucune des faces de la carte grise ne semble porter de mention de vente datée : à confirmer à l'œil.",
-      piece: cartesVues[0].libelle,
-    });
-  }
+  // La mention de vente portée sur la carte grise n'est plus jugée.
+  //
+  // Barrer la carte et écrire « vendu le » est un geste manuscrit, et le modèle
+  // devine l'encre plus qu'il ne la lit : sur DEM-2026-03076 comme sur tous les
+  // dossiers où ce constat a été soumis à l'administration, la carte était bien
+  // barrée. Vingt-cinq signalements, aucun juste.
+  //
+  // Le guide l'exige toujours — « certificat d'immatriculation barré, avec la
+  // mention Vendu le et signature du vendeur » — et ce point figure donc dans la
+  // liste des vérifications laissées à l'œil, avec la date de vente et les
+  // signatures, qui relèvent du même geste et du même document.
 
   // La comparaison des dates de vente est suspendue tant que leur lecture n'est
   // pas mesurée. Le guide l'exige, la règle est juste, mais elle repose sur deux
