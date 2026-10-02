@@ -159,7 +159,7 @@ export function DemanderPiece({
             <CardDescription>
               {enAttente.length > 0
                 ? `${enAttente.length} pièce(s) en attente du garage.`
-                : "Réclamer une pièce manquante, sans rien refuser."}
+                : "Réclamer une pièce manquante."}
             </CardDescription>
           </div>
 
