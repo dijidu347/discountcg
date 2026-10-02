@@ -428,6 +428,28 @@ const TYPE_PAR_CERFA: { motif: RegExp; type: string }[] = [
   { motif: /13754/, type: "certificat_vente_publique" },
 ];
 
+// Le modèle s'écarte parfois du vocabulaire demandé : « certificat_immatriculation »
+// pour une carte grise, « extrait_kbis » pour un Kbis, « permis_de_conduire »
+// avec des traits en plus. Ces variantes ne figurent dans aucune famille, et le
+// contrôle annonçait alors « ce n'est pas la pièce demandée » sur des documents
+// parfaitement conformes.
+const SYNONYMES: Record<string, string> = {
+  certificat_immatriculation: "carte_grise",
+  certificat_d_immatriculation: "carte_grise",
+  carte_grise_barree: "carte_grise",
+  extrait_kbis: "kbis",
+  permis_de_conduire: "permis_conduire",
+  fiche_identification: "fiche_identification_vehicule",
+  certificat_situation_administrative: "certificat_non_gage",
+  non_gage: "certificat_non_gage",
+};
+
+export function typeNormalise(type: string | null | undefined): string | null {
+  if (!type) return type ?? null;
+  const propre = type.trim().toLowerCase().replace(/[\s-]+/g, "_");
+  return SYNONYMES[propre] ?? propre;
+}
+
 export function typeSelonCerfa(numero: string | null | undefined): string | null {
   if (!numero) return null;
   const chiffres = numero.replace(/\D/g, "");
@@ -437,9 +459,14 @@ export function typeSelonCerfa(numero: string | null | undefined): string | null
 /** L'extraction, corrigée par le numéro de formulaire quand il a été lu. */
 export function selonLeCerfa(ex: Extraction | null | undefined): Extraction | null {
   if (!ex) return ex ?? null;
-  const type = typeSelonCerfa(ex.numero_cerfa);
-  if (!type || type === ex.type_document) return ex;
-  return { ...ex, type_document: type, correspond: undefined };
+  const normalise = typeNormalise(ex.type_document) ?? undefined;
+  const parLeCerfa = typeSelonCerfa(ex.numero_cerfa);
+
+  if (parLeCerfa && parLeCerfa !== normalise) {
+    return { ...ex, type_document: parLeCerfa, correspond: undefined };
+  }
+  if (normalise !== ex.type_document) return { ...ex, type_document: normalise };
+  return ex;
 }
 
 export function appartientALaFamille(libelle: string, typeDetecte?: string | null): boolean {

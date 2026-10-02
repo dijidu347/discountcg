@@ -1064,4 +1064,19 @@ const bienClasse = selonLeCerfa({
 });
 verifie("un classement deja juste n'est pas touche", bienClasse?.correspond === true);
 
+// Le modele s'ecarte parfois du vocabulaire demande. Ces variantes ne figuraient
+// dans aucune famille, et le controle annoncait « ce n'est pas la piece
+// demandee » sur des documents parfaitement conformes.
+verifie("« certificat_immatriculation » est une carte grise",
+  selonLeCerfa({ type_document: "certificat_immatriculation", lisible: true })?.type_document === "carte_grise");
+verifie("« extrait_kbis » est un Kbis",
+  selonLeCerfa({ type_document: "extrait_kbis", lisible: true })?.type_document === "kbis");
+verifie("« permis_de_conduire » est un permis",
+  selonLeCerfa({ type_document: "permis_de_conduire", lisible: true })?.type_document === "permis_conduire");
+verifie("un type deja juste n'est pas touche",
+  selonLeCerfa({ type_document: "carte_grise", lisible: true })?.type_document === "carte_grise");
+verifie("et le numero de cerfa prime sur la variante",
+  selonLeCerfa({ type_document: "certificat_immatriculation", numero_cerfa: "15776*02", lisible: true })
+    ?.type_document === "certificat_cession");
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
