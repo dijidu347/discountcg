@@ -940,12 +940,17 @@ const avecCarteGrise = (titulaire: string, mandantNom: string): Piece[] => [
     },
   }),
 ];
-verifie("le mandat d'un tiers est confronte au titulaire de la carte grise",
-  anomaliesDossier(avecCarteGrise("LEASYS FRANCE", "MOTRYX AUTOMOBILES"), [], ctxDC, true, [])
-    .some((a) => a.code === "mandant_different" && a.message.includes("la carte grise")));
-verifie("le mandat du titulaire lui-meme passe",
-  !anomaliesDossier(avecCarteGrise("LEASYS FRANCE", "LEASYS FRANCE"), [], ctxDC, true, [])
-    .some((a) => a.code === "mandant_different"));
+// Un professionnel qui a achete en DA revend un vehicule dont la carte grise
+// est restee au nom de l'ancien proprietaire : c'est la cession qui dit qui
+// vend, jamais la carte grise (cas de DEM-2026-07599).
+verifie("le titulaire de la carte grise n'est pas la reference",
+  !anomaliesDossier(
+    [...avecCarteGrise("JEAN-LUC PROVOST", "SASU 4 ROUES"),
+     piece({ document_id: "c2", type_document: "doc_1", nom_fichier: "cession.jpg",
+       libelle: "Certificat de cession",
+       extraction: { type_document: "certificat_cession", lisible: true,
+         personnes: [{ role: "vendeur", nom: "SASU 4 ROUES", est_une_societe: true }] } })],
+    [], ctxDC, true, []).some((a) => a.code === "mandant_different"));
 
 // Le non-gage est remis au moment de la vente : c'est a ce jour-la qu'il doit
 // avoir moins de quinze jours, pas aujourd'hui. Sur DEM-2026-07426, un
@@ -967,24 +972,5 @@ verifie("sans date de vente, on prend le jour du depot",
   !nonGageDu("2026-03-01", { depose_le: "2026-03-10" })
     .some((a) => a.code === "piece_trop_ancienne"));
 
-// Cas de DEM-2026-08215 : une declaration d'achat dans un dossier enregistre
-// comme cession. Le garage s'etait trompe de case, et tout ce que le controle
-// disait ensuite reposait sur une premisse fausse.
-const dansUneDC = (type: string): Piece[] => [
-  piece({
-    document_id: "x", type_document: "doc_4", nom_fichier: "scan.pdf",
-    libelle: "Récépissé de déclaration d'achat du vendeur professionnel",
-    extraction: { type_document: type, lisible: true },
-  }),
-];
-verifie("une declaration d'achat dans une DC fait douter du type",
-  anomaliesDossier(dansUneDC("declaration_achat"), [], { ...contexte, type: "DC" }, true, [])
-    .some((a) => a.code === "type_demarche_douteux"));
-verifie("le recepisse d'une precedente DA ne fait pas douter",
-  !anomaliesDossier(dansUneDC("accuse_enregistrement_achat"), [], { ...contexte, type: "DC" }, true, [])
-    .some((a) => a.code === "type_demarche_douteux"));
-verifie("et sur une DA, une declaration d'achat est a sa place",
-  !anomaliesDossier(dansUneDC("declaration_achat"), [], { ...contexte, type: "DA" }, true, [])
-    .some((a) => a.code === "type_demarche_douteux"));
 
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

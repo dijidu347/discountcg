@@ -851,30 +851,14 @@ export function anomaliesDossier(
     });
   }
 
-  // Le type de démarche doit correspondre aux pièces déposées.
+  // Le type de démarche n'est pas déductible des pièces.
   //
-  // Les listes du guide ne sont pas les mêmes : la déclaration d'achat cerfa
-  // 13751 est une pièce de DA (page 16) et ne figure pas parmi les pièces d'une
-  // DC (page 13). En trouver une dans un dossier enregistré comme cession, c'est
-  // le signe que le garage s'est trompé de case — et tout ce que le contrôle
-  // dira ensuite reposera sur une prémisse fausse. Sur DEM-2026-08215, cela a
-  // produit un reproche sur le mandant qui n'avait pas lieu d'être : en DA,
-  // c'est bien l'acheteur professionnel qui mandate.
-  //
-  // Le récépissé d'une précédente DA ne compte pas : il porte son propre type et
-  // sa présence est normale des deux côtés.
-  if (contexte.type === "DC") {
-    const declarationAchat = pieces.find((p) => p.extraction?.type_document === "declaration_achat");
-    if (declarationAchat) {
-      anomalies.push({
-        code: "type_demarche_douteux",
-        gravite: "moyenne",
-        message: "Le dossier contient une déclaration d'achat alors qu'il est enregistré comme déclaration de cession : vérifiez le type de démarche auprès du garage.",
-        piece: declarationAchat.libelle,
-        document_id: declarationAchat.document_id,
-      });
-    }
-  }
+  // J'avais cru qu'une déclaration d'achat dans un dossier de cession trahissait
+  // une erreur de case, parce que le guide ne la liste pas page 13. Elle est en
+  // réalité fréquente et légitime : un professionnel qui revend joint la DA par
+  // laquelle il a acquis le véhicule, comme preuve de sa propriété. La règle
+  // signalait dix-huit dossiers normaux. Sur DEM-2026-08215 le type était bien
+  // faux, mais cela se voit au dossier, pas à la présence d'une pièce.
 
   // Une plaque étrangère au dossier, dite une fois par pièce, remplissait la
   // liste de trois lignes identiques pour un seul fait. Et le nombre de pièces
@@ -951,22 +935,23 @@ export function anomaliesDossier(
       const complet = `${personne.prenom ?? ""} ${personne.nom ?? ""}`.trim();
       return complet || null;
     };
-    // La référence est le titulaire porté sur la carte grise : c'est lui
-    // « l'ancien titulaire » au sens du guide, et son nom y est imprimé — donc
-    // plus sûr qu'une mention manuscrite sur la cession. À défaut, on se rabat
-    // sur le vendeur désigné par la cession.
-    const carteGrise = pieces.find((p) => p.extraction?.type_document === "carte_grise");
+    // La référence est le vendeur désigné par la cession, et surtout pas le
+    // titulaire de la carte grise.
+    //
+    // Un professionnel qui a acheté en déclaration d'achat revend un véhicule
+    // dont la carte grise est restée au nom de l'ancien propriétaire — c'est
+    // tout l'objet de la DA. Sur DEM-2026-07599, la carte grise porte
+    // JEAN-LUC PROVOST, la cession dit que SASU 4 ROUES vend, et le mandat vient
+    // de SASU 4 ROUES : tout est juste. Comparer au titulaire de la carte grise
+    // signalait vingt-deux dossiers dont la quasi-totalité était normale.
     const mandant = nomDe(mandat, "mandant");
-    const titulaire = nomDe(carteGrise, "titulaire");
     const vendeur = nomDe(cession, "vendeur");
-    const ancienTitulaire = titulaire ?? vendeur;
-    const ou = titulaire ? "la carte grise" : "la cession";
 
-    if (mandant && ancienTitulaire && !memePersonne(mandant, ancienTitulaire)) {
+    if (mandant && vendeur && !memePersonne(mandant, vendeur)) {
       anomalies.push({
         code: "mandant_different",
         gravite: "moyenne",
-        message: `Le mandat est donné par « ${mandant} » alors que ${ou} désigne « ${ancienTitulaire} » : seul l'ancien titulaire peut mandater la déclaration de cession.`,
+        message: `Le mandat est donné par « ${mandant} » alors que la cession désigne « ${vendeur} » comme vendeur : c'est au vendeur de mandater la déclaration de cession.`,
         piece: mandat!.libelle,
         document_id: mandat!.document_id,
       });
