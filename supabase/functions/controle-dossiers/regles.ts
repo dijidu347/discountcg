@@ -376,11 +376,14 @@ const ABREVIATIONS: { motif: RegExp; court: string }[] = [
   // cession ne se dépose pas dans un dossier de déclaration d'achat. Les pièces
   // gardent leur nom de métier. « La DA » reste réservé au récépissé, qui est ce
   // que le guide et les garages appellent ainsi.
+  // L'ordre compte : « Récépissé de déclaration d'achat du vendeur
+  // professionnel » contient « déclaration d'achat », et le nommer ainsi
+  // désignait la mauvaise pièce. Le plus spécifique passe devant.
+  { motif: /r[ée]c[ée]piss[ée]/i, court: "le récépissé de DA" },
   { motif: /13751|d[ée]claration d.achat/i, court: "la déclaration d'achat" },
   { motif: /15776|certificat de cession/i, court: "le certificat de cession" },
   { motif: /contr[ôo]le technique/i, court: "le CT" },
   { motif: /carte grise|certificat d.immatriculation/i, court: "la CG" },
-  { motif: /r[ée]c[ée]piss[ée]/i, court: "le récépissé de DA" },
   { motif: /non.?gage|situation administrative/i, court: "le non-gage" },
   { motif: /13757|mandat/i, court: "le mandat" },
   { motif: /kbis/i, court: "le Kbis" },

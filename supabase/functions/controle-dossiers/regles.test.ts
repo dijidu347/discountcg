@@ -1079,4 +1079,13 @@ verifie("et le numero de cerfa prime sur la variante",
   selonLeCerfa({ type_document: "certificat_immatriculation", numero_cerfa: "15776*02", lisible: true })
     ?.type_document === "certificat_cession");
 
+// « Recepisse de declaration d'achat du vendeur professionnel » contient
+// « declaration d'achat » : nomme ainsi, le constat designait la mauvaise piece
+// (cas de DEM-2026-01730).
+import { libelleCourt as _lc } from "./regles.ts";
+verifie("le recepisse n'est pas nomme « la declaration d'achat »",
+  _lc("Récépissé de déclaration d'achat du vendeur professionnel") === "le récépissé de DA");
+verifie("et le formulaire 13751 garde son nom",
+  _lc("Déclaration d'achat signée et tamponnée (cerfa 13751*02)") === "la déclaration d'achat");
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
