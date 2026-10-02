@@ -422,7 +422,16 @@ async function recontroler(supabase: any, demarcheId: string) {
     dateMec = vehicule?.date_mec ?? null;
   }
 
+  // La date de la vente, lue sur la cession ou sur la déclaration d'achat : elle
+  // sert de repère pour juger si une pièce était fraîche le jour où elle a
+  // compté.
+  const dateCession = pieces
+    .map((p) => p.extraction?.dates?.cession)
+    .find((d) => !!d) ?? null;
+
   const contexte: ContexteDossier = {
+    date_cession: dateCession,
+    depose_le: demarche.created_at ?? null,
     type: demarche.type,
     immatriculation: demarche.immatriculation,
     vin,

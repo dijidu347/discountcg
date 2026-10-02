@@ -84,6 +84,10 @@ export interface ContexteDossier {
   client_prenom?: string | null;
   client_adresse?: string | null;
   mandat_data?: Record<string, unknown> | null;
+  /** Date de la vente, qui sert de repère pour juger la fraîcheur des pièces. */
+  date_cession?: string | null;
+  /** Jour où le dossier a été déposé, à défaut de date de vente. */
+  depose_le?: string | null;
 }
 
 const JOUR = 24 * 60 * 60 * 1000;
@@ -612,12 +616,28 @@ export function anomaliesPiece(
   // second n'a pas de sens si le premier est vrai.
   const estLaPieceAttendue = !horsSujet(piece.libelle, ex.type_document, ex.correspond);
 
+  // La fraîcheur se mesure au jour de la vente, pas à aujourd'hui.
+  //
+  // Le non-gage est remis par le vendeur à l'acheteur au moment de la cession,
+  // et c'est là qu'il doit avoir moins de quinze jours. Mesurer depuis
+  // aujourd'hui revenait à reprocher au garage le temps que son dossier passe
+  // dans la file : sur DEM-2026-07426, un certificat parfaitement frais le jour
+  // de la vente était annoncé « 190 jours ». À défaut de date de cession, on
+  // prend le jour du dépôt du dossier.
+  const jourDeReference = enDate(contexte.date_cession)
+    ?? enDate(contexte.depose_le)
+    ?? maintenant;
+
   for (const regle of FRAICHEUR) {
     if (!estLaPieceAttendue) break;
     if (!regle.motif.test(piece.libelle)) continue;
-    const age = joursDepuis(ex.dates?.emission, maintenant);
+    const age = joursDepuis(ex.dates?.emission, jourDeReference);
     if (age !== null && age > regle.jours) {
-      ajoute("piece_trop_ancienne", "moyenne", `${regle.nom} date de ${age} jours, la limite est de ${regle.jours} jours.`);
+      ajoute(
+        "piece_trop_ancienne",
+        "moyenne",
+        `${regle.nom} avait ${age} jours au moment de la vente, la limite est de ${regle.jours} jours.`,
+      );
     }
   }
 

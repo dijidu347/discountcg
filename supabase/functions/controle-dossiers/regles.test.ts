@@ -947,4 +947,24 @@ verifie("le mandat du titulaire lui-meme passe",
   !anomaliesDossier(avecCarteGrise("LEASYS FRANCE", "LEASYS FRANCE"), [], ctxDC, true, [])
     .some((a) => a.code === "mandant_different"));
 
+// Le non-gage est remis au moment de la vente : c'est a ce jour-la qu'il doit
+// avoir moins de quinze jours, pas aujourd'hui. Sur DEM-2026-07426, un
+// certificat frais le jour de la cession etait annonce « 190 jours ».
+const nonGageDu = (emission: string, ctx: Partial<ContexteDossier>) => anomaliesPiece(
+  piece({
+    libelle: "Certificat de situation administrative (non-gage)", nom_fichier: "ng.jpg",
+    extraction: { type_document: "certificat_non_gage", correspond: true, lisible: true, dates: { emission } },
+  }),
+  { ...contexte, ...ctx }, maintenant,
+);
+verifie("un non-gage frais le jour de la vente ne vieillit pas dans la file",
+  !nonGageDu("2026-03-01", { date_cession: "2026-03-05" })
+    .some((a) => a.code === "piece_trop_ancienne"));
+verifie("un non-gage deja perime le jour de la vente est signale",
+  nonGageDu("2026-03-01", { date_cession: "2026-04-15" })
+    .some((a) => a.code === "piece_trop_ancienne"));
+verifie("sans date de vente, on prend le jour du depot",
+  !nonGageDu("2026-03-01", { depose_le: "2026-03-10" })
+    .some((a) => a.code === "piece_trop_ancienne"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);
