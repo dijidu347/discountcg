@@ -84,6 +84,20 @@ export interface ContexteDossier {
   client_prenom?: string | null;
   client_adresse?: string | null;
   mandat_data?: Record<string, unknown> | null;
+  /** Raison sociale du garage qui dépose le dossier. */
+  garage_nom?: string | null;
+  /** Son compte est vérifié : son Kbis et la pièce d'identité de son dirigeant sont chez nous. */
+  garage_verifie?: boolean;
+  /**
+   * Le garage vend son propre véhicule, et son compte est vérifié.
+   *
+   * La vérification a exigé son Kbis et la pièce d'identité de son dirigeant,
+   * approuvés tous les deux — ce que le guide réclame page 13 d'un vendeur
+   * société. Sur sept des huit cessions à vendeur société, ce vendeur est le
+   * garage lui-même : lui redemander au dossier ce qu'il nous a déjà donné
+   * serait du travail pour rien, des deux côtés.
+   */
+  le_garage_vend?: boolean;
   /** Date de la vente, qui sert de repère pour juger la fraîcheur des pièces. */
   date_cession?: string | null;
   /** Jour où le dossier a été déposé, à défaut de date de vente. */
@@ -541,7 +555,15 @@ export function anomaliesPiece(
   // Quand le fichier a servi à deux emplacements, « ce n'est pas la bonne pièce »
   // n'ajoute rien : c'est la même histoire que le doublon, qui dit déjà laquelle
   // manque. Deux signalements pour un seul document absent brouillent la lecture.
-  if (!dansUnDoublon && !estPieceLibre(piece.type_document) && horsSujet(piece.libelle, ex.type_document, ex.correspond)) {
+  const identiteDuVendeurDejaChezNous = contexte.le_garage_vend === true
+    && /identit[ée] du vendeur/i.test(piece.libelle);
+
+  if (
+    !dansUnDoublon
+    && !identiteDuVendeurDejaChezNous
+    && !estPieceLibre(piece.type_document)
+    && horsSujet(piece.libelle, ex.type_document, ex.correspond)
+  ) {
     const lu = ex.type_document ? ` (document lu : ${ex.type_document.replace(/_/g, " ")})` : "";
     ajoute("mauvaise_piece", "haute", `Ce n'est pas la pièce demandée${lu}.`);
   }
@@ -808,6 +830,9 @@ export function anomaliesDossier(
   // Tant que le garage dépose ses pièces, une pièce absente est normale : elle
   // n'est signalée comme manquante qu'une fois le dépôt annoncé terminé.
   for (const libelle of manquantes) {
+    // La pièce d'identité du vendeur est déjà chez nous quand ce vendeur est le
+    // garage et que son compte est vérifié.
+    if (contexte.le_garage_vend && /identit[ée] du vendeur/i.test(libelle)) continue;
     anomalies.push({
       code: "piece_manquante",
       gravite: depotTermine ? "haute" : "basse",

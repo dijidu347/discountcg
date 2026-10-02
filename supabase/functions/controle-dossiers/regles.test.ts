@@ -973,4 +973,24 @@ verifie("sans date de vente, on prend le jour du depot",
     .some((a) => a.code === "piece_trop_ancienne"));
 
 
+// Un garage verifie a deja depose son Kbis et la piece d'identite de son
+// dirigeant. Quand c'est lui le vendeur -- sept cessions sur huit a vendeur
+// societe -- ces pieces sont deja chez nous : on ne les redemande pas.
+const ctxGarageVend: ContexteDossier = { ...contexte, le_garage_vend: true };
+
+verifie("on ne reclame pas une identite qu'on detient deja",
+  !anomaliesDossier([], ["Pièce d'identité du vendeur (recto/verso)"], ctxGarageVend, true, [])
+    .some((a) => a.code === "piece_manquante"));
+verifie("et un Kbis depose a cet emplacement n'est plus une mauvaise piece",
+  !anomaliesPiece(
+    piece({
+      type_document: "doc_2", libelle: "Pièce d'identité du vendeur (recto/verso)", nom_fichier: "kbis.pdf",
+      extraction: { type_document: "kbis", correspond: false, lisible: true },
+    }),
+    ctxGarageVend, maintenant,
+  ).some((a) => a.code === "mauvaise_piece"));
+verifie("quand le vendeur n'est pas le garage, l'identite reste exigee",
+  anomaliesDossier([], ["Pièce d'identité du vendeur (recto/verso)"], contexte, true, [])
+    .some((a) => a.code === "piece_manquante"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

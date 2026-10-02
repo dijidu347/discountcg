@@ -16,6 +16,7 @@ import { lirePiece, type Source } from "./lecture.ts";
 import {
   anomaliesDossier,
   anomaliesPiece,
+  memePersonne,
   doublonsParFichier,
   appartientALaFamille,
   estPieceLibre,
@@ -339,7 +340,7 @@ async function contexteDeLecture(
 async function recontroler(supabase: any, demarcheId: string) {
   const { data: demarche } = await supabase
     .from("demarches")
-    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, created_at, status")
+    .select("type, immatriculation, marque, modele, client_nom, client_prenom, client_adresse, mandat_data, documents_complets, vehicule_id, garage_id, created_at, status, garages(raison_sociale, is_verified)")
     .eq("id", demarcheId)
     .maybeSingle();
   if (!demarche) return;
@@ -429,7 +430,26 @@ async function recontroler(supabase: any, demarcheId: string) {
     .map((p) => p.extraction?.dates?.cession)
     .find((d) => !!d) ?? null;
 
+  // Un garage vérifié a déjà déposé son Kbis et la pièce d'identité de son
+  // dirigeant, approuvés au moment de la vérification du compte. Quand c'est lui
+  // le vendeur — ce qui est le cas de sept cessions sur huit où le vendeur est
+  // une société — ces deux pièces sont déjà chez nous, et les redemander au
+  // dossier n'aurait aucun sens.
+  const garage = (demarche as Record<string, unknown>).garages as
+    { raison_sociale?: string | null; is_verified?: boolean | null } | null;
+
+  const vendeurDeLaCession = pieces
+    .find((p) => p.extraction?.type_document === "certificat_cession")
+    ?.extraction?.personnes?.find((p) => (p.role ?? "").toLowerCase() === "vendeur");
+  const nomDuVendeur = `${vendeurDeLaCession?.prenom ?? ""} ${vendeurDeLaCession?.nom ?? ""}`.trim();
+
   const contexte: ContexteDossier = {
+    garage_nom: garage?.raison_sociale ?? null,
+    garage_verifie: garage?.is_verified === true,
+    le_garage_vend: garage?.is_verified === true
+      && !!garage?.raison_sociale
+      && !!nomDuVendeur
+      && memePersonne(garage.raison_sociale, nomDuVendeur),
     date_cession: dateCession,
     depose_le: demarche.created_at ?? null,
     type: demarche.type,
