@@ -967,4 +967,24 @@ verifie("sans date de vente, on prend le jour du depot",
   !nonGageDu("2026-03-01", { depose_le: "2026-03-10" })
     .some((a) => a.code === "piece_trop_ancienne"));
 
+// Cas de DEM-2026-08215 : une declaration d'achat dans un dossier enregistre
+// comme cession. Le garage s'etait trompe de case, et tout ce que le controle
+// disait ensuite reposait sur une premisse fausse.
+const dansUneDC = (type: string): Piece[] => [
+  piece({
+    document_id: "x", type_document: "doc_4", nom_fichier: "scan.pdf",
+    libelle: "Récépissé de déclaration d'achat du vendeur professionnel",
+    extraction: { type_document: type, lisible: true },
+  }),
+];
+verifie("une declaration d'achat dans une DC fait douter du type",
+  anomaliesDossier(dansUneDC("declaration_achat"), [], { ...contexte, type: "DC" }, true, [])
+    .some((a) => a.code === "type_demarche_douteux"));
+verifie("le recepisse d'une precedente DA ne fait pas douter",
+  !anomaliesDossier(dansUneDC("accuse_enregistrement_achat"), [], { ...contexte, type: "DC" }, true, [])
+    .some((a) => a.code === "type_demarche_douteux"));
+verifie("et sur une DA, une declaration d'achat est a sa place",
+  !anomaliesDossier(dansUneDC("declaration_achat"), [], { ...contexte, type: "DA" }, true, [])
+    .some((a) => a.code === "type_demarche_douteux"));
+
 console.log(echecs === 0 ? "\nTOUT PASSE" : `\n${echecs} ECHEC(S)`);

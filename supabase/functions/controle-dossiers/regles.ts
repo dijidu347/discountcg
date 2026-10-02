@@ -851,6 +851,31 @@ export function anomaliesDossier(
     });
   }
 
+  // Le type de démarche doit correspondre aux pièces déposées.
+  //
+  // Les listes du guide ne sont pas les mêmes : la déclaration d'achat cerfa
+  // 13751 est une pièce de DA (page 16) et ne figure pas parmi les pièces d'une
+  // DC (page 13). En trouver une dans un dossier enregistré comme cession, c'est
+  // le signe que le garage s'est trompé de case — et tout ce que le contrôle
+  // dira ensuite reposera sur une prémisse fausse. Sur DEM-2026-08215, cela a
+  // produit un reproche sur le mandant qui n'avait pas lieu d'être : en DA,
+  // c'est bien l'acheteur professionnel qui mandate.
+  //
+  // Le récépissé d'une précédente DA ne compte pas : il porte son propre type et
+  // sa présence est normale des deux côtés.
+  if (contexte.type === "DC") {
+    const declarationAchat = pieces.find((p) => p.extraction?.type_document === "declaration_achat");
+    if (declarationAchat) {
+      anomalies.push({
+        code: "type_demarche_douteux",
+        gravite: "moyenne",
+        message: "Le dossier contient une déclaration d'achat alors qu'il est enregistré comme déclaration de cession : vérifiez le type de démarche auprès du garage.",
+        piece: declarationAchat.libelle,
+        document_id: declarationAchat.document_id,
+      });
+    }
+  }
+
   // Une plaque étrangère au dossier, dite une fois par pièce, remplissait la
   // liste de trois lignes identiques pour un seul fait. Et le nombre de pièces
   // qui s'accordent est justement ce qui permet de trancher : trois documents
