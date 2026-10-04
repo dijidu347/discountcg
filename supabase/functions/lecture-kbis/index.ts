@@ -53,7 +53,11 @@ Rends exactement ceci, et rien d'autre :
     caractère par caractère, par exemple "28/09/2026" ou "28 septembre 2026",
     null si tu ne la vois pas,
   "mention": les quelques mots imprimés juste avant cette date, par exemple
-    "Édité le", null si elle est seule
+    "Édité le", null si elle est seule,
+  "activite": l'activité déclarée, recopiée telle qu'elle est imprimée, sous
+    « Activité(s) », « Objet social » ou « Activité principale », par exemple
+    "Achat et vente de véhicules automobiles d'occasion". Recopie la ligne
+    entière, sans la résumer. null si tu ne la trouves pas
 }
 
 Ne convertis pas la date, ne la réordonne pas, ne la reformate pas : recopie-la.
@@ -98,7 +102,7 @@ serve(async (req) => {
   let requete = supabase
     .from("verification_documents")
     .select("id, garage_id, nom_fichier, url, status")
-    .is("date_emission", null)
+    .is("lu_le", null)
     .ilike("document_type", "%kbis%")
     .in("status", ["pending", "approved"])
     .order("created_at", { ascending: false })
@@ -157,27 +161,33 @@ serve(async (req) => {
       const lu = JSON.parse(nettoye);
       lues++;
 
-      if (lu?.est_un_kbis === false) {
-        refusees.push({ id: ligne.id, motif: "ce n'est pas un Kbis" });
-        continue;
+      // La lecture a abouti : quoi qu'elle ait donné, le document est marqué lu.
+      // Sans cela, un Kbis sans date lisible repasserait à chaque tour.
+      const marqueur = { lu_le: new Date().toISOString() } as Record<string, unknown>;
+
+      // L'activité est recopiée telle quelle : c'est l'administration qui juge
+      // si « achat vente de véhicules » y figure, comme l'exige le guide.
+      if (typeof lu?.activite === "string" && lu.activite.trim()) {
+        marqueur.activite = lu.activite.trim().slice(0, 500);
       }
 
-      const iso = dateFrancaise(lu?.date_imprimee);
-      if (!iso) {
+      const iso = lu?.est_un_kbis === false ? null : dateFrancaise(lu?.date_imprimee);
+      if (lu?.est_un_kbis === false) {
+        refusees.push({ id: ligne.id, motif: "ce n'est pas un Kbis" });
+      } else if (!iso) {
         refusees.push({ id: ligne.id, motif: `date illisible (${lu?.date_imprimee ?? "vide"})` });
-        continue;
-      }
-      if (!datePlausible(iso)) {
+      } else if (!datePlausible(iso)) {
         refusees.push({ id: ligne.id, motif: `date invraisemblable (${iso})` });
-        continue;
+      } else {
+        marqueur.date_emission = iso;
+        ecrites++;
       }
 
       const { error: erreurEcriture } = await supabase
         .from("verification_documents")
-        .update({ date_emission: iso })
+        .update(marqueur)
         .eq("id", ligne.id);
       if (erreurEcriture) throw new Error(erreurEcriture.message);
-      ecrites++;
     } catch (erreur) {
       const motif = erreur instanceof Error ? erreur.message : String(erreur);
       console.error(`lecture-kbis ${ligne.id} : ${motif}`);

@@ -162,6 +162,18 @@ export function GarageVerificationPanel({
     );
   };
 
+  // L'âge du Kbis en clair, pour que l'administration le voie avant d'accorder
+  // la vérification plutôt que de le découvrir à la relance, six mois plus tard.
+  const ageDuKbis = (emission: string | null | undefined) => {
+    if (!emission) return null;
+    const fin = new Date(emission);
+    fin.setMonth(fin.getMonth() + 6);
+    const jours = Math.round((fin.getTime() - Date.now()) / 86400000);
+    if (jours < 0) return { alerte: true, texte: `périmé depuis ${-jours} jour${-jours > 1 ? "s" : ""}` };
+    if (jours <= 30) return { alerte: true, texte: `expire dans ${jours} jour${jours > 1 ? "s" : ""}` };
+    return { alerte: false, texte: `valable encore ${jours} jours` };
+  };
+
   // Kbis dépassé : six mois à compter de sa date de délivrance.
   const kbisPerime = Boolean(
     garage?.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
@@ -702,21 +714,33 @@ export function GarageVerificationPanel({
                                       </p>
                                     )}
                                     {reqDoc.code === "kbis" && (
-                                      <div className="mt-2 flex items-center gap-2">
-                                        <label className="text-xs text-muted-foreground" htmlFor={`kbis-date-${doc.id}`}>
-                                          Délivré le
-                                        </label>
-                                        <Input
-                                          id={`kbis-date-${doc.id}`}
-                                          type="date"
-                                          className="h-7 w-36 text-xs"
-                                          defaultValue={doc.date_emission ?? ""}
-                                          onChange={(e) => enregistrerDateKbis(doc.id, e.target.value)}
-                                        />
-                                        {!doc.date_emission && (
-                                          <span className="text-xs text-muted-foreground">
-                                            sans elle, les six mois partent du dépôt
-                                          </span>
+                                      <div className="mt-2 space-y-1">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <label className="text-xs text-muted-foreground" htmlFor={`kbis-date-${doc.id}`}>
+                                            Délivré le
+                                          </label>
+                                          <Input
+                                            id={`kbis-date-${doc.id}`}
+                                            type="date"
+                                            className="h-7 w-36 text-xs"
+                                            defaultValue={doc.date_emission ?? ""}
+                                            onChange={(e) => enregistrerDateKbis(doc.id, e.target.value)}
+                                          />
+                                          {ageDuKbis(doc.date_emission) && (
+                                            <span className={`text-xs font-medium ${ageDuKbis(doc.date_emission)!.alerte ? "text-orange-600" : "text-muted-foreground"}`}>
+                                              {ageDuKbis(doc.date_emission)!.texte}
+                                            </span>
+                                          )}
+                                          {!doc.date_emission && (
+                                            <span className="text-xs text-muted-foreground">
+                                              sans elle, les six mois partent du dépôt
+                                            </span>
+                                          )}
+                                        </div>
+                                        {doc.activite && (
+                                          <p className="text-xs text-muted-foreground">
+                                            Activité lue : « {doc.activite} »
+                                          </p>
                                         )}
                                       </div>
                                     )}
