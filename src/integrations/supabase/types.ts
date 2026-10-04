@@ -2726,6 +2726,16 @@ export type Database = {
           type: string
         }[]
       }
+      stats_revenu_net: {
+        Args: { p_au?: string; p_du: string }
+        Returns: {
+          demarches_creees: number
+          demarches_recues: number
+          demarches_traitees: number
+          revenu_net: number
+        }[]
+      }
+      taxe_etat_pro: { Args: { p_type: string }; Returns: number }
       type_sous_controle: { Args: { p_type: string }; Returns: boolean }
       validite_kbis: { Args: { p_garage: string }; Returns: string }
       verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
