@@ -211,6 +211,34 @@ serve(async (req) => {
 // configuration de l'action correspondante.
 const cacheLibelles = new Map<string, Record<string, string>>();
 
+// Les rangs retirés de la liste (« doc_6 », « doc_7 »…). Leur ligne reste en
+// base pour nommer ce qui a été déposé dessus, mais la pièce n'est plus
+// demandée, donc plus contrôlée.
+const cacheMasques = new Map<string, Set<string>>();
+
+async function rangsMasquesDe(supabase: any, typeDemarche: string): Promise<Set<string>> {
+  const enCache = cacheMasques.get(typeDemarche);
+  if (enCache) return enCache;
+
+  const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
+  const masques = new Set<string>();
+  if (action?.id) {
+    const { data: pieces } = await supabase
+      .from("action_documents")
+      .select("ordre, masque")
+      .eq("action_id", action.id)
+      .order("ordre");
+    (pieces ?? []).forEach((piece: any, index: number) => {
+      if (piece.masque === true) {
+        masques.add(`doc_${index + 1}`);
+        masques.add(`doc_${index + 1}_verso`);
+      }
+    });
+  }
+  cacheMasques.set(typeDemarche, masques);
+  return masques;
+}
+
 async function libellesDocN(
   supabase: any,
   typeDemarche: string,
@@ -422,7 +450,12 @@ async function recontroler(supabase: any, demarcheId: string) {
   const parDocument = new Map((analyses ?? []).map((a: any) => [a.document_id, a] as [string, Analyse]));
 
   const libelles = await libellesDocN(supabase, demarche.type);
-  const pieces: Piece[] = retenus.map((doc) => {
+  // Une pièce qu'on ne demande plus n'est plus jugée : un garage avait déposé
+  // un contrôle technique dans une case qu'on a retirée, et le signaler périmé
+  // faisait passer son dossier au rouge pour une pièce dont on n'a que faire.
+  // Le fichier reste visible à l'écran, il n'entre simplement plus au contrôle.
+  const rangsMasques = await rangsMasquesDe(supabase, demarche.type);
+  const pieces: Piece[] = retenus.filter((doc) => !rangsMasques.has(doc.type_document)).map((doc) => {
     const analyse = parDocument.get(doc.id) as Analyse | undefined;
     return {
       document_id: doc.id,
