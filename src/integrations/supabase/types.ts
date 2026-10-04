@@ -2380,6 +2380,24 @@ export type Database = {
         }
         Relationships: []
       }
+      vehicle_lookup_quota: {
+        Row: {
+          appels: number
+          cle: string
+          fenetre: string
+        }
+        Insert: {
+          appels?: number
+          cle: string
+          fenetre: string
+        }
+        Update: {
+          appels?: number
+          cle?: string
+          fenetre?: string
+        }
+        Relationships: []
+      }
       vehicules: {
         Row: {
           carrosserie: string | null
@@ -2545,6 +2563,10 @@ export type Database = {
       commande_demandee: { Args: never; Returns: string }
       consommer_jeton_gratuit: {
         Args: { p_garage_id: string }
+        Returns: boolean
+      }
+      consommer_quota_plaque: {
+        Args: { p_cle: string; p_fenetre: string; p_plafond: number }
         Returns: boolean
       }
       crediter_solde_admin: {
