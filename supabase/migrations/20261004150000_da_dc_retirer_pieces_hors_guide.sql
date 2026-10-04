@@ -17,12 +17,17 @@
 -- donc aucune pièce déjà déposée n'est renommée (les clés valent « doc_1 »,
 -- « doc_2 »… dans l'ordre de cette table).
 
+--   - la pièce d'identité de l'acquéreur, en DC. Le guide la liste page 13,
+--     mais comme facultative : elle évite une faute d'orthographe dans la
+--     cession. Une case que personne n'est tenu de remplir n'a pas sa place
+--     dans la liste.
 delete from public.action_documents d
 using public.actions_rapides a
 where d.action_id = a.id
   and a.code in ('DA', 'DC')
   and (d.nom_document ilike '%contrôle technique%'
-       or (a.code = 'DA' and d.nom_document ilike '%dirigeant%'));
+       or (a.code = 'DA' and d.nom_document ilike '%dirigeant%')
+       or (a.code = 'DC' and d.nom_document ilike '%acqu%reur%'));
 
 -- La question « acheté auprès d'un professionnel ? » décide d'une pièce sur une
 -- DA : si oui, le récépissé de déclaration d'achat du vendeur est dû (page 16,
