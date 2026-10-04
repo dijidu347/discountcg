@@ -8,6 +8,13 @@
       "when": 1790882204343,
       "tag": "0000_solde_plaques",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791142247537,
+      "tag": "0001_vehicle_lookup_quota",
+      "breakpoints": true
     }
   ]
 }
