@@ -4,7 +4,7 @@ import { sourcesDisponibles } from "./sources.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-lookup-secret',
 };
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -16,6 +16,58 @@ const TTL_NOT_FOUND_MS = 24 * 60 * 60 * 1000;  // 24 heures
 const admin = SUPABASE_URL && SERVICE_ROLE_KEY
   ? createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } })
   : null;
+
+// ---- Quota : ne compte que les appels qui coûtent (défaut de cache ou force) ----
+const PLAFOND_IP_HEURE = 15;
+const PLAFOND_GLOBAL_JOUR = 600;
+const BYPASS_SECRET = Deno.env.get('LOOKUP_BYPASS_SECRET') ?? '';
+
+async function empreinteIp(req: Request): Promise<string> {
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'inconnue';
+  const hash = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(ip)));
+  return Array.from(hash.slice(0, 12)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+function egaliteConstante(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return r === 0;
+}
+
+async function consommer(cle: string, fenetre: Date, plafond: number): Promise<boolean> {
+  if (!admin) throw new Error('client service indisponible');
+  const { data, error } = await admin.rpc('consommer_quota_plaque', {
+    p_cle: cle, p_fenetre: fenetre.toISOString(), p_plafond: plafond,
+  });
+  if (error) throw new Error(error.message);
+  return data === true;
+}
+
+// true = autorisé. En cas de panne du compteur : on laisse passer.
+async function quotaAutorise(req: Request): Promise<boolean> {
+  try {
+    const now = new Date();
+    const heure = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), now.getUTCHours()));
+    const jour = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    const secret = req.headers.get('x-lookup-secret') ?? '';
+    const exempte = BYPASS_SECRET.length > 0 && secret.length > 0 && egaliteConstante(secret, BYPASS_SECRET);
+    if (!exempte) {
+      if (!(await consommer(`ip:${await empreinteIp(req)}`, heure, PLAFOND_IP_HEURE))) {
+        console.warn('vehicle-lookup quota IP atteint');
+        return false;
+      }
+    }
+    if (!(await consommer('global', jour, PLAFOND_GLOBAL_JOUR))) {
+      console.warn('vehicle-lookup quota global atteint');
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('vehicle-lookup compteur de quota en panne, appel autorisé:', e instanceof Error ? e.message : e);
+    return true;
+  }
+}
 
 type NormalizedVehicle = {
   marque?: unknown;
@@ -136,6 +188,18 @@ serve(async (req) => {
       console.error('aucune source de plaques configurée');
       return new Response(
         JSON.stringify({ success: false, indisponible: true, error: 'Service non configuré' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!(await quotaAutorise(req))) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          indisponible: true,
+          limite: true,
+          error: 'Trop de recherches, veuillez saisir les informations manuellement',
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
