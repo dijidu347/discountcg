@@ -165,6 +165,10 @@ export default function NouvelleDemarche() {
   // Identifiant de la question « acheté auprès d'un professionnel ? », qui décide
   // si le récépissé de la précédente déclaration d'achat est dû.
   const [questionVendeurProId, setQuestionVendeurProId] = useState<string | null>(null);
+  // Identifiant de la question « qui vend le véhicule ? », qui décide des pièces
+  // d'identité d'une DC : rien si c'est le garage lui-même, sa pièce d'identité
+  // si c'est un particulier, son Kbis en plus si c'est une autre société.
+  const [questionQuiVendId, setQuestionQuiVendId] = useState<string | null>(null);
   // Payment mode state
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("pro_pays_all");
   const [clientEmail, setClientEmail] = useState<string | undefined>();
@@ -357,6 +361,20 @@ export default function NouvelleDemarche() {
     return /^oui$/i.test((questionnaireAnswerTexts[questionVendeurProId] ?? "").trim());
   }, [questionnaireAnswerTexts, questionVendeurProId]);
 
+  // Qui vend, sur une DC. La page 13 du guide a deux colonnes selon le vendeur,
+  // et un troisième cas qu'elle ne prévoit pas parce qu'il lui est extérieur :
+  // le garage qui vend sa propre voiture nous a déjà donné son Kbis et la pièce
+  // de son dirigeant en se faisant vérifier.
+  type QualiteVendeur = "garage" | "particulier" | "societe" | null;
+  const quiVend = useMemo<QualiteVendeur>(() => {
+    if (!questionQuiVendId) return null;
+    const reponse = (questionnaireAnswerTexts[questionQuiVendId] ?? "").trim();
+    if (/garage/i.test(reponse)) return "garage";
+    if (/particulier/i.test(reponse)) return "particulier";
+    if (/soci[ée]t[ée]/i.test(reponse)) return "societe";
+    return null;
+  }, [questionnaireAnswerTexts, questionQuiVendId]);
+
   // L'ordre d'affichage des pièces, qui n'est pas celui de la configuration :
   // les rangs y valent « doc_1 », « doc_2 »… et les changer renommerait toutes
   // les pièces déjà déposées. On réordonne donc à l'écran seulement, en gardant
@@ -372,8 +390,14 @@ export default function NouvelleDemarche() {
     if (doc.obligatoire) return true;
     const nom = doc.nom_document ?? "";
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro && formData.type === "DA";
+    if (formData.type === "DC") {
+      // Sans réponse — un brouillon ouvert avant que la question existe — on
+      // en reste à ce qui était demandé jusqu'ici : la pièce d'identité.
+      if (/identit[ée] du vendeur/i.test(nom)) return quiVend !== "garage";
+      if (/kbis/i.test(nom)) return quiVend === "societe";
+    }
     return false;
-  }, [venduParUnPro, formData.type]);
+  }, [venduParUnPro, quiVend, formData.type]);
 
   // Tout ce qui manque pour payer, dans l'ordre de la page. Le bouton Payer
   // reste cliquable : au clic, cette liste s'affiche et chaque bloc concerne
@@ -634,6 +658,10 @@ export default function NouvelleDemarche() {
       const vendeur = (questions ?? []).find((q: { question_text?: string | null }) =>
         /professionnel/i.test(q.question_text ?? ""));
       setQuestionVendeurProId(vendeur?.id ?? null);
+
+      const quiVend = (questions ?? []).find((q: { question_text?: string | null }) =>
+        /qui vend/i.test(q.question_text ?? ""));
+      setQuestionQuiVendId(quiVend?.id ?? null);
 
       const { data: docs } = await supabase
         .from('action_documents')

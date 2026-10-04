@@ -388,6 +388,9 @@ const ABREVIATIONS: { motif: RegExp; court: string }[] = [
   { motif: /carte grise|certificat d.immatriculation/i, court: "la CG" },
   { motif: /non.?gage|situation administrative/i, court: "le non-gage" },
   { motif: /13757|mandat/i, court: "le mandat" },
+  // Sur une DC, le Kbis réclamé est celui du vendeur, pas celui du garage :
+  // le dire, sinon le garage cherche le sien.
+  { motif: /kbis du vendeur/i, court: "le Kbis du vendeur" },
   { motif: /kbis/i, court: "le Kbis" },
   { motif: /identit[ée] du vendeur/i, court: "la pièce d'identité du vendeur" },
   { motif: /identit[ée] de l.acqu[ée]reur|identit[ée] de l.acheteur/i, court: "la pièce d'identité de l'acquéreur" },

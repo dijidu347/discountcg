@@ -255,11 +255,33 @@ async function venduParUnProfessionnel(supabase: any, demarcheId: string): Promi
   return /oui/i.test(reponse?.answer_text ?? "");
 }
 
+// Qui vend, sur une DC. La page 13 du guide a deux colonnes selon le vendeur :
+// un particulier donne sa pièce d'identité, une société donne son Kbis et la
+// pièce de son dirigeant. Et un troisième cas, extérieur au guide : le garage
+// qui vend sa propre voiture nous a déjà remis les deux en se faisant vérifier.
+// Sans réponse — un dossier déposé avant que la question existe — on en reste à
+// ce qui lui avait été demandé, pas davantage.
+type QualiteVendeur = "garage" | "particulier" | "societe" | null;
+
+async function qualiteDuVendeur(supabase: any, demarcheId: string): Promise<QualiteVendeur> {
+  const { data } = await supabase
+    .from("demarche_questionnaire_responses")
+    .select("question_text, answer_text")
+    .eq("demarche_id", demarcheId);
+  const reponse = (data ?? []).find((r: any) => /qui vend/i.test(r.question_text ?? ""));
+  const texte = reponse?.answer_text ?? "";
+  if (/garage/i.test(texte)) return "garage";
+  if (/particulier/i.test(texte)) return "particulier";
+  if (/soci[ée]t[ée]/i.test(texte)) return "societe";
+  return null;
+}
+
 async function pieceObligatoires(
   supabase: any,
   typeDemarche: string,
   ouvertLe: string | null,
   venduParPro = false,
+  vendeur: QualiteVendeur = null,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
   if (!action?.id) return [];
@@ -283,9 +305,15 @@ async function pieceObligatoires(
     // 13, qui liste les pièces d'une DC, ne la mentionne pas. Le formulaire de
     // dépôt ne peut pas exprimer cette condition — sa case « obligatoire » vaut
     // pour tout le monde ou pour personne — donc c'est le contrôle qui la porte.
+    //
+    // Sur une DC, les pièces d'identité dépendent de qui vend : rien de plus
+    // quand c'est le garage lui-même, sa pièce d'identité quand c'est un
+    // particulier, son Kbis en plus quand c'est une autre société.
     .filter((piece: any) =>
       piece.obligatoire
-      || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro && typeDemarche === "DA"))
+      || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro && typeDemarche === "DA")
+      || (/identit[ée] du vendeur/i.test(piece.libelle) && typeDemarche === "DC" && vendeur !== "garage")
+      || (/kbis/i.test(piece.libelle) && typeDemarche === "DC" && vendeur === "societe"))
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
     .filter((piece: any) =>
       !/r[ée]c[ée]piss[ée]/i.test(piece.libelle) || (venduParPro && typeDemarche === "DA"))
@@ -464,6 +492,7 @@ async function recontroler(supabase: any, demarcheId: string) {
   const attendues = await pieceObligatoires(
     supabase, demarche.type, demarche.created_at ?? null,
     await venduParUnProfessionnel(supabase, demarcheId),
+    await qualiteDuVendeur(supabase, demarcheId),
   );
 
   // Après un refus, le garage renvoie ses pièces dans des cases « correction »
