@@ -59,3 +59,13 @@ set obligatoire = false
 from public.actions_rapides a
 where d.action_id = a.id and a.code = 'DC'
   and d.nom_document ilike '%identité du vendeur%';
+
+-- Le récépissé de déclaration d'achat du vendeur professionnel n'est dû dans
+-- aucune des trois réponses : la page 13 ne le demande pas. Une case que rien
+-- ne rend obligatoire se remplit quand même — 838 dossiers l'ont fait. Elle est
+-- masquée, pas supprimée : son rang nomme ces 838 pièces déjà déposées.
+update public.action_documents d
+set masque = true
+from public.actions_rapides a
+where d.action_id = a.id and a.code = 'DC'
+  and d.nom_document ilike '%récépissé%';

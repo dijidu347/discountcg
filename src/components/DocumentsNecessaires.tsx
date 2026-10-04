@@ -36,6 +36,13 @@ interface DocumentsNecessairesProps {
   idsEnErreur?: string[];
 }
 
+// Une pièce facultative se signale toujours de la même façon : même mot, même
+// place, même gris, sur toutes les démarches. La mention s'écrivait autrement
+// d'une ligne à l'autre — collée au libellé ici, en pastille là.
+const MENTION_OPTIONNELLE = (
+  <span className="ml-1 text-xs font-normal text-muted-foreground">(optionnel)</span>
+);
+
 // Configuration des documents par type de démarche
 export const getDocumentsConfig = (
   demarcheType: string, 
@@ -565,7 +572,7 @@ export function DocumentsNecessaires({
         ) : doc.recommended ? (
           <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50 ml-2 align-middle">Recommandé</Badge>
         ) : (
-          <span className="text-muted-foreground text-xs ml-1">(optionnel)</span>
+          MENTION_OPTIONNELLE
         )}
         {doc.conditionKey && (
           <span className="text-xs text-muted-foreground italic ml-2">Requis selon votre situation</span>
@@ -717,7 +724,7 @@ export function DocumentsNecessaires({
                       <div className="flex-1">
                         <div className="text-sm font-medium">
                           {doc.nom.replace(/\(recto\/verso\)/i, '').replace(/recto\/verso/i, '').trim()} (verso)
-                          <span className="text-muted-foreground text-xs ml-1">(Optionnel)</span>
+                          {MENTION_OPTIONNELLE}
                         </div>
                       </div>
                       <div className="w-[350px]">
@@ -743,7 +750,7 @@ export function DocumentsNecessaires({
             <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Pièces supplémentaires
-              <span className="text-xs bg-muted px-2 py-0.5 rounded">Optionnel</span>
+              {MENTION_OPTIONNELLE}
             </h3>
           </div>
           
