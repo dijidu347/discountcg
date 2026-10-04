@@ -2462,11 +2462,13 @@ export type Database = {
       }
       verification_documents: {
         Row: {
+          activite: string | null
           created_at: string | null
           date_emission: string | null
           document_type: string
           garage_id: string
           id: string
+          lu_le: string | null
           nom_fichier: string
           rejection_reason: string | null
           status: string
@@ -2475,11 +2477,13 @@ export type Database = {
           validated_by: string | null
         }
         Insert: {
+          activite?: string | null
           created_at?: string | null
           date_emission?: string | null
           document_type: string
           garage_id: string
           id?: string
+          lu_le?: string | null
           nom_fichier: string
           rejection_reason?: string | null
           status?: string
@@ -2488,11 +2492,13 @@ export type Database = {
           validated_by?: string | null
         }
         Update: {
+          activite?: string | null
           created_at?: string | null
           date_emission?: string | null
           document_type?: string
           garage_id?: string
           id?: string
+          lu_le?: string | null
           nom_fichier?: string
           rejection_reason?: string | null
           status?: string
