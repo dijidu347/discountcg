@@ -409,6 +409,20 @@ export default function NouvelleDemarche() {
     return false;
   }, [venduParUnPro, quiVend, formData.type]);
 
+  // Les pièces dont la réponse à la question décide. Celle que la réponse
+  // écarte ne s'affiche pas du tout : une case « optionnel » qui ne correspond
+  // pas au cas du garage l'invite à la remplir pour rien — c'est ce qui a fait
+  // déposer 838 récépissés sur des DC qui n'en demandaient aucun.
+  const pieceConditionnelle = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null }) => {
+    if (doc.obligatoire) return false;
+    const nom = doc.nom_document ?? "";
+    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return formData.type === "DA";
+    if (formData.type === "DC") {
+      return /identit[ée] du vendeur/i.test(nom) || /kbis/i.test(nom);
+    }
+    return false;
+  }, [formData.type]);
+
   // Tout ce qui manque pour payer, dans l'ordre de la page. Le bouton Payer
   // reste cliquable : au clic, cette liste s'affiche et chaque bloc concerne
   // s'encadre en rouge (cle = identifiant du bloc ou de la piece).
@@ -1900,6 +1914,11 @@ export default function NouvelleDemarche() {
                               // donc son rang : ce qui a déjà été déposé dessus reste
                               // rangé là où le garage l'a mis. Elle ne s'affiche plus.
                               if (doc.masque) return null;
+
+                              // Et une pièce que la réponse écarte non plus : le garage
+                              // qui vend sa propre voiture n'a pas à voir la case d'une
+                              // pièce d'identité de vendeur qui ne le concerne pas.
+                              if (pieceConditionnelle(doc) && !pieceDue(doc)) return null;
 
                               const docName = doc.nom_document.toLowerCase();
                               const hasRectoVerso = docName.includes('recto/verso') || docName.includes('recto verso');
