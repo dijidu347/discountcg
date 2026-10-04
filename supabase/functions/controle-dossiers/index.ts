@@ -260,6 +260,7 @@ async function pieceObligatoires(
   typeDemarche: string,
   ouvertLe: string | null,
   venduParPro = false,
+  garageVerifie = true,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
   if (!action?.id) return [];
@@ -296,8 +297,15 @@ async function pieceObligatoires(
     // vérifier sur les documents présents. L'avoir rendu obligatoire le 1er
     // octobre a produit l'inverse de l'effet voulu : trois garages sur trois ont
     // déposé autre chose à sa place pour passer l'envoi.
+    // La pièce d'identité du dirigeant, exigée page 16, est déjà chez nous : la
+    // vérification d'un compte garage la réclame et l'approuve. Sur une DA,
+    // l'acheteur professionnel est le garage lui-même — lui redemander au
+    // dossier ce qu'il nous a déjà donné a fait déposer vingt-trois pièces pour
+    // rien et bloqué treize dossiers en saisie. Elle n'est due que d'un garage
+    // dont la vérification est tombée.
     .filter((piece: any) =>
       piece.obligatoire
+      || (/dirigeant/i.test(piece.libelle) && !garageVerifie)
       || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro && typeDemarche === "DA"))
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
     .filter((piece: any) =>
@@ -477,6 +485,7 @@ async function recontroler(supabase: any, demarcheId: string) {
   const attendues = await pieceObligatoires(
     supabase, demarche.type, demarche.created_at ?? null,
     await venduParUnProfessionnel(supabase, demarcheId),
+    garage?.is_verified === true,
   );
 
   // Après un refus, le garage renvoie ses pièces dans des cases « correction »
