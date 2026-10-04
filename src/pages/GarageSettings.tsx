@@ -366,6 +366,16 @@ export default function GarageSettings() {
     const remplacementEnAttente = approvedDoc
       && docs.some(d => d.status === 'pending' && d.created_at > approvedDoc.created_at);
     if (approvedDoc && !remplacementEnAttente) {
+      // Un Kbis approuvé il y a plus de six mois n'est plus valable : le montrer
+      // en vert reviendrait à dire au garage qu'il n'a rien à faire.
+      if (docCode === 'kbis' && kbisPerime) {
+        return {
+          status: 'expire',
+          badge: <Badge className="bg-orange-500"><AlertCircle className="h-3 w-3 mr-1" />Expiré</Badge>,
+          canUpload: true,
+          doc: approvedDoc
+        };
+      }
       return { 
         status: 'approved', 
         badge: <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approuvé</Badge>,
@@ -640,6 +650,7 @@ export default function GarageSettings() {
                             key={reqDoc.id} 
                             className={`border rounded-lg p-4 ${
                               status.status === 'rejected' ? 'border-red-300 bg-red-50/50 dark:bg-red-950/10' :
+                              status.status === 'expire' ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/10' :
                               status.status === 'approved' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/10' :
                               ''
                             }`}

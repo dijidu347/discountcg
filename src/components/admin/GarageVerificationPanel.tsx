@@ -162,6 +162,11 @@ export function GarageVerificationPanel({
     );
   };
 
+  // Kbis dépassé : six mois à compter de sa date de délivrance.
+  const kbisPerime = Boolean(
+    garage?.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
+  );
+
   const getDocumentsByType = (docType: string) =>
     verificationDocs.filter((d) => d.document_type === docType);
 
@@ -636,22 +641,29 @@ export function GarageVerificationPanel({
                             <p className="text-sm text-muted-foreground">{reqDoc.description}</p>
                           )}
                         </div>
-                        {latestDoc && (
-                          <Badge
-                            variant={
-                              latestDoc.status === "approved"
-                                ? "default"
-                                : latestDoc.status === "rejected"
-                                ? "destructive"
-                                : "secondary"
-                            }
-                            className={latestDoc.status === "approved" ? "bg-green-500" : ""}
-                          >
-                            {latestDoc.status === "pending" && "En attente"}
-                            {latestDoc.status === "approved" && "Approuvé"}
-                            {latestDoc.status === "rejected" && "Refusé"}
-                          </Badge>
-                        )}
+                        {latestDoc && (() => {
+                          // Un Kbis approuvé il y a plus de six mois n'est plus
+                          // valable : le laisser en vert ferait croire que le
+                          // dossier du garage est complet.
+                          const expire = reqDoc.code === "kbis"
+                            && latestDoc.status === "approved" && kbisPerime;
+                          return (
+                            <Badge
+                              variant={
+                                latestDoc.status === "approved"
+                                  ? "default"
+                                  : latestDoc.status === "rejected"
+                                  ? "destructive"
+                                  : "secondary"
+                              }
+                              className={expire ? "bg-orange-500" : latestDoc.status === "approved" ? "bg-green-500" : ""}
+                            >
+                              {latestDoc.status === "pending" && "En attente"}
+                              {latestDoc.status === "approved" && (expire ? "Expiré" : "Approuvé")}
+                              {latestDoc.status === "rejected" && "Refusé"}
+                            </Badge>
+                          );
+                        })()}
                       </div>
 
                       {docs.length === 0 ? (
