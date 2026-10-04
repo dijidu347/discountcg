@@ -17,7 +17,7 @@ const Pricing = () => {
     },
     {
       service: "Carte grise professionnel",
-      documents: ["Kbis de moins de 3 mois", "Justificatif d'identité gérant", "Certificat de cession", "Contrôle technique", "Mandat de représentation"]
+      documents: ["Kbis de moins de 6 mois", "Justificatif d'identité gérant", "Certificat de cession", "Contrôle technique", "Mandat de représentation"]
     }
   ];
 

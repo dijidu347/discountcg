@@ -9,7 +9,7 @@ const FAQ = () => {
   const faqs = [
     {
       question: "Quels documents faut-il pour une carte grise professionnelle ?",
-      answer: "Pour une carte grise professionnelle, vous devez fournir : un Kbis de moins de 3 mois, une pièce d'identité du gérant, le certificat de cession du véhicule, le contrôle technique valide, et un mandat de représentation. Nous vous accompagnons dans la préparation de ces documents."
+      answer: "Pour une carte grise professionnelle, vous devez fournir : un Kbis de moins de 6 mois, une pièce d'identité du gérant, le certificat de cession du véhicule, le contrôle technique valide, et un mandat de représentation. Nous vous accompagnons dans la préparation de ces documents."
     },
     {
       question: "Quel est le délai de traitement d'un dossier ?",
