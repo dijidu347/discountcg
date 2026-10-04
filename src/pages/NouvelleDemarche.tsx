@@ -380,6 +380,13 @@ export default function NouvelleDemarche() {
   // les pièces déjà déposées. On réordonne donc à l'écran seulement, en gardant
   // le rang d'origine de chaque ligne.
   //
+  // Une pièce facultative se signale toujours de la même façon : même mot,
+  // même place, même gris, quelle que soit la ligne. C'est ce qui manquait —
+  // la mention se collait au libellé sur une ligne, flottait sur la suivante.
+  const mentionOptionnelle = (
+    <span className="ml-1 text-xs font-normal text-muted-foreground">(optionnel)</span>
+  );
+
   // Ce qui est dû d'abord, le facultatif en bas.
   const rangVoulu = (nom: string): number => {
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return 1;
@@ -1906,9 +1913,7 @@ export default function NouvelleDemarche() {
                                       <LibelleFormulaire texte={labelText} />
                                       {isObligatoire ? (
                                         <span className="text-destructive text-base font-bold">&nbsp;*</span>
-                                      ) : (
-                                        <span className="text-muted-foreground text-xs">(optionnel)</span>
-                                      )}
+                                      ) : mentionOptionnelle}
                                     </Label>
                                   );
                                 }
@@ -1938,9 +1943,7 @@ export default function NouvelleDemarche() {
                                     })}
                                     {isObligatoire ? (
                                       <span className="text-destructive text-base font-bold">&nbsp;*</span>
-                                    ) : (
-                                      <span className="text-muted-foreground text-xs">(optionnel)</span>
-                                    )}
+                                    ) : mentionOptionnelle}
                                   </Label>
                                 );
                               };
@@ -1967,9 +1970,9 @@ export default function NouvelleDemarche() {
                                     </div>
                                     <div className="flex items-center gap-4">
                                       <div className="flex-1">
-                                        <Label className="text-sm font-medium flex items-center gap-2">
-                                          {versoName}
-                                          <span className="text-muted-foreground text-xs">(Optionnel)</span>
+                                        <Label className="text-sm font-medium">
+                                          <LibelleFormulaire texte={versoName} />
+                                          {mentionOptionnelle}
                                         </Label>
                                       </div>
                                       <div className="w-[400px]">
@@ -2014,7 +2017,7 @@ export default function NouvelleDemarche() {
                             <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
                               <FileText className="h-4 w-4" />
                               Pièces supplémentaires
-                              <span className="text-xs bg-muted px-2 py-0.5 rounded">Optionnel</span>
+                              {mentionOptionnelle}
                             </h3>
                             <Button
                               type="button"
