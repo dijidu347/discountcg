@@ -343,6 +343,9 @@ export default function GarageSettings() {
     }
   };
 
+  // Documents approuvés dont le garage a demandé le remplacement.
+  const [remplacements, setRemplacements] = useState<Set<string>>(new Set());
+
   const getDocumentStatus = (docCode: string) => {
     const docs = verificationDocs.filter(d => d.document_type === docCode);
     if (docs.length === 0) return { status: 'missing', canUpload: true };
@@ -350,11 +353,21 @@ export default function GarageSettings() {
     // Priority: approved > pending > rejected
     // Check for approved first
     const approvedDoc = docs.find(d => d.status === 'approved');
-    if (approvedDoc) {
+    // Un envoi postérieur à l'approbation est un remplacement : c'est lui qu'il
+    // faut montrer, sinon le garage dépose son nouveau Kbis et l'écran continue
+    // d'afficher « Approuvé » avec l'ancien fichier.
+    const remplacementEnAttente = approvedDoc
+      && docs.some(d => d.status === 'pending' && d.created_at > approvedDoc.created_at);
+    if (approvedDoc && !remplacementEnAttente) {
       return { 
         status: 'approved', 
         badge: <Badge className="bg-green-500"><CheckCircle className="h-3 w-3 mr-1" />Approuvé</Badge>,
-        canUpload: false,
+        // Un document approuvé reste remplaçable, sur demande : un Kbis vieillit
+        // et passe les six mois. Tant que le garage n'a pas cliqué sur
+        // « Remplacer », les champs de dépôt restent fermés, pour ne pas laisser
+        // croire qu'il manque quelque chose.
+        canUpload: remplacements.has(docCode),
+        remplacable: true,
         doc: approvedDoc
       };
     }
@@ -558,17 +571,18 @@ export default function GarageSettings() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {garage?.is_verified ? (
-                  <div className="text-center py-8">
-                    <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">Votre compte est vérifié</h3>
-                    <p className="text-muted-foreground">
-                      Vous bénéficiez maintenant du badge "Compte Vérifié"
+                {garage?.is_verified && (
+                  <div className="text-center py-6 mb-2 rounded-lg border border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20">
+                    <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
+                    <h3 className="text-xl font-semibold mb-1">Votre compte est vérifié</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Un document qui n'est plus à jour se remplace ci-dessous.
                     </p>
                   </div>
-                ) : (
+                )}
+                {(
                   <>
-                    {garage?.verification_requested_at && (
+                    {!garage?.is_verified && garage?.verification_requested_at && (
                       <div className="text-center py-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950/20 dark:border-yellow-800">
                         <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
                         <h3 className="text-lg font-semibold mb-1">Vérification en cours</h3>
@@ -578,7 +592,7 @@ export default function GarageSettings() {
                       </div>
                     )}
                     
-                    {missingDocs > 0 && !garage?.verification_requested_at && (
+                    {!garage?.is_verified && missingDocs > 0 && !garage?.verification_requested_at && (
                       <div className="text-center py-4 mb-4 bg-orange-50 border border-orange-200 rounded-lg dark:bg-orange-950/20 dark:border-orange-800">
                         <AlertCircle className="h-8 w-8 text-orange-500 mx-auto mb-2" />
                         <h3 className="text-lg font-semibold mb-1">
@@ -655,6 +669,16 @@ export default function GarageSettings() {
                                   <Eye className="h-4 w-4 mr-1" />
                                   Voir le document
                                 </Button>
+                                {status.remplacable && !status.canUpload && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setRemplacements((d) => new Set(d).add(reqDoc.code))}
+                                  >
+                                    <Upload className="h-4 w-4 mr-1" />
+                                    Remplacer
+                                  </Button>
+                                )}
                               </div>
                             )}
                             

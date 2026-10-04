@@ -204,7 +204,7 @@ const getEmailTemplate = (type: string, data: any) => {
               : `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre arrive à échéance${data.echeance ? ` le <strong>${data.echeance}</strong>` : ""}.</p>
                  <p>Déposez un extrait récent depuis vos paramètres pour conserver votre vérification.</p>`}
 
-            <a href="${baseUrl}/garage-settings" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            <a href="${baseUrl}/garage-settings?tab=verification" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Déposer mon Kbis
             </a>
 
