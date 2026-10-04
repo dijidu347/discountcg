@@ -16,22 +16,24 @@ import AnnouncementManager from "@/components/admin/AnnouncementManager";
 // Fenêtre glissante utilisée par la carte Revenus et la carte Démarches 30J.
 const REVENUE_PERIOD_DAYS = 30;
 
-// Borne basse "depuis toujours" : antérieure à la première démarche en base.
-const ALL_TIME_START = "2024-01-01T00:00:00.000Z";
-
 const PARIS_TZ = "Europe/Paris";
 
-// Agrégats renvoyés par la RPC public.get_admin_revenue_totals(p_start, p_end).
+const eur = (n: number) =>
+  `${n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+
+// Agrégats renvoyés par la RPC public.stats_revenu_net(p_du, p_au).
 // La fonction agrège côté base : aucune ligne de paiement ni de démarche n'est
 // transférée, donc le plafond PostgREST de 1000 lignes ne peut plus tronquer les
 // totaux (c'est ce qui faisait afficher 19 120 € au lieu de 28 695 €).
+// Le revenu est net : taxes reversées à l'État et frais bancaires déduits,
+// exactement comme la page /admin/revenus vers laquelle la carte renvoie.
 // types.ts est généré depuis la base et ne connaît pas cette fonction, d'où le
 // cast à l'appel — même approche que get_public_garage_count dans Login.tsx.
-interface RevenueTotalsRow {
-  total_service_fees: number | null;
-  total_token_revenue: number | null;
-  total_revenue: number | null;
-  total_demarches: number | null;
+interface RevenuNetRow {
+  revenu_net: number | null;
+  demarches_recues: number | null;
+  demarches_traitees: number | null;
+  demarches_creees: number | null;
 }
 
 // Décalage d'un fuseau à un instant donné (gère l'heure d'été).
@@ -65,13 +67,14 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
     totalGarages: 0,
-    totalDemarches: 0,
     demarchesATraiter: 0,
     demarchesNonVues: 0,
-    totalPaiements: 0,
-    revenuDemarches: 0,
-    revenuCredits: 0,
-    revenuPeriode: 0,
+    netPeriode: 0,
+    netAujourdhui: 0,
+    recuesPeriode: 0,
+    recuesAujourdhui: 0,
+    traiteesPeriode: 0,
+    traiteesAujourdhui: 0,
     garagesAVerifier: 0,
     demarches30j: 0,
     demarchesAujourdhui: 0,
@@ -159,12 +162,12 @@ export default function AdminDashboard() {
       commandesPartATraiter().not('admin_viewed', 'is', true),
     ]);
 
-    // Revenus et volumes : trois appels à la RPC d'agrégation, sur trois
+    // Revenus et volumes : deux appels à la RPC d'agrégation, sur deux
     // fenêtres. Remplace le calcul JS qui rapatriait toutes les lignes de
     // `paiements` et `token_purchases` pour les sommer côté client — sans
     // `.range()`, PostgREST plafonnait ces requêtes à 1000 lignes et le total
     // était calculé sur un échantillon tronqué.
-    // Les trois fenêtres passent par la MÊME fonction : les chiffres affichés
+    // Les deux fenêtres passent par la MÊME fonction : les chiffres affichés
     // côte à côte (30 jours vs aujourd'hui) partagent donc exactement le même
     // périmètre de calcul, ce qu'un count maison ne garantirait pas.
     const nowISO = new Date().toISOString();
@@ -173,31 +176,30 @@ export default function AdminDashboard() {
     ).toISOString();
     const todayStartISO = startOfTodayParisISO();
 
-    const callRevenueTotals = async (
+    const callRevenuNet = async (
       startISO: string,
       endISO: string,
-    ): Promise<RevenueTotalsRow | null> => {
+    ): Promise<RevenuNetRow | null> => {
       const { data, error } = await supabase
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .rpc('get_admin_revenue_totals' as any, { p_start: startISO, p_end: endISO });
+        .rpc('stats_revenu_net' as any, { p_du: startISO, p_au: endISO });
 
       if (error) {
-        console.error('get_admin_revenue_totals', { startISO, endISO }, error);
+        console.error('stats_revenu_net', { startISO, endISO }, error);
         return null;
       }
       // La RPC renvoie une TABLE (tableau) ; on tolère aussi un enregistrement
       // simple si la fonction venait à être redéfinie en RETURNS record.
       const row = Array.isArray(data) ? data[0] : data;
-      return (row as RevenueTotalsRow | undefined) ?? null;
+      return (row as RevenuNetRow | undefined) ?? null;
     };
 
-    const [totauxGlobaux, totaux30j, totauxAujourdhui] = await Promise.all([
-      callRevenueTotals(ALL_TIME_START, nowISO),
-      callRevenueTotals(periodStartISO, nowISO),
-      callRevenueTotals(todayStartISO, nowISO),
+    const [totaux30j, totauxAujourdhui] = await Promise.all([
+      callRevenuNet(periodStartISO, nowISO),
+      callRevenuNet(todayStartISO, nowISO),
     ]);
 
-    if (!totauxGlobaux || !totaux30j || !totauxAujourdhui) {
+    if (!totaux30j || !totauxAujourdhui) {
       toast({
         title: "Statistiques indisponibles",
         description: "Les revenus et volumes de démarches n'ont pas pu être calculés.",
@@ -227,16 +229,17 @@ export default function AdminDashboard() {
     const coffreActive = coffreSubs || [];
     setStats({
       totalGarages: garages?.length || 0,
-      totalDemarches: Number(totauxGlobaux?.total_demarches ?? 0),
       demarchesATraiter: demarchesATraiterCount || 0,
       demarchesNonVues: demarchesNonVuesCount || 0,
-      totalPaiements: Number(totauxGlobaux?.total_revenue ?? 0),
-      revenuDemarches: Number(totauxGlobaux?.total_service_fees ?? 0),
-      revenuCredits: Number(totauxGlobaux?.total_token_revenue ?? 0),
-      revenuPeriode: Number(totaux30j?.total_revenue ?? 0),
+      netPeriode: Number(totaux30j?.revenu_net ?? 0),
+      netAujourdhui: Number(totauxAujourdhui?.revenu_net ?? 0),
+      recuesPeriode: Number(totaux30j?.demarches_recues ?? 0),
+      recuesAujourdhui: Number(totauxAujourdhui?.demarches_recues ?? 0),
+      traiteesPeriode: Number(totaux30j?.demarches_traitees ?? 0),
+      traiteesAujourdhui: Number(totauxAujourdhui?.demarches_traitees ?? 0),
       garagesAVerifier: garagesAVerifier.length,
-      demarches30j: Number(totaux30j?.total_demarches ?? 0),
-      demarchesAujourdhui: Number(totauxAujourdhui?.total_demarches ?? 0),
+      demarches30j: Number(totaux30j?.demarches_creees ?? 0),
+      demarchesAujourdhui: Number(totauxAujourdhui?.demarches_creees ?? 0),
       demarchesAttenteClient: demarchesAttenteClientCount || 0,
       commandesPartATraiter: commandesPartATraiterCount || 0,
       commandesPartNouvelles: commandesPartNouvellesCount || 0,
@@ -468,30 +471,56 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
-        {/* Revenue Stats Section - Link to full page */}
+        {/* Revenus : net des taxes reversées à l'État et des frais bancaires,
+            comme la page détaillée vers laquelle la carte renvoie. */}
         <Card className="mb-8 cursor-pointer hover:border-primary transition-colors" onClick={() => navigate("/admin/revenus")}>
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5 text-green-600" />
-                <CardTitle>Revenus</CardTitle>
+                <CardTitle>Revenus nets</CardTitle>
               </div>
               <Button variant="outline" size="sm">
                 Voir les statistiques détaillées →
               </Button>
             </div>
-            <CardDescription>
-              <span className="block text-base font-semibold text-foreground">
-                Revenu total : {stats.totalPaiements.toFixed(2)} €
-              </span>
-              <span className="block">
-                {REVENUE_PERIOD_DAYS} derniers jours : {stats.revenuPeriode.toFixed(2)} €
-              </span>
-              <span className="block text-xs mt-1">
-                Dont démarches {stats.revenuDemarches.toFixed(2)} € · jetons {stats.revenuCredits.toFixed(2)} €
-              </span>
-            </CardDescription>
+            <CardDescription>Taxes de l'État et frais bancaires déduits.</CardDescription>
           </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            {[
+              {
+                titre: `${REVENUE_PERIOD_DAYS} derniers jours`,
+                net: stats.netPeriode,
+                recues: stats.recuesPeriode,
+                traitees: stats.traiteesPeriode,
+              },
+              {
+                titre: "Aujourd'hui",
+                net: stats.netAujourdhui,
+                recues: stats.recuesAujourdhui,
+                traitees: stats.traiteesAujourdhui,
+              },
+            ].map((fenetre) => (
+              <div key={fenetre.titre} className="rounded-lg border p-4">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {fenetre.titre}
+                </p>
+                <p className="mt-1 text-2xl font-bold tabular-nums text-green-600">
+                  {eur(fenetre.net)}
+                </p>
+                <div className="mt-3 flex gap-6 text-sm">
+                  <span>
+                    <span className="font-semibold tabular-nums">{fenetre.recues}</span>{" "}
+                    <span className="text-muted-foreground">reçues</span>
+                  </span>
+                  <span>
+                    <span className="font-semibold tabular-nums">{fenetre.traitees}</span>{" "}
+                    <span className="text-muted-foreground">traitées</span>
+                  </span>
+                </div>
+              </div>
+            ))}
+          </CardContent>
         </Card>
 
         {/* Section Particuliers */}
