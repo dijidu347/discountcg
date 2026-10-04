@@ -35,3 +35,17 @@ drop trigger if exists verification_documents_validite_kbis on public.verificati
 create trigger verification_documents_validite_kbis
 after insert or update of status, date_emission on public.verification_documents
 for each row execute function public.maj_validite_kbis();
+
+-- La date est lue sur le document par l'edge function lecture-kbis, relancée
+-- toutes les quinze minutes. La tâche est posée à part : elle doit lire la clé
+-- de service dans le coffre des secrets, ce qu'une migration n'a pas le droit
+-- de faire ici.
+--
+--   select cron.schedule('lecture-kbis-quotidienne', '*/15 * * * *', $job$
+--     select net.http_post(
+--       url := '.../functions/v1/lecture-kbis',
+--       headers := jsonb_build_object('Content-Type','application/json',
+--         'Authorization','Bearer ' || (select decrypted_secret
+--            from vault.decrypted_secrets where name = 'service_role_key' limit 1)),
+--       body := jsonb_build_object('lot', 10), timeout_milliseconds := 120000);
+--   $job$);
