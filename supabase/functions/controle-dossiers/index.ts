@@ -260,7 +260,6 @@ async function pieceObligatoires(
   typeDemarche: string,
   ouvertLe: string | null,
   venduParPro = false,
-  garageVerifie = true,
 ): Promise<{ code: string; libelle: string }[]> {
   const { data: action } = await supabase.from("actions_rapides").select("id").eq("code", typeDemarche).maybeSingle();
   if (!action?.id) return [];
@@ -278,34 +277,14 @@ async function pieceObligatoires(
       obligatoire: piece.obligatoire,
       depuis: piece.obligatoire_depuis as string | null,
     }))
-    // Deux pièces que le SIV exige sous condition, et que le formulaire de dépôt
-    // ne peut pas rendre obligatoires : il bloquerait l'envoi de toutes les
-    // démarches, y compris celles où la condition n'est pas remplie, faute de
-    // connaître l'âge du véhicule ou la nature du vendeur. Le contrôle, lui, le
-    // sait — c'est donc lui qui porte l'exigence, en signalant sans bloquer.
-    // Le récépissé de la précédente déclaration d'achat est la seule pièce que le
-    // SIV exige sous condition, et seulement sur une DA : la page 16 la réclame
-    // « en cas d'achat du véhicule à un autre professionnel ». La page 13, qui
-    // liste les pièces d'une DC, ne la mentionne pas — l'y exiger était une
-    // invention de plus. Le formulaire de dépôt ne peut pas
-    // l'exprimer — sa case « obligatoire » vaut pour tout le monde ou pour
-    // personne — donc c'est le contrôle qui porte l'exigence.
-    //
-    // Le contrôle technique, lui, n'est PAS une pièce de DA ni de DC : les listes
-    // de documents obligatoires du guide (pages 13 et 16) ne le mentionnent pas.
-    // Il figure seulement dans la check-list de l'annexe 5, qui dit ce qu'il faut
-    // vérifier sur les documents présents. L'avoir rendu obligatoire le 1er
-    // octobre a produit l'inverse de l'effet voulu : trois garages sur trois ont
-    // déposé autre chose à sa place pour passer l'envoi.
-    // La pièce d'identité du dirigeant, exigée page 16, est déjà chez nous : la
-    // vérification d'un compte garage la réclame et l'approuve. Sur une DA,
-    // l'acheteur professionnel est le garage lui-même — lui redemander au
-    // dossier ce qu'il nous a déjà donné a fait déposer vingt-trois pièces pour
-    // rien et bloqué treize dossiers en saisie. Elle n'est due que d'un garage
-    // dont la vérification est tombée.
+    // Le récépissé de la précédente déclaration d'achat est la seule pièce que
+    // le SIV exige sous condition, et seulement sur une DA : la page 16 la
+    // réclame « en cas d'achat du véhicule à un autre professionnel ». La page
+    // 13, qui liste les pièces d'une DC, ne la mentionne pas. Le formulaire de
+    // dépôt ne peut pas exprimer cette condition — sa case « obligatoire » vaut
+    // pour tout le monde ou pour personne — donc c'est le contrôle qui la porte.
     .filter((piece: any) =>
       piece.obligatoire
-      || (/dirigeant/i.test(piece.libelle) && !garageVerifie)
       || (/r[ée]c[ée]piss[ée]/i.test(piece.libelle) && venduParPro && typeDemarche === "DA"))
     .filter((piece: any) => !piece.depuis || !jourDuDossier || jourDuDossier >= piece.depuis)
     .filter((piece: any) =>
@@ -485,7 +464,6 @@ async function recontroler(supabase: any, demarcheId: string) {
   const attendues = await pieceObligatoires(
     supabase, demarche.type, demarche.created_at ?? null,
     await venduParUnProfessionnel(supabase, demarcheId),
-    garage?.is_verified === true,
   );
 
   // Après un refus, le garage renvoie ses pièces dans des cases « correction »

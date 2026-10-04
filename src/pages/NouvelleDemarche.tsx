@@ -346,12 +346,12 @@ export default function NouvelleDemarche() {
     return Boolean(plaque || vin);
   }, [formData.type, vehiculeMandat, selectedImmatriculation, vehicleInfoPro]);
 
-  // Deux pièces du guide SIV ne sont dues que sous condition, et la condition
-  // n'est connue qu'ici : le récépissé de la précédente déclaration d'achat
-  // quand le véhicule a été acheté à un autre professionnel, le contrôle
-  // technique au-delà de quatre ans d'âge. La case « obligatoire » de la
-  // configuration ne sait pas exprimer cela — elle vaut pour tout le monde ou
-  // pour personne — donc la condition se juge au moment du dépôt.
+  // Une seule pièce du guide SIV n'est due que sous condition, et la condition
+  // n'est connue qu'ici : le récépissé de la précédente déclaration d'achat,
+  // quand le véhicule a été acheté à un autre professionnel. La case
+  // « obligatoire » de la configuration ne sait pas exprimer cela — elle vaut
+  // pour tout le monde ou pour personne — donc la condition se juge au moment
+  // du dépôt.
   const venduParUnPro = useMemo(() => {
     if (!questionVendeurProId) return false;
     return /^oui$/i.test((questionnaireAnswerTexts[questionVendeurProId] ?? "").trim());
@@ -362,11 +362,9 @@ export default function NouvelleDemarche() {
   // les pièces déjà déposées. On réordonne donc à l'écran seulement, en gardant
   // le rang d'origine de chaque ligne.
   //
-  // Ce qui est dû d'abord, le facultatif en bas ; et le contrôle technique
-  // juste après le récépissé, puisqu'ils vont de pair dans l'esprit du garage.
+  // Ce qui est dû d'abord, le facultatif en bas.
   const rangVoulu = (nom: string): number => {
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return 1;
-    if (/contr[ôo]le technique/i.test(nom)) return 2;
     return 0;
   };
 
@@ -374,9 +372,6 @@ export default function NouvelleDemarche() {
     if (doc.obligatoire) return true;
     const nom = doc.nom_document ?? "";
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro && formData.type === "DA";
-    // Le contrôle technique n'est pas une pièce de DA ni de DC : le guide ne le
-    // liste pas dans leurs documents obligatoires. L'avoir rendu bloquant a
-    // pousse trois garages sur trois a deposer autre chose pour passer l'envoi.
     return false;
   }, [venduParUnPro, formData.type]);
 
