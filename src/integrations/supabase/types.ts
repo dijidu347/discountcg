@@ -51,6 +51,7 @@ export type Database = {
           action_id: string
           created_at: string
           id: string
+          masque: boolean
           nom_document: string
           obligatoire: boolean
           obligatoire_depuis: string | null
@@ -60,6 +61,7 @@ export type Database = {
           action_id: string
           created_at?: string
           id?: string
+          masque?: boolean
           nom_document: string
           obligatoire?: boolean
           obligatoire_depuis?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           action_id?: string
           created_at?: string
           id?: string
+          masque?: boolean
           nom_document?: string
           obligatoire?: boolean
           obligatoire_depuis?: string | null
