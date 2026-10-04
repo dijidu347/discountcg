@@ -8,7 +8,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GarageSignatureSettings } from "@/components/signature/GarageSignatureSettings";
 import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -47,7 +46,6 @@ export default function GarageSettings() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [garage, setGarage] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("info");
   const [formData, setFormData] = useState({
     raison_sociale: "",
     siret: "",
@@ -78,10 +76,13 @@ export default function GarageSettings() {
       loadRequiredDocs();
     }
     
+    // Le lien « Déposer mon Kbis » des e-mails porte encore ?tab=verification :
+    // la page n'a plus d'onglets, elle y descend.
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get('tab');
-    if (tab === 'verification') {
-      setActiveTab('verification');
+    if (params.get('tab') === 'verification') {
+      setTimeout(() => {
+        document.getElementById('verification')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 400);
     }
   }, [user]);
 
@@ -451,23 +452,8 @@ export default function GarageSettings() {
         
         <h1 className="text-2xl font-bold mb-6">Paramètres du compte</h1>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="info">Informations</TabsTrigger>
-            <TabsTrigger value="verification" className="relative">
-              Vérification
-              {missingDocs > 0 && !garage?.is_verified && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                  {missingDocs}
-                </Badge>
-              )}
-              {notifications.length > 0 && (
-                <Badge variant="secondary" className="ml-2">{notifications.length}</Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="info" className="space-y-6 mt-6">
+        <div className="space-y-6">
+          <div className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Informations de l'entreprise</CardTitle>
@@ -573,9 +559,9 @@ export default function GarageSettings() {
               garage={garage}
               onSaved={(patch) => setGarage((g: any) => (g ? { ...g, ...patch } : g))}
             />
-          </TabsContent>
-          
-          <TabsContent value="verification" className="mt-6">
+          </div>
+
+          <div id="verification" className="scroll-mt-6">
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -722,30 +708,25 @@ export default function GarageSettings() {
                             
                             {status.canUpload && (
                               <div className="space-y-2">
-                                {[1, 2, 3].map((inputIndex) => (
-                                  <div key={inputIndex} className="relative">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-sm text-muted-foreground w-24">
-                                        Fichier {inputIndex} {inputIndex === 1 ? '*' : '(opt.)'}:
-                                      </span>
-                                      <Input 
-                                        type="file" 
-                                        accept=".pdf,.jpg,.jpeg,.png" 
-                                        onChange={(e) => {
-                                          const selected = e.target.files;
-                                          if (selected && selected.length > 0) {
-                                            // Important: copy files before clearing the input value
-                                            const filesArray = Array.from(selected);
-                                            handleFileUpload(reqDoc.code, filesArray);
-                                            e.target.value = '';
-                                          }
-                                        }}
-                                        disabled={uploadingDoc === reqDoc.code}
-                                        className="cursor-pointer flex-1"
-                                      />
-                                    </div>
-                                  </div>
-                                ))}
+                                {/* Un seul champ : trois cases donnaient à croire qu'il
+                                    fallait trois fichiers. Il en accepte plusieurs d'un
+                                    coup, pour un recto et un verso. */}
+                                <Input
+                                  type="file"
+                                  multiple
+                                  accept=".pdf,.jpg,.jpeg,.png"
+                                  onChange={(e) => {
+                                    const selected = e.target.files;
+                                    if (selected && selected.length > 0) {
+                                      // Important: copy files before clearing the input value
+                                      const filesArray = Array.from(selected);
+                                      handleFileUpload(reqDoc.code, filesArray);
+                                      e.target.value = '';
+                                    }
+                                  }}
+                                  disabled={uploadingDoc === reqDoc.code}
+                                  className="cursor-pointer"
+                                />
                                 {uploadingDoc === reqDoc.code && (
                                   <div className="flex items-center justify-center py-2">
                                     <Loader2 className="h-5 w-5 animate-spin mr-2" />
@@ -788,9 +769,8 @@ export default function GarageSettings() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-          
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );
