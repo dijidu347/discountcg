@@ -27,13 +27,15 @@ export function dateFrancaise(brut: string | null | undefined): string | null {
   let mois: number | null = null;
   let annee: number | null = null;
 
-  const chiffres = texte.match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})\s*[/.-]\s*(\d{4})$/);
+  // Certains greffes impriment l'heure derrière la date (« 01/10/2026 -
+  // 15:09:21 ») : on lit la date et on laisse le reste.
+  const chiffres = texte.match(/^(\d{1,2})\s*[/.-]\s*(\d{1,2})\s*[/.-]\s*(\d{4})(?!\d)/);
   if (chiffres) {
     jour = Number(chiffres[1]);
     mois = Number(chiffres[2]);
     annee = Number(chiffres[3]);
   } else {
-    const lettres = texte.match(/^(\d{1,2})(?:er)?\s+([a-z]+)\.?\s+(\d{4})$/);
+    const lettres = texte.match(/^(\d{1,2})(?:er)?\s+([a-z]+)\.?\s+(\d{4})(?!\d)/);
     if (lettres) {
       jour = Number(lettres[1]);
       mois = MOIS[lettres[2]] ?? null;

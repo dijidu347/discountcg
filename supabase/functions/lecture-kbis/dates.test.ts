@@ -18,6 +18,11 @@ verifie("point et tiret acceptés", dateFrancaise("28-09-2026") === "2026-09-28"
   && dateFrancaise("28.09.2026") === "2026-09-28");
 verifie("jour sur un chiffre", dateFrancaise("3/10/2026") === "2026-10-03");
 
+// Des greffes impriment l'heure derrière la date : elle ne doit pas tout perdre.
+verifie("heure accolée", dateFrancaise("01/10/2026 - 15:09:21") === "2026-10-01");
+verifie("heure accolée, autre greffe", dateFrancaise("29/09/2026 - 20:15:54") === "2026-09-29");
+verifie("date suivie de texte", dateFrancaise("28/09/2026 à 10h00") === "2026-09-28");
+
 // En toutes lettres, avec ou sans accents, avec « 1er ».
 verifie("28 septembre 2026", dateFrancaise("28 septembre 2026") === "2026-09-28");
 verifie("1er aout 2026", dateFrancaise("1er aout 2026") === "2026-08-01");
