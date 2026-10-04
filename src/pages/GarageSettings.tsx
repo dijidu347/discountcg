@@ -91,6 +91,13 @@ export default function GarageSettings() {
   const demandeRattrapee = useRef(false);
   useEffect(() => {
     if (!garage || garage.is_verified || garage.verification_requested_at || demandeRattrapee.current) return;
+    // Sauf si c'est le Kbis qui a expiré : repartir en vérification avec le même
+    // Kbis périmé affiche « Vérification en cours » au garage, qui attend alors
+    // une réponse au lieu de déposer le document neuf, et met l'administration
+    // devant un dossier qui n'a pas bougé.
+    const kbisPerime = garage.kbis_valide_jusqu_au
+      && new Date(garage.kbis_valide_jusqu_au) < new Date();
+    if (kbisPerime) return;
     const requis = requiredDocs.filter(d => d.obligatoire).map(d => d.code);
     if (requis.length === 0) return;
     const envoyes = new Set(verificationDocs.filter(d => d.status === 'approved' || d.status === 'pending').map(d => d.document_type));
@@ -396,6 +403,12 @@ export default function GarageSettings() {
     };
   };
 
+  // Kbis dépassé : c'est lui qu'il faut renouveler, et le dire vaut mieux que
+  // de laisser le garage devant un « Vérification en cours » qui n'avance pas.
+  const kbisPerime = Boolean(
+    garage?.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
+  );
+
   const getMissingDocsCount = () => {
     const requiredCodes = requiredDocs.filter(d => d.obligatoire).map(d => d.code);
     const approvedOrPending = verificationDocs
@@ -582,7 +595,21 @@ export default function GarageSettings() {
                 )}
                 {(
                   <>
-                    {!garage?.is_verified && garage?.verification_requested_at && (
+                    {kbisPerime && (
+                      <div className="py-4 mb-4 px-4 bg-orange-50 border border-orange-200 rounded-lg dark:bg-orange-950/20 dark:border-orange-800">
+                        <div className="flex items-start gap-3">
+                          <AlertCircle className="h-6 w-6 text-orange-500 shrink-0" />
+                          <div>
+                            <h3 className="font-semibold mb-1">Votre extrait Kbis a plus de six mois</h3>
+                            <p className="text-muted-foreground text-sm">
+                              Déposez-en un récent ci-dessous, avec le bouton « Remplacer ».
+                              Vos démarches continuent de fonctionner normalement.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {!garage?.is_verified && !kbisPerime && garage?.verification_requested_at && (
                       <div className="text-center py-4 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg dark:bg-yellow-950/20 dark:border-yellow-800">
                         <AlertCircle className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
                         <h3 className="text-lg font-semibold mb-1">Vérification en cours</h3>

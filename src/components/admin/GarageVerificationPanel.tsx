@@ -264,6 +264,23 @@ export function GarageVerificationPanel({
     }
   };
 
+  // La date portée sur le Kbis, celle qui fait courir les six mois. Elle se
+  // saisit au moment où l'administration regarde le document ; sans elle, la
+  // validité repart du dépôt, comme avant.
+  const enregistrerDateKbis = async (docId: string, valeur: string) => {
+    const { error } = await supabase
+      .from("verification_documents")
+      // types.ts est généré depuis la base et ne connaît pas encore la colonne.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ date_emission: valeur || null } as any)
+      .eq("id", docId);
+    if (error) {
+      toast({ title: "Date non enregistrée", description: error.message, variant: "destructive" });
+      return;
+    }
+    await loadVerificationDocs(garage.id);
+  };
+
   const handleSingleApprove = async (docId: string) => {
     try {
       const { error } = await supabase
@@ -671,6 +688,25 @@ export function GarageVerificationPanel({
                                       <p className="text-xs text-destructive mt-1">
                                         Refus: {doc.rejection_reason}
                                       </p>
+                                    )}
+                                    {reqDoc.code === "kbis" && (
+                                      <div className="mt-2 flex items-center gap-2">
+                                        <label className="text-xs text-muted-foreground" htmlFor={`kbis-date-${doc.id}`}>
+                                          Délivré le
+                                        </label>
+                                        <Input
+                                          id={`kbis-date-${doc.id}`}
+                                          type="date"
+                                          className="h-7 w-36 text-xs"
+                                          defaultValue={doc.date_emission ?? ""}
+                                          onChange={(e) => enregistrerDateKbis(doc.id, e.target.value)}
+                                        />
+                                        {!doc.date_emission && (
+                                          <span className="text-xs text-muted-foreground">
+                                            sans elle, les six mois partent du dépôt
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                   </div>
                                 </div>
