@@ -2463,6 +2463,7 @@ export type Database = {
       verification_documents: {
         Row: {
           created_at: string | null
+          date_emission: string | null
           document_type: string
           garage_id: string
           id: string
@@ -2475,6 +2476,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          date_emission?: string | null
           document_type: string
           garage_id: string
           id?: string
@@ -2487,6 +2489,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          date_emission?: string | null
           document_type?: string
           garage_id?: string
           id?: string
