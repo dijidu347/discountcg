@@ -386,7 +386,10 @@ export default function NouvelleDemarche() {
     return 0;
   };
 
-  const pieceDue = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null }) => {
+  const pieceDue = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null; masque?: boolean | null }) => {
+    // Une pièce masquée n'est plus demandée : sa ligne ne reste en base que
+    // pour garder son rang aux pièces déjà déposées.
+    if (doc.masque) return false;
     if (doc.obligatoire) return true;
     const nom = doc.nom_document ?? "";
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro && formData.type === "DA";
@@ -1885,6 +1888,11 @@ export default function NouvelleDemarche() {
                               // les cles de documents valent "doc_<rang>", les decaler
                               // casserait le suivi des pieces deja deposees.
                               if (mandatRequis && /13757/.test(doc.nom_document ?? "")) return null;
+
+                              // Une pièce retirée de la liste garde sa ligne en base, et
+                              // donc son rang : ce qui a déjà été déposé dessus reste
+                              // rangé là où le garage l'a mis. Elle ne s'affiche plus.
+                              if (doc.masque) return null;
 
                               const docName = doc.nom_document.toLowerCase();
                               const hasRectoVerso = docName.includes('recto/verso') || docName.includes('recto verso');

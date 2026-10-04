@@ -194,6 +194,9 @@ export default function DemarcheDetail() {
   const [trackingServices, setTrackingServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [documentLabels, setDocumentLabels] = useState<Record<string, string>>({});
+  // Pièces retirées de la liste : encore nommées pour les dépôts anciens, mais
+  // plus proposées à la réclamation.
+  const [piecesMasquees, setPiecesMasquees] = useState<string[]>([]);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationType, setNotificationType] = useState("info");
   const [invalidDocDialog, setInvalidDocDialog] = useState<{
@@ -402,10 +405,16 @@ export default function DemarcheDetail() {
 
         if (actionDocs) {
           const labels: Record<string, string> = { ...proDocLabels };
+          // Toutes les lignes comptent dans le rang, masquées comprises : c'est
+          // ce rang qui nomme les pièces déjà déposées. Seule la liste des
+          // pièces réclamables les écarte.
+          const masquees: string[] = [];
           actionDocs.forEach((doc, idx) => {
             labels[`doc_${idx + 1}`] = doc.nom_document;
+            if ((doc as { masque?: boolean }).masque) masquees.push(doc.nom_document);
           });
           setDocumentLabels(labels);
+          setPiecesMasquees(masquees);
         } else {
           setDocumentLabels(proDocLabels);
         }
@@ -871,6 +880,7 @@ export default function DemarcheDetail() {
     Object.entries(documentLabels)
       .filter(([cle]) => (prefixePro ? cle.startsWith(prefixePro) : cle.startsWith("doc_")))
       .map(([, libelle]) => libelle)
+      .filter((libelle) => !piecesMasquees.includes(libelle))
       .concat("Certificat de situation administrative (non-gage)"),
   ));
 

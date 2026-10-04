@@ -35,9 +35,9 @@ where a.code = 'DC'
   );
 
 -- Le Kbis du vendeur : dû seulement quand le vendeur est une autre société.
--- Ajouté en fin de liste, donc aucun rang n'est décalé et aucune pièce déjà
--- déposée n'est renommée (les clés valent « doc_1 », « doc_2 »… dans l'ordre
--- de cette table).
+-- Ajouté APRÈS la dernière ligne, masquées comprises : un rang libéré par une
+-- pièce retirée appartient toujours aux pièces déposées dessus, et le réutiliser
+-- les ferait passer pour des Kbis.
 insert into public.action_documents (action_id, nom_document, ordre, obligatoire, obligatoire_depuis)
 select a.id, 'Extrait Kbis du vendeur (moins de 6 mois)',
        coalesce((select max(d.ordre) from public.action_documents d where d.action_id = a.id), 0) + 1,

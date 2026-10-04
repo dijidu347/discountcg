@@ -287,7 +287,7 @@ async function pieceObligatoires(
   if (!action?.id) return [];
   const { data: pieces } = await supabase
     .from("action_documents")
-    .select("nom_document, ordre, obligatoire, obligatoire_depuis")
+    .select("nom_document, ordre, obligatoire, obligatoire_depuis, masque")
     .eq("action_id", action.id)
     .order("ordre");
 
@@ -298,7 +298,11 @@ async function pieceObligatoires(
       libelle: piece.nom_document,
       obligatoire: piece.obligatoire,
       depuis: piece.obligatoire_depuis as string | null,
+      masque: piece.masque === true,
     }))
+    // Une pièce retirée de la liste garde sa ligne pour que les pièces déjà
+    // déposées gardent leur rang. Elle n'est plus réclamée à personne.
+    .filter((piece: any) => !piece.masque)
     // Le récépissé de la précédente déclaration d'achat est la seule pièce que
     // le SIV exige sous condition, et seulement sur une DA : la page 16 la
     // réclame « en cas d'achat du véhicule à un autre professionnel ». La page
