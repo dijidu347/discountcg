@@ -452,7 +452,9 @@ export default function GarageSettings() {
         
         <h1 className="text-2xl font-bold mb-6">Paramètres du compte</h1>
         
-        <div className="space-y-6">
+        {/* Deux colonnes dès qu'il y a la place : la page était large et vide,
+            avec la vérification rejetée tout en bas. */}
+        <div className="grid items-start gap-6 lg:grid-cols-2">
           <div className="space-y-6">
             <Card>
               <CardHeader>
