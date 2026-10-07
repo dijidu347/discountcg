@@ -48,6 +48,9 @@ const REPERES = [
 // lecture du tableau par puissance.
 const RECENT = "2022-01-01";
 
+// Les départements les plus souvent cherchés, avec leur tarif réel.
+const DEPARTEMENTS_COURANTS = ["59", "13", "69", "75", "33", "29", "44", "31"];
+
 // Un cas commun, décliné par genre : 6 CV dans un département à 43 €.
 const EXEMPLE_GENRES = [
   { genre: "VP", libelle: "Voiture particulière", note: "Plein tarif" },
@@ -58,6 +61,9 @@ const EXEMPLE_GENRES = [
 ];
 
 export const faqService = [
+  { question: "Combien coûte une carte grise en moyenne ?", answer: "Pour une voiture particulière de 6 CV de moins de dix ans, comptez 271,76 € dans un département à 43 € le cheval fiscal, et 427,76 € à Paris. Le même véhicule passé dix ans de mise en circulation voit sa taxe régionale divisée par deux." },
+  { question: "Pourquoi le prix change-t-il d'un département à l'autre ?", answer: "Parce que le tarif du cheval fiscal est voté par chaque conseil régional. Il va de 30 € à Mayotte à 68,95 € en Île-de-France. C'est l'adresse du titulaire qui compte, pas le lieu d'achat du véhicule." },
+  { question: "Le simulateur donne-t-il le même prix que celui de l'ANTS ?", answer: "La taxe régionale, oui : les règles sont les mêmes. Notre simulateur y ajoute les frais de dossier, que le simulateur officiel ne chiffre pas, et lit les caractéristiques du véhicule depuis la plaque au lieu de vous les faire saisir." },
   { question: "Le simulateur est-il gratuit ?", answer: "Oui, et sans inscription. Le résultat s'affiche immédiatement, taxes comprises." },
   { question: "Les tarifs sont-ils à jour ?", answer: "Oui. Ce sont les tarifs 2026 votés par les conseils régionaux, et c'est la même table qui alimente le simulateur et le tableau ci-dessus." },
   { question: "Quels frais de dossier appliquez-vous ?", answer: "Ils commencent à 30 €, parmi les plus bas du marché pour un service agréé par l'État. Ils s'ajoutent aux taxes, qui vont à l'État et aux collectivités." },
@@ -146,6 +152,17 @@ export function TarifsCarteGrise() {
           code: r.code,
           total: calculatePrice(departementsTarifs[r.code], cv, RECENT, "VP").prixTotal,
         })),
+      })),
+    [],
+  );
+
+  const parDepartement = useMemo(
+    () =>
+      DEPARTEMENTS_COURANTS.map((code) => ({
+        code,
+        nom: departementsLabels[code] || code,
+        tarif: departementsTarifs[code],
+        six: calculatePrice(departementsTarifs[code], 6, RECENT, "VP").prixTotal,
       })),
     [],
   );
@@ -526,6 +543,89 @@ export function TarifsCarteGrise() {
                 <p>Aucun titre n'est expédié, donc pas d'acheminement : la taxe de gestion seule.</p>
               </CardContent>
             </Card>
+          </div>
+        </section>
+
+        {/* Section: prix dans les departements les plus demandes */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <MapPin className="w-7 h-7 text-primary" />
+            Le prix de la carte grise dans les principaux départements
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Le même véhicule de 6 CV, immatriculé dans huit départements parmi les plus peuplés.
+            Entre le Nord et Paris,{" "}
+            {(parDepartement.find((d) => d.code === "75")!.six - parDepartement.find((d) => d.code === "59")!.six).toFixed(2)}{" "}
+            &euro; d'écart pour la même voiture — seule l'adresse du titulaire change.
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {parDepartement.map((d) => (
+              <Card key={d.code}>
+                <CardContent className="py-4">
+                  <p className="font-semibold text-foreground">
+                    {d.nom} <span className="text-muted-foreground font-normal">({d.code})</span>
+                  </p>
+                  <p className="text-2xl font-bold text-primary mt-1">{d.six.toFixed(2)} &euro;</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {d.tarif.toFixed(2)} &euro; le cheval fiscal, pour un 6 CV de moins de dix ans
+                  </p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Section: le simulateur officiel et le notre */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <Calculator className="w-7 h-7 text-primary" />
+            Simulateur de l'ANTS ou simulateur en ligne : lequel utiliser ?
+          </h2>
+          <div className="prose prose-lg max-w-none text-muted-foreground space-y-4">
+            <p>
+              L'ANTS, qui gère l'immatriculation en France, met à disposition un simulateur officiel.
+              Il donne le montant des taxes, et c'est tout ce qu'il a à donner : il ne facture rien
+              et ne traite pas de dossier. Si vous cherchez uniquement le montant dû à l'État, il
+              fait le travail.
+            </p>
+            <p>
+              Le nôtre part de votre <strong>plaque d'immatriculation</strong> : la puissance
+              fiscale, l'énergie, le genre et la date de mise en circulation sont lus dans le fichier
+              national, vous n'avez rien à recopier de votre carte grise. Il applique ensuite les
+              mêmes règles — demi-tarif au-delà de dix ans, exonérations par genre, taxe utilitaire —
+              et ajoute ce que l'ANTS ne chiffre pas : nos frais de dossier, pour que le total
+              affiché soit celui que vous paierez vraiment.
+            </p>
+            <p>
+              Les deux doivent tomber sur la même taxe régionale. S'ils divergent, c'est en général
+              que la puissance fiscale saisie à la main n'est pas celle de la case P.6.
+            </p>
+          </div>
+        </section>
+
+        {/* Section: ce qui est gratuit */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <Info className="w-7 h-7 text-primary" />
+            Une carte grise en ligne gratuite, est-ce que ça existe ?
+          </h2>
+          <div className="prose prose-lg max-w-none text-muted-foreground space-y-4">
+            <p>
+              La <strong>simulation</strong> est gratuite, ici comme chez l'ANTS : connaître le prix
+              de sa carte grise ne coûte rien, sans inscription ni carte bancaire.
+            </p>
+            <p>
+              La <strong>carte grise elle-même</strong>, non. Les taxes vont à l'État et aux
+              collectivités : aucun service, officiel ou privé, ne peut les effacer. Un site qui
+              annonce une carte grise gratuite parle en réalité de la simulation, ou de la démarche
+              sur le site de l'ANTS — où vous payez les mêmes taxes, en faisant le dossier vous-même.
+            </p>
+            <p>
+              Ce qui change d'un prestataire à l'autre, ce sont les <strong>frais de dossier</strong>,
+              qui s'ajoutent aux taxes. Les nôtres commencent à 30 €, et ils couvrent la vérification
+              des pièces, le dépôt auprès de l'ANTS et l'envoi du titre. Il n'y a que là qu'il y a
+              une comparaison à faire — les taxes, elles, sont les mêmes partout.
+            </p>
           </div>
         </section>
 
