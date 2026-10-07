@@ -16,7 +16,7 @@ export interface PriceCalculation {
   /**
    * Vrai quand la taxe Y.2 dépend du poids total autorisé en charge, que nous
    * ne lisons pas : camion, tracteur routier, VASP. Le montant rendu retient la
-   * tranche la plus basse — il est à confirmer avant facturation.
+   * tranche la plus haute, et baissera dès que le poids sera renseigné.
    */
   taxeADeterminer?: boolean;
 }
@@ -42,8 +42,9 @@ interface Bareme {
   /**
    * Vrai quand le barème officiel dépend du poids total autorisé en charge,
    * que le fichier des immatriculations ne nous donne pas. On retient alors la
-   * tranche la plus basse et on le signale, plutôt que d'annoncer un montant
-   * qu'on ne sait pas justifier.
+   * tranche la PLUS HAUTE : une estimation basse ne se corrige jamais, puisque
+   * personne ne remplit un champ qui ferait monter le prix. Haute, elle
+   * descend dès que le poids est saisi — et le garage a une raison de le faire.
    */
   selonPtac?: boolean;
 }
@@ -62,8 +63,8 @@ const BAREMES: Record<string, Bareme> = {
 
   // Poids lourds : demi-tarif, et une taxe transport qui dépend du PTAC
   // (camion 127, 189 ou 285 € ; tracteur routier 34 ou 285 €).
-  CAM: { moins10: 0.5, plus10: 0.5, y2: 127, y5: 2.76, selonPtac: true },
-  TRR: { moins10: 0.5, plus10: 0.5, y2: 34, y5: 2.76, selonPtac: true },
+  CAM: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76, selonPtac: true },
+  TRR: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76, selonPtac: true },
   TCP: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76 },
 
   // Exonérés de taxe régionale. Le cyclomoteur l'est aussi de l'acheminement :
@@ -85,8 +86,8 @@ const BAREMES: Record<string, Bareme> = {
 };
 
 // Les tranches de PTAC du barème, en kilogrammes (case F.2 de la carte grise).
-// Sans cette information, on retient la tranche la plus basse et on le signale ;
-// avec elle, le montant est exact.
+// Sans cette information, le genre porte la tranche la plus haute ; avec elle,
+// le montant est exact — et presque toujours plus bas.
 function baremeSelonPtac(genre: string, ptacKg: number): Bareme | null {
   if (!ptacKg || ptacKg <= 0) return null;
   const tonnes = ptacKg / 1000;
