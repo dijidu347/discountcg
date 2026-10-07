@@ -84,6 +84,28 @@ const BAREMES: Record<string, Bareme> = {
   MIAR: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
 };
 
+// Les tranches de PTAC du barème, en kilogrammes (case F.2 de la carte grise).
+// Sans cette information, on retient la tranche la plus basse et on le signale ;
+// avec elle, le montant est exact.
+function baremeSelonPtac(genre: string, ptacKg: number): Bareme | null {
+  if (!ptacKg || ptacKg <= 0) return null;
+  const tonnes = ptacKg / 1000;
+
+  if (genre === "CAM") {
+    const y2 = tonnes <= 6 ? 127 : tonnes <= 11 ? 189 : 285;
+    return { moins10: 0.5, plus10: 0.5, y2, y5: 2.76 };
+  }
+  if (genre === "TRR") {
+    return { moins10: 0.5, plus10: 0.5, y2: tonnes <= 3.5 ? 34 : 285, y5: 2.76 };
+  }
+  if (genre === "VASP") {
+    // Au-delà de 3,5 t, le VASP passe au demi-tarif.
+    const coef = tonnes < 3.5 ? 1 : 0.5;
+    return { moins10: coef, plus10: 0.5, y2: 0, y5: 2.76 };
+  }
+  return null;
+}
+
 // Faute de genre lisible, on applique celui d'une voiture : c'est le cas de
 // très loin le plus fréquent, et le seul qui ne sous-facture personne.
 const BAREME_PAR_DEFAUT: Bareme = BAREMES.VP;
@@ -96,7 +118,9 @@ export const calculatePrice = (
   tarifDepartement: number,
   chevauxFiscaux: number,
   dateMiseEnCirculation: string,
-  genre?: string
+  genre?: string,
+  /** Poids total autorisé en charge, en kilogrammes (case F.2). */
+  ptacKg?: number
 ): PriceCalculation => {
   if (!tarifDepartement || tarifDepartement <= 0) {
     throw new Error('Tarif département invalide');
@@ -115,7 +139,8 @@ export const calculatePrice = (
     console.warn(`[calculatePrice] genre hors barème, traité comme une voiture : "${genre}"`);
   }
 
-  const applique = bareme ?? BAREME_PAR_DEFAUT;
+  const precis = bareme?.selonPtac ? baremeSelonPtac(genreUpper, Number(ptacKg)) : null;
+  const applique = precis ?? bareme ?? BAREME_PAR_DEFAUT;
   const coefficient = anciennete >= 10 ? applique.plus10 : applique.moins10;
 
   const prixCVPlein = chevauxFiscaux * tarifDepartement;
@@ -148,6 +173,6 @@ export const calculatePrice = (
     tarifDepartement,
     chevauxFiscaux,
     anciennete,
-    taxeADeterminer: applique.selonPtac === true,
+    taxeADeterminer: bareme?.selonPtac === true && !precis,
   };
 };

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { PriceCalculation } from "@/utils/calculatePrice";
 import { GenreVehiculeChoice } from "@/components/simulateur/GenreVehiculeChoice";
+import { PtacInput } from "@/components/simulateur/PtacInput";
 import { Car, Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,8 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const [departments, setDepartments] = useState<DepartmentTariff[]>([]);
   // Tarif du département retenu : sert à refaire le calcul si le genre change.
   const [tarifRetenu, setTarifRetenu] = useState<number>(0);
+  // Poids total autorisé en charge, saisi pour les seuls genres dont la taxe en dépend.
+  const [ptacKg, setPtacKg] = useState<number | null>(null);
   const [valide, setValide] = useState(false);
 
   useEffect(() => {
@@ -94,7 +97,8 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
             selectedDept.tarif,
             puissanceFiscale,
             data.date_mec,
-            data.genre
+            data.genre,
+            ptacKg ?? undefined
           );
 
           setCalculatedPrice(priceResult.prixTotal);
@@ -149,11 +153,28 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
   const changerGenre = async (genre: "VP" | "CTTE") => {
     if (!vehicleData || !tarifRetenu) return;
     const { calculatePrice } = await import("@/utils/calculatePrice");
-    const priceResult = calculatePrice(tarifRetenu, Number(vehicleData.puissance_fiscale), vehicleData.date_mec, genre);
+    const priceResult = calculatePrice(tarifRetenu, Number(vehicleData.puissance_fiscale), vehicleData.date_mec, genre, ptacKg ?? undefined);
     setVehicleData({ ...vehicleData, genre });
     setCalculatedPrice(priceResult.prixTotal);
     setPriceDetails(priceResult);
     // Déjà validé : la démarche doit porter le nouveau prix.
+    if (valide && onPriceCalculated) onPriceCalculated(priceResult.prixTotal, priceResult);
+  };
+
+  // Le poids saisi tranche la tranche du barème : on recalcule aussitôt.
+  const changerPtac = async (kg: number | null) => {
+    setPtacKg(kg);
+    if (!vehicleData || !tarifRetenu) return;
+    const { calculatePrice } = await import("@/utils/calculatePrice");
+    const priceResult = calculatePrice(
+      tarifRetenu,
+      Number(vehicleData.puissance_fiscale),
+      vehicleData.date_mec,
+      vehicleData.genre,
+      kg ?? undefined,
+    );
+    setCalculatedPrice(priceResult.prixTotal);
+    setPriceDetails(priceResult);
     if (valide && onPriceCalculated) onPriceCalculated(priceResult.prixTotal, priceResult);
   };
 
@@ -327,6 +348,10 @@ export function VehicleFormCG({ garageId, onVehicleSelect, selectedVehicleId, on
               modele={vehicleData.modele}
               onChange={changerGenre}
             />
+          )}
+
+          {priceCalculated && priceDetails?.taxeADeterminer && (
+            <PtacInput valeur={ptacKg} onChange={changerPtac} />
           )}
         </div>
 
