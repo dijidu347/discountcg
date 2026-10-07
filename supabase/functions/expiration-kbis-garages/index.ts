@@ -46,6 +46,11 @@ serve(async (req) => {
   // attendre que l'alerte ait quinze jours. Réservé à une reprise de l'existant,
   // décidée explicitement.
   const sansDelai: boolean = corps?.sans_delai === true;
+  // Relancer tout le monde, y compris ceux déjà prévenus et ceux qui ont déjà
+  // perdu leur vérification. Sert après une correction : le premier message
+  // annonçait une date illisible (« le 2026-06-29 ») et renvoyait vers un
+  // espace où le dépôt ne marchait pas.
+  const relancerPerimes: boolean = corps?.relancer_perimes === true;
 
   const aujourdhui = new Date().toISOString().slice(0, 10);
   const dans15Jours = new Date(Date.now() + JOURS_AVANT_ALERTE * 86400_000).toISOString().slice(0, 10);
@@ -73,6 +78,25 @@ serve(async (req) => {
       },
     });
   };
+
+  // 0. La relance exceptionnelle : tous les Kbis périmés, badge perdu ou non.
+  if (relancerPerimes) {
+    const { data: perimes } = await supabase
+      .from("garages")
+      .select("id, raison_sociale, email, kbis_valide_jusqu_au")
+      .not("kbis_valide_jusqu_au", "is", null)
+      .lt("kbis_valide_jusqu_au", aujourdhui);
+
+    let relances = 0;
+    for (const garage of (perimes ?? []) as Garage[]) {
+      await prevenir(garage, true);
+      // L'horloge des quinze jours repart : personne ne perd son badge dans la
+      // foulée d'un message qu'il vient à peine de recevoir.
+      await supabase.from("garages").update({ kbis_alerte_envoyee_le: new Date().toISOString() }).eq("id", garage.id);
+      relances++;
+    }
+    return json({ relances });
+  }
 
   // 1. Les échéances proches, prévenues une seule fois.
   const { data: aPrevenir } = await supabase
