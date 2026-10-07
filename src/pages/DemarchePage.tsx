@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ContenuCession } from "@/components/seo/ContenuCession";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
+import { pushVueDemarche } from "@/lib/gtm";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -44,6 +45,10 @@ const DemarchePage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [starting, setStarting] = useState(false);
+
+  useEffect(() => {
+    if (demarche) pushVueDemarche(demarche.code, demarche.shortTitle);
+  }, [demarche]);
 
   const isCG = demarche ? CG_TYPES.includes(demarche.code) : false;
   const reserveePro = demarche ? RESERVEES_AUX_PROS.includes(demarche.code) : false;

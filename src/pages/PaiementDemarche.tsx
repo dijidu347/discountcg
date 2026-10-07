@@ -4,6 +4,7 @@ import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { pushPaiementOuvert } from "@/lib/gtm";
 import { supabase } from "@/integrations/supabase/client";
 import { messageServeur } from "@/lib/erreurServeur";
 import { Loader2, ArrowLeft, CheckCircle, CreditCard, ChevronDown, ChevronUp, Copy, Send, Clock, Link2, AlertTriangle } from "lucide-react";
@@ -379,6 +380,11 @@ const PaiementDemarche = () => {
   const handlePaymentCalculated = useCallback((result: PaymentCalculationResult) => {
     setCalculatedTotal(result.totalTTC);
   }, []);
+
+  useEffect(() => {
+    if (!demarche || demarche.paye || calculatedTotal === null) return;
+    pushPaiementOuvert(String(demarche.id), calculatedTotal);
+  }, [demarche, calculatedTotal]);
 
   // canPayWithBalance est calculé plus bas après le calcul de finalAmount
 

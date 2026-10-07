@@ -12,6 +12,7 @@ import { Elements, CardElement, useStripe, useElements } from "@stripe/react-str
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { GuestPaymentDetailsSummary, calculateGuestOrderTTC } from "@/components/payment/GuestPaymentDetailsSummary";
+import { pushPaiementOuvert } from "@/lib/gtm";
 import { USE_SOGECOMMERCE, redirectToSogecommerce } from "@/lib/sogecommerce";
 import { CgvAcceptance } from "@/components/payment/CgvAcceptance";
 
@@ -276,6 +277,21 @@ const PaiementGuestOrder = () => {
     if (!USE_SOGECOMMERCE) initializeStripe(); // inutile en mode Sogecommerce
     loadOrder();
   }, [orderId]);
+
+  useEffect(() => {
+    if (!order || order.paye) return;
+    pushPaiementOuvert(
+      order.id,
+      calculateGuestOrderTTC(order.montant_ht || 0, order.frais_dossier || 30, {
+        smsNotifications: order.sms_notifications,
+        emailNotifications: order.email_notifications,
+        dossierPrioritaire: order.dossier_prioritaire,
+        certificatNonGage: order.certificat_non_gage,
+        express: order.express,
+        demarcheType: order.demarche_type,
+      })
+    );
+  }, [order]);
 
   const initializeStripe = async () => {
     try {

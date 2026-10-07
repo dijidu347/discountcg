@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { PriceSummary } from "@/components/simulateur/PriceSummary";
+import { pushSimulationTerminee } from "@/lib/gtm";
 import { PaymentMethods } from "@/components/payment/PaymentMethods";
 import { UploadListSimple } from "@/components/upload/UploadListSimple";
 import { GuestOrderInfoForm } from "@/components/GuestOrderInfoForm";
@@ -82,6 +83,10 @@ export default function ResultatCarteGrise() {
   // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché :
   // le montant à encaisser en dépend.
   const nonGageChoisi = !isNonGageRequired(demarcheType) || nonGageMode !== null;
+
+  useEffect(() => {
+    if (calculation) pushSimulationTerminee(demarcheType, calculation.prixTotal);
+  }, [calculation, demarcheType]);
 
   // Calcul du total TTC (pas de TVA)
   const calculateTotalTTC = () => {
