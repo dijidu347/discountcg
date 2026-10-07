@@ -2567,6 +2567,7 @@ export type Database = {
         }[]
       }
       commande_demandee: { Args: never; Returns: string }
+      commandes_particulier_actives: { Args: never; Returns: number }
       consommer_jeton_gratuit: {
         Args: { p_garage_id: string }
         Returns: boolean
