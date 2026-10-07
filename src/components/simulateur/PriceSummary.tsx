@@ -157,6 +157,17 @@ export const PriceSummary = ({
                 {/* Détail du calcul carte grise : déplié à la demande, juste sous le prix.
                     Réplié par défaut (état interne de DetailsCollapse). */}
                 <DetailsCollapse detail={calculation} />
+                {calculation.taxeADeterminer && (
+                  // Camion, tracteur routier, VASP : la taxe de formation
+                  // professionnelle dépend du poids total autorisé en charge,
+                  // que le fichier des immatriculations ne donne pas. On
+                  // annonce la tranche la plus basse et on le dit.
+                  <p className="mt-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
+                    Ce genre de véhicule porte une taxe de transport qui dépend de son poids total
+                    autorisé en charge. Le montant affiché retient la tranche la plus basse : il
+                    sera confirmé à la prise en charge du dossier.
+                  </p>
+                )}
               </div>
 
               {/* Services */}

@@ -13,32 +13,84 @@ export interface PriceCalculation {
   tarifDepartement: number;
   chevauxFiscaux: number;
   anciennete: number;
+  /**
+   * Vrai quand la taxe Y.2 dépend du poids total autorisé en charge, que nous
+   * ne lisons pas : camion, tracteur routier, VASP. Le montant rendu retient la
+   * tranche la plus basse — il est à confirmer avant facturation.
+   */
+  taxeADeterminer?: boolean;
 }
 
-// Y.2 — Taxe de développement des actions de formation professionnelle (transports routiers)
-// Applicable aux CTTE (camionnettes ≤ 3,5T), taux 2025
-const TAXE_PARAFISCALE_CTTE = 34;
-// Y.2 : seule la camionnette/utilitaire ≤ 3,5 t (CTTE) paie la parafiscale
-// transport. Le simulateur officiel montre 0 pour tous les autres genres.
-const GENRES_AVEC_TAXE_PARAFISCALE = ['CTTE'];
+// Le barème officiel, recopié des données de référence du simulateur de
+// Service-Public (DILA, data.gouv.fr, licence ouverte) :
+// https://www.data.gouv.fr/datasets/simulateur-de-cout-du-certificat-dimmatriculation-carte-grise
+//
+// Pour chaque genre (case J.1) : le coefficient appliqué à la taxe régionale
+// selon l'âge du véhicule, et la taxe Y.2 de formation professionnelle des
+// transports. Avant cette table, seuls les genres légers étaient traités ; un
+// camion était facturé au plein tarif et sa taxe transport — 127 à 285 € —
+// passait à la trappe.
+interface Bareme {
+  /** Coefficient sur la taxe régionale avant dix ans (1 = plein tarif). */
+  moins10: number;
+  /** Coefficient à partir de dix ans de mise en circulation. */
+  plus10: number;
+  /** Taxe Y.2, en euros. */
+  y2: number;
+  /** Redevance d'acheminement Y.5 : nulle pour le seul cyclomoteur. */
+  y5: number;
+  /**
+   * Vrai quand le barème officiel dépend du poids total autorisé en charge,
+   * que le fichier des immatriculations ne nous donne pas. On retient alors la
+   * tranche la plus basse et on le signale, plutôt que d'annoncer un montant
+   * qu'on ne sait pas justifier.
+   */
+  selonPtac?: boolean;
+}
 
-// Genres moto (codes officiels arrêté du 9 février 2009) → demi-tarif Y.1.
+const BAREMES: Record<string, Bareme> = {
+  VP: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76 },
+  CTTE: { moins10: 1, plus10: 0.5, y2: 34, y5: 2.76 },
+  VASP: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76, selonPtac: true },
+  TM: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76 },
+  QM: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76 },
+
+  // Motos : demi-tarif quel que soit l'âge.
+  MTL: { moins10: 0.5, plus10: 0.5, y2: 0, y5: 2.76 },
+  MTT1: { moins10: 0.5, plus10: 0.5, y2: 0, y5: 2.76 },
+  MTT2: { moins10: 0.5, plus10: 0.5, y2: 0, y5: 2.76 },
+
+  // Poids lourds : demi-tarif, et une taxe transport qui dépend du PTAC
+  // (camion 127, 189 ou 285 € ; tracteur routier 34 ou 285 €).
+  CAM: { moins10: 0.5, plus10: 0.5, y2: 127, y5: 2.76, selonPtac: true },
+  TRR: { moins10: 0.5, plus10: 0.5, y2: 34, y5: 2.76, selonPtac: true },
+  TCP: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76 },
+
+  // Exonérés de taxe régionale. Le cyclomoteur l'est aussi de l'acheminement :
+  // aucun titre ne lui est expédié.
+  CL: { moins10: 0, plus10: 0, y2: 0, y5: 0 },
+  CYCL: { moins10: 0, plus10: 0, y2: 0, y5: 0 },
+  TRA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  MAGA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  REM: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  SREM: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  SRAT: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  SRTC: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  RETC: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  SRSP: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  RESP: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  REA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  SREA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  MIAR: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+};
+
+// Faute de genre lisible, on applique celui d'une voiture : c'est le cas de
+// très loin le plus fréquent, et le seul qui ne sous-facture personne.
+const BAREME_PAR_DEFAUT: Bareme = BAREMES.VP;
+
+// Conservés pour les appelants existants.
 export const MOTO_GENRES = ["MTL", "MTT1", "MTT2"];
-
-// Genres exonérés de taxe régionale Y.1 (prixCV forcé à 0) : cyclomoteur (CL),
-// tracteur / matériel agricole (TRA, MAGA), remorques (REM, SREM). Ni demi-tarif
-// ni abattement ne s'appliquent ensuite — zéro.
-export const GENRES_EXONERES_Y1 = ["CL", "TRA", "MAGA", "REM", "SREM"];
-
-// Genres reconnus par le calcul (VP/VASP plein tarif + parafiscale + motos +
-// exonérés). Sert au garde-fou : tout autre code de genre présent est logué
-// (console.warn) au lieu d'être facturé au plein tarif silencieusement.
-const GENRES_CONNUS = new Set<string>([
-  'VP', 'VASP',
-  ...GENRES_AVEC_TAXE_PARAFISCALE,
-  ...MOTO_GENRES,
-  ...GENRES_EXONERES_Y1,
-]);
+export const GENRES_EXONERES_Y1 = Object.keys(BAREMES).filter((g) => BAREMES[g].moins10 === 0);
 
 export const calculatePrice = (
   tarifDepartement: number,
@@ -52,59 +104,43 @@ export const calculatePrice = (
 
   const anciennete = getVehicleAge(dateMiseEnCirculation);
   const fraisGestion = 11;
-  const fraisAcheminement = 2.76;
 
-  // Y.2 taxe parafiscale (formation professionnelle transport)
-  const taxeParafiscale = genre && GENRES_AVEC_TAXE_PARAFISCALE.includes(genre.toUpperCase())
-    ? TAXE_PARAFISCALE_CTTE
-    : 0;
-
-  // Genre normalisé (majuscules), pour la détection moto et le garde-fou.
   const genreUpper = genre ? genre.toUpperCase() : "";
+  const bareme = BAREMES[genreUpper];
 
-  // Garde-fou anti-silence : un genre présent mais NON reconnu est facturé au
-  // plein tarif ; on le logge pour le repérer si le SIV renvoie un code non
-  // prévu (le calcul continue normalement, le warn ne bloque rien).
-  if (genreUpper && !GENRES_CONNUS.has(genreUpper)) {
-    console.warn(`[calculatePrice] genre non reconnu, facturé au plein tarif : "${genre}"`);
+  // Garde-fou anti-silence : un genre présent mais absent du barème officiel
+  // est traité comme une voiture et journalisé, pour qu'on le repère si le SIV
+  // renvoie un code imprévu.
+  if (genreUpper && !bareme) {
+    console.warn(`[calculatePrice] genre hors barème, traité comme une voiture : "${genre}"`);
   }
 
-  const isMoto = !!genreUpper && MOTO_GENRES.includes(genreUpper);
-  const isExonereY1 = !!genreUpper && GENRES_EXONERES_Y1.includes(genreUpper);
-  const isCyclomoteur = genreUpper === "CL";
+  const applique = bareme ?? BAREME_PAR_DEFAUT;
+  const coefficient = anciennete >= 10 ? applique.plus10 : applique.moins10;
 
-  let prixCV = chevauxFiscaux * tarifDepartement;
-  let prixCVAvantAbattement: number | undefined;
-  let abattement = false;
+  const prixCVPlein = chevauxFiscaux * tarifDepartement;
+  const prixCV = prixCVPlein * coefficient;
 
-  // Priorité : exonération Y.1 (prixCV = 0, ni demi-tarif ni abattement) →
-  // sinon demi-tarif moto (Y.1 ÷ 2) → sinon abattement 10 ans. Jamais cumulés
-  // (pas de quart de tarif ; pour un exonéré ou une moto, `abattement` reste false).
-  if (isExonereY1) {
-    prixCV = 0;
-  } else if (isMoto) {
-    prixCV = prixCV * 0.5;
-  } else if (anciennete >= 10) {
-    prixCVAvantAbattement = prixCV;
-    prixCV = prixCV * 0.5;
-    abattement = true;
-  }
+  // L'abattement n'est annoncé que lorsqu'il change quelque chose : une moto,
+  // à demi-tarif depuis toujours, ne « bénéficie » de rien à ses dix ans.
+  const abattement = coefficient < applique.moins10;
+  const prixCVAvantAbattement = abattement ? prixCVPlein : undefined;
+
+  const taxeParafiscale = applique.y2;
+  const fraisAcheminement = applique.y5;
 
   // Arrondi à l'euro SUPÉRIEUR du sous-total (hors redevance), avec recalage
   // au centime pour éviter qu'une erreur de virgule flottante fasse sauter un euro.
-  // Y.5 redevance d'acheminement : non facturée au cyclomoteur (CL) uniquement.
-  const fraisAcheminementFacture = isCyclomoteur ? 0 : fraisAcheminement;
-
   const sousTotal = prixCV + taxeParafiscale + fraisGestion;
   const sousTotalArrondi = Math.ceil(Math.round(sousTotal * 100) / 100);
-  const prixTotal = sousTotalArrondi + fraisAcheminementFacture;
+  const prixTotal = sousTotalArrondi + fraisAcheminement;
 
   return {
     prixCV,
     prixCVAvantAbattement,
     abattement,
     fraisGestion,
-    fraisAcheminement: fraisAcheminementFacture,
+    fraisAcheminement,
     taxeParafiscale,
     sousTotal,
     sousTotalArrondi,
@@ -112,5 +148,6 @@ export const calculatePrice = (
     tarifDepartement,
     chevauxFiscaux,
     anciennete,
+    taxeADeterminer: applique.selonPtac === true,
   };
 };
