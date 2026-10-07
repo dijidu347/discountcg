@@ -338,6 +338,18 @@ export function TarifsCarteGrise() {
             <Info className="w-4 h-4 inline mr-1" />
             Ces montants sont la taxe régionale (Y.1) seule. Ajoutez 13,76 € (Y.4 + Y.5) pour le prix total, hors malus.
           </p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Ces 101 tarifs ont été comparés aux{" "}
+            <a
+              href="https://www.data.gouv.fr/datasets/simulateur-de-cout-du-certificat-dimmatriculation-carte-grise"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline"
+            >
+              données de référence du simulateur officiel
+            </a>
+            , publiées par la DILA : ils correspondent, sans écart.
+          </p>
         </section>
 
         {/* Section: Regions les plus cheres / moins cheres */}
