@@ -147,6 +147,14 @@ export function ContenuCession() {
             Le code reste valable jusqu'à ce que l'acheteur l'utilise. S'il le perd, le vendeur peut
             le retrouver : il figure sur l'accusé d'enregistrement reçu au moment de la déclaration.
           </p>
+          <p>
+            C'est avec ce code que l'acheteur demandera la carte grise à son nom. S'il veut savoir
+            à l'avance ce qu'elle lui coûtera, notre{" "}
+            <Link to="/simulateur" className="text-primary hover:underline font-semibold">
+              simulateur du prix de la carte grise
+            </Link>{" "}
+            le calcule à partir de la plaque, tarif du département compris.
+          </p>
         </div>
       </section>
 

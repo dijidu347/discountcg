@@ -16,7 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calculator, Euro, MapPin, Car, TrendingDown, Info, HelpCircle, ArrowUpDown, ChevronRight } from "lucide-react";
+import { Calculator, Euro, MapPin, Car, TrendingDown, Info, HelpCircle, ArrowUpDown, ChevronRight, FileText } from "lucide-react";
 
 const regions: Record<string, { name: string; depts: string[] }> = {
   idf: { name: "Île-de-France", depts: ["75", "77", "78", "91", "92", "93", "94", "95"] },
@@ -664,7 +664,18 @@ export function TarifsCarteGrise() {
         {/* Internal links */}
         <section className="mb-8">
           <h2 className="text-xl font-bold text-foreground mb-4">Liens utiles</h2>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-3 gap-4">
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="py-4">
+                {/* Celui qui calcule le prix d'une carte grise vient souvent
+                    d'acheter : le vendeur, lui, a une cession à déclarer. */}
+                <Link to="/declaration-cession" className="flex items-center gap-3 text-primary hover:underline font-medium">
+                  <FileText className="w-5 h-5" />
+                  Certificat de cession
+                  <ChevronRight className="w-4 h-4 ml-auto" />
+                </Link>
+              </CardContent>
+            </Card>
             <Card className="hover:shadow-md transition-shadow">
               <CardContent className="py-4">
                 <Link to="/demarche-simple" className="flex items-center gap-3 text-primary hover:underline font-medium">
