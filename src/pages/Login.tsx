@@ -26,6 +26,14 @@ export default function Login() {
     });
   }, []);
 
+  // La page d'où l'on vient, quand on y a été envoyé par un lien d'e-mail.
+  // Seulement un chemin interne : jamais une adresse complète, qui permettrait
+  // d'expédier quelqu'un ailleurs après sa connexion.
+  const suiteDemandee = () => {
+    const brut = new URLSearchParams(window.location.search).get("suite") ?? "";
+    return /^\/[^/]/.test(brut) ? brut : null;
+  };
+
   useEffect(() => {
     if (user) {
       // Check if user is a particulier
@@ -40,7 +48,7 @@ export default function Login() {
           } else if (roles.includes("particulier") && !roles.includes("admin") && !roles.includes("garage")) {
             navigate("/mon-espace");
           } else {
-            navigate("/dashboard");
+            navigate(suiteDemandee() ?? "/dashboard");
           }
         });
     }

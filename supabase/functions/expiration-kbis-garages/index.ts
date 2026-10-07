@@ -57,11 +57,14 @@ serve(async (req) => {
   const ilYa15Jours = new Date(Date.now() - JOURS_AVANT_ALERTE * 86400_000).toISOString();
 
   const prevenir = async (garage: Garage, expire: boolean) => {
+    const depasse = !expire && !!garage.kbis_valide_jusqu_au && garage.kbis_valide_jusqu_au < aujourdhui;
     await supabase.from("notifications").insert({
       garage_id: garage.id,
       type: expire ? "kbis_expire" : "kbis_bientot_expire",
       message: expire
         ? "Votre extrait Kbis a plus de six mois : votre compte n'est plus vérifié. Déposez un Kbis récent pour retrouver votre vérification."
+        : depasse
+        ? "Votre extrait Kbis a dépassé six mois. Déposez-en un récent sous quinze jours pour conserver votre vérification."
         : `Votre extrait Kbis arrive à échéance le ${garage.kbis_valide_jusqu_au}. Pensez à en déposer un récent.`,
     });
 
@@ -74,16 +77,21 @@ serve(async (req) => {
           nom: garage.raison_sociale ?? "",
           echeance: garage.kbis_valide_jusqu_au ?? "",
           expire,
+          depasse,
         },
       },
     });
   };
 
-  // 0. La relance exceptionnelle : tous les Kbis périmés, badge perdu ou non.
+  // 0. La relance exceptionnelle, réservée à ceux qui ont DÉJÀ perdu leur
+  // vérification : plus rien ne les atteint, la tâche quotidienne ne regarde
+  // que les garages encore vérifiés. Ceux-là suivent le chemin normal —
+  // prévenus quinze jours avant, prévenus de nouveau le jour du retrait.
   if (relancerPerimes) {
     const { data: perimes } = await supabase
       .from("garages")
       .select("id, raison_sociale, email, kbis_valide_jusqu_au")
+      .eq("is_verified", false)
       .not("kbis_valide_jusqu_au", "is", null)
       .lt("kbis_valide_jusqu_au", aujourdhui);
 

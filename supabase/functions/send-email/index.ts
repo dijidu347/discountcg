@@ -201,16 +201,21 @@ const getEmailTemplate = (type: string, data: any) => {
       return {
         subject: data.expire
           ? "Votre compte n'est plus vérifié : Kbis à renouveler"
+          : data.depasse
+          ? "Votre extrait Kbis a dépassé six mois"
           : "Votre extrait Kbis arrive à échéance",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: ${data.expire ? "#b45309" : "#1d4ed8"};">
-              ${data.expire ? "Votre extrait Kbis a plus de six mois" : "Votre extrait Kbis arrive à échéance"}
+            <h1 style="color: ${data.expire || data.depasse ? "#b45309" : "#1d4ed8"};">
+              ${data.expire || data.depasse ? "Votre extrait Kbis a dépassé six mois" : "Votre extrait Kbis arrive à échéance"}
             </h1>
             <p>Bonjour ${data.nom || ""},</p>
             ${data.expire
               ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre a dépassé cette limite : <strong>votre compte n'est plus marqué comme vérifié</strong>.</p>
                  <p>Vos démarches continuent de fonctionner normalement. Pour retrouver votre vérification, déposez simplement un extrait Kbis récent depuis vos paramètres.</p>`
+              : data.depasse
+              ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre a été délivré${data.echeance ? ` il y a plus de six mois : il a dépassé l'échéance du <strong>${dateFr(data.echeance)}</strong>` : " il y a plus de six mois"}.</p>
+                 <p><strong>Votre compte reste vérifié quinze jours.</strong> Déposez un extrait récent avant pour le conserver — le dépôt se fait en une minute, et votre vérification revient automatiquement.</p>`
               : `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre arrive à échéance${data.echeance ? ` le <strong>${dateFr(data.echeance)}</strong>` : ""}.</p>
                  <p>Déposez un extrait récent depuis vos paramètres pour conserver votre vérification.</p>`}
 

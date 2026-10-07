@@ -76,7 +76,12 @@ export default function GarageSettings() {
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/login");
+    if (!authLoading && !user) {
+      // On emporte la destination : après la connexion, le garage revient ici,
+      // et pas sur le tableau de bord.
+      const suite = window.location.pathname + window.location.search;
+      navigate(`/login?suite=${encodeURIComponent(suite)}`);
+    }
   }, [user, authLoading, navigate]);
 
   useEffect(() => {
