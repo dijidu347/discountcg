@@ -71,7 +71,7 @@ export const demarchesConfig: DemarcheConfig[] = [
         answer: "Pour un changement de titulaire, il vous faut : la carte grise barrée par l'ancien propriétaire, le Cerfa 13750, le Cerfa 15776, une pièce d'identité, un justificatif de domicile, le contrôle technique (si véhicule de plus de 4 ans) et le permis de conduire.",
       },
       {
-        question: "Que risque-t-on si on ne fait pas sa carte grise dans les 30 jours ?",
+        question: "Que risque-t-on si on ne fait pas sa carte grise dans le mois ?",
         answer: "Le non-respect du délai de 30 jours pour effectuer le changement de titulaire est passible d'une amende forfaitaire de 135 euros (contravention de 4e classe). De plus, en cas de contrôle routier, votre véhicule peut être immobilisé si la carte grise n'est pas à votre nom.",
       },
       {
@@ -128,7 +128,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Que faire si l'acheteur ne fait pas sa carte grise après la cession ?",
-        answer: "Si l'acheteur ne fait pas sa carte grise dans les 30 jours, vous pouvez signaler la situation à la préfecture. Grâce à votre déclaration de cession, vous serez protégé en cas d'infraction. Vous pouvez également contacter l'acheteur pour lui rappeler son obligation légale.",
+        answer: "Si l'acheteur ne fait pas sa carte grise dans le mois, vous pouvez signaler la situation à la préfecture. Grâce à votre déclaration de cession, vous serez protégé en cas d'infraction. Vous pouvez également contacter l'acheteur pour lui rappeler son obligation légale.",
       },
       {
         question: "Peut-on faire une déclaration de cession pour un véhicule hors d'usage (VHU) ?",
@@ -260,7 +260,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Que risque-t-on si on ne change pas l'adresse sur la carte grise ?",
-        answer: "Le défaut de mise à jour de l'adresse dans les 30 jours est passible d'une amende forfaitaire de 135 euros (contravention de 4e classe). De plus, vous ne recevrez pas les courriers liés à votre véhicule (contraventions, rappels de contrôle technique) à votre nouvelle adresse.",
+        answer: "Le défaut de mise à jour de l'adresse dans le mois est passible d'une amende forfaitaire de 135 euros (contravention de 4e classe). De plus, vous ne recevrez pas les courriers liés à votre véhicule (contraventions, rappels de contrôle technique) à votre nouvelle adresse.",
       },
       {
         question: "Peut-on changer l'adresse de plusieurs véhicules en même temps ?",
@@ -994,7 +994,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Le changement d'adresse locataire est-il obligatoire ?",
-        answer: "Oui, comme pour tout véhicule, la mise à jour de l'adresse sur la carte grise est obligatoire dans les 30 jours suivant le déménagement, même pour un véhicule en location.",
+        answer: "Oui, comme pour tout véhicule, la mise à jour de l'adresse sur la carte grise est obligatoire dans le mois suivant le déménagement, même pour un véhicule en location.",
       },
       {
         question: "Qui doit effectuer le changement d'adresse : le locataire ou le loueur ?",
