@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { ROUTES_SEO } from "@/data/seoRoutes";
+
+const SEO = ROUTES_SEO["/simulateur"];
 import { breadcrumbSchema, serviceSchema, faqSchema } from "@/components/seo/schemas";
 import { SimulateurSection } from "@/components/SimulateurSection";
 import { TarifsCarteGrise, faqTarifs, faqService } from "@/components/seo/TarifsCarteGrise";
@@ -15,9 +18,9 @@ export default function Simulateur() {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Simulateur Prix Carte Grise 2026 | Tarif du Cheval Fiscal"
-        description="Calculez le prix de votre carte grise en 30 secondes, et consultez le tarif du cheval fiscal des 101 départements en 2026. Gratuit, sans inscription."
-        canonical="https://discountcartegrise.fr/simulateur"
+        title={SEO.title}
+        description={SEO.description}
+        canonical={SEO.canonical}
         schema={[
           breadcrumbSchema([
             { name: "Accueil", url: "https://discountcartegrise.fr/" },

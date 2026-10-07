@@ -160,7 +160,7 @@ const DemarchePage = () => {
     .slice(0, 4);
 
   const schemas = [
-    serviceSchema(demarche.title, demarche.description, isCG ? "30" : "19.90", pageUrl),
+    serviceSchema(demarche.title, demarche.description, null, pageUrl),
     faqSchema(demarche.faqs),
     breadcrumbSchema([
       { name: "Accueil", url: baseUrl },

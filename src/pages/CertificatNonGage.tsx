@@ -13,6 +13,9 @@ import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
+import { ROUTES_SEO } from "@/data/seoRoutes";
+
+const SEO = ROUTES_SEO["/certificat-de-non-gage"];
 import { webPageSchema, faqSchema, breadcrumbSchema } from "@/components/seo/schemas";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -102,9 +105,9 @@ export default function CertificatNonGage() {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Certificat de Non-Gage Gratuit | Situation Administrative"
-        description="Le certificat de non-gage est gratuit auprès du ministère de l'Intérieur et s'obtient en deux minutes. Ses six rubriques expliquées, sa durée de validité, et les démarches qui l'exigent."
-        canonical="https://discountcartegrise.fr/certificat-de-non-gage"
+        title={SEO.title}
+        description={SEO.description}
+        canonical={SEO.canonical}
         schema={schemas}
       />
       <Navbar />

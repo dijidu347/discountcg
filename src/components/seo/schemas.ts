@@ -89,10 +89,14 @@ export function webSiteSchema() {
   };
 }
 
+// Le prix est facultatif, et volontairement omis sur les pages demarche : il
+// est servi par la base (guest_demarche_types.prix_base) et affiche a l'ecran.
+// Le figer ici produisait une offre erronee dans les donnees structurees —
+// 19,90 EUR annonces pour des demarches facturees 29, 39, 49 ou 59 EUR.
 export function serviceSchema(
   name: string,
   description: string,
-  price: string,
+  price: string | null,
   url: string
 ) {
   return {
@@ -112,16 +116,20 @@ export function serviceSchema(
     },
     url,
     termsOfService: "https://discountcartegrise.fr/cgv",
-    offers: {
-      "@type": "Offer",
-      price,
-      priceCurrency: "EUR",
-      availability: "https://schema.org/InStock",
-      seller: {
-        "@type": "Organization",
-        name: "Discount Carte Grise",
-      },
-    },
+    ...(price
+      ? {
+          offers: {
+            "@type": "Offer",
+            price,
+            priceCurrency: "EUR",
+            availability: "https://schema.org/InStock",
+            seller: {
+              "@type": "Organization",
+              name: "Discount Carte Grise",
+            },
+          },
+        }
+      : {}),
   };
 }
 
