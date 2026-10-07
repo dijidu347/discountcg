@@ -62,6 +62,7 @@ const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
 const PrixCarteGrise = React.lazy(() => import("./pages/PrixCarteGrise"));
 const CertificatNonGage = React.lazy(() => import("./pages/CertificatNonGage"));
 const CarteGriseProfessionnel = React.lazy(() => import("./pages/CarteGriseProfessionnel"));
+const HabilitationSiv = React.lazy(() => import("./pages/HabilitationSiv"));
 const APropos = React.lazy(() => import("./pages/APropos"));
 const MentionsLegales = React.lazy(() => import("./pages/MentionsLegales"));
 const CGV = React.lazy(() => import("./pages/CGV"));
@@ -145,6 +146,7 @@ const App = () => (
             <Route path="/prix-carte-grise" element={<PrixCarteGrise />} />
             <Route path="/certificat-de-non-gage" element={<CertificatNonGage />} />
             <Route path="/carte-grise-professionnel" element={<CarteGriseProfessionnel />} />
+            <Route path="/habilitation-siv" element={<HabilitationSiv />} />
             <Route path="/a-propos" element={<APropos />} />
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/cgv" element={<CGV />} />

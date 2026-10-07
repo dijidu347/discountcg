@@ -80,6 +80,21 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
     ],
   },
 
+  "/habilitation-siv": {
+    title: "Habilitation SIV : Conditions, Procédure et Obligations",
+    description:
+      "Comment obtenir l'habilitation au SIV : les deux conditions cumulatives, les pièces, la pré-demande ANTS et ce qu'elle engage une fois obtenue. Et quand il vaut mieux passer par un habilité.",
+    canonical: `${BASE}/habilitation-siv`,
+    h1: "Habilitation SIV : conditions, procédure et obligations",
+    intro: [
+      "L'habilitation au Système d'Immatriculation des Véhicules autorise un professionnel à télétransmettre lui-même les opérations d'immatriculation de ses clients. Elle est délivrée par le préfet du département du siège social de l'entreprise, et concerne les professionnels du commerce de l'automobile y compris du cyclomoteur, les loueurs, les experts, les huissiers, les démolisseurs, les broyeurs et les centres VHU.",
+      "Deux conditions cumulatives doivent être remplies. D'abord être professionnel de l'automobile depuis plus d'un an avec une activité réelle, que le livre de police et les factures doivent pouvoir attester : l'article R. 322-1 du code de la route réserve l'habilitation aux professionnels de l'automobile, et les préfectures demandent un an d'activité de l'établissement. Ensuite avoir un bulletin n° 2 de casier judiciaire vierge, l'article 18-1 de l'arrêté du 9 février 2009 interdisant d'habiliter une personne faisant l'objet d'une condamnation inscrite à ce bulletin.",
+      "Trois pièces sont systématiquement demandées : un extrait Kbis de moins de six mois ou le numéro de SIRET, la pièce d'identité du gérant, et la pièce d'identité de chaque personne qui aura accès au SIV. Vient ensuite une pré-demande en ligne sur le site de l'ANTS, puis l'acquisition du certificat numérique indispensable à la télétransmission — que les préfectures conseillent d'attendre la validation de la demande avant d'acheter.",
+      "L'habilitation n'est pas un droit : l'autorité préfectorale reste seule à apprécier le bien-fondé d'une demande. Une fois obtenue, elle engage à signaler tout changement de situation dans le mois, à conserver les dossiers cinq ans et à les restituer en cas de cessation d'activité, à accepter le contrôle préfectoral des opérations, et à respecter un préavis de deux mois pour la résilier.",
+      "L'habilitation et l'agrément ne se confondent pas. L'agrément, délivré par l'administration des finances publiques, autorise à percevoir les taxes et la redevance sur les certificats d'immatriculation puis à les reverser au Trésor public. Il est réservé aux professionnels du commerce de l'automobile et aux loueurs, et l'habilitation en est le préalable. Un professionnel habilité mais non agréé ne peut pas encaisser la taxe régionale de son client.",
+    ],
+  },
+
   "/a-propos": {
     title: "A propos | Discount Carte Grise - Service Agree par l'Etat",
     description:

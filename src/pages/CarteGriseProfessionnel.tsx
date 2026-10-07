@@ -229,6 +229,15 @@ export default function CarteGriseProfessionnel() {
               complète, taxes comprises, en une seule ligne.
             </p>
             <p>
+              Si vous voulez la demander, nous avons écrit la procédure complète : conditions,
+              pièces, pré-demande ANTS et obligations qui suivent, sur notre page{" "}
+              <Link to="/habilitation-siv" className="font-semibold text-primary hover:underline">
+                habilitation SIV
+              </Link>
+              . Une condition y est décisive : il faut plus d'un an d'activité, ce qui ferme la
+              voie aux établissements récents.
+            </p>
+            <p>
               Déléguer a un coût par démarche, et c'est son seul inconvénient. En échange, vous
               n'avez pas de dossier à instruire auprès de la préfecture, pas d'agrément séparé à
               obtenir pour les taxes, pas d'accès SIV à administrer ni de responsabilité à porter
