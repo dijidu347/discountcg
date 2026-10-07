@@ -149,6 +149,24 @@ async function revalider(
 
   await supabase.from("garages").update({ is_verified: true, verification_requested_at: null }).eq("id", garage.id);
 
+  // Un Kbis remplace le précédent : il n'y a aucune raison d'en garder deux, et
+  // les dossiers finissaient par en empiler quatre ou cinq. On retire les plus
+  // anciens, fichier compris, une fois le nouveau approuvé — jamais avant.
+  const { data: anciens } = await supabase
+    .from("verification_documents")
+    .select("id, url")
+    .eq("garage_id", garage.id)
+    .ilike("document_type", "%kbis%")
+    .neq("id", ligne.id);
+
+  for (const ancien of anciens ?? []) {
+    const emplacement = cheminStockage(ancien.url ?? "");
+    if (emplacement) {
+      await supabase.storage.from(emplacement.seau).remove([emplacement.chemin]);
+    }
+    await supabase.from("verification_documents").delete().eq("id", ancien.id);
+  }
+
   // La validité vient d'être recalculée par le déclencheur : on la relit pour
   // l'annoncer au garage plutôt que de la recalculer ici.
   const { data: apres } = await supabase
