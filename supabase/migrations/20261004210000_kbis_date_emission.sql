@@ -49,3 +49,17 @@ for each row execute function public.maj_validite_kbis();
 --            from vault.decrypted_secrets where name = 'service_role_key' limit 1)),
 --       body := jsonb_build_object('lot', 10), timeout_milliseconds := 120000);
 --   $job$);
+
+-- La relance des Kbis périmés n'était lancée qu'à la main : la fonction
+-- expiration-kbis-garages existait depuis le 3 octobre 2026, sans tâche pour
+-- l'appeler. Elle prévient quinze jours avant l'échéance, puis ne retire la
+-- vérification qu'aux garages prévenus depuis au moins quinze jours.
+--
+--   select cron.schedule('expiration-kbis-garages', '10 8 * * *', $job$
+--     select net.http_post(
+--       url := '.../functions/v1/expiration-kbis-garages',
+--       headers := jsonb_build_object('Content-Type','application/json',
+--         'Authorization','Bearer ' || (select decrypted_secret
+--            from vault.decrypted_secrets where name = 'service_role_key' limit 1)),
+--       body := '{}'::jsonb, timeout_milliseconds := 120000);
+--   $job$);
