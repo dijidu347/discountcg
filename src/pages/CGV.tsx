@@ -126,6 +126,23 @@ export default function CGV() {
               reçu ces informations.
             </p>
             <p>
+              {/* Mention exigee par l'article L. 223-1 du Code de la consommation. La DGCCRF
+                  la releve nommement parmi les manquements constates sur les sites d'aide
+                  aux demarches administratives. */}
+              <strong>Démarchage téléphonique.</strong> Le Client consommateur est informé de son droit de
+              s'inscrire gratuitement sur la liste d'opposition au démarchage téléphonique prévue à l'article
+              L. 223-1 du Code de la consommation, sur{" "}
+              <a
+                href="https://www.bloctel.gouv.fr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                bloctel.gouv.fr
+              </a>
+              .
+            </p>
+            <p>
               Avant tout paiement, le Client déclare avoir lu et accepté les présentes CGV au moyen d'une case à cocher
               dédiée. Aucun paiement ne peut être effectué sans cette acceptation. Cette acceptation emporte notamment
               celle de l'article 10, relatif au caractère définitif de la commande et à l'absence de remboursement.

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ContenuCession } from "@/components/seo/ContenuCession";
+import { TarifDemarche } from "@/components/demarche/TarifDemarche";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -336,6 +337,7 @@ const DemarchePage = () => {
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
               Tarif de votre {demarche.shortTitle.toLowerCase()}
             </h2>
+            <TarifDemarche code={demarche.code} avecTaxe={isCG} />
             <p className="text-muted-foreground mb-4">
               {demarche.prixDescription}
             </p>

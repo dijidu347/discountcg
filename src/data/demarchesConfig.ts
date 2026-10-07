@@ -120,7 +120,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Combien coûte une déclaration de cession ?",
-        answer: "Notre service de déclaration de cession est à partir de 19,90 euros. Le traitement est immédiat et vous recevez votre code de cession par email.",
+        answer: "Notre service de déclaration de cession est à 20 euros. Le traitement est immédiat et vous recevez votre code de cession par email.",
       },
       {
         question: "Quel est le délai pour faire une déclaration de cession ?",
@@ -163,7 +163,7 @@ export const demarchesConfig: DemarcheConfig[] = [
         answer: "Oui. Vous déclarez la cession comme pour une vente à un particulier. Le garage, lui, fait une déclaration d'achat, qui place le véhicule en détention professionnelle sans éditer de nouvelle carte grise.",
       },
     ],
-    prixDescription: "La déclaration de cession est proposée à un tarif forfaitaire à partir de 19,90 euros. Ce prix inclut le remplissage automatique du Cerfa 15776, la transmission à l'administration et l'envoi du code de cession par email. Sur le site de l'ANTS, la démarche est gratuite mais souvent complexe et sujette à des bugs. Avec Discount Carte Grise, aucun frais caché ni taxe supplémentaire : tout est compris dans le tarif annoncé.",
+    prixDescription: "La déclaration de cession est proposée à un tarif forfaitaire, indiqué ci-dessus. Ce prix inclut le remplissage automatique du Cerfa 15776, la transmission à l'administration et l'envoi du code de cession par email. Sur le site de l'ANTS, la démarche est gratuite mais souvent complexe et sujette à des bugs. Avec Discount Carte Grise, aucun frais caché ni taxe supplémentaire : tout est compris dans le tarif annoncé.",
     seoContent: "Tant que la cession n'est pas déclarée, c'est le vendeur qui répond du véhicule devant l'administration. Un excès de vitesse, un stationnement impayé, un péage non réglé par l'acheteur : l'avis arrive chez l'ancien propriétaire, et c'est à lui de prouver qu'il avait vendu. La déclaration ferme cette porte, et c'est sa vraie fonction.\n\nLe vendeur et l'acheteur remplissent ensemble le Cerfa 15776, en trois exemplaires : un pour chacun, un pour l'administration. La carte grise est barrée en diagonale, avec la mention « vendu le », la date et l'heure, et la signature du vendeur. La date doit être la même sur les deux documents — c'est le premier point que vérifie le SIV.\n\nLa déclaration produit un code de cession à cinq caractères. Sans ce code, l'acheteur ne peut pas obtenir la carte grise à son nom : il faut donc le lui transmettre, avec son exemplaire du certificat et la carte grise barrée.\n\nVoiture, scooter, utilitaire, remorque, camping-car : la formalité est la même, et elle vaut aussi pour un don. Le vendeur a quinze jours, l'acheteur en a trente pour sa carte grise.",
     keywords: ["déclaration de cession", "vente véhicule", "cerfa 15776", "déclaration vente voiture", "déclaration cession pas cher"],
   },
@@ -219,7 +219,7 @@ export const demarchesConfig: DemarcheConfig[] = [
         answer: "Il n'y a pas de durée maximale légale pour la détention professionnelle. Toutefois, un véhicule qui reste trop longtemps sans être revendu peut attirer l'attention de l'administration. En pratique, la plupart des professionnels revendent le véhicule dans les quelques mois suivant l'achat.",
       },
     ],
-    prixDescription: "La déclaration d'achat est proposée à un tarif forfaitaire à partir de 19,90 euros. Ce prix inclut la gestion complète de la déclaration auprès de l'administration et l'envoi de l'accusé de réception par email. Contrairement au changement de titulaire, aucune taxe régionale n'est due car il n'y a pas d'édition de nouvelle carte grise. Pas de frais supplémentaires ni de mauvaise surprise.",
+    prixDescription: "La déclaration d'achat est réservée aux professionnels de l'automobile et proposée à un tarif forfaitaire, indiqué ci-dessus. Ce prix inclut la gestion complète de la déclaration auprès de l'administration et l'envoi de l'accusé de réception par email. Contrairement au changement de titulaire, aucune taxe régionale n'est due car il n'y a pas d'édition de nouvelle carte grise. Pas de frais supplémentaires ni de mauvaise surprise.",
     seoContent: "La déclaration d'achat par un professionnel de l'automobile est une étape clé dans le circuit de revente de véhicules d'occasion. Elle permet aux garagistes, concessionnaires et négociants de détenir légalement un véhicule sans avoir à l'immatriculer à leur nom, ce qui évite des frais de carte grise inutiles.\n\nEn France, des milliers de transactions professionnelles nécessitent chaque jour cette déclaration. Le professionnel doit impérativement disposer d'un numéro SIREN valide et exercer une activité dans le secteur automobile pour pouvoir effectuer cette démarche.\n\nDiscount Carte Grise accompagne les professionnels de l'automobile dans toutes leurs démarches administratives. Notre service en ligne permet de gagner un temps précieux et d'éviter les erreurs qui pourraient retarder la revente du véhicule. Simplifiez votre gestion administrative avec notre plateforme dédiée aux professionnels.",
     keywords: ["déclaration achat véhicule", "achat voiture occasion professionnel", "déclaration achat pas cher"],
   },
@@ -359,7 +359,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Envoyez les documents requis",
       "Recevez votre carte grise et vos plaques",
     ],
-    prixDescription: "Le prix de la carte grise d'un véhicule neuf dépend de la puissance fiscale, du tarif du cheval fiscal dans votre département et du taux d'émission de CO2. La taxe sur les émissions polluantes (malus écologique) peut s'ajouter pour les véhicules dépassant 118 g de CO2/km en 2026. Les véhicules électriques et hybrides rechargeables bénéficient d'exonérations de taxe régionale dans la plupart des départements. Nos frais de dossier sont à partir de 30 euros, souvent moins chers que ceux facturés par les concessionnaires.",
+    prixDescription: "Le prix de la carte grise d'un véhicule neuf dépend de la puissance fiscale, du tarif du cheval fiscal dans votre département et du taux d'émission de CO2. La taxe sur les émissions polluantes (malus écologique) peut s'ajouter pour les véhicules dépassant 118 g de CO2/km en 2026. Les véhicules électriques et hybrides rechargeables bénéficient d'exonérations de taxe régionale dans la plupart des départements. Nos frais de dossier sont de 39 euros, souvent moins chers que ceux facturés par les concessionnaires.",
     faqs: [
       {
         question: "Peut-on immatriculer un véhicule neuf en ligne ?",
