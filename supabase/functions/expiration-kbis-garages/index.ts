@@ -51,6 +51,9 @@ serve(async (req) => {
   // annonçait une date illisible (« le 2026-06-29 ») et renvoyait vers un
   // espace où le dépôt ne marchait pas.
   const relancerPerimes: boolean = corps?.relancer_perimes === true;
+  // Un envoi groupé se compte avant de partir : qui est concerné, combien, et
+  // avec quelle adresse. Rien n'est envoyé tant que simuler vaut vrai.
+  const simuler: boolean = corps?.simuler === true;
 
   const aujourdhui = new Date().toISOString().slice(0, 10);
   const dans15Jours = new Date(Date.now() + JOURS_AVANT_ALERTE * 86400_000).toISOString().slice(0, 10);
@@ -94,6 +97,19 @@ serve(async (req) => {
       .eq("is_verified", false)
       .not("kbis_valide_jusqu_au", "is", null)
       .lt("kbis_valide_jusqu_au", aujourdhui);
+
+    if (simuler) {
+      return json({
+        simulation: true,
+        destinataires: (perimes ?? []).length,
+        sans_email: (perimes ?? []).filter((g: Garage) => !g.email).length,
+        apercu: (perimes ?? []).slice(0, 5).map((g: Garage) => ({
+          garage: g.raison_sociale,
+          email: g.email,
+          echeance: g.kbis_valide_jusqu_au,
+        })),
+      });
+    }
 
     let relances = 0;
     for (const garage of (perimes ?? []) as Garage[]) {
