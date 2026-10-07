@@ -10,6 +10,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { departementsTarifs, departementsLabels } from "@/data/departementsTarifs";
+import { calculatePrice } from "@/utils/calculatePrice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -33,6 +34,28 @@ const regions: Record<string, { name: string; depts: string[] }> = {
   paca: { name: "Provence-Alpes-Côte d'Azur", depts: ["04", "05", "06", "13", "83", "84"] },
   dom: { name: "DOM-TOM", depts: ["971", "972", "973", "974", "976"] },
 };
+
+export // Trois départements qui encadrent la France : le moins cher, le plus répandu,
+// le plus cher. Les prix affichés sortent de calculatePrice, celle qu'utilise
+// le simulateur.
+const REPERES = [
+  { code: "976", libelle: "Mayotte" },
+  { code: "59", libelle: "Nord" },
+  { code: "75", libelle: "Paris" },
+];
+
+// Un véhicule de moins de dix ans, pour que l'abattement ne brouille pas la
+// lecture du tableau par puissance.
+const RECENT = "2022-01-01";
+
+// Un cas commun, décliné par genre : 6 CV dans un département à 43 €.
+const EXEMPLE_GENRES = [
+  { genre: "VP", libelle: "Voiture particulière", note: "Plein tarif" },
+  { genre: "CTTE", libelle: "Camionnette (utilitaire)", note: "Plein tarif + 34 € de taxe transport" },
+  { genre: "MTT1", libelle: "Moto, scooter plus de 50 cm³", note: "Taxe régionale divisée par deux" },
+  { genre: "CL", libelle: "Cyclomoteur, scooter 50 cm³", note: "Exonéré de taxe régionale et d'acheminement" },
+  { genre: "REM", libelle: "Remorque", note: "Exonérée de taxe régionale" },
+];
 
 export const faqService = [
   { question: "Le simulateur est-il gratuit ?", answer: "Oui, et sans inscription. Le résultat s'affiche immédiatement, taxes comprises." },
@@ -115,6 +138,27 @@ export function TarifsCarteGrise() {
     return list;
   }, [allDepts, selectedRegion, sortKey, sortDir]);
 
+  const parPuissance = useMemo(
+    () =>
+      [3, 4, 5, 6, 7, 8, 10].map((cv) => ({
+        cv,
+        prix: REPERES.map((r) => ({
+          code: r.code,
+          total: calculatePrice(departementsTarifs[r.code], cv, RECENT, "VP").prixTotal,
+        })),
+      })),
+    [],
+  );
+
+  const parGenre = useMemo(
+    () =>
+      EXEMPLE_GENRES.map((g) => {
+        const calcul = calculatePrice(43, 6, RECENT, g.genre);
+        return { ...g, total: calcul.prixTotal, regionale: calcul.prixCV };
+      }),
+    [],
+  );
+
   const cheapest = useMemo(() => [...allDepts].sort((a, b) => a.tarif - b.tarif).slice(0, 5), [allDepts]);
   const mostExpensive = useMemo(() => [...allDepts].sort((a, b) => b.tarif - a.tarif).slice(0, 5), [allDepts]);
 
@@ -151,7 +195,7 @@ export function TarifsCarteGrise() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                <p>Elle ne vise que les <strong>véhicules utilitaires immatriculés au nom d'une société</strong>. Pour un particulier, elle vaut <strong>0 €</strong>. Pour une entreprise, elle dépend du genre du véhicule et de son poids total autorisé en charge.</p>
+                <p>Elle ne vise qu'un genre précis : la <strong>camionnette (CTTE)</strong> de 3,5 tonnes au plus, portée case J.1 de la carte grise. Son montant est de <strong>34 €</strong>. Une voiture particulière, une moto, une remorque : zéro.</p>
               </CardContent>
             </Card>
 
@@ -175,7 +219,7 @@ export function TarifsCarteGrise() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                <p>Un montant fixe de <strong>11 €</strong> prélevé par l'État pour le traitement du dossier. Identique dans tous les départements et pour tous les genres de véhicules. Les cyclomoteurs et les véhicules diplomatiques en sont dispensés.</p>
+                <p>Un montant fixe de <strong>11 €</strong> prélevé par l'État pour le traitement du dossier. Identique dans tous les départements et pour tous les genres de véhicules, cyclomoteurs compris — c'est même la seule taxe que paie un 50 cm³.</p>
               </CardContent>
             </Card>
 
@@ -352,6 +396,137 @@ export function TarifsCarteGrise() {
               </p>
             </CardContent>
           </Card>
+        </section>
+
+        {/* Section: prix par puissance fiscale */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <Euro className="w-7 h-7 text-primary" />
+            Combien coûte une carte grise de 5, 7 ou 10 CV ?
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Les montants ci-dessous sont des prix complets, taxes fixes incluses, pour une voiture
+            particulière de moins de dix ans. Ils sortent du même calcul que le simulateur : trois
+            départements qui encadrent la France, du moins cher au plus cher.
+          </p>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Puissance fiscale</TableHead>
+                    {REPERES.map((r) => (
+                      <TableHead key={r.code} className="text-right">
+                        {r.libelle} ({departementsTarifs[r.code].toFixed(2)} &euro;/CV)
+                      </TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {parPuissance.map((ligne) => (
+                    <TableRow key={ligne.cv}>
+                      <TableCell className="font-medium">{ligne.cv} CV</TableCell>
+                      {ligne.prix.map((p) => (
+                        <TableCell key={p.code} className="text-right font-semibold">
+                          {p.total.toFixed(2)} &euro;
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            <Info className="w-4 h-4 inline mr-1" />
+            Au-delà de dix ans de mise en circulation, divisez la taxe régionale par deux : un 7 CV
+            parisien passe de {parPuissance.find((l) => l.cv === 7)!.prix[2].total.toFixed(2)} &euro; à{" "}
+            {calculatePrice(departementsTarifs["75"], 7, "2010-01-01", "VP").prixTotal.toFixed(2)} &euro;.
+          </p>
+        </section>
+
+        {/* Section: prix par type de vehicule */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <Car className="w-7 h-7 text-primary" />
+            Prix de la carte grise selon le type de véhicule
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Le genre inscrit case J.1 de la carte grise change tout. Un scooter 50 cm³ ne paie
+            ni taxe régionale ni acheminement : il lui reste 11 €. Une moto paie la moitié de la
+            taxe régionale. Voici ce que donne un même véhicule de 6 CV dans un département à
+            43 € le cheval fiscal.
+          </p>
+          <div className="border rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type de véhicule</TableHead>
+                    <TableHead>Règle appliquée</TableHead>
+                    <TableHead className="text-right">Taxe régionale</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {parGenre.map((g) => (
+                    <TableRow key={g.genre}>
+                      <TableCell className="font-medium">{g.libelle}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{g.note}</TableCell>
+                      <TableCell className="text-right">{g.regionale.toFixed(2)} &euro;</TableCell>
+                      <TableCell className="text-right font-semibold">{g.total.toFixed(2)} &euro;</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-3">
+            <Info className="w-4 h-4 inline mr-1" />
+            Les tracteurs et le matériel agricole suivent la même règle que les remorques : exonérés
+            de taxe régionale.
+          </p>
+        </section>
+
+        {/* Section: demarches annexes */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
+            <Info className="w-7 h-7 text-primary" />
+            Duplicata, changement d'adresse : les démarches à prix fixe
+          </h2>
+          <p className="text-muted-foreground mb-6">
+            Toutes les démarches ne refont pas le calcul complet. Certaines ne portent que les taxes
+            fixes, quel que soit le véhicule et le département.
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Duplicata</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                <p className="text-2xl font-bold text-foreground mb-2">13,76 &euro;</p>
+                <p>Carte grise perdue, volée ou abîmée. Taxe de gestion et acheminement, rien d'autre : la taxe régionale a déjà été payée.</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Changement d'adresse</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                <p className="text-2xl font-bold text-foreground mb-2">2,76 &euro;</p>
+                <p>Un déménagement ne redéclenche pas la taxe régionale, même vers un département plus cher. Seul l'acheminement du titre est dû.</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Certificat provisoire WW</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                <p className="text-2xl font-bold text-foreground mb-2">11 &euro;</p>
+                <p>Aucun titre n'est expédié, donc pas d'acheminement : la taxe de gestion seule.</p>
+              </CardContent>
+            </Card>
+          </div>
         </section>
 
         {/* FAQ */}
