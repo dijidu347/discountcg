@@ -256,7 +256,7 @@ const DemarchePage = () => {
             <h3 className="text-sm font-semibold text-foreground mb-2">Voir aussi</h3>
             <ul className="space-y-1 text-sm">
               <li>
-                <Link to="/prix-carte-grise" className="text-primary hover:underline">
+                <Link to="/simulateur" className="text-primary hover:underline">
                   Prix carte grise 2026 par département
                 </Link>
               </li>

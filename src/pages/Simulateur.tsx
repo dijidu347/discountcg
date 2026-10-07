@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { SEOHead } from "@/components/seo/SEOHead";
 import { breadcrumbSchema, serviceSchema, faqSchema } from "@/components/seo/schemas";
 import { SimulateurSection } from "@/components/SimulateurSection";
+import { TarifsCarteGrise, faqTarifs, faqService } from "@/components/seo/TarifsCarteGrise";
 import { Shield, Clock, FileCheck, CheckCircle, ArrowRight } from "lucide-react";
 
 export default function Simulateur() {
@@ -14,8 +15,8 @@ export default function Simulateur() {
   return (
     <div className="min-h-screen bg-background">
       <SEOHead
-        title="Simulateur Prix Carte Grise 2026 Gratuit | Résultat Instantané"
-        description="Calculez gratuitement le prix de votre carte grise en ligne. Simulateur à jour des tarifs 2026 par département. Résultat instantané, frais de dossier dès 30€."
+        title="Simulateur Prix Carte Grise 2026 | Tarif du Cheval Fiscal"
+        description="Calculez le prix de votre carte grise en 30 secondes, et consultez le tarif du cheval fiscal des 101 départements en 2026. Gratuit, sans inscription."
         canonical="https://discountcartegrise.fr/simulateur"
         schema={[
           breadcrumbSchema([
@@ -29,10 +30,7 @@ export default function Simulateur() {
             "https://discountcartegrise.fr/simulateur"
           ),
           faqSchema([
-            { question: "Comment est calculé le prix d'une carte grise ?", answer: "Le prix d'une carte grise dépend de la puissance fiscale du véhicule, du tarif du cheval fiscal de votre département, de l'âge du véhicule et du type de carburant. Notre simulateur calcule automatiquement ces éléments." },
-            { question: "Le simulateur est-il gratuit ?", answer: "Oui, notre simulateur de prix carte grise est 100% gratuit et sans engagement. Vous obtenez le résultat instantanément." },
-            { question: "Les tarifs sont-ils à jour ?", answer: "Oui, notre simulateur utilise les tarifs officiels 2026 en vigueur, mis à jour à chaque changement de tarification régionale." },
-            { question: "Quels frais de dossier appliquez-vous ?", answer: "Nos frais de dossier commencent à partir de 30€. C'est l'un des tarifs les plus compétitifs du marché pour un service agréé par l'État." },
+            ...faqTarifs, ...faqService,
           ]),
         ]}
       />
@@ -85,60 +83,8 @@ export default function Simulateur() {
         </div>
       </section>
 
-      {/* Contenu SEO */}
-      <section className="py-16">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6">
-            Comment est calculé le prix d'une carte grise ?
-          </h2>
-          <div className="prose prose-lg max-w-none text-muted-foreground space-y-4">
-            <p>
-              Le prix d'une carte grise (certificat d'immatriculation) est composé de plusieurs taxes calculées selon les caractéristiques de votre véhicule et votre lieu de résidence. Notre simulateur prend en compte tous ces éléments pour vous donner un prix précis et transparent.
-            </p>
-            <h3 className="text-xl font-semibold text-foreground">Les composantes du prix</h3>
-            <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Taxe régionale (Y.1)</strong> : calculée selon la puissance fiscale et le tarif du cheval fiscal de votre département</li>
-              <li><strong>Taxe de formation professionnelle (Y.2)</strong> : pour les véhicules utilitaires uniquement</li>
-              <li><strong>Taxe CO2 (Y.3)</strong> : basée sur les émissions de CO2 du véhicule</li>
-              <li><strong>Taxe de gestion (Y.4)</strong> : 11€ fixe</li>
-              <li><strong>Redevance d'acheminement (Y.5)</strong> : 2,76€ fixe</li>
-            </ul>
-            <h3 className="text-xl font-semibold text-foreground">Exonérations possibles</h3>
-            <p>
-              Les véhicules de plus de 10 ans bénéficient d'une réduction de 50% sur la taxe régionale. Les véhicules électriques et hybrides peuvent être exonérés totalement ou partiellement selon les régions.
-            </p>
-            <h3 className="text-xl font-semibold text-foreground">Le tarif dépend de votre département</h3>
-            <p>
-              C'est l'adresse du titulaire qui fixe le tarif du cheval fiscal, pas le lieu d'achat du véhicule. Il va de 30 € à Mayotte à 68,95 € en Île-de-France : sur un véhicule de 7 CV, 272 € d'écart pour la même voiture.{" "}
-              <Link to="/prix-carte-grise" className="text-primary hover:underline font-semibold">
-                Voir le tarif du cheval fiscal des 101 départements
-              </Link>.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="text-2xl md:text-3xl font-bold text-center mb-10">
-            Questions fréquentes sur le prix de la carte grise
-          </h2>
-          <div className="space-y-4">
-            {[
-              { q: "Comment est calculé le prix d'une carte grise ?", a: "Le prix dépend de la puissance fiscale du véhicule, du tarif du cheval fiscal de votre département, de l'âge du véhicule et du type de carburant. Notre simulateur calcule automatiquement ces éléments." },
-              { q: "Le simulateur est-il gratuit ?", a: "Oui, notre simulateur de prix carte grise est 100% gratuit et sans engagement. Vous obtenez le résultat instantanément." },
-              { q: "Les tarifs sont-ils à jour ?", a: "Oui, notre simulateur utilise les tarifs officiels 2026 en vigueur, mis à jour à chaque changement de tarification régionale." },
-              { q: "Quels frais de dossier appliquez-vous ?", a: "Nos frais de dossier commencent à partir de 30€. C'est l'un des tarifs les plus compétitifs du marché pour un service agréé par l'État." },
-            ].map((faq, i) => (
-              <div key={i} className="bg-card border border-border rounded-lg p-6">
-                <h3 className="font-semibold text-foreground mb-2">{faq.q}</h3>
-                <p className="text-muted-foreground">{faq.a}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Le contenu rapatrié de /prix-carte-grise */}
+      <TarifsCarteGrise />
 
       {/* CTA */}
       <section className="py-16 bg-primary text-primary-foreground">
