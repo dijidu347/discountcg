@@ -12,36 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Download, FileText, Clock, KeyRound, Info } from "lucide-react";
+import { QUI_FAIT_QUOI, CASES_CERFA } from "@/data/cessionReperes";
 
 // Les délais et les sanctions, les deux questions qui amènent sur cette page.
-const QUI_FAIT_QUOI = [
-  {
-    qui: "Le vendeur",
-    action: "Barrer la carte grise, porter la mention « vendu le », la date et l'heure, puis signer",
-    quand: "Le jour de la vente",
-    sinon: "L'acheteur ne peut pas faire sa carte grise",
-  },
-  {
-    qui: "Le vendeur",
-    action: "Déclarer la cession et remettre le code de cession à l'acheteur",
-    quand: "Dans les 15 jours",
-    sinon: "Il reste responsable des infractions commises avec le véhicule",
-  },
-  {
-    qui: "L'acheteur",
-    action: "Demander la carte grise à son nom",
-    quand: "Dans les 30 jours",
-    sinon: "Amende de 135 €",
-  },
-];
-
-const CASES_CERFA = [
-  { repere: "Véhicule", contenu: "Immatriculation, date de première mise en circulation, marque et numéro d'identification (VIN), recopiés de la carte grise." },
-  { repere: "Ancien propriétaire", contenu: "Nom, prénom, adresse du vendeur. Pour une société, sa raison sociale et son SIRET." },
-  { repere: "Date et heure de cession", contenu: "Le moment exact où la vente est conclue. C'est lui qui fait basculer la responsabilité, d'où l'heure." },
-  { repere: "Nouveau propriétaire", contenu: "Identité et adresse de l'acheteur. Une faute d'orthographe ici bloque sa demande de carte grise." },
-  { repere: "Signatures", contenu: "Les deux parties signent. Une société ajoute son cachet." },
-];
 
 export function ContenuCession() {
   return (

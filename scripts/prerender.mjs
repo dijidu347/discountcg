@@ -163,6 +163,60 @@ async function principal() {
   await mkdir(TEMP, { recursive: true });
   const { demarchesConfig } = await chargerTs("src/data/demarchesConfig.ts", "demarches");
   const { ROUTES_SEO } = await chargerTs("src/data/seoRoutes.ts", "routes");
+  // Le tableau des 101 departements est la matiere premiere du simulateur :
+  // c'est la donnee publique reutilisee, et c'est ce qui distingue la page des
+  // simulateurs concurrents. Il etait rendu par React, donc absent du HTML
+  // servi — invisible pour les robots des assistants.
+  let tableauDepartements = "";
+  try {
+    const { departementsTarifs, departementsLabels } = await chargerTs(
+      "src/data/departementsTarifs.ts",
+      "departements"
+    );
+    const codes = Object.keys(departementsTarifs).sort();
+    const lignes = codes
+      .map((c) => {
+        const t = Number(departementsTarifs[c]);
+        return `<tr><td>${echappe(departementsLabels[c] ?? c)}</td><td>${echappe(c)}</td>` +
+          `<td>${t.toFixed(2)} &euro;</td><td>${(t * 5).toFixed(2)} &euro;</td>` +
+          `<td>${(t * 7).toFixed(2)} &euro;</td></tr>`;
+      })
+      .join("");
+    tableauDepartements =
+      `<h2>Tarif du cheval fiscal par departement en ${new Date().getFullYear()}</h2>` +
+      `<p>Tarif de la taxe regionale par cheval fiscal dans les ${codes.length} departements. ` +
+      `Les colonnes 5 CV et 7 CV donnent la taxe regionale seule, hors taxes fixes.</p>` +
+      `<table><thead><tr><th>Departement</th><th>Code</th><th>Tarif/CV</th>` +
+      `<th>Taxe 5 CV</th><th>Taxe 7 CV</th></tr></thead><tbody>${lignes}</tbody></table>`;
+  } catch (e) {
+    console.warn("[prerender] tableau des departements ignore :", e?.message ?? e);
+  }
+
+  // Meme raison pour la cession : « qui fait quoi dans quel delai » et le
+  // contenu du Cerfa case par case sont ce que cherche quelqu'un qui tape
+  // « certificat de cession », et c'etait rendu par React.
+  let reperesCession = "";
+  try {
+    const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
+      "src/data/cessionReperes.ts",
+      "cession"
+    );
+    reperesCession =
+      `<h2>Qui fait quoi, et dans quel delai</h2><table><thead><tr><th>Qui</th>` +
+      `<th>Ce qu'il doit faire</th><th>Quand</th><th>A defaut</th></tr></thead><tbody>` +
+      QUI_FAIT_QUOI.map(
+        (l) =>
+          `<tr><td>${echappe(l.qui)}</td><td>${echappe(l.action)}</td>` +
+          `<td>${echappe(l.quand)}</td><td>${echappe(l.sinon)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      `<h2>Ce que contient le Cerfa 15776</h2>` +
+      CASES_CERFA.map(
+        (c) => `<h3>${echappe(c.repere)}</h3><p>${echappe(c.contenu)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] reperes de cession ignores :", e?.message ?? e);
+  }
 
   const organisation = {
     "@context": "https://schema.org",
@@ -175,7 +229,8 @@ async function principal() {
 
   // Pages écrites à la main.
   for (const [route, seo] of Object.entries(ROUTES_SEO)) {
-    const html = corps({ h1: seo.h1, blocs: [paragraphes(seo.intro)] });
+    const supplement = route === "/simulateur" ? tableauDepartements : "";
+    const html = corps({ h1: seo.h1, blocs: [paragraphes(seo.intro), supplement] });
     await ecrire(
       route,
       appliquer(gabarit, {
@@ -208,6 +263,7 @@ async function principal() {
     const html = corps({
       h1: d.h1,
       blocs: [
+        d.slug === "declaration-cession" ? reperesCession : "",
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
         liste("Comment ça se passe", d.steps),

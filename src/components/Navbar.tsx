@@ -42,6 +42,9 @@ const Navbar = () => {
             <button onClick={() => navigate("/carte-grise")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Démarches
             </button>
+            <button onClick={() => navigate("/carte-grise-professionnel")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
+              Professionnels
+            </button>
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
             </button>
@@ -84,6 +87,12 @@ const Navbar = () => {
           navigate("/carte-grise");
         }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Démarches
+            </button>
+            <button onClick={() => {
+          setIsOpen(false);
+          navigate("/carte-grise-professionnel");
+        }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
+              Professionnels
             </button>
             <button onClick={() => {
           setIsOpen(false);
