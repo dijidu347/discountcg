@@ -604,7 +604,7 @@ export default function ManageGarages() {
     { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
     { cle: "en_attente", texte: "Documents à compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter" },
     { cle: "a_verifier", texte: "À vérifier", aide: "Toutes les pièces obligatoires sont envoyées : à nous de contrôler et valider" },
-    { cle: "kbis_perime", texte: "Kbis à renouveler", aide: "Garages déjà vérifiés dont le Kbis a dépassé six mois : il leur suffit d'en déposer un récent" },
+    { cle: "kbis_perime", texte: "Kbis expiré", aide: "Garages déjà vérifiés dont le Kbis a dépassé six mois : il leur suffit d'en déposer un récent" },
     { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
   ];
 

@@ -98,7 +98,7 @@ function etatDuGarage(garage: { is_verified?: boolean | null; kbis_valide_jusqu_
   if (!garage) return null;
   if (garage.is_verified) return { texte: "Vérifié", classe: "bg-green-500" };
   if (garage.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date()) {
-    return { texte: "Kbis à renouveler", classe: "bg-orange-500" };
+    return { texte: "Kbis expiré", classe: "bg-orange-500" };
   }
   return null;
 }

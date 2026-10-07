@@ -213,6 +213,12 @@ export default function GarageDetail() {
 
   if (!garage) return null;
 
+  // Un garage qui a perdu sa vérification parce que son Kbis a dépassé six mois
+  // n'est pas un garage inconnu : on le dit plutôt que de laisser « Non ».
+  const kbisExpire = Boolean(
+    garage.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
+  );
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
@@ -235,12 +241,17 @@ export default function GarageDetail() {
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">{garage.raison_sociale}</h1>
-            {garage.is_verified && (
+            {garage.is_verified ? (
               <Badge className="bg-green-500">
                 <ShieldCheck className="h-3 w-3 mr-1" />
                 Vérifié
               </Badge>
-            )}
+            ) : kbisExpire ? (
+              <Badge className="bg-orange-500">
+                <ShieldCheck className="h-3 w-3 mr-1" />
+                Kbis expiré
+              </Badge>
+            ) : null}
           </div>
           <Button onClick={() => setShowEditDialog(true)}>
             <Pencil className="h-4 w-4 mr-2" />
@@ -316,6 +327,8 @@ export default function GarageDetail() {
                 <dd>
                   {garage.is_verified ? (
                     <Badge className="bg-green-500">Oui</Badge>
+                  ) : kbisExpire ? (
+                    <Badge className="bg-orange-500">Kbis expiré</Badge>
                   ) : (
                     <Badge variant="secondary">Non</Badge>
                   )}
