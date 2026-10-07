@@ -74,6 +74,32 @@ function liste(titre, elements) {
     .join("")}</ul>`;
 }
 
+// Le pont entre les deux publics vit dans un composant React, donc hors du
+// HTML servi. Un lien interne que les robots ne voient pas ne vaut rien : les
+// robots des assistants n'executent pas le JavaScript, et c'est par ces liens
+// que la branche pro et la branche particulier se repondent.
+const PRO_SEULEMENT = ["DA", "W_GARAGE"];
+const PRO_MAJORITAIRE = ["CPI_WW"];
+
+function publicCroise(code) {
+  if (PRO_SEULEMENT.includes(code) || PRO_MAJORITAIRE.includes(code)) {
+    const intro = PRO_SEULEMENT.includes(code)
+      ? "Cette demarche est reservee aux professionnels de l'automobile et se depose depuis un compte garage, sous notre habilitation."
+      : "Demarche majoritairement professionnelle : garages, concessions et negociants la deposent depuis un compte professionnel, a un tarif different.";
+    return (
+      `<h2>Vous etes un professionnel ?</h2><p>${echappe(intro)} ` +
+      `Voir <a href="${BASE}/carte-grise-professionnel">l'offre et les tarifs professionnels</a>, ` +
+      `et <a href="${BASE}/habilitation-siv">faut-il demander son habilitation SIV</a>.</p>`
+    );
+  }
+  return (
+    `<h2>Vous etes un professionnel ?</h2><p>Garages, concessions, negociants et loueurs ` +
+    `deposent leurs demarches depuis un compte dedie, avec une grille tarifaire a part : ` +
+    `la declaration d'achat et la declaration de cession y sont a 5 &euro;. ` +
+    `Voir <a href="${BASE}/carte-grise-professionnel">l'offre professionnels</a>.</p>`
+  );
+}
+
 function faqHtml(faqs) {
   if (!faqs?.length) return "";
   return (
@@ -271,6 +297,7 @@ async function principal() {
         d.prixDescription ? `<h2>Tarif</h2><p>${echappe(d.prixDescription)}</p>` : "",
         d.seoContent ? paragraphes([d.seoContent]) : "",
         faqHtml(d.faqs),
+        publicCroise(d.code),
       ],
     });
 
