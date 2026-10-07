@@ -226,6 +226,7 @@ serve(async (req) => {
   let ecrites = 0;
   const refusees: { id: string; motif: string }[] = [];
   const revalides: string[] = [];
+  const aControler: string[] = [];
 
   for (const ligne of aLire ?? []) {
     try {
@@ -302,9 +303,21 @@ serve(async (req) => {
         .eq("id", ligne.id);
       if (erreurEcriture) throw new Error(erreurEcriture.message);
 
-      if (iso && datePlausible(iso)) {
-        const rendu = await revalider(supabase, ligne as any, iso, sirenLu, lu?.est_un_kbis !== false);
-        if (rendu) revalides.push(rendu);
+      const rendu = iso && datePlausible(iso)
+        ? await revalider(supabase, ligne as any, iso, sirenLu, lu?.est_un_kbis !== false)
+        : null;
+      if (rendu) {
+        revalides.push(rendu);
+      } else if (ligne.status === "pending" && /kbis/i.test(ligne.document_type ?? "")) {
+        // La lecture n'a pas conclu : le garage passe dans « À vérifier », où
+        // quelqu'un tranchera. Sans cela, sa pièce attendrait sans que personne
+        // ne la voie.
+        await supabase
+          .from("garages")
+          .update({ verification_requested_at: new Date().toISOString(), verification_admin_viewed: false })
+          .eq("id", ligne.garage_id)
+          .is("verification_requested_at", null);
+        aControler.push(ligne.garage_id);
       }
     } catch (erreur) {
       const motif = erreur instanceof Error ? erreur.message : String(erreur);
@@ -322,5 +335,5 @@ serve(async (req) => {
     }
   }
 
-  return json({ candidats: (aLire ?? []).length, lues, ecrites, revalides, refusees });
+  return json({ candidats: (aLire ?? []).length, lues, ecrites, revalides, a_controler: aControler.length, refusees });
 });

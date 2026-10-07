@@ -348,7 +348,11 @@ export default function GarageSettings() {
       const requiredCodes = requiredDocs.filter(d => d.obligatoire).map(d => d.code);
       const allRequiredUploaded = requiredCodes.every(code => uploadedTypes.has(code));
       
-      if (allRequiredUploaded && !garage.verification_requested_at) {
+      // Un renouvellement de Kbis n'est pas une demande de vérification : la
+      // lecture décide toute seule dans le quart d'heure, et ne réveille
+      // l'administration que si elle n'a pas pu conclure. Prévenir dès le dépôt
+      // revenait à annoncer un travail qui, neuf fois sur dix, n'aura pas lieu.
+      if (allRequiredUploaded && !garage.verification_requested_at && !kbisPerime) {
         await supabase.from('garages').update({ 
           verification_requested_at: new Date().toISOString(),
           verification_admin_viewed: false
