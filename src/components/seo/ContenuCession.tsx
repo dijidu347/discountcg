@@ -178,8 +178,9 @@ export function ContenuCession() {
             Sur le site de l'ANTS, la démarche est donc entièrement gratuite, et il faut le dire.
           </p>
           <p>
-            Ce que vous payez chez nous, ce sont des <strong>frais de service</strong>, à partir de
-            19,90 €. Ils couvrent le remplissage du Cerfa à partir de la plaque, la vérification des
+            Ce que vous payez chez nous, ce sont des <strong>frais de service</strong> : 20 € pour
+            un particulier, 5 € pour un professionnel de l'automobile. Ils couvrent le remplissage
+            du Cerfa à partir de la plaque, la vérification des
             informations avant envoi — une faute sur le nom de l'acheteur bloque sa carte grise — et
             la transmission au SIV avec le code de cession en retour, immédiatement.
           </p>

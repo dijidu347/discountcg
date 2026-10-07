@@ -90,7 +90,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     shortTitle: "déclaration de cession",
     h1: "Certificat et déclaration de cession de véhicule en ligne",
     metaTitle: "Certificat de Cession en Ligne | Cerfa 15776 | Déclaration",
-    metaDescription: "Certificat de cession Cerfa 15776 rempli à partir de votre plaque, déclaration transmise au SIV et code de cession immédiat. Dès 19,90 €, ou le formulaire vierge à télécharger.",
+    metaDescription: "Certificat de cession Cerfa 15776 rempli à partir de votre plaque, déclaration transmise au SIV et code de cession immédiat. 20 € pour un particulier, 5 € pour un professionnel, ou le formulaire vierge à télécharger.",
     icon: "FileText",
     description: "Déclarez la vente de votre véhicule en toute simplicité",
     longDescription: "La déclaration de cession (Cerfa 15776) est une démarche administrative obligatoire lors de la vente ou du don d'un véhicule. Elle officialise le transfert de propriété et protège le vendeur contre toute responsabilité en cas d'infraction commise par l'acheteur après la transaction.\n\nLe vendeur dispose d'un délai de 15 jours suivant la date de la vente pour effectuer cette déclaration auprès de l'administration. Sans cette formalité, il reste juridiquement responsable du véhicule : contraventions, amendes de stationnement et même accidents pourraient lui être imputés.\n\nLa déclaration de cession génère un code de cession à 5 caractères, indispensable pour que l'acheteur puisse réaliser sa demande de carte grise. Ce code prouve que la vente a bien été déclarée officiellement. Avec Discount Carte Grise, le formulaire Cerfa 15776 est rempli automatiquement et vous recevez votre code de cession immédiatement par email.\n\nCette démarche concerne aussi bien les véhicules automobiles que les deux-roues, camping-cars, utilitaires et remorques. Elle s'applique que la cession soit à titre onéreux (vente) ou à titre gratuit (don).",
@@ -140,7 +140,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Peut-on faire sa déclaration de cession en ligne gratuitement ?",
-        answer: "Oui, sur le site de l'ANTS : la déclaration de cession ne donne lieu à aucune taxe, l'État ne prélève rien. Ce que facturent les services comme le nôtre, ce sont des frais de service — chez nous 19,90 € — pour remplir le Cerfa à partir de la plaque, vérifier les informations avant envoi et transmettre au SIV avec retour immédiat du code de cession.",
+        answer: "Oui, sur le site de l'ANTS : la déclaration de cession ne donne lieu à aucune taxe, l'État ne prélève rien. Ce que facturent les services comme le nôtre, ce sont des frais de service — chez nous 20 € pour un particulier et 5 € pour un professionnel — pour remplir le Cerfa à partir de la plaque, vérifier les informations avant envoi et transmettre au SIV avec retour immédiat du code de cession.",
       },
       {
         question: "Où trouver le certificat de cession à remplir ?",
@@ -174,7 +174,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     shortTitle: "déclaration d'achat",
     h1: "Déclaration d'Achat de Véhicule d'Occasion",
     metaTitle: "Déclaration d'Achat Véhicule | Pro Auto en Ligne",
-    metaDescription: "Déclarez l'achat d'un véhicule d'occasion en ligne. Service dédié aux professionnels de l'automobile, traitement immédiat. Faites votre demande dès 19,90 euros.",
+    metaDescription: "Déclarez l'achat d'un véhicule d'occasion en ligne. Réservé aux professionnels de l'automobile : garages, concessions, négociants. 5 € par déclaration, la première offerte.",
     icon: "ShoppingCart",
     description: "Déclarez l'achat d'un véhicule d'occasion",
     longDescription: "La déclaration d'achat est une démarche obligatoire pour les professionnels de l'automobile qui achètent un véhicule d'occasion auprès d'un particulier ou d'un autre professionnel. Elle permet de notifier l'administration du changement de détention du véhicule et de le placer sous le régime de la détention professionnelle.\n\nContrairement au changement de titulaire classique, la déclaration d'achat n'entraîne pas l'édition d'une nouvelle carte grise immédiate. Le véhicule reste sous l'identité administrative de l'ancien propriétaire jusqu'à sa revente, moment où le nouveau titulaire effectuera le changement de carte grise à son nom.\n\nCette démarche doit être effectuée dans les 15 jours suivant l'acquisition du véhicule. Elle est principalement utilisée par les garagistes, les concessionnaires, les marchands automobiles et les sociétés de négoce de véhicules. Le professionnel doit justifier de son activité via un extrait Kbis ou une carte professionnelle.\n\nAvec Discount Carte Grise, la déclaration d'achat est traitée immédiatement. Vous recevez votre accusé de réception par email, vous permettant de justifier la détention légale du véhicule en cas de contrôle.",

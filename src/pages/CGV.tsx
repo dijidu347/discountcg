@@ -180,7 +180,7 @@ export default function CGV() {
               </li>
               <li>
                 <strong>des Frais de service</strong> du Prestataire, correspondant à sa prestation d'assistance. Ces
-                frais varient selon la nature de la démarche et débutent à 19,90 € TTC. Le montant exact des Frais de
+                frais varient selon la nature de la démarche et selon la qualité du Client, professionnel ou consommateur, et débutent à 5 € TTC. Le montant exact des Frais de
                 service applicable à la commande est porté à la connaissance du Client au moyen du simulateur de prix et
                 du récapitulatif de commande, avant toute validation et tout paiement.
               </li>

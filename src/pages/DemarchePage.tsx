@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ContenuCession } from "@/components/seo/ContenuCession";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
+import { PublicCroise } from "@/components/demarche/PublicCroise";
 import { pushVueDemarche } from "@/lib/gtm";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
@@ -343,6 +344,9 @@ const DemarchePage = () => {
               Tarif de votre {demarche.shortTitle.toLowerCase()}
             </h2>
             <TarifDemarche code={demarche.code} avecTaxe={isCG} />
+            <div className="mb-6">
+              <PublicCroise code={demarche.code} />
+            </div>
             <p className="text-muted-foreground mb-4">
               {demarche.prixDescription}
             </p>
@@ -460,7 +464,7 @@ const DemarchePage = () => {
                 <FileText className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">Meilleur prix garanti</p>
-                  <p className="text-xs text-muted-foreground">Carte grise pas chère, frais dès 19,90 euros</p>
+                  <p className="text-xs text-muted-foreground">Frais de service affichés avant toute commande</p>
                 </div>
               </div>
             </Card>
