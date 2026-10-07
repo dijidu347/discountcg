@@ -65,6 +65,21 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
     ],
   },
 
+  "/carte-grise-professionnel": {
+    title: "Carte Grise Professionnel | Garages, Concessions, Négociants",
+    description:
+      "Déposez les cartes grises de vos clients sous notre habilitation SIV. Déclaration d'achat et de cession dès 5 €, sans abonnement. Première déclaration offerte.",
+    canonical: `${BASE}/carte-grise-professionnel`,
+    h1: "Carte grise pour les professionnels de l'automobile",
+    intro: [
+      "Garages, concessions, négociants, loueurs : déposez vos immatriculations depuis un compte professionnel, sous notre habilitation. Déclaration d'achat et de cession, changement de titulaire, véhicule neuf, W garage, WW provisoire — sans vous occuper des formalités auprès de la préfecture.",
+      "Vous pouvez demander votre propre habilitation au Système d'Immatriculation des Véhicules : elle est délivrée par le préfet du département de votre siège social, aux professionnels de l'automobile et aux loueurs. Si vous immatriculez beaucoup et voulez tout gérer en interne, c'est la bonne voie.",
+      "L'habilitation et l'agrément ne se confondent pas. L'habilitation, délivrée par la préfecture, donne accès au SIV pour effectuer les démarches. L'agrément, délivré par le Trésor public, autorise à percevoir les taxes d'immatriculation pour le compte de l'État. Un professionnel habilité mais non agréé ne peut pas encaisser la taxe régionale de son client. Nous détenons les deux : habilitation n° 285046 et agrément n° 63198.",
+      "Le fonctionnement tient en quatre étapes : vous créez votre compte avec un Kbis de moins de six mois et la pièce d'identité du dirigeant ; nous vérifions votre entreprise, la date du Kbis étant lue automatiquement ; vous créditez un solde en euros, sans abonnement ni engagement de volume ; vous déposez vos démarches et le certificat provisoire part par e-mail dès la validation, votre client repart avec son véhicule le jour même.",
+      "Sur les douze derniers mois, 4 047 démarches ont été traitées pour le compte de 189 garages vérifiés. Sur le dernier trimestre, le délai médian entre le dépôt et la finalisation a été de 21 heures sur 1 744 démarches. La première déclaration d'achat ou de cession est offerte à l'ouverture du compte.",
+    ],
+  },
+
   "/a-propos": {
     title: "A propos | Discount Carte Grise - Service Agree par l'Etat",
     description:

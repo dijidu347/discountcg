@@ -32,6 +32,7 @@ const Footer = () => {
             <h4 className="font-bold mb-4">Services</h4>
             <ul className="space-y-2 text-sm opacity-80">
               <li><Link to="/carte-grise" className="hover:opacity-100 transition-opacity">Carte grise en ligne</Link></li>
+              <li><Link to="/carte-grise-professionnel" className="hover:opacity-100 transition-opacity">Offre professionnels</Link></li>
               <li><Link to="/declaration-cession" className="hover:opacity-100 transition-opacity">Déclaration de cession</Link></li>
               <li><Link to="/changement-adresse-carte-grise" className="hover:opacity-100 transition-opacity">Changement d'adresse</Link></li>
               <li><Link to="/simulateur" className="hover:opacity-100 transition-opacity">Prix carte grise 2026</Link></li>
