@@ -107,6 +107,13 @@ export default function Simulateur() {
             <p>
               Les véhicules de plus de 10 ans bénéficient d'une réduction de 50% sur la taxe régionale. Les véhicules électriques et hybrides peuvent être exonérés totalement ou partiellement selon les régions.
             </p>
+            <h3 className="text-xl font-semibold text-foreground">Le tarif dépend de votre département</h3>
+            <p>
+              C'est l'adresse du titulaire qui fixe le tarif du cheval fiscal, pas le lieu d'achat du véhicule. Il va de 30 € à Mayotte à 68,95 € en Île-de-France : sur un véhicule de 7 CV, 272 € d'écart pour la même voiture.{" "}
+              <Link to="/prix-carte-grise" className="text-primary hover:underline font-semibold">
+                Voir le tarif du cheval fiscal des 101 départements
+              </Link>.
+            </p>
           </div>
         </div>
       </section>
