@@ -697,30 +697,8 @@ export default function ResultatCarteGrise() {
                       .single();
                     if (orderData) {
                       const totalPaid = calculateTotalTTC();
-                      // Admin notification
-                      await supabase.functions.invoke('send-email', {
-                        body: {
-                          type: 'admin_new_guest_order',
-                          to: 'contact@discountcartegrise.fr',
-                          data: {
-                            client_name: orderData.nom ? `${orderData.prenom} ${orderData.nom}` : 'Non renseigné',
-                            client_email: orderData.email || 'Non renseigné',
-                            client_phone: orderData.telephone || 'Non renseigné',
-                            tracking_number: orderData.tracking_number,
-                            immatriculation: orderData.immatriculation,
-                            demarche_type: orderData.demarche_type || 'CG',
-                            order_id: orderData.id,
-                            documents_count: 0,
-                            montant_ttc: totalPaid,
-                            options: {
-                              dossier_prioritaire: false,
-                              express: express,
-                              certificat_non_gage: certificatNonGage,
-                              email_notifications: false,
-                            }
-                          }
-                        }
-                      });
+                      // Plus d'e-mail interne : la carte « Commandes
+                      // particulier à traiter » du tableau de bord suffit.
                       // Client confirmation email
                       if (orderData.email) {
                         await supabase.functions.invoke('send-email', {

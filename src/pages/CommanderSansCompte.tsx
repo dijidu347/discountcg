@@ -566,27 +566,8 @@ const CommanderSansCompte = () => {
             demarcheType: order?.demarche_type,
           }
         );
-        await supabase.functions.invoke('send-email', {
-          body: {
-            type: 'admin_new_guest_order',
-            to: 'contact@discountcartegrise.fr',
-            data: {
-              client_name: `${formData.prenom} ${formData.nom}`,
-              client_email: formData.email,
-              client_phone: formData.telephone,
-              tracking_number: order.tracking_number,
-              immatriculation: order.immatriculation,
-              demarche_type: order.demarche_type,
-              order_id: order.id,
-              documents_count: Object.keys(uploadedDocs).length,
-              montant_ttc: totalPaid,
-              options: {
-                sms_notifications: formData.sms_notifications,
-                email_notifications: formData.email_notifications,
-              }
-            }
-          }
-        });
+        // Plus d'e-mail interne : la carte « Commandes particulier à traiter »
+        // du tableau de bord porte déjà le compte et les nouvelles.
       } catch (e) { console.error('Admin notif failed:', e); }
 
       // Client email

@@ -1017,27 +1017,8 @@ async function handleGuestOrderPayment(
     console.error("❌ CRITICAL: No email available for client! Order:", orderId, "Tracking:", orderData.tracking_number);
   }
 
-  // --- Notifications admin ----------------------------------------------
-  const clientName = `${orderData.prenom || ""} ${orderData.nom || ""}`.trim() || clientEmail || "Client";
-  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
-    await delay(600);
-    try {
-      await sendEmail("admin_new_guest_order", ADMIN_EMAILS[i], {
-        client_name: clientName,
-        client_email: clientEmail || "Non renseigné",
-        client_phone: orderData.telephone || "Non renseigné",
-        tracking_number: orderData.tracking_number,
-        immatriculation: orderData.immatriculation,
-        demarche_type: orderData.demarche_type || "CG",
-        order_id: orderData.id,
-        documents_count: 0,
-        montant_ttc: actualTTC.toFixed(2),
-      });
-    } catch (emailError) {
-      console.error("❌ Failed to send admin notification:", emailError);
-    }
-  }
-  console.log("✅ Admin notification emails sent");
+  // Plus d'e-mail interne : la carte « Commandes particulier à traiter » du
+  // tableau de bord porte déjà le compte et les nouvelles jamais ouvertes.
 
   return "guest_paid";
 }
@@ -1428,16 +1409,8 @@ async function handleTokenPurchase(
       new_balance: newBalance,
     }, tokenPdfAttachment);
   }
-  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
-    await delay(1000);
-    await sendEmail("admin_balance_recharge", ADMIN_EMAILS[i], {
-      garage_name: garage.raison_sociale,
-      garage_email: garage.email,
-      amount: credit,
-      price: amount,
-      new_balance: newBalance,
-    });
-  }
+  // Plus d'e-mail interne : les rechargements figurent sur la page Achats
+  // jetons, et le solde du garage est à jour dans la seconde.
 
   return "token_purchase";
 }
