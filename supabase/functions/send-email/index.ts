@@ -115,9 +115,19 @@ const majiEmailFooter = (baseUrl: string) => `
   </div>
 `;
 
+// Une date lue en base vaut « 2026-06-29 » ; écrite telle quelle dans un mail,
+// un lecteur français la prend pour un 29 juin ou pour autre chose, et au mieux
+// bute dessus. Les dates qui partent chez le client s'écrivent jour en premier.
+function dateFr(valeur: unknown): string {
+  const texte = String(valeur ?? "").trim();
+  const iso = texte.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return iso ? `${iso[3]}-${iso[2]}-${iso[1]}` : texte;
+}
+
 const getEmailTemplate = (type: string, data: any) => {
   const baseUrl = "https://discountcartegrise.fr";
   const trackingUrl = data?.tracking_number ? `${baseUrl}/suivi/${data.tracking_number}` : "";
+
 
   switch (type) {
     // === GUEST ORDER EMAILS ===
@@ -201,7 +211,7 @@ const getEmailTemplate = (type: string, data: any) => {
             ${data.expire
               ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre a dépassé cette limite : <strong>votre compte n'est plus marqué comme vérifié</strong>.</p>
                  <p>Vos démarches continuent de fonctionner normalement. Pour retrouver votre vérification, déposez simplement un extrait Kbis récent depuis vos paramètres.</p>`
-              : `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre arrive à échéance${data.echeance ? ` le <strong>${data.echeance}</strong>` : ""}.</p>
+              : `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre arrive à échéance${data.echeance ? ` le <strong>${dateFr(data.echeance)}</strong>` : ""}.</p>
                  <p>Déposez un extrait récent depuis vos paramètres pour conserver votre vérification.</p>`}
 
             <a href="${baseUrl}/garage-settings?tab=verification" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
@@ -439,8 +449,8 @@ const getEmailTemplate = (type: string, data: any) => {
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #22c55e;">Votre compte est de nouveau vérifié</h1>
             <p>Bonjour ${data.nom || ""},</p>
-            <p>Nous avons bien reçu votre nouvel extrait Kbis${data.emission ? `, délivré le <strong>${data.emission}</strong>` : ""}. Il a été enregistré et votre compte a retrouvé sa vérification.</p>
-            ${data.echeance ? `<p>Elle court jusqu'au <strong>${data.echeance}</strong>. Nous vous préviendrons quinze jours avant cette date.</p>` : ""}
+            <p>Nous avons bien reçu votre nouvel extrait Kbis${data.emission ? `, délivré le <strong>${dateFr(data.emission)}</strong>` : ""}. Il a été enregistré et votre compte a retrouvé sa vérification.</p>
+            ${data.echeance ? `<p>Elle court jusqu'au <strong>${dateFr(data.echeance)}</strong>. Nous vous préviendrons quinze jours avant cette date.</p>` : ""}
             <a href="${baseUrl}/dashboard" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Accéder à mon espace
             </a>

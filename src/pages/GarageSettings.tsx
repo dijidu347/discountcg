@@ -41,6 +41,15 @@ interface Notification {
   created_at: string;
 }
 
+const FORMATS_ACCEPTES = ["pdf", "jpg", "jpeg", "png"];
+
+// Rend le message à afficher si un fichier ne peut pas être lu, sinon null.
+function formatRefuse(files: File[]): string | null {
+  const mauvais = files.filter((f) => !FORMATS_ACCEPTES.includes((f.name.split(".").pop() || "").toLowerCase()));
+  if (mauvais.length === 0) return null;
+  return `${mauvais.map((f) => f.name).join(", ")} : déposez un PDF ou une photo (JPG, PNG). Une archive ZIP ne peut pas être ouverte, ni par nous ni par l'administration.`;
+}
+
 export default function GarageSettings() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -224,6 +233,11 @@ export default function GarageSettings() {
 
   const handleFileUpload = async (documentType: string, files: File[]) => {
     if (!garage || files.length === 0) return;
+    const refus = formatRefuse(files);
+    if (refus) {
+      toast({ title: "Format non accepté", description: refus, variant: "destructive" });
+      return;
+    }
     setUploadingDoc(documentType);
     try {
       // Delete any rejected documents of this type before uploading new ones

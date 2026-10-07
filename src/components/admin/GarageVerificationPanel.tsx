@@ -365,6 +365,17 @@ export function GarageVerificationPanel({
     const file = e.target.files?.[0];
     if (!file || !garage || !uploadingDocType) return;
 
+    const extension = (file.name.split(".").pop() || "").toLowerCase();
+    if (!["pdf", "jpg", "jpeg", "png"].includes(extension)) {
+      toast({
+        title: "Format non accepté",
+        description: "Déposez un PDF ou une photo (JPG, PNG). Une archive ZIP ne peut pas être lue.",
+        variant: "destructive",
+      });
+      if (adminFileInputRef.current) adminFileInputRef.current.value = "";
+      return;
+    }
+
     try {
       const fileExt = file.name.split(".").pop();
       const fileName = `${garage.id}/${uploadingDocType}_admin_${Date.now()}.${fileExt}`;

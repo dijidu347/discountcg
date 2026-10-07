@@ -104,7 +104,9 @@ async function revalider(
   sirenLu: string,
   estUnKbis: boolean,
 ): Promise<string | null> {
-  if (ligne.status !== "pending" || !estUnKbis) return null;
+  // Le dépôt vient du garage (en attente) ou de l'administration, qui approuve
+  // en déposant : dans les deux cas, c'est la lecture qui rend le badge.
+  if (!["pending", "approved"].includes(ligne.status) || !estUnKbis) return null;
   if (!/kbis/i.test(ligne.document_type ?? "")) return null;
 
   const moins6Mois = new Date();
@@ -121,25 +123,29 @@ async function revalider(
   const sirenGarage = String(garage.siret ?? "").replace(/\D/g, "").slice(0, 9);
   if (!sirenGarage || sirenLu.slice(0, 9) !== sirenGarage) return null;
 
-  // Déjà vérifié par le passé : un Kbis approuvé existe dans son dossier.
+  // Déjà vérifié par le passé : un Kbis approuvé existe dans son dossier, autre
+  // que celui qu'on est en train de lire.
   const { count } = await supabase
     .from("verification_documents")
     .select("id", { count: "exact", head: true })
     .eq("garage_id", garage.id)
     .eq("status", "approved")
+    .neq("id", ligne.id)
     .ilike("document_type", "%kbis%");
   if (!count) return null;
 
-  const { error } = await supabase
-    .from("verification_documents")
-    .update({
-      status: "approved",
-      validated_at: new Date().toISOString(),
-      rejection_reason: null,
-      valide_automatiquement: true,
-    })
-    .eq("id", ligne.id);
-  if (error) return null;
+  if (ligne.status === "pending") {
+    const { error } = await supabase
+      .from("verification_documents")
+      .update({
+        status: "approved",
+        validated_at: new Date().toISOString(),
+        rejection_reason: null,
+        valide_automatiquement: true,
+      })
+      .eq("id", ligne.id);
+    if (error) return null;
+  }
 
   await supabase.from("garages").update({ is_verified: true, verification_requested_at: null }).eq("id", garage.id);
 
