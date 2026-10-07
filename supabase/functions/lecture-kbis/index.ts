@@ -286,6 +286,15 @@ serve(async (req) => {
       const motif = erreur instanceof Error ? erreur.message : String(erreur);
       console.error(`lecture-kbis ${ligne.id} : ${motif}`);
       refusees.push({ id: ligne.id, motif });
+      // Une panne de réseau se retente ; un fichier .zip ou un chemin
+      // introuvable, non : sans cette marque, la tâche repasserait dessus
+      // toutes les quinze minutes jusqu'à la fin des temps.
+      if (/Format non pris en charge|Chemin de stockage introuvable/.test(motif)) {
+        await supabase
+          .from("verification_documents")
+          .update({ lu_le: new Date().toISOString() })
+          .eq("id", ligne.id);
+      }
     }
   }
 
