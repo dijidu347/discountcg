@@ -145,9 +145,28 @@ export function DemarcheChat({
       return;
     }
 
+    // Cinq messages d'affilée ne font pas cinq nouvelles : ils font une
+    // conversation. On ne prévient donc que si le message précédent vient de
+    // l'autre partie — le nôtre est alors une réponse, qui mérite un signal.
+    // Sauf si ce précédent est vieux de plus de deux heures : c'est une
+    // relance restée sans réponse, et elle doit ressortir.
+    const { data: avant } = await supabase
+      .from("messages")
+      .select("sender_type, created_at")
+      .eq("demarche_id", demarcheId)
+      .order("created_at", { ascending: false })
+      .range(1, 1);
+
+    const precedent = avant?.[0];
+    const monologue = precedent?.sender_type === senderType;
+    const depuis = precedent ? Date.now() - new Date(precedent.created_at).getTime() : Infinity;
+    const doitPrevenir = !monologue || depuis > 2 * 60 * 60 * 1000;
+
     // Send email notification
     try {
-      if (isAdmin && garageEmail) {
+      if (!doitPrevenir) {
+        // Rien à envoyer : la conversation est déjà ouverte en face.
+      } else if (isAdmin && garageEmail) {
         // Admin sends -> notify garage by email
         await supabase.functions.invoke("send-email", {
           body: {
