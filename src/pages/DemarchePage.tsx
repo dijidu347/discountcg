@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ContenuCession } from "@/components/seo/ContenuCession";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -285,6 +286,8 @@ const DemarchePage = () => {
           </div>
         </section>
       )}
+
+      {demarche.slug === "declaration-cession" && <ContenuCession />}
 
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">

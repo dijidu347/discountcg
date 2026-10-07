@@ -88,9 +88,9 @@ export const demarchesConfig: DemarcheConfig[] = [
     slug: "declaration-cession",
     title: "Déclaration de Cession",
     shortTitle: "déclaration de cession",
-    h1: "Déclaration de Cession de Véhicule en Ligne",
-    metaTitle: "Déclaration de Cession Véhicule en Ligne | Cerfa 15776",
-    metaDescription: "Effectuez votre déclaration de cession en ligne en quelques minutes. Cerfa 15776 rempli automatiquement, code de cession immédiat. Dès 19,90 euros. Service rapide et pas cher.",
+    h1: "Certificat et déclaration de cession de véhicule en ligne",
+    metaTitle: "Certificat de Cession en Ligne | Cerfa 15776 | Déclaration",
+    metaDescription: "Certificat de cession Cerfa 15776 rempli à partir de votre plaque, déclaration transmise au SIV et code de cession immédiat. Dès 19,90 €, ou le formulaire vierge à télécharger.",
     icon: "FileText",
     description: "Déclarez la vente de votre véhicule en toute simplicité",
     longDescription: "La déclaration de cession (Cerfa 15776) est une démarche administrative obligatoire lors de la vente ou du don d'un véhicule. Elle officialise le transfert de propriété et protège le vendeur contre toute responsabilité en cas d'infraction commise par l'acheteur après la transaction.\n\nLe vendeur dispose d'un délai de 15 jours suivant la date de la vente pour effectuer cette déclaration auprès de l'administration. Sans cette formalité, il reste juridiquement responsable du véhicule : contraventions, amendes de stationnement et même accidents pourraient lui être imputés.\n\nLa déclaration de cession génère un code de cession à 5 caractères, indispensable pour que l'acheteur puisse réaliser sa demande de carte grise. Ce code prouve que la vente a bien été déclarée officiellement. Avec Discount Carte Grise, le formulaire Cerfa 15776 est rempli automatiquement et vous recevez votre code de cession immédiatement par email.\n\nCette démarche concerne aussi bien les véhicules automobiles que les deux-roues, camping-cars, utilitaires et remorques. Elle s'applique que la cession soit à titre onéreux (vente) ou à titre gratuit (don).",
@@ -138,9 +138,33 @@ export const demarchesConfig: DemarcheConfig[] = [
         question: "Faut-il barrer la carte grise lors de la vente ?",
         answer: "Oui, le vendeur doit obligatoirement barrer la carte grise en diagonale, inscrire la mention \"vendu le\" ou \"cédé le\" suivie de la date et de l'heure exacte, et signer le document. Cette formalité est indispensable pour que l'acheteur puisse faire sa carte grise.",
       },
+      {
+        question: "Peut-on faire sa déclaration de cession en ligne gratuitement ?",
+        answer: "Oui, sur le site de l'ANTS : la déclaration de cession ne donne lieu à aucune taxe, l'État ne prélève rien. Ce que facturent les services comme le nôtre, ce sont des frais de service — chez nous 19,90 € — pour remplir le Cerfa à partir de la plaque, vérifier les informations avant envoi et transmettre au SIV avec retour immédiat du code de cession.",
+      },
+      {
+        question: "Où trouver le certificat de cession à remplir ?",
+        answer: "Le formulaire officiel est le Cerfa 15776, téléchargeable vierge sur cette page. Vous pouvez l'imprimer et le remplir à la main en trois exemplaires, ou nous laisser le générer pré-rempli à partir de votre plaque d'immatriculation.",
+      },
+      {
+        question: "Qu'est-ce que le code de cession et à quoi sert-il ?",
+        answer: "C'est un code à cinq caractères produit par la déclaration. L'acheteur doit le saisir pour obtenir la carte grise à son nom : sans lui, sa démarche est bloquée même s'il détient la carte grise barrée. Le vendeur le lui transmet avec le certificat de cession.",
+      },
+      {
+        question: "La date ou l'heure de cession sont-elles vraiment obligatoires ?",
+        answer: "Oui, et l'heure compte autant que la date : c'est ce moment précis qui fait basculer la responsabilité du vendeur vers l'acheteur. Une infraction commise une heure après la vente n'est pas au compte du vendeur, à condition que l'heure figure sur le certificat et sur la carte grise barrée.",
+      },
+      {
+        question: "Un véhicule en copropriété, avec deux noms sur la carte grise ?",
+        answer: "Les deux co-titulaires doivent signer le certificat de cession. Un certificat signé par un seul est rejeté, et l'acheteur ne s'en aperçoit qu'au moment de sa demande de carte grise.",
+      },
+      {
+        question: "Je vends à un garage : dois-je quand même déclarer la cession ?",
+        answer: "Oui. Vous déclarez la cession comme pour une vente à un particulier. Le garage, lui, fait une déclaration d'achat, qui place le véhicule en détention professionnelle sans éditer de nouvelle carte grise.",
+      },
     ],
     prixDescription: "La déclaration de cession est proposée à un tarif forfaitaire à partir de 19,90 euros. Ce prix inclut le remplissage automatique du Cerfa 15776, la transmission à l'administration et l'envoi du code de cession par email. Sur le site de l'ANTS, la démarche est gratuite mais souvent complexe et sujette à des bugs. Avec Discount Carte Grise, aucun frais caché ni taxe supplémentaire : tout est compris dans le tarif annoncé.",
-    seoContent: "La déclaration de cession est une formalité souvent négligée par les vendeurs de véhicules, pourtant elle est essentielle pour se dégager de toute responsabilité après la vente. En France, de nombreux automobilistes reçoivent encore des amendes pour des infractions commises par l'acheteur faute d'avoir déclaré la cession à temps.\n\nLe processus est simple : le vendeur et l'acheteur remplissent ensemble le Cerfa 15776 en trois exemplaires. Chacun conserve un exemplaire et le troisième est transmis à l'administration. Chez Discount Carte Grise, nous simplifions cette étape en générant automatiquement le formulaire et en le transmettant directement au SIV.\n\nQue vous vendiez une voiture, un scooter, un utilitaire ou une remorque, la déclaration de cession est obligatoire. N'attendez pas : déclarez votre vente dès aujourd'hui pour éviter les mauvaises surprises.",
+    seoContent: "Tant que la cession n'est pas déclarée, c'est le vendeur qui répond du véhicule devant l'administration. Un excès de vitesse, un stationnement impayé, un péage non réglé par l'acheteur : l'avis arrive chez l'ancien propriétaire, et c'est à lui de prouver qu'il avait vendu. La déclaration ferme cette porte, et c'est sa vraie fonction.\n\nLe vendeur et l'acheteur remplissent ensemble le Cerfa 15776, en trois exemplaires : un pour chacun, un pour l'administration. La carte grise est barrée en diagonale, avec la mention « vendu le », la date et l'heure, et la signature du vendeur. La date doit être la même sur les deux documents — c'est le premier point que vérifie le SIV.\n\nLa déclaration produit un code de cession à cinq caractères. Sans ce code, l'acheteur ne peut pas obtenir la carte grise à son nom : il faut donc le lui transmettre, avec son exemplaire du certificat et la carte grise barrée.\n\nVoiture, scooter, utilitaire, remorque, camping-car : la formalité est la même, et elle vaut aussi pour un don. Le vendeur a quinze jours, l'acheteur en a trente pour sa carte grise.",
     keywords: ["déclaration de cession", "vente véhicule", "cerfa 15776", "déclaration vente voiture", "déclaration cession pas cher"],
   },
   {
