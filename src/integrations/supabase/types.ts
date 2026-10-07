@@ -2489,10 +2489,12 @@ export type Database = {
           lu_le: string | null
           nom_fichier: string
           rejection_reason: string | null
+          siren: string | null
           status: string
           url: string
           validated_at: string | null
           validated_by: string | null
+          valide_automatiquement: boolean
         }
         Insert: {
           activite?: string | null
@@ -2504,10 +2506,12 @@ export type Database = {
           lu_le?: string | null
           nom_fichier: string
           rejection_reason?: string | null
+          siren?: string | null
           status?: string
           url: string
           validated_at?: string | null
           validated_by?: string | null
+          valide_automatiquement?: boolean
         }
         Update: {
           activite?: string | null
@@ -2519,10 +2523,12 @@ export type Database = {
           lu_le?: string | null
           nom_fichier?: string
           rejection_reason?: string | null
+          siren?: string | null
           status?: string
           url?: string
           validated_at?: string | null
           validated_by?: string | null
+          valide_automatiquement?: boolean
         }
         Relationships: [
           {
