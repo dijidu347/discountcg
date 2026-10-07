@@ -60,6 +60,7 @@ const PaiementSoldeSucces = React.lazy(() => import("./pages/PaiementSoldeSucces
 const PaiementClient = React.lazy(() => import("./pages/PaiementClient"));
 const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
 const PrixCarteGrise = React.lazy(() => import("./pages/PrixCarteGrise"));
+const CertificatNonGage = React.lazy(() => import("./pages/CertificatNonGage"));
 const APropos = React.lazy(() => import("./pages/APropos"));
 const MentionsLegales = React.lazy(() => import("./pages/MentionsLegales"));
 const CGV = React.lazy(() => import("./pages/CGV"));
@@ -141,6 +142,7 @@ const App = () => (
            <Route path="/admin/guest-order/:id" element={<AdminGuard><GuestOrderDetail /></AdminGuard>} />
            <Route path="/admin/guest-actions" element={<AdminGuard><ManageGuestActions /></AdminGuard>} />
             <Route path="/prix-carte-grise" element={<PrixCarteGrise />} />
+            <Route path="/certificat-de-non-gage" element={<CertificatNonGage />} />
             <Route path="/a-propos" element={<APropos />} />
             <Route path="/mentions-legales" element={<MentionsLegales />} />
             <Route path="/cgv" element={<CGV />} />

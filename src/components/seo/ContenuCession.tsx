@@ -144,6 +144,14 @@ export function ContenuCession() {
             au vendeur, ce qui évite les relances un mois après la vente.
           </p>
           <p>
+            À une réserve près : l'acheteur aura aussi besoin d'un{" "}
+            <Link to="/certificat-de-non-gage" className="text-primary hover:underline font-semibold">
+              certificat de situation administrative
+            </Link>{" "}
+            — le « non-gage » — de moins de quinze jours. Il est gratuit, mais seul le vendeur peut
+            le demander.
+          </p>
+          <p>
             Le code reste valable jusqu'à ce que l'acheteur l'utilise. S'il le perd, le vendeur peut
             le retrouver : il figure sur l'accusé d'enregistrement reçu au moment de la déclaration.
           </p>

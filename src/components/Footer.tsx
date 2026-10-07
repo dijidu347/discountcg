@@ -47,6 +47,7 @@ const Footer = () => {
               <li><a href="#contact" className="hover:opacity-100 transition-opacity">Contact</a></li>
               <li><button onClick={() => navigate("/login")} className="hover:opacity-100 transition-opacity">Espace Pro</button></li>
               <li><Link to="/simulateur" className="hover:opacity-100 transition-opacity">Simulateur prix carte grise</Link></li>
+              <li><Link to="/certificat-de-non-gage" className="hover:opacity-100 transition-opacity">Certificat de non-gage</Link></li>
               <li><Link to="/a-propos" className="hover:opacity-100 transition-opacity">A propos</Link></li>
             </ul>
           </div>
