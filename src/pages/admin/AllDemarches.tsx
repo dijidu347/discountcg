@@ -42,7 +42,7 @@ const fetchAllDemarches = async (
   while (keepGoing) {
     const { data, error } = await supabase
       .from("demarches")
-      .select("*, garages(raison_sociale, is_verified), vehicules(marque, modele)")
+      .select("*, garages(raison_sociale, is_verified, kbis_valide_jusqu_au), vehicules(marque, modele)")
       .order("created_at", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
@@ -88,6 +88,20 @@ const parActiviteRecente = (a: any, b: any) => {
 // ──────────────────────────────────────────────────────────────────────
 // Composant principal
 // ──────────────────────────────────────────────────────────────────────
+
+// Un garage sans pastille verte, ce n'est pas forcement un inconnu : c'est le
+// plus souvent un habitue dont le Kbis a depasse six mois. Sur les 48 garages
+// non verifies qui ont depose une demarche en septembre-octobre 2026, 39
+// etaient dans ce cas. Les confondre a l'ecran oblige a ouvrir la fiche pour
+// savoir a qui on a affaire.
+function etatDuGarage(garage: { is_verified?: boolean | null; kbis_valide_jusqu_au?: string | null } | null | undefined) {
+  if (!garage) return null;
+  if (garage.is_verified) return { texte: "Vérifié", classe: "bg-green-500" };
+  if (garage.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date()) {
+    return { texte: "Kbis à renouveler", classe: "bg-orange-500" };
+  }
+  return null;
+}
 
 export default function AllDemarches() {
   const { user, loading: authLoading } = useAuth();
@@ -593,8 +607,10 @@ export default function AllDemarches() {
                       </TableCell>
                       <TableCell className="w-32 whitespace-normal break-words text-xs leading-tight">
                         {d.garages?.raison_sociale}
-                        {d.garages?.is_verified && (
-                          <Badge className="bg-green-500 text-[10px] px-1.5 py-0 mt-1 block w-fit">Vérifié</Badge>
+                        {etatDuGarage(d.garages) && (
+                          <Badge className={`${etatDuGarage(d.garages)!.classe} text-[10px] px-1.5 py-0 mt-1 block w-fit`}>
+                            {etatDuGarage(d.garages)!.texte}
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="w-20 whitespace-normal break-words text-xs leading-tight">
@@ -792,8 +808,10 @@ export default function AllDemarches() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {d.garages?.raison_sociale}
-                          {d.garages?.is_verified && (
-                            <Badge className="bg-green-500 text-xs">Vérifié</Badge>
+                          {etatDuGarage(d.garages) && (
+                            <Badge className={`${etatDuGarage(d.garages)!.classe} text-xs`}>
+                              {etatDuGarage(d.garages)!.texte}
+                            </Badge>
                           )}
                         </div>
                       </TableCell>
@@ -867,8 +885,10 @@ export default function AllDemarches() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {d.garages?.raison_sociale}
-                          {d.garages?.is_verified && (
-                            <Badge className="bg-green-500 text-xs">Vérifié</Badge>
+                          {etatDuGarage(d.garages) && (
+                            <Badge className={`${etatDuGarage(d.garages)!.classe} text-xs`}>
+                              {etatDuGarage(d.garages)!.texte}
+                            </Badge>
                           )}
                         </div>
                       </TableCell>
