@@ -19,14 +19,13 @@ Disallow: /support
 Disallow: /paiement-demarche
 Disallow: /complete-profile
 
-User-agent: GPTBot
-Disallow: /
 
-User-agent: Google-Extended
-Disallow: /
 
-User-agent: ClaudeBot
-Disallow: /
+# Robots d'entrainement des modeles : autorises depuis le 07/10/2026.
+# Les robots de recherche (OAI-SearchBot, Claude-SearchBot, PerplexityBot)
+# passaient deja par la regle generale ; ceux-ci conditionnent en plus la
+# notoriete de la marque dans les reponses donnees sans recherche web.
+# CCBot et Bytespider restent bloques : beaucoup de charge, peu de retour.
 
 User-agent: CCBot
 Disallow: /
