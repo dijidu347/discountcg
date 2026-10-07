@@ -156,23 +156,9 @@ async function handleCreateDemarche(body: any) {
     response.payment_url = `${baseUrl}/paiement-demarche/${demarche.id}`;
   }
 
-  // Send admin notification
-  try {
-    await supabase.functions.invoke("send-email", {
-      body: {
-        type: "admin_new_demarche",
-        to: "contact@discountcartegrise.fr",
-        data: {
-          type: type,
-          reference: demarche.numero_demarche || demarche.id,
-          immatriculation,
-          client_name: garage.raison_sociale,
-          montant_ttc: totalTtc.toFixed(2),
-          is_free_token: isFreeToken,
-        },
-      },
-    });
-  } catch (e) { console.error("Admin notif failed:", e); }
+  // Plus d'e-mail interne à chaque démarche : la liste « À traiter » du tableau
+  // de bord porte déjà le compte, avec une pastille sur les dossiers jamais
+  // ouverts.
 
   return jsonResponse(response);
 }

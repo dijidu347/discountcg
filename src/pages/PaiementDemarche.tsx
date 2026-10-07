@@ -488,24 +488,8 @@ const PaiementDemarche = () => {
           },
         });
 
-        const adminEmails = ["contact@discountcartegrise.fr"];
-        for (const adminEmail of adminEmails) {
-          await new Promise(resolve => setTimeout(resolve, 600));
-          await supabase.functions.invoke("send-email", {
-            body: {
-              type: "admin_new_demarche",
-              to: adminEmail,
-              data: {
-                type: demarche.type,
-                reference: demarche.numero_demarche,
-                immatriculation: demarche.immatriculation,
-                client_name: garage.raison_sociale,
-                montant_ttc: amountToPay,
-                is_free_token: false,
-              },
-            },
-          });
-        }
+        // Plus d'e-mail interne à chaque démarche : la liste « À traiter » du
+        // tableau de bord porte déjà le compte.
       } catch (emailError) {
         console.error("Error sending emails:", emailError);
       }

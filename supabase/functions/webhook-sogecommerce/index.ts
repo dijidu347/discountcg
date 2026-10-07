@@ -805,19 +805,9 @@ async function handleDemarchePayment(
     console.log("✅ Confirmation email with invoice sent to garage");
   }
 
-  // Notifications admin (avec pause anti rate-limit)
-  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
-    await delay(600);
-    await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
-      type: demarche.type,
-      reference: demarche.numero_demarche,
-      immatriculation: realImmat,
-      client_name: garage?.raison_sociale || "N/A",
-      montant_ttc: amount.toFixed(2),
-      is_free_token: demarche.is_free_token || false,
-    });
-  }
-  console.log("✅ Admin notification emails sent");
+  // Plus d'e-mail interne à chaque démarche : la liste « À traiter » du tableau
+  // de bord porte déjà le compte, avec une pastille sur les dossiers jamais
+  // ouverts. Un message par démarche payée n'apprenait rien et noyait le reste.
 
   return "pro_paid_full";
 }
@@ -1247,20 +1237,9 @@ async function handleClientPayment(
     console.log("✅ Notification client_payment_confirmed inserted for garage");
   }
 
-  // Notifications admin
-  await delay(600);
-  for (let i = 0; i < ADMIN_EMAILS.length; i++) {
-    await delay(600);
-    await sendEmail("admin_new_demarche", ADMIN_EMAILS[i], {
-      type: demarche.type,
-      reference: demarche.numero_demarche,
-      immatriculation: realImmat,
-      client_name: garage?.raison_sociale || "N/A",
-      montant_ttc: amount.toFixed(2),
-      is_free_token: demarche.is_free_token || false,
-    });
-  }
-  console.log("✅ Admin notification emails sent");
+  // Plus d'e-mail interne à chaque démarche : la liste « À traiter » du tableau
+  // de bord porte déjà le compte, avec une pastille sur les dossiers jamais
+  // ouverts. Un message par démarche payée n'apprenait rien et noyait le reste.
 
   return "client_paid";
 }

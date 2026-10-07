@@ -1337,25 +1337,10 @@ export default function NouvelleDemarche() {
         setFreeTokenAvailable(false);
       }
 
-      // Toujours envoyer les mails admin pour les démarches avec jeton gratuit
+      // Plus d'e-mail interne à chaque démarche : la liste « À traiter » du
+      // tableau de bord porte déjà le compte, avec une pastille sur les
+      // dossiers jamais ouverts.
       if (demarche) {
-        const adminEmails = ["contact@discountcartegrise.fr"];
-        for (const adminEmail of adminEmails) {
-          await supabase.functions.invoke("send-email", {
-            body: {
-              type: "admin_new_demarche",
-              to: adminEmail,
-              data: {
-                type: `Démarche garage - ${demarche.type}`,
-                reference: demarche.numero_demarche || demarcheId,
-                immatriculation: demarche.immatriculation,
-                client_name: garage.raison_sociale || "N/A",
-                montant_ttc: demarche.montant_ttc?.toFixed(2) || "0.00",
-                is_free_token: true,
-              },
-            },
-          });
-        }
 
         // Email de confirmation au garage (jeton gratuit)
         await supabase.functions.invoke("send-email", {
