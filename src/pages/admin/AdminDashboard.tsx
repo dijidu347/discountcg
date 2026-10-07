@@ -122,7 +122,7 @@ export default function AdminDashboard() {
     // Load admin statistics
     const { data: garages } = await supabase
       .from('garages')
-      .select('id, verification_requested_at, is_verified, verification_admin_viewed');
+      .select('id, verification_requested_at, is_verified, verification_admin_viewed, kbis_valide_jusqu_au');
 
     // "À traiter" : count SQL exact, filtres appliqués CÔTÉ BASE via la source
     // unique de vérité partagée avec la page liste. Aucune ligne transférée,
@@ -157,10 +157,16 @@ export default function AdminDashboard() {
         .select('*', { count: 'exact', head: true })
         .eq('paye', true)
         .or('status.not.in.(finalise,refuse),status.is.null');
-    const [{ count: commandesPartATraiterCount }, { count: commandesPartNouvellesCount }] = await Promise.all([
-      commandesPartATraiter(),
+    // Les commandes qui dorment — ouvertes par nous, sans nouvelle du client
+    // depuis 30 jours — ne sont plus comptées : la pastille annonçait 23
+    // dossiers quand 10 seulement attendaient vraiment un geste. Le calcul se
+    // fait en base, avec la même règle que l'onglet « En sommeil » de la liste.
+    const [{ data: actives }, { count: commandesPartNouvellesCount }] = await Promise.all([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase.rpc('commandes_particulier_actives' as any),
       commandesPartATraiter().not('admin_viewed', 'is', true),
     ]);
+    const commandesPartATraiterCount = Number(actives ?? 0);
 
     // Revenus et volumes : deux appels à la RPC d'agrégation, sur deux
     // fenêtres. Remplace le calcul JS qui rapatriait toutes les lignes de
@@ -222,8 +228,14 @@ export default function AdminDashboard() {
         .filter((c) => c.dossier_complet)
         .map((c) => c.garage_id),
     );
+    // Un garage dont le Kbis a expiré n'est pas un dossier à examiner : ses
+    // pièces sont toutes approuvées, il lui manque un papier récent, et la
+    // lecture automatique lui rendra son badge dès qu'il le déposera. Les
+    // compter ici gonflait l'alerte à 82 garages dont 75 n'attendaient rien.
     const garagesAVerifier = garages?.filter(g =>
-      !g.is_verified && aControler.has(g.id)
+      !g.is_verified
+      && aControler.has(g.id)
+      && !(g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date())
     ) || [];
 
     const coffreActive = coffreSubs || [];

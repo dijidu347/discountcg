@@ -465,6 +465,30 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // Une démarche arrive d'un garage dont le Kbis a dépassé six mois. On ne la
+    // refuse pas, on demande la pièce : le dossier attend, le garage sait
+    // pourquoi, et son badge revient tout seul dès le dépôt.
+    case "kbis_demande_demarche":
+      return {
+        subject: `Votre démarche ${data.reference || ""} attend votre Kbis à jour`.trim(),
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #b45309;">Votre Kbis doit être mis à jour</h1>
+            <p>Bonjour ${data.nom || ""},</p>
+            <p>Nous avons bien reçu votre démarche${data.reference ? ` <strong>${data.reference}</strong>` : ""}${data.immatriculation ? ` pour le véhicule ${data.immatriculation}` : ""}.</p>
+            <p>Pour pouvoir la traiter, il nous faut un <strong>extrait Kbis de moins de six mois</strong> : le vôtre${data.echeance ? `, valable jusqu'au ${dateFr(data.echeance)},` : ""} a dépassé cette limite. Les démarches d'immatriculation l'exigent.</p>
+            <p>Déposez-en un récent depuis votre espace : votre vérification revient automatiquement, et nous reprenons votre dossier.</p>
+
+            <a href="${baseUrl}/garage-settings?tab=verification" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Déposer mon Kbis
+            </a>
+
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+
     case "account_rejected":
       return {
         subject: `❌ Demande de vérification refusée`,

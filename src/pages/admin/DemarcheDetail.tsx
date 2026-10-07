@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check, RefreshCw, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check, RefreshCw, Loader2, AlertCircle } from "lucide-react";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import { SITE_URL } from "@/lib/siteUrl";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, downloadPrivateFileFromUrl, StorageBucket } from "@/lib/storage-utils";
@@ -188,6 +188,9 @@ export default function DemarcheDetail() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [demarche, setDemarche] = useState<any>(null);
   const [garage, setGarage] = useState<any>(null);
+  // Relance du Kbis : une démarche arrive d'un garage dont la pièce a expiré.
+  const [relanceKbisEnvoyee, setRelanceKbisEnvoyee] = useState(false);
+  const [relanceKbisEnCours, setRelanceKbisEnCours] = useState(false);
   const [vehicule, setVehicule] = useState<any>(null);
   const [documents, setDocuments] = useState<any[]>([]);
   const [paiement, setPaiement] = useState<any>(null);
@@ -876,6 +879,46 @@ export default function DemarcheDetail() {
     CG_NEUF_PRO: "cgn_",
   };
   const prefixePro = PREFIXE_PAR_TYPE[demarche?.type ?? ""] ?? null;
+  // Le Kbis du garage a dépassé six mois : le dossier ne peut pas être traité
+  // en l'état, et c'est au garage de fournir la pièce.
+  const kbisExpire = Boolean(
+    garage?.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
+  );
+
+  const demanderKbisAJour = async () => {
+    if (!garage?.email) {
+      toast({ title: "Pas d'adresse e-mail pour ce garage", variant: "destructive" });
+      return;
+    }
+    setRelanceKbisEnCours(true);
+    const { error } = await supabase.functions.invoke("send-email", {
+      body: {
+        type: "kbis_demande_demarche",
+        to: garage.email,
+        data: {
+          nom: garage.raison_sociale ?? "",
+          reference: demarche?.numero_demarche ?? "",
+          immatriculation: demarche?.immatriculation ?? "",
+          echeance: garage.kbis_valide_jusqu_au ?? "",
+        },
+      },
+    });
+    setRelanceKbisEnCours(false);
+    if (error) {
+      toast({ title: "Envoi impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    // La même demande dans son espace : un garage qui ne lit pas ses mails la
+    // retrouve en se connectant.
+    await supabase.from("garage_verification_notifications").insert({
+      garage_id: garage.id,
+      subject: "Votre Kbis doit être mis à jour",
+      message: `Nous avons bien reçu votre démarche ${demarche?.numero_demarche ?? ""}, mais pour pouvoir la traiter il nous faut un extrait Kbis de moins de six mois. Déposez-en un récent depuis vos paramètres : votre vérification revient automatiquement.`,
+    });
+    setRelanceKbisEnvoyee(true);
+    toast({ title: "Demande envoyée", description: garage.email });
+  };
+
   const piecesDeCetteDemarche = Array.from(new Set(
     Object.entries(documentLabels)
       .filter(([cle]) => (prefixePro ? cle.startsWith(prefixePro) : cle.startsWith("doc_")))
@@ -1289,6 +1332,32 @@ export default function DemarcheDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {kbisExpire && (
+              <Card className="border-orange-300 bg-orange-50/60 dark:border-orange-900 dark:bg-orange-950/20">
+                <CardContent className="py-4">
+                  <div className="flex items-start gap-3">
+                    <AlertCircle className="h-6 w-6 shrink-0 text-orange-500" />
+                    <div className="flex-1">
+                      <p className="font-semibold">Le Kbis de ce garage a expiré</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Il a dépassé six mois{garage?.kbis_valide_jusqu_au ? ` le ${new Date(garage.kbis_valide_jusqu_au).toLocaleDateString("fr-FR")}` : ""}.
+                        Les démarches d'immatriculation en exigent un récent : demandez-le avant de traiter ce dossier.
+                      </p>
+                      <Button
+                        size="sm"
+                        className="mt-3 bg-orange-600 hover:bg-orange-700"
+                        disabled={relanceKbisEnCours || relanceKbisEnvoyee}
+                        onClick={demanderKbisAJour}
+                      >
+                        {relanceKbisEnCours && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {relanceKbisEnvoyee ? "Demande envoyée" : "Demander le Kbis à jour"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             <ControleAutomatique demarcheId={id!} typeDemarche={demarche?.type} />
 
