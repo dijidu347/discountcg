@@ -96,11 +96,13 @@ const parActiviteRecente = (a: any, b: any) => {
 // savoir a qui on a affaire.
 function etatDuGarage(garage: { is_verified?: boolean | null; kbis_valide_jusqu_au?: string | null } | null | undefined) {
   if (!garage) return null;
-  if (garage.is_verified) return { texte: "Vérifié", classe: "bg-green-500" };
+  if (garage.is_verified) return { texte: "Vérifié", classe: "bg-green-500 hover:bg-green-500" };
   if (garage.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date()) {
-    return { texte: "Kbis expiré", classe: "bg-orange-500" };
+    return { texte: "Kbis expiré", classe: "bg-orange-500 hover:bg-orange-500" };
   }
-  return null;
+  // Reste ceux qui n'ont jamais terminé leur vérification. Sans pastille, on ne
+  // savait pas si l'information manquait ou si le garage n'était pas vérifié.
+  return { texte: "Non vérifié", classe: "bg-muted text-muted-foreground hover:bg-muted" };
 }
 
 export default function AllDemarches() {
