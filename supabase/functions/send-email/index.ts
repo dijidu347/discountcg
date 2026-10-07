@@ -429,6 +429,27 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // Un garage déjà vérifié qui dépose un Kbis récent retrouve sa vérification
+    // sans qu'on y touche. Le ton n'est pas celui d'une première inscription :
+    // il est client depuis longtemps, on ne lui souhaite pas la bienvenue.
+    case "kbis_renouvele":
+      return {
+        subject: "Votre compte est de nouveau vérifié",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h1 style="color: #22c55e;">Votre compte est de nouveau vérifié</h1>
+            <p>Bonjour ${data.nom || ""},</p>
+            <p>Nous avons bien reçu votre nouvel extrait Kbis${data.emission ? `, délivré le <strong>${data.emission}</strong>` : ""}. Il a été enregistré et votre compte a retrouvé sa vérification.</p>
+            ${data.echeance ? `<p>Elle court jusqu'au <strong>${data.echeance}</strong>. Nous vous préviendrons quinze jours avant cette date.</p>` : ""}
+            <a href="${baseUrl}/dashboard" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+              Accéder à mon espace
+            </a>
+            ${guestReplyBlock}
+            ${guestFooter}
+          </div>
+        `,
+      };
+
     case "account_rejected":
       return {
         subject: `❌ Demande de vérification refusée`,

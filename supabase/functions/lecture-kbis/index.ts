@@ -54,6 +54,8 @@ Rends exactement ceci, et rien d'autre :
     null si tu ne la vois pas,
   "mention": les quelques mots imprimés juste avant cette date, par exemple
     "Édité le", null si elle est seule,
+  "siren": le numéro SIREN ou SIRET imprimé sur le Kbis, chiffres seulement,
+    null si tu ne le lis pas,
   "activite": l'activité déclarée, recopiée telle qu'elle est imprimée, sous
     « Activité(s) », « Objet social » ou « Activité principale », par exemple
     "Achat et vente de véhicules automobiles d'occasion". Recopie la ligne
@@ -82,6 +84,90 @@ function base64(octets: Uint8Array): string {
   return btoa(binaire);
 }
 
+// Un garage qui avait sa vérification et qui l'a perdue parce que son Kbis a
+// passé six mois n'a rien à prouver de plus : son dossier a déjà été contrôlé
+// par un humain, il lui manquait un papier récent. Quand il en dépose un, la
+// lecture suffit à lui rendre son badge — sans attendre qu'on l'approuve à la
+// main, ce qui pouvait prendre des jours pendant lesquels il travaillait sans.
+//
+// Quatre conditions, toutes nécessaires :
+//   - le garage a déjà eu un Kbis approuvé (donc il a été vérifié une fois) ;
+//   - le document lu est bien un Kbis, avec une date de délivrance lisible ;
+//   - cette date a moins de six mois ;
+//   - le SIREN imprimé est celui du garage.
+// Si l'une manque, on ne touche à rien : la pièce reste en attente et
+// l'administration tranche, comme avant.
+async function revalider(
+  supabase: any,
+  ligne: { id: string; garage_id: string; status: string; document_type?: string | null },
+  iso: string,
+  sirenLu: string,
+  estUnKbis: boolean,
+): Promise<string | null> {
+  if (ligne.status !== "pending" || !estUnKbis) return null;
+  if (!/kbis/i.test(ligne.document_type ?? "")) return null;
+
+  const moins6Mois = new Date();
+  moins6Mois.setMonth(moins6Mois.getMonth() - 6);
+  if (new Date(`${iso}T00:00:00Z`) < moins6Mois) return null;
+
+  const { data: garage } = await supabase
+    .from("garages")
+    .select("id, raison_sociale, email, siret, is_verified")
+    .eq("id", ligne.garage_id)
+    .maybeSingle();
+  if (!garage || garage.is_verified) return null;
+
+  const sirenGarage = String(garage.siret ?? "").replace(/\D/g, "").slice(0, 9);
+  if (!sirenGarage || sirenLu.slice(0, 9) !== sirenGarage) return null;
+
+  // Déjà vérifié par le passé : un Kbis approuvé existe dans son dossier.
+  const { count } = await supabase
+    .from("verification_documents")
+    .select("id", { count: "exact", head: true })
+    .eq("garage_id", garage.id)
+    .eq("status", "approved")
+    .ilike("document_type", "%kbis%");
+  if (!count) return null;
+
+  const { error } = await supabase
+    .from("verification_documents")
+    .update({
+      status: "approved",
+      validated_at: new Date().toISOString(),
+      rejection_reason: null,
+      valide_automatiquement: true,
+    })
+    .eq("id", ligne.id);
+  if (error) return null;
+
+  await supabase.from("garages").update({ is_verified: true, verification_requested_at: null }).eq("id", garage.id);
+
+  // La validité vient d'être recalculée par le déclencheur : on la relit pour
+  // l'annoncer au garage plutôt que de la recalculer ici.
+  const { data: apres } = await supabase
+    .from("garages").select("kbis_valide_jusqu_au").eq("id", garage.id).maybeSingle();
+
+  await supabase.from("notifications").insert({
+    garage_id: garage.id,
+    type: "kbis_renouvele",
+    message: `Votre nouvel extrait Kbis a été enregistré : votre compte est de nouveau vérifié${apres?.kbis_valide_jusqu_au ? `, jusqu'au ${apres.kbis_valide_jusqu_au}` : ""}.`,
+  });
+
+  if (garage.email) {
+    await supabase.functions.invoke("send-email", {
+      body: {
+        type: "kbis_renouvele",
+        to: garage.email,
+        data: { nom: garage.raison_sociale ?? "", emission: iso, echeance: apres?.kbis_valide_jusqu_au ?? "" },
+      },
+    });
+  }
+
+  return garage.raison_sociale ?? garage.id;
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -101,7 +187,7 @@ serve(async (req) => {
 
   let requete = supabase
     .from("verification_documents")
-    .select("id, garage_id, nom_fichier, url, status")
+    .select("id, garage_id, nom_fichier, url, status, document_type")
     .is("lu_le", null)
     .ilike("document_type", "%kbis%")
     .in("status", ["pending", "approved"])
@@ -115,6 +201,7 @@ serve(async (req) => {
   let lues = 0;
   let ecrites = 0;
   const refusees: { id: string; motif: string }[] = [];
+  const revalides: string[] = [];
 
   for (const ligne of aLire ?? []) {
     try {
@@ -170,6 +257,8 @@ serve(async (req) => {
       if (typeof lu?.activite === "string" && lu.activite.trim()) {
         marqueur.activite = lu.activite.trim().slice(0, 500);
       }
+      const sirenLu = String(lu?.siren ?? "").replace(/\D/g, "");
+      if (sirenLu.length >= 9) marqueur.siren = sirenLu.slice(0, 14);
 
       const iso = lu?.est_un_kbis === false ? null : dateFrancaise(lu?.date_imprimee);
       if (lu?.est_un_kbis === false) {
@@ -188,6 +277,11 @@ serve(async (req) => {
         .update(marqueur)
         .eq("id", ligne.id);
       if (erreurEcriture) throw new Error(erreurEcriture.message);
+
+      if (iso && datePlausible(iso)) {
+        const rendu = await revalider(supabase, ligne as any, iso, sirenLu, lu?.est_un_kbis !== false);
+        if (rendu) revalides.push(rendu);
+      }
     } catch (erreur) {
       const motif = erreur instanceof Error ? erreur.message : String(erreur);
       console.error(`lecture-kbis ${ligne.id} : ${motif}`);
@@ -195,5 +289,5 @@ serve(async (req) => {
     }
   }
 
-  return json({ candidats: (aLire ?? []).length, lues, ecrites, refusees });
+  return json({ candidats: (aLire ?? []).length, lues, ecrites, revalides, refusees });
 });
