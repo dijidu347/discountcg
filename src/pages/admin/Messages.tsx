@@ -26,7 +26,7 @@ interface Conversation {
   reference: string;
   dernier_message: string;
   recu_le: string;
-  etat: "non_lu" | "a_repondre" | "traite";
+  etat: "non_lu" | "a_repondre";
   garage_id: string | null;
   contact_email: string | null;
   contact_nom: string | null;
@@ -93,7 +93,6 @@ export default function Messages() {
   const SECTIONS = [
     { cle: "non_lu" as const, titre: "Non lues", aide: "Vous ne les avez pas encore ouvertes" },
     { cle: "a_repondre" as const, titre: "Pas encore répondu", aide: "Lues, mais le dernier mot est à eux" },
-    { cle: "traite" as const, titre: "Traitées", aide: "Vous avez répondu, ou la conversation a été classée" },
   ];
 
   const ouvrirDossier = (c: Conversation) =>
@@ -221,9 +220,8 @@ export default function Messages() {
                   />
                 )}
 
-                {/* Sous le chat : c'est ici qu'on decide, apres avoir lu.
-                    Inutile sur une conversation deja traitee. */}
-                <div className={`flex justify-end border-t pt-4 ${choisie.etat === "traite" ? "hidden" : ""}`}>
+                {/* Sous le chat : c'est ici qu'on decide, apres avoir lu. */}
+                <div className="flex justify-end border-t pt-4">
                   <Button
                     variant="outline"
                     disabled={classement}

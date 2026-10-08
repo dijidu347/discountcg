@@ -2,20 +2,21 @@
 --
 -- Deux changements par rapport à la version précédente.
 --
--- D'abord la fonction ne filtre plus : elle classe. La page dédiée montre trois
--- sections — non lues, à répondre, traitées — et les traitées étaient
--- justement celles que la version précédente écartait. L'état se lit ainsi :
+-- D'abord la fonction qualifie chaque conversation au lieu de la filtrer en
+-- silence : la page dédiée sépare les non lues de celles qu'on a ouvertes sans
+-- y répondre. L'état se lit ainsi :
 --   non_lu     : le dernier mot est à eux, et nous ne l'avons pas ouvert
 --   a_repondre : le dernier mot est à eux, nous l'avons lu, rien n'est parti
---   traite     : nous avons répondu, ou la conversation a été classée
+--   traite     : nous avons répondu, ou la conversation a été classée — écarté
 --
 -- Ensuite elle renvoie le contexte d'affichage : le garage et ses coordonnées
 -- côté professionnel, le client et le numéro de suivi côté particulier. Sans
 -- cela la page devait interroger la base à chaque conversation ouverte.
 --
--- Les traitées sont plafonnées aux cent plus récentes : il y en a cent
--- cinquante-quatre sur les dossiers ouverts, et c'est une section de
--- consultation, pas une file de travail.
+-- Les traitées ne sortent pas : il y en a cent cinquante-quatre sur les seuls
+-- dossiers ouverts, et une conversation à laquelle on a répondu n'appelle plus
+-- rien. L'état reste calculé parce qu'il sert à écarter ces lignes, mais la
+-- page n'affiche que ce qui demande un geste.
 
 drop function if exists public.messages_en_attente();
 
@@ -98,19 +99,7 @@ as $$
          garage_id, contact_email, contact_nom
   from qualifiees
   where etat <> 'traite'
-
-  union all
-
-  -- Section de consultation : les cent plus recentes suffisent.
-  select source, cible_id, reference, dernier_message, recu_le, etat,
-         garage_id, contact_email, contact_nom
-  from (
-    select * from qualifiees where etat = 'traite'
-    order by recu_le desc
-    limit 100
-  ) recentes
-
-  order by 5 desc;
+  order by recu_le desc;
 $$;
 
 revoke all on function public.messages_en_attente() from public, anon;
