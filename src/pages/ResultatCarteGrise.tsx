@@ -70,6 +70,11 @@ export default function ResultatCarteGrise() {
   // reste dérivé du choix pour alimenter sans changement le prix, la commande,
   // les e-mails et le récapitulatif.
   const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
+  // Le non-gage bloque le paiement. Tant que rien ne le signalait, le client
+  // arrivait sur un encart gris sans savoir quoi faire : en septembre, 18
+  // clients sur 22 n'ont jamais touche ce choix, et le taux de paiement est
+  // tombe de 30 a 6 %.
+  const [erreurNonGage, setErreurNonGage] = useState(false);
   // Cible du défilement : une fois ses informations saisies, le client est
   // amené aux options, qui font varier le montant à payer.
   const optionsRef = useRef<HTMLDivElement>(null);
@@ -609,9 +614,32 @@ export default function ResultatCarteGrise() {
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-primary text-primary-foreground font-bold text-lg">
                   2
                 </div>
-                <h2 className="text-2xl font-bold">Options</h2>
+                <h2 className="text-2xl font-bold">
+                  {isNonGageRequired(demarcheType) ? "Certificat de non-gage" : "Options"}
+                </h2>
               </div>
-              
+
+              {/* Le certificat de non-gage est obligatoire : il a sa propre carte,
+                  avant les options, parce qu'il etait auparavant range sous
+                  « Options supplementaires » — et qu'une obligation rangee dans
+                  les options se saute. */}
+              {isNonGageRequired(demarcheType) && (
+                <Card className={erreurNonGage ? "border-destructive" : undefined}>
+                  <CardContent className="pt-6">
+                    <NonGageChoice
+                      demarcheType={demarcheType}
+                      audience="particulier"
+                      value={nonGageMode}
+                      onChange={(mode) => {
+                        setNonGageMode(mode);
+                        setErreurNonGage(false);
+                      }}
+                      enErreur={erreurNonGage}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Options supplémentaires */}
               <Card>
                 <CardHeader>
@@ -624,13 +652,6 @@ export default function ResultatCarteGrise() {
                   {/* Dossier Prioritaire (option express) */}
                   <ExpressOptionCard demarcheType={demarcheType} checked={express} onCheckedChange={setExpress} />
 
-                  {/* Certificat de non-gage : choix imposé, pas une option */}
-                  <NonGageChoice
-                    demarcheType={demarcheType}
-                    audience="particulier"
-                    value={nonGageMode}
-                    onChange={setNonGageMode}
-                  />
                 </CardContent>
               </Card>
 
@@ -723,9 +744,34 @@ export default function ResultatCarteGrise() {
                   } catch (e) { console.error('Email notification failed:', e); }
                 }}
               /> : (
-                <Card className="opacity-50">
-                  <CardContent className="pt-6">
-                    <p className="text-muted-foreground text-center py-4">{!isInfoCompleted ? "Veuillez d'abord renseigner vos informations" : !nonGageChoisi ? "Choisissez comment obtenir le certificat de non-gage (étape 2)" : "Calcul du prix en cours..."}</p>
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    {!isInfoCompleted ? (
+                      <p className="text-muted-foreground py-4">Veuillez d'abord renseigner vos informations</p>
+                    ) : !nonGageChoisi ? (
+                      <div className="py-2 space-y-3">
+                        <p className="font-medium text-foreground">
+                          Une étape reste à compléter avant de payer
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Le certificat de non-gage est obligatoire pour cette démarche. Indiquez si
+                          vous le fournissez ou si nous le commandons.
+                        </p>
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            setErreurNonGage(true);
+                            document
+                              .getElementById("bloc-non-gage")
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                          }}
+                        >
+                          Compléter cette étape
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground py-4">Calcul du prix en cours…</p>
+                    )}
                   </CardContent>
                 </Card>
               )}

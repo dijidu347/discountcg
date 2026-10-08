@@ -104,6 +104,8 @@ export default function DemarcheSimple() {
 
   // Le paiement reste fermé tant que le certificat de non-gage n'est pas tranché.
   const nonGageChoisi = !isNonGageRequired(demarcheType) || nonGageMode !== null;
+  // Voir ResultatCarteGrise : le choix bloquait le paiement sans jamais le dire.
+  const [erreurNonGage, setErreurNonGage] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -288,13 +290,15 @@ export default function DemarcheSimple() {
               }}
             />
             {isNonGageRequired(demarcheType) && (
-              <div className="mt-4">
+              <div className={`mt-4 rounded-lg ${erreurNonGage ? "ring-2 ring-destructive" : ""}`}>
                 <NonGageChoice
+                  enErreur={erreurNonGage}
                   demarcheType={demarcheType}
                   audience="particulier"
                   value={nonGageMode}
                   onChange={async (mode) => {
                     setNonGageMode(mode);
+                    setErreurNonGage(false);
                     // `certificat_non_gage` reste la colonne de facturation : elle
                     // alimente déjà le calcul serveur, la facture et les e-mails.
                     await supabase
@@ -368,13 +372,34 @@ export default function DemarcheSimple() {
             )}
 
             {(!isInfoCompleted || !nonGageChoisi) && !isPaid && (
-              <Card className="opacity-50">
-                <CardContent className="pt-6">
-                  <p className="text-muted-foreground text-center py-4">
-                    {!isInfoCompleted
-                      ? "Veuillez d'abord renseigner vos informations"
-                      : "Choisissez comment obtenir le certificat de non-gage"}
-                  </p>
+              <Card>
+                <CardContent className="pt-6 text-center">
+                  {!isInfoCompleted ? (
+                    <p className="text-muted-foreground py-4">
+                      Veuillez d'abord renseigner vos informations
+                    </p>
+                  ) : (
+                    <div className="py-2 space-y-3">
+                      <p className="font-medium text-foreground">
+                        Une étape reste à compléter avant de payer
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Le certificat de non-gage est obligatoire pour cette démarche. Indiquez si
+                        vous le fournissez ou si nous le commandons.
+                      </p>
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          setErreurNonGage(true);
+                          document
+                            .getElementById("bloc-non-gage")
+                            ?.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }}
+                      >
+                        Compléter cette étape
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
