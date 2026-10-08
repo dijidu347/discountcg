@@ -89,7 +89,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     title: "Déclaration de Cession",
     shortTitle: "déclaration de cession",
     h1: "Certificat et déclaration de cession de véhicule en ligne",
-    metaTitle: "Certificat de Cession en Ligne | Cerfa 15776 | Déclaration",
+    metaTitle: "Certificat de Cession de Véhicule | Cerfa 15776 en Ligne",
     metaDescription: "Certificat de cession Cerfa 15776 rempli à partir de votre plaque, déclaration transmise au SIV et code de cession immédiat. 20 € pour un particulier, 5 € pour un professionnel, ou le formulaire vierge à télécharger.",
     icon: "FileText",
     description: "Déclarez la vente de votre véhicule en toute simplicité",
@@ -359,7 +359,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Envoyez les documents requis",
       "Recevez votre carte grise et vos plaques",
     ],
-    prixDescription: "Le prix de la carte grise d'un véhicule neuf dépend de la puissance fiscale, du tarif du cheval fiscal dans votre département et du taux d'émission de CO2. La taxe sur les émissions polluantes (malus écologique) peut s'ajouter pour les véhicules dépassant 118 g de CO2/km en 2026. Les véhicules électriques et hybrides rechargeables bénéficient d'exonérations de taxe régionale dans la plupart des départements. Nos frais de dossier sont de 39 euros, souvent moins chers que ceux facturés par les concessionnaires.",
+    prixDescription: "Le prix de la carte grise d'un véhicule neuf dépend de la puissance fiscale, du tarif du cheval fiscal dans votre département et du taux d'émission de CO2. La taxe sur les émissions de CO2 s'applique à partir de 108 g/km depuis le 1er janvier 2026, et s'y ajoute un malus au poids dont le seuil est descendu à 1,5 tonne. Les véhicules électriques et hybrides rechargeables bénéficient d'exonérations de taxe régionale dans la plupart des départements. Nos frais de dossier sont de 39 euros, souvent moins chers que ceux facturés par les concessionnaires.",
     faqs: [
       {
         question: "Peut-on immatriculer un véhicule neuf en ligne ?",
@@ -383,7 +383,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Qu'est-ce que le malus écologique pour un véhicule neuf ?",
-        answer: "Le malus écologique est une taxe additionnelle appliquée aux véhicules neufs émettant plus de 118 g de CO2/km en 2026. Son montant peut atteindre plusieurs dizaines de milliers d'euros pour les véhicules les plus polluants. Les véhicules électriques et hybrides rechargeables en sont généralement exonérés.",
+        answer: "Le malus écologique est une taxe appliquée aux véhicules émettant 108 g de CO2/km ou plus depuis le 1er janvier 2026, le barème grimpant jusqu'à 80 000 € au-delà de 191 g. S'y ajoute un malus au poids, déclenché à partir de 1,5 tonne. C'est le barème de l'année de première immatriculation qui s'applique, en France ou à l'étranger, et non la date de commande. Son montant peut atteindre plusieurs dizaines de milliers d'euros pour les véhicules les plus polluants. Les véhicules électriques et hybrides rechargeables en sont généralement exonérés.",
       },
       {
         question: "Un véhicule neuf a-t-il besoin d'un contrôle technique ?",
@@ -420,19 +420,19 @@ export const demarchesConfig: DemarcheConfig[] = [
     faqs: [
       {
         question: "Quels documents pour une carte grise suite à un décès ?",
-        answer: "Il vous faut l'acte de décès, la carte grise du véhicule, une attestation notariale ou certificat d'hérédité, votre pièce d'identité et un justificatif de domicile.",
+        answer: "L'acte de décès, la carte grise du véhicule, une pièce justifiant de votre qualité d'héritier, votre pièce d'identité, un justificatif de domicile, l'assurance du véhicule et votre permis de conduire. Pour la qualité d'héritier, une attestation signée par l'ensemble des héritiers suffit sur les petites successions ; au-delà de 5 965 €, il faut un acte de notoriété établi par un notaire.",
       },
       {
         question: "Combien de temps pour transférer une carte grise après un décès ?",
-        answer: "Il n'y a pas de délai légal strict, mais il est recommandé d'effectuer la démarche rapidement pour pouvoir utiliser le véhicule légalement.",
+        answer: "Aucun délai ne vous oblige à mettre la carte grise à votre nom si vous gardez le véhicule. En revanche, un délai compte si vous comptez le revendre : passé trois mois après le décès, et si le véhicule a circulé entre-temps, vous devez l'immatriculer à votre nom avant de pouvoir le vendre. En deçà, vous pouvez vendre directement.",
       },
       {
         question: "Peut-on vendre directement un véhicule hérité sans faire la carte grise ?",
-        answer: "Non, vous ne pouvez pas vendre un véhicule dont la carte grise est au nom d'une personne décédée sans effectuer au préalable le changement de titulaire. La carte grise doit d'abord être mise à votre nom avant de pouvoir procéder à la vente.",
+        answer: "Souvent si, et c'est une économie que peu de gens connaissent. En principe le véhicule doit être immatriculé au nom d'un héritier avant d'être revendu, mais l'article 12 de l'arrêté du 9 février 2009 prévoit deux exceptions : si la revente intervient dans les trois mois suivant le décès, ou si le véhicule n'a pas circulé depuis le décès. Dans ces cas, vous vendez directement et l'acheteur immatricule à son nom — vous n'avez pas de carte grise à payer. Il lui faudra le certificat de cession signé par les héritiers, l'ancienne carte grise portant la mention « Vendu le », une attestation sur l'honneur que le véhicule n'a pas roulé depuis le décès, et un contrôle technique en cours de validité.",
       },
       {
         question: "Que faire si plusieurs héritiers veulent le véhicule ?",
-        answer: "En cas de plusieurs héritiers, un accord doit être trouvé pour désigner le bénéficiaire du véhicule. Le notaire en charge de la succession peut arbitrer. Une attestation signée par tous les héritiers désignant le nouveau titulaire peut être demandée par l'administration.",
+        answer: "L'accord doit prendre une forme précise : l'arrêté exige soit une lettre de désistement de tous les autres héritiers en faveur de celui qui demande l'immatriculation, soit un certificat du notaire constatant leur accord pour lui attribuer le véhicule. Une entente verbale ne suffit pas, et c'est la pièce qui manque le plus souvent dans les dossiers de succession.",
       },
       {
         question: "Le contrôle technique est-il nécessaire pour une carte grise succession ?",
@@ -456,8 +456,8 @@ export const demarchesConfig: DemarcheConfig[] = [
     slug: "quitus-fiscal",
     title: "Quitus Fiscal",
     shortTitle: "demande de quitus fiscal",
-    h1: "Quitus Fiscal pour Véhicule Importé - Certificat Fiscal",
-    metaTitle: "Quitus Fiscal Véhicule Importé | Quitus ou 846A ?",
+    h1: "Quitus fiscal et certificat 846 A : lequel vous concerne",
+    metaTitle: "Quitus Fiscal et Certificat 846 A | Véhicule Importé",
     metaDescription: "Le quitus fiscal concerne les véhicules achetés dans l'Union européenne ; un véhicule venant d'un pays tiers relève du 846A, délivré par la douane. Conditions, pièces et demande.",
     icon: "FileCheck",
     description: "Certificat fiscal obligatoire pour les véhicules importés",
@@ -503,7 +503,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     ],
     prixDescription: "La demande de quitus fiscal auprès de l'administration fiscale est gratuite. Nos frais de dossier couvrent la constitution du dossier, la transmission aux services fiscaux et le suivi de votre demande jusqu'à l'obtention du certificat fiscal. En cas de TVA exigible sur un véhicule neuf importé, celle-ci devra être réglée directement auprès du Trésor Public. Aucune taxe supplémentaire de notre part.",
     seoContent: "Importer un véhicule de l'étranger est une démarche de plus en plus courante, que ce soit pour bénéficier de prix attractifs dans d'autres pays européens ou pour acquérir un modèle non disponible en France. Le quitus fiscal constitue la première étape administrative indispensable de ce processus.\n\nLe quitus se demande au service des impôts dont dépend votre domicile, au moyen du formulaire n° 1993-PART-D-SD pour un particulier, n° 1993-PRO-D-SD pour un professionnel. Quatre départements font exception depuis septembre 2023 : dans le Nord, le Pas-de-Calais, la Moselle et le Bas-Rhin, la demande d'immatriculation vaut demande de quitus et passe par une téléprocédure dédiée sur le site de l'ANTS. Ailleurs, la demande s'adresse par courriel au service des impôts du département, et la TVA éventuellement due se règle exclusivement par virement.\n\nDiscount Carte Grise maîtrise parfaitement les procédures d'importation automobile et vous accompagne de A à Z. De la demande de quitus fiscal à l'obtention de votre carte grise définitive, notre équipe d'experts gère chaque étape pour vous garantir une importation réussie et sans tracas.",
-    keywords: ["quitus fiscal", "certificat de dédouanement 846A", "véhicule importé France", "TVA véhicule occasion étranger", "quitus fiscal pas cher"],
+    keywords: ["quitus fiscal", "certificat 846 A", "véhicule importé France", "TVA véhicule occasion étranger", "quitus fiscal pas cher"],
   },
   {
     code: "CPI_WW",
@@ -515,7 +515,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     metaDescription: "Obtenez votre Certificat Provisoire d'Immatriculation WW (CPI WW) pour votre véhicule importé. Démarche 100% en ligne, service agréé, traitement rapide.",
     icon: "Globe",
     description: "Certificat Provisoire d'Immatriculation WW pour véhicule importé",
-    longDescription: "Le Certificat Provisoire d'Immatriculation WW (CPI WW) est un document temporaire permettant de faire circuler un véhicule importé en France en attendant l'immatriculation définitive. Les plaques WW (doubles W) sont des plaques d'immatriculation provisoires attribuées aux véhicules en instance d'immatriculation.\n\nCette démarche s'adresse aux particuliers et professionnels qui ont importé un véhicule de l'étranger et qui souhaitent circuler légalement pendant la constitution du dossier d'immatriculation définitive. Le CPI WW est valable 1 mois et peut être renouvelé si nécessaire.\n\nAvec Discount Carte Grise, nous gérons l'ensemble du processus : dépôt de votre dossier, obtention du CPI WW et suivi jusqu'à l'immatriculation définitive. Une fois les documents réunis (quitus fiscal, COC), votre carte grise définitive est éditée.",
+    longDescription: "Le Certificat Provisoire d'Immatriculation WW (CPI WW) est un document temporaire permettant de faire circuler un véhicule importé en France en attendant l'immatriculation définitive. Les plaques WW (doubles W) sont des plaques d'immatriculation provisoires attribuées aux véhicules en instance d'immatriculation.\n\nCette démarche s'adresse aux particuliers et professionnels qui ont importé un véhicule de l'étranger et qui souhaitent circuler légalement pendant la constitution du dossier d'immatriculation définitive. Le CPI WW permet de circuler pendant quatre mois — six mois pour les véhicules neufs vendus incomplets aux fins de carrossage et les machines agricoles automotrices. L'immatriculation provisoire doit obligatoirement être suivie d'une immatriculation définitive.\n\nAvec Discount Carte Grise, nous gérons l'ensemble du processus : dépôt de votre dossier, obtention du CPI WW et suivi jusqu'à l'immatriculation définitive. Un point qui débloque beaucoup de dossiers : le justificatif fiscal n'a pas à être fourni au moment de la demande de WW, à condition de produire la preuve qu'il a été demandé. Vous pouvez donc rouler pendant que votre quitus s'instruit. Une fois les documents réunis, votre carte grise définitive est éditée.",
     documents: [
       "Carte grise étrangère",
       "Facture d'achat du véhicule",
@@ -536,7 +536,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     faqs: [
       {
         question: "Qu'est-ce qu'un CPI WW ?",
-        answer: "Le CPI WW (Certificat Provisoire d'Immatriculation avec plaques WW) est un document temporaire délivré aux véhicules importés en attente d'immatriculation définitive. Il permet de circuler légalement en France pendant 1 mois.",
+        answer: "Le CPI WW (Certificat Provisoire d'Immatriculation avec plaques WW) est un document temporaire délivré aux véhicules importés en attente d'immatriculation définitive. Il permet de circuler légalement en France pendant quatre mois.",
       },
       {
         question: "Quand doit-on demander un CPI WW ?",
@@ -544,7 +544,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Combien de temps est valable un CPI WW ?",
-        answer: "Un CPI WW est valable 1 mois. Si l'immatriculation définitive n'est pas obtenue dans ce délai, il peut être renouvelé. Avec Discount Carte Grise, nous suivons votre dossier jusqu'à l'obtention de la carte grise définitive.",
+        answer: "Quatre mois, et six mois pour les véhicules neufs vendus incomplets aux fins de carrossage, les machines agricoles automotrices et les véhicules de catégories R et S. C'est l'article 8 de l'arrêté du 9 février 2009 qui le fixe, dans sa rédaction en vigueur depuis le 1er janvier 2026. L'immatriculation provisoire doit obligatoirement déboucher sur une immatriculation définitive. Avec Discount Carte Grise, nous suivons votre dossier jusqu'à l'obtention de la carte grise définitive.",
       },
       {
         question: "Quelle est la différence entre CPI et CPI WW ?",
@@ -896,7 +896,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "La FIV est-elle nécessaire pour vendre un véhicule ?",
-        answer: "La FIV n'est pas obligatoire pour vendre un véhicule, mais elle peut être utile pour fournir des informations détaillées à l'acheteur. Pour la vente, les documents obligatoires sont la carte grise barrée, le Cerfa 15776 et le rapport de contrôle technique.",
+        answer: "La FIV n'est pas obligatoire pour vendre un véhicule, mais elle peut être utile pour fournir des informations détaillées à l'acheteur. Pour la vente, les documents obligatoires sont la carte grise barrée, le Cerfa 15776, le certificat de situation administrative de moins de quinze jours et, pour un véhicule de plus de quatre ans, le rapport de contrôle technique.",
       },
     ],
     seoContent: "La Fiche d'Identification Véhicule (FIV) est un document administratif méconnu mais précieux pour les propriétaires de véhicules. Extraite directement du Système d'Immatriculation des Véhicules (SIV), elle constitue la fiche d'identité complète de votre véhicule.\n\nCe document est particulièrement utile dans le cadre d'une succession, d'un litige sur les caractéristiques d'un véhicule, ou simplement pour vérifier que les données enregistrées correspondent bien à la réalité. La FIV contient des informations plus détaillées que celles visibles sur la carte grise.\n\nDiscount Carte Grise vous permet d'obtenir votre FIV rapidement et sans vous déplacer. Notre service en ligne traite votre demande sous 24h et vous envoie le document directement par email. Un service simple et efficace pour un document souvent difficile à obtenir par les voies classiques.",
