@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { MessagesEnAttente } from "@/components/admin/MessagesEnAttente";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -370,6 +371,8 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
         )}
+
+        <MessagesEnAttente />
 
         {/* Alerte garages à vérifier */}
         {stats.garagesAVerifier > 0 && (

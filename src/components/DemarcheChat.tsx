@@ -181,22 +181,9 @@ export function DemarcheChat({
             },
           },
         });
-      } else if (!isAdmin) {
-        // Garage sends -> notify admin by email
-        await supabase.functions.invoke("send-email", {
-          body: {
-            type: "admin_new_message",
-            to: "contact@discountcartegrise.fr",
-            data: {
-              garage_name: garageName || "Garage",
-              garage_email: garageEmail || "",
-              reference: numeroDemarche || demarcheId,
-              demarche_id: demarcheId,
-              message_preview: newMessage.trim().substring(0, 150),
-            },
-          },
-        });
       }
+      // Le garage qui ecrit ne declenche plus d'e-mail : la carte « Messages
+      // en attente » du tableau de bord admin tient ce role.
     } catch (e) {
       console.error("Email notification failed:", e);
     }

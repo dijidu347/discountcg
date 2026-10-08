@@ -133,23 +133,9 @@ serve(async (req) => {
         );
       }
 
-      // Send email notification to admin
-      try {
-        await supabase.functions.invoke("send-email", {
-          body: {
-            type: "admin_guest_message",
-            to: "contact@discountcartegrise.fr",
-            data: {
-              client_name: `${order.prenom} ${order.nom}`,
-              client_email: order.email,
-              tracking_number: order.tracking_number,
-              message_preview: content.trim().substring(0, 200),
-            },
-          },
-        });
-      } catch (e) {
-        console.error("Email notification failed:", e);
-      }
+      // Plus d'e-mail a l'admin : trois messages d'un client en produisaient
+      // trois. La carte « Messages en attente » du tableau de bord les liste,
+      // alimentee par la fonction messages_en_attente().
 
       return new Response(
         JSON.stringify({ success: true, message }),
