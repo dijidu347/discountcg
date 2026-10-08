@@ -217,7 +217,7 @@ serve(async (req) => {
       try {
         const { data: cached, error } = await admin
           .from('vehicle_cache')
-          .select('found, data, expires_at, hit_count')
+          .select('found, data, brut, expires_at, hit_count')
           .eq('plate', cleanPlate)
           .maybeSingle();
 
@@ -233,7 +233,12 @@ serve(async (req) => {
 
           console.log(`vehicle-lookup ${cleanPlate} source=cache found=${cached.found}`);
           return new Response(
-            JSON.stringify({ success: true, data: cached.data ?? normalize(null) }),
+            JSON.stringify({
+              success: true,
+              // Avec un brut, la normalisation est recalculée : l'enrichir ne coûte aucun appel.
+              data: cached.brut ? { ...(cached.data ?? {}), ...normalize(cached.brut) } : (cached.data ?? normalize(null)),
+              brut: cached.brut ?? null,
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -289,6 +294,7 @@ serve(async (req) => {
       }
 
       const normalizedData = normalize(issue.brut);
+      const brut = partieBrute(issue.brut);
       const found = isFilled(normalizedData.marque) || isFilled(normalizedData.puissance_fiscale);
 
       console.log(`vehicle-lookup ${cleanPlate} source=${source.nom} found=${found}`);
@@ -299,13 +305,14 @@ serve(async (req) => {
           cleanPlate,
           found,
           found ? normalizedData : null,
-          found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS
+          found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS,
+          brut,
         );
       }
 
       // Contrat de réponse inchangé
       return new Response(
-        JSON.stringify({ success: true, data: normalizedData }),
+        JSON.stringify({ success: true, data: normalizedData, brut }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -334,7 +341,7 @@ serve(async (req) => {
   }
 });
 
-async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: number) {
+async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: number, brut: unknown = null) {
   if (!admin) return;
   try {
     const now = new Date();
@@ -347,6 +354,7 @@ async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: n
       plate,
       found,
       data,
+      brut,
       fetched_at: now.toISOString(),
       expires_at: new Date(now.getTime() + ttlMs).toISOString(),
     }, { onConflict: 'plate' });
