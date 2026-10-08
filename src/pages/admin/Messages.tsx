@@ -182,10 +182,17 @@ export default function Messages() {
                     key={`${c.source}-${c.cible_id}`}
                     type="button"
                     onClick={() => setChoisie(c)}
+                    // Une non lue se voit sans lire l'intitule de sa section :
+                    // fond jaune et bord franc. Une lue reste neutre, et la
+                    // selection se marque par un bord plus sombre.
                     className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${
-                      active
-                        ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30"
-                        : "border-transparent hover:bg-muted/60"
+                      c.etat === "non_lu"
+                        ? active
+                          ? "border-yellow-600 bg-yellow-100 dark:border-yellow-400 dark:bg-yellow-950/50"
+                          : "border-yellow-400 bg-yellow-50 hover:bg-yellow-100 dark:border-yellow-600 dark:bg-yellow-950/25"
+                        : active
+                          ? "border-foreground/30 bg-muted"
+                          : "border-transparent hover:bg-muted/60"
                     }`}
                   >
                     <div className="mb-1 flex items-center gap-2">
@@ -196,7 +203,13 @@ export default function Messages() {
                         {depuis(c.recu_le)}
                       </span>
                     </div>
-                    <p className="truncate text-sm font-medium text-foreground">{c.reference}</p>
+                    <p
+                      className={`truncate text-sm text-foreground ${
+                        c.etat === "non_lu" ? "font-bold" : "font-medium"
+                      }`}
+                    >
+                      {c.reference}
+                    </p>
                     <p className="truncate text-xs text-muted-foreground">{c.dernier_message}</p>
                           </button>
                         );
