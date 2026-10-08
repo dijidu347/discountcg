@@ -586,6 +586,27 @@ export type Database = {
           },
         ]
       }
+      conversations_classees: {
+        Row: {
+          cible_id: string
+          classee_le: string
+          classee_par: string | null
+          source: string
+        }
+        Insert: {
+          cible_id: string
+          classee_le?: string
+          classee_par?: string | null
+          source: string
+        }
+        Update: {
+          cible_id?: string
+          classee_le?: string
+          classee_par?: string | null
+          source?: string
+        }
+        Relationships: []
+      }
       demarche_questionnaire_responses: {
         Row: {
           answer_text: string
@@ -2715,6 +2736,7 @@ export type Database = {
         Returns: {
           cible_id: string
           dernier_message: string
+          non_lu: boolean
           recu_le: string
           reference: string
           source: string
