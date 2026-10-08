@@ -25,6 +25,11 @@ create table if not exists public.conversations_classees (
 comment on table public.conversations_classees is
   'Conversations marquées « pas de réponse nécessaire ». Le classement vaut jusqu''au prochain message reçu, qui les fait ressortir.';
 
+-- La politique RLS filtre les lignes, elle n'accorde pas l'acces a la table :
+-- sans ces droits, l'admin se heurte a une erreur de permission malgre la
+-- politique.
+grant select, insert, update, delete on public.conversations_classees to authenticated;
+
 alter table public.conversations_classees enable row level security;
 
 drop policy if exists "Les admins gerent le classement" on public.conversations_classees;
@@ -34,7 +39,11 @@ create policy "Les admins gerent le classement"
   using (has_role(auth.uid(), 'admin'::app_role))
   with check (has_role(auth.uid(), 'admin'::app_role));
 
-create or replace function public.messages_en_attente()
+-- La fonction existe deja avec cinq colonnes ; on en ajoute une sixieme, et
+-- CREATE OR REPLACE refuse de changer un type de retour.
+drop function if exists public.messages_en_attente();
+
+create function public.messages_en_attente()
 returns table (
   source text,
   cible_id uuid,
