@@ -932,7 +932,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     faqs: [
       {
         question: "Quand passer de l'immatriculation WW à l'immatriculation définitive ?",
-        answer: "Vous devez demander l'immatriculation définitive dès que vous avez réuni tous les documents nécessaires (quitus fiscal, COC, contrôle technique). Le CPI WW est valable 1 mois, il faut donc anticiper la démarche.",
+        answer: "Vous devez demander l'immatriculation définitive dès que vous avez réuni tous les documents nécessaires (quitus fiscal, COC, contrôle technique). Le CPI WW permet de circuler quatre mois, ce qui laisse le temps de réunir le dossier — mais l'immatriculation définitive doit obligatoirement suivre.",
       },
       {
         question: "Quels documents sont nécessaires pour l'immatriculation définitive ?",
@@ -1006,7 +1006,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Le changement de département du locataire entraîne-t-il des frais supplémentaires ?",
-        answer: "Le changement d'adresse du locataire suit les mêmes règles que le changement d'adresse classique : gratuit les 3 premières fois, puis soumis à la taxe fixe et la redevance d'acheminement. Le changement de département n'entraîne pas de taxe régionale supplémentaire pour cette démarche.",
+        answer: "Le changement d'adresse du locataire suit les mêmes règles que le changement d'adresse classique : gratuit les trois premières fois, puis 2,76 euros au quatrième, la seule redevance d'acheminement. Le changement de département n'entraîne pas de taxe régionale supplémentaire pour cette démarche.",
       },
     ],
     seoContent: "Le changement d'adresse du locataire sur la carte grise est une spécificité administrative propre aux véhicules en location longue durée (LLD) ou en crédit-bail. Contrairement à un véhicule dont vous êtes pleinement propriétaire, la carte grise d'un véhicule en location mentionne deux entités : l'organisme financier (propriétaire) et le locataire (utilisateur).\n\nCette particularité rend la démarche légèrement plus complexe car elle implique parfois l'accord de l'organisme de financement. Les contrats de LLD étant variés, les modalités de mise à jour de l'adresse peuvent différer d'un loueur à l'autre.\n\nDiscount Carte Grise maîtrise les spécificités de cette démarche et vous accompagne dans la mise à jour de votre carte grise en location. Que votre véhicule soit en LLD, en LOA ou en crédit-bail, notre service en ligne traite votre demande rapidement et vous évite les échanges fastidieux avec votre société de leasing.",
