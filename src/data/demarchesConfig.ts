@@ -460,7 +460,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     metaTitle: "Quitus Fiscal et Certificat 846 A | Véhicule Importé",
     metaDescription: "Le quitus fiscal concerne les véhicules achetés dans l'Union européenne ; un véhicule venant d'un pays tiers relève du 846A, délivré par la douane. Conditions, pièces et demande.",
     icon: "FileCheck",
-    description: "Certificat fiscal obligatoire pour les véhicules importés",
+    description: "Certificat fiscal exigé pour un véhicule acheté dans l'Union européenne",
     longDescription: "Le quitus fiscal, que l'administration appelle certificat fiscal, atteste qu'un véhicule est en situation régulière au regard de la TVA. Il est exigé pour immatriculer en France un véhicule acheté dans un autre pays membre de l'Union européenne, et sans lui l'ANTS refuse la demande de carte grise.\n\nUn point que presque tous les sites confondent : le quitus fiscal et le 846 A ne sont pas le même document. Le quitus est délivré par les services des impôts et ne concerne que les acquisitions dans l'Union européenne. Un véhicule venant d'un pays tiers — le Royaume-Uni depuis le Brexit, la Suisse, les États-Unis — ne relève pas du quitus mais du certificat de dédouanement n° 846 A, délivré par la douane après les formalités douanières.\n\nLa TVA dépend de l'âge du véhicule au sens européen, pas de son usage. Un véhicule de moins de six mois ou de moins de 6 000 kilomètres est considéré comme neuf : la TVA française de 20 % est alors exigible, même s'il a déjà servi. Au-delà de ces deux seuils, il est d'occasion et la TVA n'est pas due en France si elle a été acquittée dans le pays d'origine.\n\nLa demande se fait après la livraison du véhicule. Le délai dépend du service des impôts et de la période, de quelques jours à plusieurs semaines. Nous constituons un dossier complet dès le départ, ce qui évite les allers-retours qui rallongent le traitement.",
     documents: [
       "Facture d'achat, ou certificat de cession si le vendeur est un particulier",
@@ -476,6 +476,10 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Recevez votre quitus fiscal par email",
     ],
     faqs: [
+      {
+        question: "Qu'est-ce que le certificat 846 A et comment l'obtenir ?",
+        answer: "C'est le certificat de dédouanement, et il n'a rien à voir avec le quitus fiscal malgré la confusion répandue. Il concerne les véhicules venant d'un pays hors Union européenne : Royaume-Uni depuis le Brexit, Suisse, États-Unis, Japon. Vous l'obtenez auprès d'un bureau de douane, après avoir réglé les droits de douane et les taxes dues. Le service vous remet alors une quittance, un exemplaire de la déclaration de douane et le certificat n° 846 A, qu'il faudra joindre à la demande de carte grise. Bon à savoir : le 846 A autorise à circuler sous l'immatriculation étrangère pendant quatre mois à compter de sa délivrance.",
+      },
       {
         question: "Qu'est-ce qu'un quitus fiscal ?",
         answer: "Le quitus fiscal, ou certificat fiscal, atteste qu'un véhicule est en règle au regard de la TVA. Il est délivré par les services des impôts et exigé pour immatriculer en France un véhicule acheté dans un autre pays de l'Union européenne. Attention à une confusion répandue : le formulaire de demande est le n° 1993-PART-D-SD pour un particulier. Le 846 A, lui, est le certificat de dédouanement délivré par la douane, pour un véhicule venant d'un pays tiers.",
