@@ -51,12 +51,11 @@ export const MessagesEnAttente = () => {
             </div>
             <div>
               <p className="font-bold text-yellow-800 dark:text-yellow-300">
-                {aTraiter} message{aTraiter > 1 ? "s" : ""} en attente de réponse
+                {aTraiter} message{aTraiter > 1 ? "s" : ""} à traiter
+                {nonLues > 0 && ` dont ${nonLues} non lu${nonLues > 1 ? "s" : ""} !`}
               </p>
               <p className="text-sm text-yellow-700 dark:text-yellow-400">
-                {nonLues > 0
-                  ? `dont ${nonLues} que vous n'avez pas encore ouverte${nonLues > 1 ? "s" : ""}`
-                  : "Un garage ou un client attend votre réponse"}
+                Cliquez pour répondre aux garages et aux clients
               </p>
             </div>
           </div>

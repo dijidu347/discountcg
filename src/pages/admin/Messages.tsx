@@ -18,7 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Check, ExternalLink, MessageSquare } from "lucide-react";
+import { ArrowLeft, Check, ExternalLink, MailOpen, MessageSquare } from "lucide-react";
 
 interface Conversation {
   source: "pro" | "particulier";
@@ -53,9 +53,10 @@ export default function Messages() {
     const { data } = await supabase.rpc("messages_en_attente" as any);
     const liste = (data as Conversation[]) ?? [];
     setConversations(liste);
-    // Au premier chargement, on ouvre la plus urgente plutôt qu'un écran vide.
+    // Aucune ouverture automatique : afficher une conversation la marque lue,
+    // et arriver sur la page ne veut pas dire qu'on a lu celle du haut.
     setChoisie((actuelle) =>
-      actuelle && liste.some((c) => c.cible_id === actuelle.cible_id) ? actuelle : liste[0] ?? null
+      actuelle && liste.some((c) => c.cible_id === actuelle.cible_id) ? actuelle : null
     );
   };
 
@@ -94,6 +95,32 @@ export default function Messages() {
     { cle: "non_lu" as const, titre: "Non lues", aide: "Vous ne les avez pas encore ouvertes" },
     { cle: "a_repondre" as const, titre: "Pas encore répondu", aide: "Lues, mais le dernier mot est à eux" },
   ];
+
+  // Ouvrir une conversation la marque lue automatiquement. Celui qui la consulte
+  // sans pouvoir repondre tout de suite la perdait donc de vue : ce bouton la
+  // remet dans « Non lues ».
+  const remettreNonLu = async (c: Conversation) => {
+    const table = c.source === "pro" ? "messages" : "guest_order_messages";
+    const colonne = c.source === "pro" ? "demarche_id" : "order_id";
+    const { error } = await supabase
+      .from(table as never)
+      .update({ is_read: false } as never)
+      .eq(colonne, c.cible_id)
+      .neq("sender_type", "admin");
+    if (error) {
+      toast({
+        title: "Impossible de marquer comme non lu",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Marquée comme non lue", description: "Elle repasse en tête de liste." });
+    setConversations((liste) =>
+      (liste ?? []).map((x) => (x.cible_id === c.cible_id ? { ...x, etat: "non_lu" } : x))
+    );
+    setChoisie(null);
+  };
 
   const ouvrirDossier = (c: Conversation) =>
     navigate(c.source === "pro" ? `/admin/demarche/${c.cible_id}` : `/admin/guest-order/${c.cible_id}`);
@@ -181,6 +208,19 @@ export default function Messages() {
             </div>
 
             {/* La conversation */}
+            {!choisie && (
+              <Card className="hidden lg:block">
+                <CardContent className="flex h-full min-h-[20rem] flex-col items-center justify-center gap-2 text-center">
+                  <MessageSquare className="h-10 w-10 text-muted-foreground/40" />
+                  <p className="font-medium text-foreground">Choisissez une conversation</p>
+                  <p className="max-w-sm text-sm text-muted-foreground">
+                    Elle ne sera marquée comme lue qu'une fois ouverte. Rien ne bouge tant que vous
+                    n'avez pas cliqué.
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
             {choisie && (
               <div className="space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
@@ -221,7 +261,13 @@ export default function Messages() {
                 )}
 
                 {/* Sous le chat : c'est ici qu'on decide, apres avoir lu. */}
-                <div className="flex justify-end border-t pt-4">
+                <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
+                  {choisie.etat !== "non_lu" && (
+                    <Button variant="ghost" onClick={() => void remettreNonLu(choisie)}>
+                      <MailOpen className="mr-2 h-4 w-4" />
+                      Marquer comme non lu
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     disabled={classement}
