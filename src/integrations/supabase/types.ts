@@ -2710,6 +2710,16 @@ export type Database = {
           user_id: string
         }[]
       }
+      messages_en_attente: {
+        Args: never
+        Returns: {
+          cible_id: string
+          dernier_message: string
+          recu_le: string
+          reference: string
+          source: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string

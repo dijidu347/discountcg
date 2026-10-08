@@ -15,6 +15,13 @@
       "when": 1791142247537,
       "tag": "0001_vehicle_lookup_quota",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791457872164,
+      "tag": "0002_messages_en_attente",
+      "breakpoints": true
     }
   ]
 }
