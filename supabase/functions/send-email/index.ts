@@ -540,11 +540,11 @@ const getEmailTemplate = (type: string, data: any) => {
 
     case "admin_new_demarche":
       return {
-        subject: `🆕 Nouvelle demande à traiter - ${data.reference}`,
+        subject: `🆕 Nouvelle démarche à traiter - ${data.reference}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #3b82f6;">Nouvelle demande à traiter</h1>
-            <p>Une nouvelle demande est disponible et nécessite votre attention.</p>
+            <h1 style="color: #3b82f6;">Nouvelle démarche à traiter</h1>
+            <p>Une nouvelle démarche est disponible et nécessite votre attention.</p>
             
             <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 8px 0;"><strong>Type :</strong> ${data.type}</p>
@@ -1049,19 +1049,19 @@ const getEmailTemplate = (type: string, data: any) => {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <p>Bonjour${data.prenom ? ` ${data.prenom}` : ""},</p>
-            <p>Vous avez commencé votre demande de <strong>${data.demarche_label}</strong>${vehicule} sur DiscountCarteGrise, sans aller jusqu'au paiement.</p>
+            <p>Vous avez commencé votre démarche de <strong>${data.demarche_label}</strong>${vehicule} sur DiscountCarteGrise, sans aller jusqu'au paiement.</p>
             <p>Tout est enregistré : il vous reste une étape. Une fois le paiement fait, vous nous envoyez vos pièces et nous nous occupons du reste.</p>
             ${data.montant ? `<div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 0;"><strong>Montant :</strong> ${data.montant} €</p>
             </div>` : ""}
             <a href="${data.lien_reprise}" style="display: inline-block; background-color: #0047AB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
-              Reprendre ma demande
+              Reprendre ma démarche
             </a>
             ${guestReplyBlock}
             ${guestFooter}
             <p style="color: #9ca3af; font-size: 12px; margin-top: 16px;">
-              ${dernier ? "C'est notre dernier rappel pour cette demande. " : ""}Vous avez changé d'avis ?
-              <a href="${data.lien_stop}" style="color: #9ca3af;">Ne plus recevoir de rappel pour cette demande</a>.
+              ${dernier ? "C'est notre dernier rappel pour cette démarche. " : ""}Vous avez changé d'avis ?
+              <a href="${data.lien_stop}" style="color: #9ca3af;">Ne plus recevoir de rappel pour cette démarche</a>.
             </p>
           </div>
         `,
