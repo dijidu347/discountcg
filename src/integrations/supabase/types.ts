@@ -2735,8 +2735,11 @@ export type Database = {
         Args: never
         Returns: {
           cible_id: string
+          contact_email: string
+          contact_nom: string
           dernier_message: string
-          non_lu: boolean
+          etat: string
+          garage_id: string
           recu_le: string
           reference: string
           source: string
