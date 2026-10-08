@@ -251,7 +251,7 @@ serve(async (req) => {
             JSON.stringify({
               success: true,
               // Avec un brut, la normalisation est recalculée : l'enrichir ne coûte aucun appel.
-              data: cached.brut ? { ...(cached.data ?? {}), ...normalize(cached.brut) } : nettoyerAncien(cached.data ?? normalize(null)),
+              data: cached.brut ? nettoyerAncien({ ...(cached.data ?? {}), ...normalize(cached.brut) }) : nettoyerAncien(cached.data ?? normalize(null)),
               brut: cached.brut ?? null,
               // D'où vient la réponse, et si un fournisseur payant a été atteint.
               provenance: { source: 'cache', fournisseur_contacte: false },
@@ -338,7 +338,7 @@ serve(async (req) => {
       // Contrat de réponse inchangé
       return new Response(
         JSON.stringify({
-          success: true, data: normalizedData, brut,
+          success: true, data: nettoyerAncien(normalizedData), brut,
           provenance: { source: source.nom, fournisseur_contacte: true },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
