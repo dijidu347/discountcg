@@ -34,6 +34,7 @@ const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
 const MajiConcepts = React.lazy(() => import("./pages/MajiConcepts"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
 const AllDemarches = React.lazy(() => import("./pages/admin/AllDemarches"));
+const AdminMessages = React.lazy(() => import("./pages/admin/Messages"));
 const AdminDemarcheDetail = React.lazy(() => import("./pages/admin/DemarcheDetail"));
 const ManageUsers = React.lazy(() => import("./pages/admin/ManageUsers"));
 const Prospection = React.lazy(() => import("./pages/Prospection"));
@@ -124,6 +125,7 @@ const App = () => (
             <Route path="/support" element={<Support />} />
             <Route path="/admin" element={<AdminGuard><AdminDashboard /></AdminGuard>} />
           <Route path="/admin/demarches" element={<AdminGuard><AllDemarches /></AdminGuard>} />
+          <Route path="/admin/messages" element={<AdminGuard><AdminMessages /></AdminGuard>} />
           <Route path="/admin/demarche/:id" element={<AdminGuard><AdminDemarcheDetail /></AdminGuard>} />
           <Route path="/admin/users" element={<AdminGuard><ManageUsers /></AdminGuard>} />
           <Route path="/admin/actions" element={<AdminGuard><ManageActions /></AdminGuard>} />
