@@ -82,12 +82,32 @@ type NormalizedVehicle = {
   genre?: unknown;
 };
 
-function normalize(apiResponse: any): NormalizedVehicle {
+// auto-ways écrit « INCONNU » ou « 0 » quand il ne sait pas : on rend alors
+// undefined, pour qu'un consommateur ne prenne pas l'absence pour une valeur.
+function texte(x: unknown): string | undefined {
+  if (x === null || x === undefined) return undefined;
+  const s = String(x).trim();
+  return s === '' || s.toUpperCase() === 'INCONNU' ? undefined : s;
+}
+function nombre(x: unknown): number | undefined {
+  const s = texte(x);
+  if (s === undefined) return undefined;
+  const n = Number(s.replace(',', '.'));
+  return Number.isFinite(n) && n > 0 ? n : undefined;
+}
+function liste(x: unknown): string[] | undefined {
+  if (!Array.isArray(x)) return undefined;
+  const l = x.map(texte).filter((s): s is string => !!s);
+  return l.length ? l : undefined;
+}
+
+function normalize(apiResponse: any): NormalizedVehicle & Record<string, unknown> {
   // Les trois formes rencontrées selon la source : les champs à la racine, sous
   // « data », ou sous « data » dans un tableau d'un seul élément.
   let v = apiResponse?.data ?? apiResponse;
   if (Array.isArray(v)) v = v[0];
   return {
+    // ---- Champs historiques : noms et valeurs inchangés ----
     marque: v?.AWN_marque,
     modele: v?.AWN_modele,
     couleur: v?.AWN_couleur,
@@ -96,9 +116,51 @@ function normalize(apiResponse: any): NormalizedVehicle {
     date_mec: dateIso(v?.AWN_date_mise_en_circulation),
     co2: v?.AWN_emission_co_2,
     immatriculation: v?.AWN_immat,
-    vin: v?.AWN_vin,
+    // auto-ways l'écrit « AWN_VIN » : l'ancienne lecture rendait toujours vide.
+    vin: v?.AWN_vin ?? v?.AWN_VIN,
     genre: v?.AWN_genre,
+    // ---- Champs ajoutés ----
+    version: texte(v?.AWN_version),
+    finition: texte(v?.AWN_finition),
+    libelle: texte(v?.AWN_label),
+    nom_commercial: texte(v?.AWN_nom_commercial),
+    genre_libelle: texte(v?.AWN_genre_label),
+    categorie_ce: texte(v?.AWN_categorie_vehicule),
+    carrosserie: texte(v?.AWN_carrosserie),
+    carrosserie_cg: texte(v?.AWN_carrosserie_carte_grise),
+    style_carrosserie: texte(v?.AWN_style_carrosserie),
+    nb_portes: nombre(v?.AWN_nbr_portes),
+    nb_places: nombre(v?.AWN_nbr_de_places),
+    boite_vitesses: texte(v?.AWN_type_boite_vites),
+    nb_vitesses: nombre(v?.AWN_nbr_vitesses),
+    code_boite: texte(v?.AWN_code_de_boite_de_vitesses),
+    transmission: texte(v?.AWN_mode_transmission_label),
+    puissance_din: nombre(v?.AWN_puissance_chevaux),
+    puissance_kw: nombre(v?.AWN_puissance_KW),
+    cylindree: nombre(v?.AWN_cylindre_capacite),
+    nb_cylindres: nombre(v?.AWN_nbr_cylindres),
+    moteur: texte(v?.AWN_label_moteur),
+    code_moteur: texte(v?.AWN_code_moteur),
+    turbo: texte(v?.AWN_turbo_compressor),
+    energie_cg: texte(v?.AWN_energie_cg),
+    norme_euro: texte(v?.AWN_norme_euro),
+    type_mine: texte(v?.AWN_type_mine),
+    cnit: texte(v?.AWN_type_variante_version),
+    codes_sra: liste(v?.AWN_codes_sra),
+    ptac: nombre(v?.AWN_PTAC),
+    date_cg: dateIso(texte(v?.AWN_date_cg)),
+    annee_debut_modele: nombre(v?.AWN_annee_de_debut_modele),
+    annee_fin_modele: nombre(v?.AWN_annee_de_fin_modele),
+    vitesse_max: nombre(v?.AWN_max_speed),
+    prix_neuf: nombre(v?.AWN_prix),
   };
+}
+
+// La partie utile de la réponse du fournisseur, sans l'enveloppe.
+function partieBrute(apiResponse: any): unknown {
+  let v = apiResponse?.data ?? apiResponse;
+  if (Array.isArray(v)) v = v[0];
+  return v ?? null;
 }
 
 // Les sources ne datent pas de la même façon : le revendeur rendait
@@ -155,7 +217,7 @@ serve(async (req) => {
       try {
         const { data: cached, error } = await admin
           .from('vehicle_cache')
-          .select('found, data, expires_at, hit_count')
+          .select('found, data, brut, expires_at, hit_count')
           .eq('plate', cleanPlate)
           .maybeSingle();
 
@@ -171,7 +233,12 @@ serve(async (req) => {
 
           console.log(`vehicle-lookup ${cleanPlate} source=cache found=${cached.found}`);
           return new Response(
-            JSON.stringify({ success: true, data: cached.data ?? normalize(null) }),
+            JSON.stringify({
+              success: true,
+              // Avec un brut, la normalisation est recalculée : l'enrichir ne coûte aucun appel.
+              data: cached.brut ? { ...(cached.data ?? {}), ...normalize(cached.brut) } : (cached.data ?? normalize(null)),
+              brut: cached.brut ?? null,
+            }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
         }
@@ -227,6 +294,7 @@ serve(async (req) => {
       }
 
       const normalizedData = normalize(issue.brut);
+      const brut = partieBrute(issue.brut);
       const found = isFilled(normalizedData.marque) || isFilled(normalizedData.puissance_fiscale);
 
       console.log(`vehicle-lookup ${cleanPlate} source=${source.nom} found=${found}`);
@@ -237,13 +305,14 @@ serve(async (req) => {
           cleanPlate,
           found,
           found ? normalizedData : null,
-          found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS
+          found ? TTL_FOUND_MS : TTL_NOT_FOUND_MS,
+          brut,
         );
       }
 
       // Contrat de réponse inchangé
       return new Response(
-        JSON.stringify({ success: true, data: normalizedData }),
+        JSON.stringify({ success: true, data: normalizedData, brut }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -272,7 +341,7 @@ serve(async (req) => {
   }
 });
 
-async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: number) {
+async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: number, brut: unknown = null) {
   if (!admin) return;
   try {
     const now = new Date();
@@ -285,6 +354,7 @@ async function writeCache(plate: string, found: boolean, data: unknown, ttlMs: n
       plate,
       found,
       data,
+      brut,
       fetched_at: now.toISOString(),
       expires_at: new Date(now.getTime() + ttlMs).toISOString(),
     }, { onConflict: 'plate' });

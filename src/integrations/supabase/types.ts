@@ -2373,6 +2373,7 @@ export type Database = {
       }
       vehicle_cache: {
         Row: {
+          brut: Json | null
           data: Json | null
           expires_at: string
           fetched_at: string
@@ -2382,6 +2383,7 @@ export type Database = {
           plate: string
         }
         Insert: {
+          brut?: Json | null
           data?: Json | null
           expires_at: string
           fetched_at?: string
@@ -2391,6 +2393,7 @@ export type Database = {
           plate: string
         }
         Update: {
+          brut?: Json | null
           data?: Json | null
           expires_at?: string
           fetched_at?: string
