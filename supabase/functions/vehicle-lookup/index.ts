@@ -175,6 +175,21 @@ function dateIso(valeur: unknown): unknown {
   return v;
 }
 
+// Entrées du cache antérieures au brut : on leur applique à la lecture le même
+// nettoyage (« INCONNU », zéros) et la même date ISO. Aucun appel fournisseur.
+// Le type d'une valeur valide est conservé : seule l'absence devient undefined.
+function nettoyerAncien(d: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...d };
+  for (const k of ['marque', 'modele', 'couleur', 'energie', 'immatriculation', 'vin', 'genre']) {
+    if (texte(out[k]) === undefined) out[k] = undefined;
+  }
+  for (const k of ['co2', 'puissance_fiscale']) {
+    if (nombre(out[k]) === undefined) out[k] = undefined;
+  }
+  out.date_mec = dateIso(texte(out.date_mec));
+  return out;
+}
+
 function isFilled(value: unknown): boolean {
   return value !== null && value !== undefined && String(value).trim() !== '';
 }
@@ -236,7 +251,7 @@ serve(async (req) => {
             JSON.stringify({
               success: true,
               // Avec un brut, la normalisation est recalculée : l'enrichir ne coûte aucun appel.
-              data: cached.brut ? { ...(cached.data ?? {}), ...normalize(cached.brut) } : (cached.data ?? normalize(null)),
+              data: cached.brut ? nettoyerAncien({ ...(cached.data ?? {}), ...normalize(cached.brut) }) : nettoyerAncien(cached.data ?? normalize(null)),
               brut: cached.brut ?? null,
               // D'où vient la réponse, et si un fournisseur payant a été atteint.
               provenance: { source: 'cache', fournisseur_contacte: false },
@@ -323,7 +338,7 @@ serve(async (req) => {
       // Contrat de réponse inchangé
       return new Response(
         JSON.stringify({
-          success: true, data: normalizedData, brut,
+          success: true, data: nettoyerAncien(normalizedData), brut,
           provenance: { source: source.nom, fournisseur_contacte: true },
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
