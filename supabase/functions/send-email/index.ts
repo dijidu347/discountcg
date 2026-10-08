@@ -538,6 +538,11 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // Les modeles « admin_new_message » et « admin_guest_message » ont ete
+    // supprimes le 8 octobre 2026 : trois messages d'un client produisaient
+    // trois e-mails. La carte « Messages a traiter » du tableau de bord et la
+    // page /admin/messages tiennent desormais ce role.
+
     case "admin_new_demarche":
       return {
         subject: `🆕 Nouvelle démarche à traiter - ${data.reference}`,
@@ -970,26 +975,6 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
-    case "admin_new_message":
-      return {
-        subject: `💬 Message garage: ${data.garage_name} - ${data.reference}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2563eb;">Nouveau message d'un garage</h2>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
-              <p style="margin: 4px 0;"><strong>Garage :</strong> ${data.garage_name}</p>
-              <p style="margin: 4px 0;"><strong>Email :</strong> ${data.garage_email}</p>
-              <p style="margin: 4px 0;"><strong>Dossier :</strong> ${data.reference}</p>
-            </div>
-            <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
-              <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
-            </div>
-            <a href="https://discountcartegrise.fr/admin/demarche/${data.demarche_id}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-              Voir dans l'admin
-            </a>
-          </div>
-        `,
-      };
 
     case "guest_new_message":
       return {
@@ -1017,26 +1002,6 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
-    case "admin_guest_message":
-      return {
-        subject: `💬 Message client particulier: ${data.client_name} - ${data.tracking_number}`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h2 style="color: #2563eb;">Nouveau message d'un client particulier</h2>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0;">
-              <p style="margin: 4px 0;"><strong>Client :</strong> ${data.client_name}</p>
-              <p style="margin: 4px 0;"><strong>Email :</strong> ${data.client_email}</p>
-              <p style="margin: 4px 0;"><strong>Commande :</strong> ${data.tracking_number}</p>
-            </div>
-            <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
-              <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
-            </div>
-            <a href="https://discountcartegrise.fr/admin/guest-orders" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-              Voir dans l'admin
-            </a>
-          </div>
-        `,
-      };
 
     // === RELANCE D'UNE COMMANDE PARTICULIER NON PAYÉE (J+1 puis J+3) ===
     case "guest_order_reminder": {
