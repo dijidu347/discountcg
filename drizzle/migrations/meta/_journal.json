@@ -36,6 +36,13 @@
       "when": 1791467398215,
       "tag": "0004_messages_en_attente_contexte",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791482863986,
+      "tag": "0005_migration",
+      "breakpoints": true
     }
   ]
 }

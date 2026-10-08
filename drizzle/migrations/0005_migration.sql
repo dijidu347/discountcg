@@ -1,0 +1,2 @@
+alter table public.vehicle_cache add column if not exists brut jsonb;
+comment on column public.vehicle_cache.brut is 'Réponse brute du fournisseur, pour enrichir la normalisation sans nouvel appel facturé. NULL pour les entrées antérieures : un appel force=true la remplit.';
