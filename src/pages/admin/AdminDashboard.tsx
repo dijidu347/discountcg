@@ -79,7 +79,6 @@ export default function AdminDashboard() {
     garagesAVerifier: 0,
     demarches30j: 0,
     demarchesAujourdhui: 0,
-    demarchesAttenteClient: 0,
     commandesPartATraiter: 0,
     commandesPartNouvelles: 0,
     coffreAbonnes: 0,
@@ -138,16 +137,6 @@ export default function AdminDashboard() {
     const { count: demarchesNonVuesCount } = await applyATraiterFilters(
       supabase.from('demarches').select('*', { count: 'exact', head: true }),
     ).not('admin_viewed', 'is', true);
-
-    // Démarches en attente de paiement client : count SQL exact (head), donc
-    // insensible au plafond de 1000 lignes. Ce compteur venait auparavant d'un
-    // filtre JS sur un `select` tronqué : la bannière pouvait rester masquée
-    // alors que des dossiers attendaient.
-    const { count: demarchesAttenteClientCount } = await supabase
-      .from('demarches')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_draft', false)
-      .eq('status', 'en_attente_paiement_client');
 
     // Commandes particulier à traiter : même règle que la page Commandes
     // particulier (payée, ni finalisée ni refusée, statut vide inclus) ; les
@@ -253,7 +242,6 @@ export default function AdminDashboard() {
       garagesAVerifier: garagesAVerifier.length,
       demarches30j: Number(totaux30j?.demarches_creees ?? 0),
       demarchesAujourdhui: Number(totauxAujourdhui?.demarches_creees ?? 0),
-      demarchesAttenteClient: demarchesAttenteClientCount || 0,
       commandesPartATraiter: commandesPartATraiterCount || 0,
       commandesPartNouvelles: commandesPartNouvellesCount || 0,
       coffreAbonnes: coffreActive.length,
@@ -406,28 +394,11 @@ export default function AdminDashboard() {
           </Card>
         )}
 
-        {/* Alerte attente paiement client */}
-        {stats.demarchesAttenteClient > 0 && (
-          <Card className="mb-6 border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/20 cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/30 transition-colors"
-                onClick={() => navigate("/admin/demarches")}>
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <Clock className="h-8 w-8 text-amber-500" />
-                  <div>
-                    <p className="font-bold text-amber-700 dark:text-amber-400">
-                      {stats.demarchesAttenteClient} démarche{stats.demarchesAttenteClient > 1 ? 's' : ''} en attente de paiement client
-                    </p>
-                    <p className="text-sm text-amber-600 dark:text-amber-500">
-                      Le client n'a pas encore payé sa part
-                    </p>
-                  </div>
-                </div>
-                <Button className="bg-amber-500 hover:bg-amber-600">Voir</Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* Plus de banniere « en attente de paiement client » : tant que le
+            client n'a pas paye, il n'y a rien a faire de notre cote, et des
+            qu'il paie la demarche rejoint « a traiter ». Le compteur restait
+            donc allume en permanence sans jamais appeler un geste — sur douze
+            dossiers, deux dataient de plus de quatre-vingt-dix jours. */}
 
         {/* Statistics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
