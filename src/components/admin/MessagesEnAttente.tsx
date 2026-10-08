@@ -38,22 +38,22 @@ export const MessagesEnAttente = () => {
   if (!aTraiter) return null;
 
   return (
-    <Card className="mb-6 border-2 border-violet-500 bg-violet-50 dark:bg-violet-950/20">
+    <Card className="mb-6 border-2 border-yellow-500 bg-yellow-50 dark:bg-yellow-950/20">
       <CardContent className="py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <MessageSquare className="h-8 w-8 text-violet-500" />
+              <MessageSquare className="h-8 w-8 text-yellow-500" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
-                <span className="relative inline-flex h-4 w-4 rounded-full bg-violet-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
+                <span className="relative inline-flex h-4 w-4 rounded-full bg-yellow-500" />
               </span>
             </div>
             <div>
-              <p className="font-bold text-violet-700 dark:text-violet-300">
+              <p className="font-bold text-yellow-800 dark:text-yellow-300">
                 {aTraiter} message{aTraiter > 1 ? "s" : ""} en attente de réponse
               </p>
-              <p className="text-sm text-violet-600 dark:text-violet-400">
+              <p className="text-sm text-yellow-700 dark:text-yellow-400">
                 {nonLues > 0
                   ? `dont ${nonLues} que vous n'avez pas encore ouverte${nonLues > 1 ? "s" : ""}`
                   : "Un garage ou un client attend votre réponse"}
@@ -61,7 +61,7 @@ export const MessagesEnAttente = () => {
             </div>
           </div>
           <Button
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-yellow-500 text-yellow-950 hover:bg-yellow-400"
             onClick={() => navigate("/admin/messages")}
           >
             Voir les messages

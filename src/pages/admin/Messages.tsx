@@ -112,10 +112,10 @@ export default function Messages() {
         </button>
 
         <h1 className="mb-6 flex items-center gap-3 text-2xl font-bold text-foreground md:text-3xl">
-          <MessageSquare className="h-7 w-7 text-violet-500" />
+          <MessageSquare className="h-7 w-7 text-yellow-500" />
           Messages en attente de réponse
           {conversations && (
-            <Badge className="bg-violet-600 text-white hover:bg-violet-600">
+            <Badge className="bg-yellow-500 text-yellow-950 hover:bg-yellow-500">
               {conversations.length}
             </Badge>
           )}
@@ -157,7 +157,7 @@ export default function Messages() {
                     onClick={() => setChoisie(c)}
                     className={`w-full rounded-md border px-3 py-2 text-left transition-colors ${
                       active
-                        ? "border-violet-500 bg-violet-50 dark:bg-violet-950/30"
+                        ? "border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30"
                         : "border-transparent hover:bg-muted/60"
                     }`}
                   >
