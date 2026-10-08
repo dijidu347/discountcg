@@ -238,6 +238,8 @@ serve(async (req) => {
               // Avec un brut, la normalisation est recalculée : l'enrichir ne coûte aucun appel.
               data: cached.brut ? { ...(cached.data ?? {}), ...normalize(cached.brut) } : (cached.data ?? normalize(null)),
               brut: cached.brut ?? null,
+              // D'où vient la réponse, et si un fournisseur payant a été atteint.
+              provenance: { source: 'cache', fournisseur_contacte: false },
             }),
             { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
           );
@@ -254,7 +256,10 @@ serve(async (req) => {
       // Panne de configuration: ne rien écrire dans le cache
       console.error('aucune source de plaques configurée');
       return new Response(
-        JSON.stringify({ success: false, indisponible: true, error: 'Service non configuré' }),
+        JSON.stringify({
+          success: false, indisponible: true, error: 'Service non configuré',
+          provenance: { source: 'aucune', fournisseur_contacte: false },
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -266,6 +271,8 @@ serve(async (req) => {
           indisponible: true,
           limite: true,
           error: 'Trop de recherches, veuillez saisir les informations manuellement',
+          // Refusé par le plafond : aucun fournisseur n'a été atteint, rien n'a coûté.
+          provenance: { source: 'aucune', fournisseur_contacte: false },
         }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
