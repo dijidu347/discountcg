@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ChevronRight, ChevronDown } from "lucide-react";
+import { MessageSquare, ChevronRight, ChevronDown, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 
 interface Conversation {
@@ -22,6 +23,7 @@ interface Conversation {
   reference: string;
   dernier_message: string;
   recu_le: string;
+  non_lu: boolean;
 }
 
 // « il y a 3 h », « hier », « il y a 5 j » : l'ancienneté dit l'urgence mieux
@@ -37,6 +39,7 @@ function depuis(iso: string): string {
 
 export const MessagesEnAttente = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
   // Repliee par defaut : vingt-cinq lignes depliees poussaient le reste du
   // tableau de bord hors de l'ecran. La carte annonce, on deroule au besoin.
@@ -59,6 +62,26 @@ export const MessagesEnAttente = () => {
 
   const ouvrir = (c: Conversation) =>
     navigate(c.source === "pro" ? `/admin/demarche/${c.cible_id}` : `/admin/guest-order/${c.cible_id}`);
+
+  // Classer sans repondre. Le classement porte une date : si le client ecrit
+  // de nouveau ensuite, la conversation ressort d'elle-meme.
+  const classer = async (c: Conversation) => {
+    const { error } = await supabase
+      .from("conversations_classees" as never)
+      .upsert(
+        { source: c.source, cible_id: c.cible_id, classee_le: new Date().toISOString() } as never,
+        { onConflict: "source,cible_id" } as never
+      );
+    if (error) {
+      toast({
+        title: "Impossible de classer la conversation",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    setConversations((liste) => (liste ?? []).filter((x) => x.cible_id !== c.cible_id));
+  };
 
   return (
     <Card className="mb-6 border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
@@ -94,15 +117,20 @@ export const MessagesEnAttente = () => {
 
         <div className={`space-y-1 ${depliee ? "mt-4" : "hidden"}`}>
           {conversations.map((c) => (
+            <div key={`${c.source}-${c.cible_id}`} className="flex items-center gap-1">
             <button
-              key={`${c.source}-${c.cible_id}`}
               type="button"
               onClick={() => ouvrir(c)}
-              className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-blue-100 dark:hover:bg-blue-950/40"
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-blue-100 dark:hover:bg-blue-950/40"
             >
               <Badge variant={c.source === "pro" ? "default" : "secondary"} className="shrink-0">
                 {c.source === "pro" ? "Pro" : "Particulier"}
               </Badge>
+              {c.non_lu && (
+                <Badge variant="destructive" className="shrink-0">
+                  Non lu
+                </Badge>
+              )}
               <span className="shrink-0 font-medium tabular-nums">{c.reference}</span>
               <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
                 {c.dernier_message}
@@ -110,6 +138,19 @@ export const MessagesEnAttente = () => {
               <span className="shrink-0 text-xs text-muted-foreground">{depuis(c.recu_le)}</span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
+            <button
+              type="button"
+              title="Pas de réponse nécessaire"
+              onClick={(e) => {
+                e.stopPropagation();
+                void classer(c);
+              }}
+              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-blue-100 hover:text-foreground dark:hover:bg-blue-950/40"
+            >
+              <Check className="h-4 w-4" />
+              <span className="hidden sm:inline">Pas de réponse nécessaire</span>
+            </button>
+            </div>
           ))}
         </div>
       </CardContent>
