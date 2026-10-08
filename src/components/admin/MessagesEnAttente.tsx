@@ -13,7 +13,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ChevronRight } from "lucide-react";
+import { MessageSquare, ChevronRight, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface Conversation {
   source: "pro" | "particulier";
@@ -37,6 +38,9 @@ function depuis(iso: string): string {
 export const MessagesEnAttente = () => {
   const navigate = useNavigate();
   const [conversations, setConversations] = useState<Conversation[] | null>(null);
+  // Repliee par defaut : vingt-cinq lignes depliees poussaient le reste du
+  // tableau de bord hors de l'ecran. La carte annonce, on deroule au besoin.
+  const [depliee, setDepliee] = useState(false);
 
   useEffect(() => {
     let vivant = true;
@@ -59,25 +63,36 @@ export const MessagesEnAttente = () => {
   return (
     <Card className="mb-6 border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
       <CardContent className="py-4">
-        <div className="mb-3 flex items-center gap-3">
-          <div className="relative">
-            <MessageSquare className="h-8 w-8 text-blue-500" />
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
-              <span className="relative inline-flex h-4 w-4 rounded-full bg-blue-500" />
-            </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <MessageSquare className="h-8 w-8 text-blue-500" />
+              <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                <span className="relative inline-flex h-4 w-4 rounded-full bg-blue-500" />
+              </span>
+            </div>
+            <div>
+              <p className="font-bold text-blue-700 dark:text-blue-400">
+                {conversations.length} message{conversations.length > 1 ? "s" : ""} en attente de réponse
+              </p>
+              <p className="text-sm text-blue-600 dark:text-blue-500">
+                Un garage ou un client attend votre réponse
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="font-bold text-blue-700 dark:text-blue-400">
-              {conversations.length} message{conversations.length > 1 ? "s" : ""} en attente de réponse
-            </p>
-            <p className="text-sm text-blue-600 dark:text-blue-500">
-              Cliquez sur une conversation pour y répondre
-            </p>
-          </div>
+          <Button
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={() => setDepliee((d) => !d)}
+          >
+            {depliee ? "Masquer" : "Voir les messages"}
+            <ChevronDown
+              className={`ml-2 h-4 w-4 transition-transform ${depliee ? "rotate-180" : ""}`}
+            />
+          </Button>
         </div>
 
-        <div className="space-y-1">
+        <div className={`space-y-1 ${depliee ? "mt-4" : "hidden"}`}>
           {conversations.map((c) => (
             <button
               key={`${c.source}-${c.cible_id}`}
