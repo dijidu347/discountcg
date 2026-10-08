@@ -61,7 +61,9 @@ as $$
     and not g.is_read
     and coalesce(o.status, '') <> 'termine'
 
-  order by recu_le desc;
+  -- Par position : dans un UNION, le nom declare en sortie de fonction
+  -- n'est pas visible ici.
+  order by 5 desc;
 $$;
 
 revoke all on function public.messages_en_attente() from public, anon;
