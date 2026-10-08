@@ -29,7 +29,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     metaDescription: "Commandez votre carte grise en ligne au meilleur prix. Traitement sous 24h, service agréé par l'État. Simulez le coût et lancez votre démarche.",
     icon: "CreditCard",
     description: "Changement de titulaire suite à l'achat d'un véhicule d'occasion",
-    longDescription: "Le changement de titulaire de la carte grise (certificat d'immatriculation) est obligatoire lors de l'achat d'un véhicule d'occasion. Cette démarche doit être effectuée dans le mois suivant la date de cession indiquée sur le Cerfa 15776. Le non-respect de ce délai peut entraîner une amende forfaitaire de 135 euros.\n\nDepuis la réforme du Plan Préfectures Nouvelle Génération (PPNG) de 2017, il n'est plus possible de réaliser cette démarche au guichet d'une préfecture ou sous-préfecture. Le changement de titulaire se fait exclusivement en ligne, soit via le site officiel de l'ANTS (Agence Nationale des Titres Sécurisés), soit par l'intermédiaire d'un professionnel habilité comme Discount Carte Grise.\n\nEn tant que service agréé par le Ministère de l'Intérieur (habilitation N° 285046), nous traitons votre dossier sous 24h maximum. Vous recevez immédiatement un Certificat Provisoire d'Immatriculation (CPI) par email, valable un mois pour circuler en toute légalité. La carte grise définitive vous est ensuite envoyée par courrier recommandé.\n\nNotre service simplifie la procédure : téléchargez vos documents, nous vérifions leur conformité, et nous effectuons toutes les démarches auprès de l'administration. Pas de file d'attente, pas de rendez-vous, pas de stress.",
+    longDescription: "Le changement de titulaire de la carte grise (certificat d'immatriculation) est obligatoire lors de l'achat d'un véhicule d'occasion. Cette démarche doit être effectuée dans le mois suivant la date de cession indiquée sur le Cerfa 15776. Le non-respect de ce délai peut entraîner une amende forfaitaire de 135 euros.\n\nDepuis la réforme du Plan Préfectures Nouvelle Génération (PPNG) de 2017, il n'est plus possible de réaliser cette démarche au guichet d'une préfecture ou sous-préfecture. Le changement de titulaire se fait exclusivement en ligne, soit via le site officiel de l'ANTS (Agence Nationale des Titres Sécurisés), soit par l'intermédiaire d'un professionnel habilité comme Discount Carte Grise.\n\nHabilités par la préfecture pour l'accès au Système d'Immatriculation des Véhicules (n° 285046) et agréés par le Trésor public pour la perception des taxes (n° 63198), nous traitons votre dossier sous 24 heures en moyenne. Vous recevez immédiatement un Certificat Provisoire d'Immatriculation (CPI) par email, valable un mois pour circuler en toute légalité. La carte grise définitive vous est ensuite envoyée par lettre suivie.\n\nNotre service simplifie la procédure : téléchargez vos documents, nous vérifions leur conformité, et nous effectuons toutes les démarches auprès de l'administration. Pas de file d'attente, pas de rendez-vous, pas de stress.",
     documents: [
       "Carte grise originale barrée et signée par l'ancien propriétaire",
       "Cerfa 13750 (demande d'immatriculation)",
@@ -39,11 +39,11 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Contrôle technique de moins de 6 mois (véhicules de plus de 4 ans)",
       "Permis de conduire",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Simulez le prix de votre carte grise en renseignant votre immatriculation",
       "Envoyez vos documents en ligne de manière sécurisée",
-      "Recevez votre carte grise par courrier recommandé",
+      "Recevez votre carte grise par lettre suivie",
     ],
     faqs: [
       {
@@ -52,7 +52,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Combien de temps pour recevoir sa carte grise ?",
-        answer: "Avec Discount Carte Grise, votre dossier est traité sous 24h maximum. Vous recevez un Certificat Provisoire d'Immatriculation (CPI) immédiatement par email, puis votre carte grise définitive par courrier recommandé sous 3 à 5 jours ouvrables.",
+        answer: "Avec Discount Carte Grise, votre dossier est traité sous 24 heures en moyenne — 21 heures de délai médian sur les démarches finalisées du dernier trimestre. Vous recevez un Certificat Provisoire d'Immatriculation (CPI) immédiatement par email, puis votre carte grise définitive, éditée et acheminée par l'Imprimerie Nationale, en général sous quelques jours.",
       },
       {
         question: "Peut-on rouler sans carte grise ?",
@@ -60,7 +60,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "La carte grise est-elle obligatoire ?",
-        answer: "Oui, tout véhicule motorisé circulant sur la voie publique doit posséder un certificat d'immatriculation (carte grise) au nom de son propriétaire. Le délai pour faire la démarche est de 30 jours après l'achat.",
+        answer: "Oui, tout véhicule motorisé circulant sur la voie publique doit posséder un certificat d'immatriculation (carte grise) au nom de son propriétaire. Le délai pour faire la démarche est d'un mois après l'achat.",
       },
       {
         question: "Comment faire ma carte grise en ligne ?",
@@ -72,15 +72,15 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Que risque-t-on si on ne fait pas sa carte grise dans le mois ?",
-        answer: "Le non-respect du délai de 30 jours pour effectuer le changement de titulaire est passible d'une amende forfaitaire de 135 euros (contravention de 4e classe). De plus, en cas de contrôle routier, votre véhicule peut être immobilisé si la carte grise n'est pas à votre nom.",
+        answer: "Le non-respect du délai d'un mois pour effectuer le changement de titulaire est passible d'une amende forfaitaire de 135 euros (contravention de 4e classe). De plus, en cas de contrôle routier, votre véhicule peut être immobilisé si la carte grise n'est pas à votre nom.",
       },
       {
         question: "Faut-il un contrôle technique pour faire sa carte grise ?",
-        answer: "Le contrôle technique est obligatoire pour les véhicules de plus de 4 ans lors d'un changement de titulaire. Il doit dater de moins de 6 mois au moment de la vente (ou de moins de 2 mois en cas de contre-visite). Les véhicules de collection, les deux-roues et les véhicules de moins de 4 ans en sont dispensés.",
+        answer: "Le contrôle technique est obligatoire pour les véhicules de plus de 4 ans lors d'un changement de titulaire. Il doit dater de moins de 6 mois au moment de la vente (ou de moins de 2 mois en cas de contre-visite). Les deux-roues et trois-roues motorisés sont concernés depuis le 15 avril 2024 : au-delà de cinq ans, ils doivent présenter un contrôle technique de moins de six mois. Les véhicules de moins de quatre ans (cinq ans pour les deux-roues) en sont dispensés.",
       },
     ],
     prixDescription: "Le tarif de votre carte grise dépend de la puissance fiscale du véhicule et du prix du cheval fiscal dans votre département de résidence. En 2026, le cheval fiscal varie de 30 euros (Mayotte) à 68,95 euros (Île-de-France). À cela s'ajoutent la taxe fixe (11 euros), la redevance d'acheminement (2,76 euros), la taxe CO2 pour les véhicules polluants et nos frais de dossier à partir de 30 euros. Pour les véhicules de plus de 10 ans, une réduction de 50% sur la taxe régionale s'applique dans la plupart des départements. Discount Carte Grise vous garantit une carte grise pas chère avec le meilleur prix du marché. Utilisez notre simulateur pour obtenir le prix exact en quelques secondes.",
-    seoContent: "Le changement de titulaire d'un certificat d'immatriculation est l'une des démarches les plus fréquentes auprès de l'administration française. Chaque année, plus de 5 millions de mutations de carte grise sont effectuées en France. Que vous achetiez une voiture d'occasion auprès d'un particulier ou d'un professionnel, la mise à jour de la carte grise à votre nom est indispensable.\n\nLe vendeur doit barrer la carte grise, inscrire la mention \"vendu le\" suivie de la date et de l'heure, et signer le document. Il dispose ensuite de 15 jours pour effectuer sa déclaration de cession en ligne. De son côté, l'acheteur a 30 jours pour demander la nouvelle carte grise à son nom. Passé ce délai, une amende de 135 euros peut être infligée.\n\nAvec Discount Carte Grise, bénéficiez d'un service rapide, fiable et au meilleur tarif. Notre plateforme en ligne vous guide étape par étape et nos experts vérifient chaque document pour éviter tout rejet de dossier. Commandez votre carte grise en ligne en toute sérénité.",
+    seoContent: "Le changement de titulaire d'un certificat d'immatriculation est l'une des démarches les plus fréquentes auprès de l'administration française. Que vous achetiez une voiture d'occasion auprès d'un particulier ou d'un professionnel, la mise à jour de la carte grise à votre nom est indispensable.\n\nLe vendeur doit barrer la carte grise, inscrire la mention \"vendu le\" suivie de la date et de l'heure, et signer le document. Il dispose ensuite de 15 jours pour effectuer sa déclaration de cession en ligne. De son côté, l'acheteur a un mois pour demander la nouvelle carte grise à son nom. Passé ce délai, une amende de 135 euros peut être infligée.\n\nAvec Discount Carte Grise, bénéficiez d'un service rapide, fiable et au meilleur tarif. Notre plateforme en ligne vous guide étape par étape et nos experts vérifient chaque document pour éviter tout rejet de dossier. Commandez votre carte grise en ligne en toute sérénité.",
     keywords: ["carte grise en ligne", "prix carte grise", "changement titulaire", "carte grise pas cher", "carte grise meilleur prix", "faire sa carte grise", "faire ma carte grise", "simulateur gratuit carte grise"],
   },
   {
@@ -239,7 +239,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Justificatif de domicile de moins de 6 mois",
       "Pièce d'identité",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Renseignez votre nouvelle adresse",
       "Envoyez votre justificatif de domicile",
@@ -289,17 +289,17 @@ export const demarchesConfig: DemarcheConfig[] = [
     metaDescription: "Obtenez un duplicata de carte grise en cas de perte, vol ou détérioration. Traitement sous 24h, service agréé. Commandez votre duplicata en ligne.",
     icon: "Copy",
     description: "Obtenez un duplicata en cas de perte, vol ou détérioration",
-    longDescription: "En cas de perte, vol ou détérioration de votre carte grise, la demande de duplicata est une démarche obligatoire pour continuer à circuler en toute légalité. Le duplicata est un nouveau certificat d'immatriculation portant les mêmes informations que l'original, mais avec un nouveau numéro de formule.\n\nEn cas de vol, il est impératif de déposer une plainte auprès de la police ou de la gendarmerie avant de demander le duplicata. Le récépissé de dépôt de plainte fait partie des documents obligatoires du dossier. Pour une perte, une simple déclaration sur l'honneur suffit.\n\nLa démarche de duplicata annule automatiquement l'ancien certificat d'immatriculation, ce qui le rend inutilisable. C'est une mesure de sécurité importante, notamment en cas de vol, pour éviter toute utilisation frauduleuse du document original.\n\nAvec Discount Carte Grise, votre demande de duplicata est traitée sous 24h. Vous recevez un CPI par email vous permettant de circuler immédiatement, puis le duplicata définitif par courrier recommandé.",
+    longDescription: "En cas de perte, vol ou détérioration de votre carte grise, la demande de duplicata est une démarche obligatoire pour continuer à circuler en toute légalité. Le duplicata est un nouveau certificat d'immatriculation portant les mêmes informations que l'original, mais avec un nouveau numéro de formule.\n\nEn cas de vol, il est impératif de déposer une plainte auprès de la police ou de la gendarmerie avant de demander le duplicata. Le récépissé de dépôt de plainte fait partie des documents obligatoires du dossier. Pour une perte, une simple déclaration sur l'honneur suffit.\n\nLa démarche de duplicata annule automatiquement l'ancien certificat d'immatriculation, ce qui le rend inutilisable. C'est une mesure de sécurité importante, notamment en cas de vol, pour éviter toute utilisation frauduleuse du document original.\n\nAvec Discount Carte Grise, votre demande de duplicata est traitée sous 24h. Vous recevez un CPI par email vous permettant de circuler immédiatement, puis le duplicata définitif par lettre suivie.",
     documents: [
       "Pièce d'identité",
       "Justificatif de domicile",
       "Déclaration de perte ou récépissé de dépôt de plainte (en cas de vol)",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Déclarez la perte ou le vol de votre carte grise",
       "Envoyez les documents justificatifs",
-      "Recevez votre duplicata par courrier recommandé",
+      "Recevez votre duplicata par lettre suivie",
     ],
     faqs: [
       {
@@ -312,7 +312,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Peut-on rouler sans carte grise en attendant le duplicata ?",
-        answer: "Oui, dès la validation de votre dossier, vous recevez un Certificat Provisoire d'Immatriculation (CPI) par email. Ce document vous autorise à circuler pendant un mois en attendant de recevoir votre duplicata définitif par courrier recommandé.",
+        answer: "Oui, dès la validation de votre dossier, vous recevez un Certificat Provisoire d'Immatriculation (CPI) par email. Ce document vous autorise à circuler pendant un mois en attendant de recevoir votre duplicata définitif par lettre suivie.",
       },
       {
         question: "Faut-il déposer plainte en cas de perte de carte grise ?",
@@ -353,7 +353,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Justificatif de domicile",
       "Permis de conduire",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Renseignez les informations de votre véhicule neuf",
       "Envoyez les documents requis",
@@ -530,7 +530,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Envoyez les documents du véhicule importé",
       "Nous constituons le dossier et obtenons le quitus fiscal si nécessaire",
       "Recevez votre CPI WW par email pour circuler immédiatement",
-      "La carte grise définitive est envoyée par courrier recommandé",
+      "La carte grise définitive est envoyée par lettre suivie",
     ],
     prixDescription: "Le prix du CPI WW dépend de la puissance fiscale du véhicule et du tarif du cheval fiscal de votre département. La taxe régionale, la taxe fixe (11 euros), la redevance d'acheminement (2,76 euros) et un éventuel malus écologique s'appliquent. Nos frais de dossier incluent la gestion complète de l'import et l'obtention du CPI WW.",
     faqs: [
@@ -582,7 +582,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Pièces d'identité des deux titulaires",
       "Justificatif de domicile",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Indiquez le cotitulaire à ajouter ou retirer",
       "Envoyez les documents requis",
@@ -695,7 +695,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Pièce d'identité",
       "Justificatif de domicile",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Renseignez les informations de votre cyclomoteur",
       "Envoyez les documents",
@@ -862,7 +862,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Numéro d'immatriculation du véhicule",
       "Carte grise (si disponible)",
     ],
-    delai: "24h maximum",
+    delai: "24 h en moyenne",
     steps: [
       "Renseignez le numéro d'immatriculation de votre véhicule",
       "Envoyez votre pièce d'identité",
@@ -912,7 +912,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     metaDescription: "Finalisez l'immatriculation définitive après une période WW provisoire. Carte grise définitive sous 48h, service agréé par l'État. Lancez votre demande en ligne.",
     icon: "CheckCircle",
     description: "Finalisation de l'immatriculation après une période d'immatriculation provisoire WW",
-    longDescription: "L'immatriculation définitive est l'étape finale du processus d'immatriculation d'un véhicule qui a circulé sous plaques WW provisoires. Une fois tous les documents requis réunis (quitus fiscal, certificat de conformité, contrôle technique), il est possible de demander la carte grise définitive avec un numéro d'immatriculation permanent au format SIV (AA-123-BB).\n\nCette démarche met fin à la période d'immatriculation provisoire et attribue au véhicule son identité administrative définitive en France. La carte grise définitive remplace le CPI WW et est le document officiel à conserver à bord du véhicule.\n\nDiscount Carte Grise suit votre dossier de A à Z : de la vérification des documents à l'envoi de votre carte grise définitive par courrier recommandé.",
+    longDescription: "L'immatriculation définitive est l'étape finale du processus d'immatriculation d'un véhicule qui a circulé sous plaques WW provisoires. Une fois tous les documents requis réunis (quitus fiscal, certificat de conformité, contrôle technique), il est possible de demander la carte grise définitive avec un numéro d'immatriculation permanent au format SIV (AA-123-BB).\n\nCette démarche met fin à la période d'immatriculation provisoire et attribue au véhicule son identité administrative définitive en France. La carte grise définitive remplace le CPI WW et est le document officiel à conserver à bord du véhicule.\n\nDiscount Carte Grise suit votre dossier de A à Z : de la vérification des documents à l'envoi de votre carte grise définitive par lettre suivie.",
     documents: [
       "CPI WW en cours de validité",
       "Carte grise étrangère",
@@ -926,7 +926,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     steps: [
       "Vérifiez que tous vos documents sont prêts",
       "Envoyez le dossier complet en ligne",
-      "Recevez votre carte grise définitive par courrier recommandé",
+      "Recevez votre carte grise définitive par lettre suivie",
     ],
     prixDescription: "Le prix de l'immatriculation définitive dépend de la puissance fiscale du véhicule et du tarif du cheval fiscal de votre département. La taxe régionale, la taxe fixe (11 euros), la redevance d'acheminement (2,76 euros) et un éventuel malus écologique s'appliquent. Nos frais de dossier couvrent la gestion complète.",
     faqs: [

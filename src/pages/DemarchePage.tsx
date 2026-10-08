@@ -392,8 +392,8 @@ const DemarchePage = () => {
               <p className="text-muted-foreground">
                 Dès la validation de votre dossier, vous recevez un Certificat Provisoire
                 d'Immatriculation (CPI) par email, vous permettant de circuler immédiatement.
-                Votre document définitif est ensuite envoyé par courrier recommandé sous 3 à 5
-                jours ouvrables.
+                Votre document définitif est ensuite édité et acheminé par l'Imprimerie
+                Nationale, en lettre suivie.
               </p>
             </div>
           </Card>
@@ -446,7 +446,7 @@ const DemarchePage = () => {
                 <Clock className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="font-semibold text-foreground text-sm">Traitement rapide</p>
-                  <p className="text-xs text-muted-foreground">Votre dossier traité sous 24h maximum</p>
+                  <p className="text-xs text-muted-foreground">Votre dossier traité sous 24 h en moyenne</p>
                 </div>
               </div>
             </Card>

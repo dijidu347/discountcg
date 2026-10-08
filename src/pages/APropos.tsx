@@ -118,7 +118,7 @@ const APropos = () => {
                   <a href="mailto:contact@discountcartegrise.fr" className="text-primary hover:underline">contact@discountcartegrise.fr</a>
                 </div>
               </div>
-              <p className="text-sm mt-4">Notre equipe repond a vos demandes du lundi au vendredi, sous 24h maximum.</p>
+              <p className="text-sm mt-4">Notre equipe repond a vos demandes du lundi au vendredi, sous 24 h en moyenne.</p>
             </section>
 
             {/* Official Sources */}
