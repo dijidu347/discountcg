@@ -84,28 +84,28 @@ export const MessagesEnAttente = () => {
   };
 
   return (
-    <Card className="mb-6 border-2 border-blue-500 bg-blue-50 dark:bg-blue-950/20">
+    <Card className="mb-6 border-2 border-violet-500 bg-violet-50 dark:bg-violet-950/20">
       <CardContent className="py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <MessageSquare className="h-8 w-8 text-blue-500" />
+              <MessageSquare className="h-8 w-8 text-violet-500" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex h-4 w-4 rounded-full bg-blue-500" />
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75" />
+                <span className="relative inline-flex h-4 w-4 rounded-full bg-violet-500" />
               </span>
             </div>
             <div>
-              <p className="font-bold text-blue-700 dark:text-blue-400">
+              <p className="font-bold text-violet-700 dark:text-violet-300">
                 {conversations.length} message{conversations.length > 1 ? "s" : ""} en attente de réponse
               </p>
-              <p className="text-sm text-blue-600 dark:text-blue-500">
+              <p className="text-sm text-violet-600 dark:text-violet-400">
                 Un garage ou un client attend votre réponse
               </p>
             </div>
           </div>
           <Button
-            className="bg-blue-500 hover:bg-blue-600"
+            className="bg-violet-600 hover:bg-violet-700"
             onClick={() => setDepliee((d) => !d)}
           >
             {depliee ? "Masquer" : "Voir les messages"}
@@ -121,13 +121,13 @@ export const MessagesEnAttente = () => {
             <button
               type="button"
               onClick={() => ouvrir(c)}
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-blue-100 dark:hover:bg-blue-950/40"
+              className="flex min-w-0 flex-1 items-center gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-violet-100 dark:hover:bg-violet-950/40"
             >
               <Badge variant={c.source === "pro" ? "default" : "secondary"} className="shrink-0">
                 {c.source === "pro" ? "Pro" : "Particulier"}
               </Badge>
               {c.non_lu && (
-                <Badge variant="destructive" className="shrink-0">
+                <Badge className="shrink-0 bg-violet-600 text-white hover:bg-violet-600">
                   Non lu
                 </Badge>
               )}
@@ -145,7 +145,7 @@ export const MessagesEnAttente = () => {
                 e.stopPropagation();
                 void classer(c);
               }}
-              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-blue-100 hover:text-foreground dark:hover:bg-blue-950/40"
+              className="flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-violet-100 hover:text-foreground dark:hover:bg-violet-950/40"
             >
               <Check className="h-4 w-4" />
               <span className="hidden sm:inline">Pas de réponse nécessaire</span>
