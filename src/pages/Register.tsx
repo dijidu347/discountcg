@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
-import { getSupabaseErrorMessage } from "@/lib/error-messages";
+import { getSupabaseErrorMessage, estMessageParDefaut, formatTechnicalError } from "@/lib/error-messages";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -71,9 +71,15 @@ export default function Register() {
     });
 
     if (error) {
+      // Quand le message reste generique, on n'a rien appris au client ni a
+      // nous : on joint le detail technique, qu'une capture d'ecran suffit
+      // alors a nous transmettre.
+      const message = getSupabaseErrorMessage(error);
+      const detail = formatTechnicalError(error);
+      console.error("[inscription garage]", error);
       toast({
         title: "Erreur d'inscription",
-        description: getSupabaseErrorMessage(error),
+        description: estMessageParDefaut(message) && detail ? `${message} (${detail})` : message,
         variant: "destructive"
       });
     } else {

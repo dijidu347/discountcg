@@ -77,17 +77,46 @@ export const getSupabaseErrorMessage = (error: { message?: string; code?: string
   if (errorMessage.includes('user not found')) {
     return "Aucun compte n'existe avec cet email. Veuillez créer un compte.";
   }
-  if (errorMessage.includes('invalid email')) {
-    return "L'adresse email saisie n'est pas valide.";
+  // Supabase ecrit « Email address "x@y.fr" is invalid » : le test sur la
+  // chaine « invalid email » ne matchait pas, et le garage tombait sur le
+  // message par defaut sans savoir quoi corriger.
+  if (errorMessage.includes('invalid email') || (errorMessage.includes('email') && errorMessage.includes('invalid'))) {
+    return "L'adresse email saisie n'est pas valide. Vérifiez qu'elle ne contient ni espace ni accent.";
   }
-  if (errorMessage.includes('password') && errorMessage.includes('too short')) {
-    return "Le mot de passe doit contenir au moins 6 caractères.";
+  // Message reel : « Password should be at least 6 characters. »
+  if (
+    (errorMessage.includes('password') && errorMessage.includes('too short')) ||
+    errorMessage.includes('password should be at least') ||
+    errorMessage.includes('password is too weak') ||
+    errorMessage.includes('weak password')
+  ) {
+    return "Le mot de passe est trop court : il doit contenir au moins 6 caractères.";
+  }
+  if (errorMessage.includes('signup requires a valid password') || errorMessage.includes('should be at least')) {
+    return "Le mot de passe saisi n'est pas valide. Il doit contenir au moins 6 caractères.";
   }
   if (errorMessage.includes('user already registered') || errorMessage.includes('already registered')) {
     return "Un compte existe déjà avec cette adresse email.";
   }
-  if (errorMessage.includes('email rate limit exceeded') || errorMessage.includes('rate limit')) {
-    return "Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.";
+  // Apres plusieurs essais, Supabase repond « For security purposes, you can
+  // only request this after 48 seconds » — sans la chaine « rate limit ».
+  // Quelqu'un qui reessaie s'enferme donc dans une erreur qu'il ne comprend pas.
+  if (
+    errorMessage.includes('email rate limit exceeded') ||
+    errorMessage.includes('rate limit') ||
+    errorMessage.includes('for security purposes') ||
+    errorMessage.includes('over_email_send_rate_limit') ||
+    errorCode.includes('over_email_send_rate_limit')
+  ) {
+    return "Trop de tentatives rapprochées. Patientez une minute, puis réessayez une seule fois.";
+  }
+  // Echec d'un declencheur en base pendant la creation du compte : le client
+  // ne peut rien y faire, autant le dire et l'orienter vers nous.
+  if (errorMessage.includes('database error saving new user') || errorMessage.includes('unexpected_failure')) {
+    return "La création du compte a échoué côté serveur. Ce n'est pas lié à vos informations : contactez-nous à contact@discountcartegrise.fr et nous le créerons pour vous.";
+  }
+  if (errorMessage.includes('signups not allowed') || errorMessage.includes('email signups are disabled')) {
+    return "Les inscriptions sont momentanément indisponibles. Contactez-nous à contact@discountcartegrise.fr.";
   }
   if (errorMessage.includes('auth session missing')) {
     return "Votre session a expiré. Veuillez vous reconnecter.";
@@ -158,8 +187,18 @@ export const getSupabaseErrorMessage = (error: { message?: string; code?: string
   }
 
   // Erreur par défaut
-  return "Une erreur s'est produite. Veuillez réessayer ou contacter le support si le problème persiste.";
+  return MESSAGE_PAR_DEFAUT;
 };
+
+// Message servi quand aucun cas n'a matche. Expose pour que les formulaires
+// sachent qu'ils n'ont rien appris au client : dans ce cas seulement, ils
+// joignent le detail technique, faute de quoi ni lui ni nous ne pouvons
+// diagnostiquer — c'est exactement ce qui est arrive sur une inscription
+// garage bloquee.
+export const MESSAGE_PAR_DEFAUT =
+  "Une erreur s'est produite. Veuillez réessayer ou contacter le support si le problème persiste.";
+
+export const estMessageParDefaut = (message: string): boolean => message === MESSAGE_PAR_DEFAUT;
 
 // Fonction pour les erreurs d'authentification spécifiquement
 export const getAuthErrorMessage = (error: { message?: string; status?: number } | null | undefined): string => {

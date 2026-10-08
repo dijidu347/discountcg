@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { getSupabaseErrorMessage } from "@/lib/error-messages";
+import { getSupabaseErrorMessage, estMessageParDefaut, formatTechnicalError } from "@/lib/error-messages";
 import { PasswordStrengthIndicator } from "@/components/PasswordStrengthIndicator";
 
 export default function RegisterParticulier() {
@@ -83,7 +83,14 @@ export default function RegisterParticulier() {
     });
 
     if (error) {
-      toast({ title: "Erreur d'inscription", description: getSupabaseErrorMessage(error), variant: "destructive" });
+      const message = getSupabaseErrorMessage(error);
+      const detail = formatTechnicalError(error);
+      console.error("[inscription particulier]", error);
+      toast({
+        title: "Erreur d'inscription",
+        description: estMessageParDefaut(message) && detail ? `${message} (${detail})` : message,
+        variant: "destructive",
+      });
     } else {
       toast({ title: "Compte créé !", description: "Bienvenue sur Discount Carte Grise" });
       if (redirectTo) {
