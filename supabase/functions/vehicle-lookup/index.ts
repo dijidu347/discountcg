@@ -295,7 +295,10 @@ serve(async (req) => {
         console.log(`vehicle-lookup ${cleanPlate} source=${source.nom} found=false`);
         if (admin) await writeCache(cleanPlate, false, null, TTL_NOT_FOUND_MS);
         return new Response(
-          JSON.stringify({ success: false, indisponible: false, error: 'Véhicule inconnu' }),
+          JSON.stringify({
+            success: false, indisponible: false, error: 'Véhicule inconnu',
+            provenance: { source: source.nom, fournisseur_contacte: true },
+          }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -319,7 +322,10 @@ serve(async (req) => {
 
       // Contrat de réponse inchangé
       return new Response(
-        JSON.stringify({ success: true, data: normalizedData, brut }),
+        JSON.stringify({
+          success: true, data: normalizedData, brut,
+          provenance: { source: source.nom, fournisseur_contacte: true },
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -333,6 +339,8 @@ serve(async (req) => {
         success: false,
         indisponible: true,
         error: 'Service indisponible',
+        // Aucune source n'a répondu : rien n'a été facturé.
+        provenance: { source: 'aucune', fournisseur_contacte: false },
         ...(diagnostic ? { detail: pannes.join(' | ') } : {}),
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
