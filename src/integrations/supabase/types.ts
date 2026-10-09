@@ -1198,6 +1198,7 @@ export type Database = {
         Row: {
           adresse: string
           code_postal: string
+          compte_interne: boolean
           created_at: string
           email: string
           free_token_available: boolean | null
@@ -1226,6 +1227,7 @@ export type Database = {
         Insert: {
           adresse: string
           code_postal: string
+          compte_interne?: boolean
           created_at?: string
           email: string
           free_token_available?: boolean | null
@@ -1254,6 +1256,7 @@ export type Database = {
         Update: {
           adresse?: string
           code_postal?: string
+          compte_interne?: boolean
           created_at?: string
           email?: string
           free_token_available?: boolean | null
@@ -2557,6 +2560,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "verification_documents_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      verification_documents_refuses: {
+        Row: {
+          depose_le: string
+          document_id: string
+          document_type: string
+          garage_id: string
+          id: string
+          nom_fichier: string | null
+          raison: string
+          refuse_le: string
+          refuse_par: string | null
+          url: string | null
+        }
+        Insert: {
+          depose_le: string
+          document_id: string
+          document_type: string
+          garage_id: string
+          id?: string
+          nom_fichier?: string | null
+          raison: string
+          refuse_le?: string
+          refuse_par?: string | null
+          url?: string | null
+        }
+        Update: {
+          depose_le?: string
+          document_id?: string
+          document_type?: string
+          garage_id?: string
+          id?: string
+          nom_fichier?: string | null
+          raison?: string
+          refuse_le?: string
+          refuse_par?: string | null
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_documents_refuses_garage_id_fkey"
             columns: ["garage_id"]
             isOneToOne: false
             referencedRelation: "garages"
