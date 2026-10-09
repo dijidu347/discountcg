@@ -398,8 +398,8 @@ export const demarchesConfig: DemarcheConfig[] = [
     slug: "succession-carte-grise",
     title: "Carte Grise Succession",
     shortTitle: "carte grise succession",
-    h1: "Carte Grise suite à un Décès - Succession et Héritage",
-    metaTitle: "Carte Grise Succession | Transfert après Décès",
+    h1: "Changement de carte grise suite à un décès",
+    metaTitle: "Changement de Carte Grise suite à un Décès : Prix et Démarche",
     metaDescription: "Transférez la carte grise d'un véhicule hérité après un décès. Démarche simplifiée pour les héritiers, service agréé. Faites votre demande en ligne.",
     icon: "Users",
     description: "Transfert de carte grise suite à un décès",
@@ -443,11 +443,15 @@ export const demarchesConfig: DemarcheConfig[] = [
         answer: "Oui, la plupart des assureurs acceptent de couvrir un véhicule hérité à titre provisoire, sous réserve de présenter l'acte de décès et le certificat d'hérédité. Il est cependant recommandé de régulariser la carte grise rapidement pour bénéficier d'une couverture complète.",
       },
       {
+        question: "Combien coûte le changement de carte grise après un décès ?",
+        answer: "Cela dépend entièrement de qui hérite. Si le véhicule revient à l'époux ou au partenaire de PACS survivant, la taxe régionale n'est pas due : l'article L. 421-52 du code des impositions sur les biens et services exonère expressément la délivrance d'un certificat d'immatriculation consécutive au décès de l'un des époux ou partenaires. Vous ne payez alors que la taxe fixe de 11 euros, la redevance d'acheminement de 2,76 euros et nos frais de dossier. Pour un enfant, un frère ou tout autre héritier, l'exonération ne joue pas et la taxe régionale s'applique normalement — le barème officiel nomme d'ailleurs cette démarche « héritage hors veuvage ».",
+      },
+      {
         question: "Faut-il payer des droits de succession sur le véhicule ?",
         answer: "Le véhicule fait partie de l'actif successoral et est soumis aux droits de succession selon les règles fiscales en vigueur. Le paiement de la carte grise (taxe régionale, frais de dossier) est distinct des droits de succession et doit être réglé par le nouveau titulaire.",
       },
     ],
-    prixDescription: "Le prix de la carte grise en cas de succession dépend de la puissance fiscale du véhicule et du tarif du cheval fiscal de votre département. Les mêmes taxes s'appliquent que pour un changement de titulaire classique : taxe régionale, taxe fixe (11 euros), redevance d'acheminement (2,76 euros) et nos frais de dossier. Pour les véhicules de plus de 10 ans, la réduction de 50% sur la taxe régionale s'applique également dans ce cadre.",
+    prixDescription: "Le prix de la carte grise en cas de succession dépend de la puissance fiscale du véhicule et du tarif du cheval fiscal de votre département. Tout dépend de qui hérite, et l'écart est considérable. Si le véhicule passe au nom de l'époux ou du partenaire de PACS survivant, la taxe régionale n'est pas due : l'article L. 421-52 du code des impositions sur les biens et services exonère la délivrance d'un certificat consécutive au décès de l'un des époux ou partenaires. Il ne reste alors que la taxe fixe de 11 euros, la redevance d'acheminement de 2,76 euros et nos frais de dossier. Pour tout autre héritier — un enfant, un frère, un parent — l'exonération ne s'applique pas et la taxe régionale est due au tarif normal. Pour les véhicules de plus de 10 ans, la réduction de 50% sur la taxe régionale s'applique également dans ce cadre.",
     seoContent: "Le transfert de carte grise suite à un décès est une démarche souvent méconnue qui survient dans un contexte émotionnel difficile. En tant que service agréé, Discount Carte Grise prend en charge cette procédure administrative avec professionnalisme et discrétion.\n\nLe certificat d'hérédité ou l'attestation notariale est la pièce maîtresse du dossier. Ce document officiel atteste de vos droits en tant qu'héritier et vous autorise à demander le transfert du certificat d'immatriculation. Pour les successions simples (conjoint survivant, enfant unique), un certificat d'hérédité délivré par la mairie peut suffire.\n\nNotre équipe connaît parfaitement les spécificités de cette démarche et vérifie chaque document pour garantir l'acceptation de votre dossier du premier coup. Confiez-nous votre demande de carte grise succession pour un traitement rapide et sans stress.",
     keywords: ["carte grise succession", "carte grise décès", "héritage véhicule", "transfert carte grise héritier", "carte grise succession pas cher"],
   },
@@ -592,7 +596,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Envoyez les documents requis",
       "Recevez la nouvelle carte grise",
     ],
-    prixDescription: "L'ajout ou le retrait d'un cotitulaire entraîne l'édition d'une nouvelle carte grise, soit 13,76 euros : la taxe fixe de 11 euros et la redevance d'acheminement de 2,76 euros, auxquelles s'ajoutent nos frais de dossier. La taxe régionale n'est pas systématiquement due : le retrait du nom d'un ex-époux qui ne conserve pas le véhicule en est exonéré, alors qu'un véritable changement de titulaire à la suite d'un divorce y est soumis. Nous vérifions votre situation avant de vous annoncer un montant.",
+    prixDescription: "L'ajout ou le retrait d'un cotitulaire entraîne l'édition d'une nouvelle carte grise, soit 13,76 euros : la taxe fixe de 11 euros et la redevance d'acheminement de 2,76 euros, auxquelles s'ajoutent nos frais de dossier. La taxe régionale n'est pas due lorsque l'opération se borne à ajouter ou retirer le nom d'un époux ou d'un partenaire de PACS à la suite d'un mariage, d'un divorce, d'un PACS, de sa dissolution ou d'un décès : l'article L. 421-52 du code des impositions sur les biens et services l'exonère, même lorsqu'il y a bien changement de propriétaire. En revanche, ajouter le nom d'un enfant ou d'un tiers reste soumis à la taxe au tarif normal.",
     faqs: [
       {
         question: "Qu'est-ce qu'un cotitulaire sur la carte grise ?",
