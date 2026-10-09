@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, Euro, ClipboardList, Clock, Archive, CreditCard, Coins , MessageSquare } from "lucide-react";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, Euro, ClipboardList, Clock, Archive, CreditCard, Coins , MessageSquare, CalendarClock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
@@ -77,6 +77,7 @@ export default function AdminDashboard() {
     traiteesPeriode: 0,
     traiteesAujourdhui: 0,
     garagesAVerifier: 0,
+    kbisADater: 0,
     demarches30j: 0,
     demarchesAujourdhui: 0,
     commandesPartATraiter: 0,
@@ -225,11 +226,10 @@ export default function AdminDashboard() {
     // lecture automatique lui rendra son badge dès qu'il le déposera. Les
     // compter ici gonflait l'alerte à 82 garages dont 75 n'attendaient rien.
     //
-    // S'y ajoutent les Kbis que la lecture automatique n'a pas su dater. Ils
-    // restent en attente sans que rien ne les signale : un garage deja verifie
-    // n'entrait dans aucun compteur, et le sien pouvait s'empiler cinq fois en
-    // quatre jours pendant qu'il attendait une reponse. Dix-huit dossiers sont
-    // dans ce cas.
+    // Les Kbis que la lecture automatique n'a pas su dater forment leur propre
+    // file, comptée a part : le geste n'est pas le meme. Il n'y a pas un
+    // dossier a examiner, il y a une date a recopier sur un document deja
+    // depose — par un garage le plus souvent deja verifie.
     const { data: kbisIllisibles } = await supabase
       .from('verification_documents')
       .select('garage_id')
@@ -240,12 +240,10 @@ export default function AdminDashboard() {
     const aDater = new Set((kbisIllisibles || []).map((d) => d.garage_id));
 
     const garagesAVerifier = garages?.filter(g =>
-      (
-        !g.is_verified
-        && aControler.has(g.id)
-        && !(g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date())
-      )
-      || aDater.has(g.id)
+      !aDater.has(g.id)
+      && !g.is_verified
+      && aControler.has(g.id)
+      && !(g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date())
     ) || [];
 
     const coffreActive = coffreSubs || [];
@@ -266,6 +264,7 @@ export default function AdminDashboard() {
       traiteesPeriode: Number(totaux30j?.demarches_traitees ?? 0),
       traiteesAujourdhui: Number(totauxAujourdhui?.demarches_traitees ?? 0),
       garagesAVerifier: garagesAVerifier.length,
+      kbisADater: garages?.filter((g) => aDater.has(g.id)).length || 0,
       demarches30j: Number(totaux30j?.demarches_creees ?? 0),
       demarchesAujourdhui: Number(totauxAujourdhui?.demarches_creees ?? 0),
       commandesPartATraiter: commandesPartATraiterCount || 0,
@@ -416,6 +415,37 @@ export default function AdminDashboard() {
                 <Button className="bg-orange-500 hover:bg-orange-600">
                   <Bell className="h-4 w-4 mr-2" />
                   Vérifier
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Date de Kbis a saisir : un geste different de la verification d'un
+            dossier, donc une file a part. Le garage a fait sa part, le document
+            est la, il ne manque qu'une date que la lecture automatique n'a pas
+            su trouver — environ un Kbis sur sept. Sans cette ligne, le document
+            restait « en attente » sans attendre personne. */}
+        {stats.kbisADater > 0 && (
+          <Card
+            className="mb-6 cursor-pointer border-2 border-yellow-500 bg-yellow-50 transition-colors hover:bg-yellow-100 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30"
+            onClick={() => navigate("/admin/manage-garages", { state: { onglet: "kbis_a_dater" } })}
+          >
+            <CardContent className="py-4">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <CalendarClock className="h-8 w-8 shrink-0 text-yellow-600" />
+                  <div>
+                    <p className="font-bold text-foreground">
+                      {stats.kbisADater} Kbis {stats.kbisADater > 1 ? "attendent" : "attend"} leur date
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      La lecture automatique n'a pas trouvé la date de délivrance : à recopier à la main
+                    </p>
+                  </div>
+                </div>
+                <Button variant="outline" className="shrink-0 border-yellow-600 text-foreground hover:bg-yellow-100 dark:hover:bg-yellow-950/40">
+                  Saisir les dates
                 </Button>
               </div>
             </CardContent>

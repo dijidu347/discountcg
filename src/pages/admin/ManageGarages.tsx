@@ -55,7 +55,7 @@ const jourInscription = (valeur: string | null | undefined) =>
   formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
 
 // Garages : onglets par étape de vérification, tri, filtres.
-type Onglet = "tous" | "a_verifier" | "kbis_perime" | "en_attente" | "valides" | "sans_demande";
+type Onglet = "tous" | "a_verifier" | "kbis_a_dater" | "kbis_perime" | "en_attente" | "valides" | "sans_demande";
 type Etape = Exclude<Onglet, "tous">;
 type Tri = "recents" | "anciens" | "depense" | "demarches";
 
@@ -359,6 +359,11 @@ export default function ManageGarages() {
   const ongletDemande = (useLocation().state as { onglet?: Onglet } | null)?.onglet;
   const [garages, setGarages] = useState<Garage[]>([]);
   const [stats, setStats] = useState<Record<string, Stats>>({});
+  // Garages dont un Kbis attend sa date : la lecture automatique a bien ouvert
+  // le fichier, mais n'y a pas trouve la date de delivrance. Rien dans les
+  // etapes ci-dessous ne les signalait, et un garage deja verifie se retrouvait
+  // dans « Valides » avec un document en attente que personne ne voyait.
+  const [kbisADater, setKbisADater] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
@@ -445,6 +450,16 @@ export default function ManageGarages() {
       };
     });
     setStats(parGarage);
+
+    const { data: sansDate } = await supabase
+      .from('verification_documents')
+      .select('garage_id')
+      .eq('status', 'pending')
+      .ilike('document_type', '%kbis%')
+      .not('lu_le', 'is', null)
+      .is('date_emission', null);
+    setKbisADater(new Set((sansDate || []).map((d) => d.garage_id)));
+
     setGarages(tous);
     setLoading(false);
   };
@@ -490,6 +505,11 @@ export default function ManageGarages() {
   // Étape de vérification de chaque garage (mêmes règles qu'avant, plus un
   // onglet pour ceux qui n'ont jamais rien demandé, jusqu'ici invisibles).
   const etape = (g: Garage): Etape => {
+    // En premier, car c'est le seul cas ou le garage a deja fait sa part et
+    // attend un geste de nous : saisir a la main la date que la lecture
+    // automatique n'a pas su extraire. Verifie ou non, le document est en
+    // attente. Place apres « valides », il disparaissait.
+    if (kbisADater.has(g.id)) return "kbis_a_dater";
     if (g.is_verified) return "valides";
     // Un habitué dont le Kbis a passé six mois n'est pas un dossier à examiner :
     // ses pièces sont toutes approuvées, il lui manque juste un papier récent.
@@ -563,7 +583,7 @@ export default function ManageGarages() {
   ].map((o) => ({ ...o, nombre: horsActivite.filter((g) => correspondActivite(o.valeur, ageDerniere(g))).length }));
 
   const comptes = useMemo(() => {
-    const c: Record<Onglet, number> = { tous: filtres.length, a_verifier: 0, kbis_perime: 0, en_attente: 0, valides: 0, sans_demande: 0 };
+    const c: Record<Onglet, number> = { tous: filtres.length, a_verifier: 0, kbis_a_dater: 0, kbis_perime: 0, en_attente: 0, valides: 0, sans_demande: 0 };
     filtres.forEach((g) => { c[etape(g)]++; });
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -604,6 +624,7 @@ export default function ManageGarages() {
     { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
     { cle: "en_attente", texte: "Documents à compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter" },
     { cle: "a_verifier", texte: "À vérifier", aide: "Toutes les pièces obligatoires sont envoyées : à nous de contrôler et valider" },
+    { cle: "kbis_a_dater", texte: "Date Kbis à saisir", aide: "La lecture automatique n'a pas trouvé la date de délivrance : à saisir à la main sur la fiche" },
     { cle: "kbis_perime", texte: "Kbis expiré", aide: "Garages déjà vérifiés dont le Kbis a dépassé six mois : il leur suffit d'en déposer un récent" },
     { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
   ];
