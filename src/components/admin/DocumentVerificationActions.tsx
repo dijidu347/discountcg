@@ -4,7 +4,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Trash2, XCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -100,6 +101,121 @@ export function SupprimerDocumentBouton({
             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Supprimer sans prévenir
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+// Les refus qui reviennent, en un clic. Le texte reste modifiable : ce sont des
+// points de départ, pas des cases à cocher.
+//
+// Ils existent parce qu'un refus sans explication fait redéposer le même
+// fichier — c'est ce qui s'est passé avec les Kbis illisibles, cinq fois pour
+// un seul garage. Écrire la raison à chaque fois coûte, et ce qui coûte finit
+// par être abrégé en « non conforme ».
+const RAISONS_COURANTES = [
+  {
+    titre: "Ce n'est pas un Kbis",
+    texte:
+      "Le document déposé n'est pas un extrait Kbis. Nous avons besoin de l'extrait d'immatriculation au RCS délivré par le greffe du tribunal de commerce, de moins de six mois.",
+  },
+  {
+    titre: "Illisible",
+    texte:
+      "Le document est illisible : nous n'y distinguons pas la date de délivrance. Merci de le déposer en PDF, ou de le photographier à plat, bien éclairé et sans reflet.",
+  },
+  {
+    titre: "Trop ancien",
+    texte:
+      "Ce Kbis a plus de six mois : il n'est plus recevable. Vous pouvez en obtenir un à jour gratuitement sur monidenum.fr, ou sur infogreffe.fr.",
+  },
+  {
+    titre: "Incomplet",
+    texte:
+      "Le document est incomplet : il manque une ou plusieurs pages. Merci de déposer l'extrait entier.",
+  },
+];
+
+/**
+ * Refuser une pièce en écrivant au garage.
+ *
+ * Distinct de la suppression, qui ne dit rien : ici le garage doit renvoyer
+ * quelque chose, donc le message est obligatoire et le bouton reste inactif
+ * tant qu'il est vide.
+ */
+export function RefuserDocumentBouton({
+  doc,
+  onRefuse,
+  libelle = "Refuser",
+  suggestions = RAISONS_COURANTES,
+}: {
+  doc: Doc;
+  onRefuse: (doc: Doc, raison: string) => void | Promise<void>;
+  libelle?: string;
+  suggestions?: { titre: string; texte: string }[];
+}) {
+  const [ouvert, setOuvert] = useState(false);
+  const [raison, setRaison] = useState("");
+
+  const fermer = (v: boolean) => {
+    setOuvert(v);
+    if (!v) setRaison("");
+  };
+
+  return (
+    <AlertDialog open={ouvert} onOpenChange={fermer}>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+          <XCircle className="mr-2 h-4 w-4" />
+          {libelle}
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Refuser « {doc.nom_fichier} »</AlertDialogTitle>
+          <AlertDialogDescription>
+            Le garage recevra ce message par email et le retrouvera dans son espace. Dites-lui ce qui
+            ne va pas et ce qu'il doit déposer, sans quoi il redéposera le même fichier.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+
+        <div className="space-y-3">
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((r) => (
+              <Button
+                key={r.titre}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setRaison(r.texte)}
+              >
+                {r.titre}
+              </Button>
+            ))}
+          </div>
+          <Textarea
+            autoFocus
+            rows={5}
+            placeholder="Ce que le garage doit corriger…"
+            value={raison}
+            onChange={(e) => setRaison(e.target.value)}
+          />
+        </div>
+
+        <AlertDialogFooter>
+          <AlertDialogCancel>Annuler</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={!raison.trim()}
+            onClick={() => {
+              onRefuse(doc, raison.trim());
+              fermer(false);
+            }}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            Refuser et prévenir
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

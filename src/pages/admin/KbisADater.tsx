@@ -31,8 +31,9 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, ArrowRight, CheckCircle, ExternalLink, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
-import { SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
+import { RefuserDocumentBouton, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
 import { supprimerDocumentVerification } from "@/lib/supprimerDocumentVerification";
+import { refuserDocumentVerification } from "@/lib/refuserDocumentVerification";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 
@@ -45,6 +46,7 @@ interface Ligne {
   lu_le: string | null;
   activite: string | null;
   garage: string;
+  garageEmail: string | null;
   garageVerifie: boolean;
   /** Le garage a déjà un Kbis approuvé, daté, encore dans ses six mois. */
   doublon: boolean;
@@ -83,7 +85,7 @@ export default function KbisADater() {
     }
 
     const [{ data: garages }, { data: valables }] = await Promise.all([
-      supabase.from("garages").select("id, raison_sociale, is_verified").in("id", garageIds),
+      supabase.from("garages").select("id, raison_sociale, email, is_verified").in("id", garageIds),
       supabase
         .from("verification_documents")
         .select("garage_id, date_emission")
@@ -108,6 +110,7 @@ export default function KbisADater() {
     const toutes: Ligne[] = enAttente.map((d) => ({
       ...d,
       garage: nomDuGarage.get(d.garage_id)?.raison_sociale || "Garage inconnu",
+      garageEmail: nomDuGarage.get(d.garage_id)?.email ?? null,
       garageVerifie: !!nomDuGarage.get(d.garage_id)?.is_verified,
       doublon: avecKbisValable.has(d.garage_id),
     }));
@@ -186,6 +189,27 @@ export default function KbisADater() {
       description: fichierRestant
         ? "Le fichier est resté dans le stockage. Le garage n'a pas été prévenu."
         : "Le garage n'a pas été prévenu.",
+    });
+    retirerDeLaFile(doc.id);
+  };
+
+  const refuser = async (doc: Ligne, raison: string) => {
+    const { ok, message, emailEnvoye } = await refuserDocumentVerification({
+      doc,
+      garage: { id: doc.garage_id, email: doc.garageEmail, raison_sociale: doc.garage },
+      parUtilisateur: user?.id,
+      raison,
+    });
+    if (!ok) {
+      toast({ title: "Refus impossible", description: message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Document refusé",
+      description: emailEnvoye
+        ? `${doc.garage} a été prévenu par email.`
+        : `${doc.garage} retrouvera le message dans son espace — l'email, lui, n'est pas parti.`,
+      variant: emailEnvoye ? undefined : "destructive",
     });
     retirerDeLaFile(doc.id);
   };
@@ -325,6 +349,7 @@ export default function KbisADater() {
                       onSupprime={supprimer}
                       libelle="Supprimer et suivant"
                     />
+                    <RefuserDocumentBouton doc={courant} onRefuse={refuser} />
                     {lignes.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={passer}>
                         Passer
@@ -369,10 +394,12 @@ export default function KbisADater() {
                     Valider et suivant
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    La date est enregistrée et la pièce approuvée.
+                    La date est enregistrée et la pièce approuvée. « Refuser » écrit au garage et lui
+                    demande une pièce corrigée ; « Supprimer » ne lui dit rien, pour les doublons.
                   </p>
 
                   <div className="flex flex-wrap items-center gap-2 border-t pt-3">
+                    <RefuserDocumentBouton doc={courant} onRefuse={refuser} />
                     <SupprimerDocumentBouton doc={courant} onSupprime={supprimer} />
                     {lignes.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={passer}>

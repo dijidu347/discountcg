@@ -374,11 +374,6 @@ export default function ManageGarages() {
   // ceux dont le Kbis a expiré, qui a déjà redéposé (c'est à nous de jouer) de
   // qui n'a rien fait (c'est à lui).
   const [kbisEnAttente, setKbisEnAttente] = useState<Map<string, string>>(new Map());
-  // Les filtres commerciaux (activité, solde, département) servent à analyser
-  // le parc, pas à vider une file. Repliés par défaut : cinq menus déroulants
-  // en permanence au-dessus d'une liste de onze lignes à traiter, c'est du
-  // décor qui pousse le travail vers le bas de l'écran.
-  const [filtresOuverts, setFiltresOuverts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
@@ -683,36 +678,29 @@ export default function ManageGarages() {
   // mes garages. La page les sépare donc en deux étages.
 
   // Ce qui attend un geste, par ordre d'urgence.
-  const VUES_TRAVAIL: { cle: Onglet; titre: (n: number) => string; detail: string; action: string }[] = [
-    {
-      cle: "kbis_a_dater",
-      titre: (n) => `${n} date${n > 1 ? "s" : ""} de Kbis à saisir`,
-      detail: "La lecture automatique n'a pas trouvé la date : à recopier sur le document.",
-      action: "Ouvrir la file",
-    },
-    {
-      cle: "a_verifier",
-      titre: (n) => `${n} dossier${n > 1 ? "s" : ""} à vérifier`,
-      detail: "Des pièces sont arrivées et attendent notre contrôle.",
-      action: "Voir la liste",
-    },
-    {
-      cle: "kbis_perime",
-      titre: (n) => `${n} Kbis périmé${n > 1 ? "s" : ""}`,
-      detail: "Garages vérifiés dont le Kbis a passé six mois : à eux d'en déposer un récent.",
-      action: "Voir la liste",
-    },
+  // Les sept onglets, dans l'ordre du parcours d'un garage. Chacun porte sa
+  // couleur : sur une rangée de sept, un libellé seul oblige à lire les sept
+  // pour trouver celui qu'on cherche, alors qu'une couleur se repère d'un
+  // coup d'œil. Elles disent aussi la nature de l'étape — ce qui nous revient
+  // en bleu, ce qui revient au garage en ambre, ce qui est acquis en vert.
+  const ONGLETS: { cle: Onglet; texte: string; aide: string; teinte: string; actif: string }[] = [
+    { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits",
+      teinte: "text-slate-700 dark:text-slate-300", actif: "bg-slate-700 text-white" },
+    { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification",
+      teinte: "text-zinc-600 dark:text-zinc-400", actif: "bg-zinc-600 text-white" },
+    { cle: "en_attente", texte: "Documents à compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter",
+      teinte: "text-amber-700 dark:text-amber-400", actif: "bg-amber-600 text-white" },
+    { cle: "a_verifier", texte: "À vérifier", aide: "Des pièces sont arrivées et attendent notre contrôle",
+      teinte: "text-blue-700 dark:text-blue-400", actif: "bg-blue-600 text-white" },
+    { cle: "kbis_a_dater", texte: "Date Kbis à saisir", aide: "La lecture automatique n'a pas trouvé la date de délivrance : à recopier à la main",
+      teinte: "text-yellow-700 dark:text-yellow-400", actif: "bg-yellow-500 text-yellow-950" },
+    { cle: "kbis_perime", texte: "Kbis périmé", aide: "Garages vérifiés dont le Kbis a passé six mois : à eux d'en déposer un récent",
+      teinte: "text-orange-700 dark:text-orange-400", actif: "bg-orange-500 text-white" },
+    { cle: "valides", texte: "Validés", aide: "Compte vérifié, Kbis à jour",
+      teinte: "text-green-700 dark:text-green-400", actif: "bg-green-600 text-white" },
   ];
 
-  // Le parc, dans l'ordre du parcours d'un garage.
-  const VUES_PARC: { cle: Onglet; texte: string; aide: string }[] = [
-    { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
-    { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
-    { cle: "sans_demande", texte: "Aucun document", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
-    { cle: "en_attente", texte: "À compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter" },
-  ];
-
-  const vueTravail = VUES_TRAVAIL.find((v) => v.cle === onglet) ?? null;
+  const ongletCourant = ONGLETS.find((o) => o.cle === onglet) ?? ONGLETS[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
@@ -733,86 +721,55 @@ export default function ManageGarages() {
         </div>
 
         <h1 className="mb-4 text-3xl font-bold">Garages</h1>
-
-        {/* Ce qui attend : trois lignes au plus, et rien quand il n'y a rien à
-            faire. C'est la seule chose que la page doit répondre tout de suite. */}
-        {VUES_TRAVAIL.some((v) => comptes[v.cle] > 0) && (
-          <Card className="mb-6 divide-y p-0">
-            {VUES_TRAVAIL.filter((v) => comptes[v.cle] > 0).map((v) => {
-              const actif = onglet === v.cle;
-              return (
-                <div
-                  key={v.cle}
-                  className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${actif ? "bg-muted/60" : ""}`}
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold">{v.titre(comptes[v.cle])}</p>
-                    <p className="text-sm text-muted-foreground">{v.detail}</p>
-                  </div>
-                  {v.cle === "kbis_a_dater" ? (
-                    <Button size="sm" className="shrink-0" onClick={() => navigate("/admin/kbis-a-dater")}>
-                      {v.action}
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant={actif ? "secondary" : "outline"}
-                      className="shrink-0"
-                      onClick={() => { setOnglet(v.cle); setPage(1); }}
-                    >
-                      {actif ? "Affichée ci-dessous" : v.action}
-                    </Button>
-                  )}
-                </div>
-              );
-            })}
-          </Card>
-        )}
-
-        {/* Le parc. En vue de travail, les onglets s'effacent derrière le titre
-            de la vue : on est en train de traiter une file, pas de parcourir
-            un annuaire. */}
-        {vueTravail ? (
-          <div className="mb-4 flex flex-wrap items-baseline gap-3">
-            <h2 className="text-xl font-semibold">{vueTravail.titre(comptes[onglet])}</h2>
-            <Button
-              variant="link"
-              size="sm"
-              className="h-auto p-0 text-muted-foreground"
-              onClick={() => { setOnglet("tous"); setPage(1); }}
-            >
-              Revenir au parc
-            </Button>
-          </div>
-        ) : (
-          <div role="tablist" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
-            {VUES_PARC.map((o) => {
-              const actif = onglet === o.cle;
-              return (
-                <button
-                  key={o.cle}
-                  type="button"
-                  role="tab"
-                  title={o.aide}
-                  aria-selected={actif}
-                  onClick={() => { setOnglet(o.cle); setPage(1); }}
-                  className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                    actif ? "bg-blue-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
+        {/* Les onglets, tous visibles : ils servent autant à traiter une file
+            qu'à parcourir le parc pour la prospection. Les replier derrière un
+            bandeau privait de la seconde lecture. */}
+        <div role="tablist" className="mb-4 flex flex-wrap gap-1.5">
+          {ONGLETS.map((o) => {
+            const actif = onglet === o.cle;
+            const n = comptes[o.cle];
+            return (
+              <button
+                key={o.cle}
+                type="button"
+                role="tab"
+                title={o.aide}
+                aria-selected={actif}
+                onClick={() => { setOnglet(o.cle); setPage(1); }}
+                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  actif
+                    ? `${o.actif} border-transparent shadow-sm`
+                    : `border-border bg-background ${o.teinte} hover:bg-muted`
+                }`}
+              >
+                {o.texte}
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
+                    actif ? "bg-white/25" : n > 0 ? "bg-muted" : "bg-transparent text-muted-foreground"
                   }`}
                 >
-                  {o.texte}
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${
-                      actif ? "bg-white/20 text-white" : "bg-background/60 text-muted-foreground"
-                    }`}
-                  >
-                    {comptes[o.cle]}
-                  </span>
-                </button>
-              );
-            })}
+                  {n}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* La file des dates se traite bien plus vite d'un écran dédié que
+            garage par garage : le raccourci reste à portée, sans occuper la
+            page quand on fait autre chose. */}
+        {onglet === "kbis_a_dater" && comptes.kbis_a_dater > 0 && (
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-yellow-500/60 bg-yellow-50 px-4 py-3 dark:bg-yellow-950/20">
+            <p className="text-sm text-foreground">
+              Le document à gauche, le champ à droite, Entrée pour enchaîner — plutôt qu'un
+              aller-retour par fiche.
+            </p>
+            <Button size="sm" className="shrink-0" onClick={() => navigate("/admin/kbis-a-dater")}>
+              Ouvrir la file
+            </Button>
           </div>
         )}
+
 
         {/* Recherche, tri et filtres */}
         <div className="mb-4 space-y-3">
@@ -846,20 +803,7 @@ export default function ManageGarages() {
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              variant={filtresActifs > 0 ? "secondary" : "ghost"}
-              size="sm"
-              className="h-8"
-              onClick={() => setFiltresOuverts((v) => !v)}
-            >
-              <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Filtres
-              {filtresActifs > 0 && (
-                <span className="ml-2 rounded-full bg-background/70 px-2 py-0.5 text-xs tabular-nums">
-                  {filtresActifs}
-                </span>
-              )}
-            </Button>
+            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
             {(filtresActifs > 0 || recherche) && (
               <>
                 <span className="text-sm text-muted-foreground">
@@ -872,7 +816,7 @@ export default function ManageGarages() {
             )}
           </div>
 
-          <div className={`flex-wrap items-center gap-2 ${filtresOuverts || filtresActifs > 0 ? "flex" : "hidden"}`}>
+          <div className="flex flex-wrap items-center gap-2">
             <FiltreActivite
               choix={activite}
               periode={activitePeriode}
