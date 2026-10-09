@@ -50,11 +50,11 @@ export const MessagesEnAttente = () => {
               </span>
             </div>
             <div>
-              <p className="font-bold text-yellow-800 dark:text-yellow-300">
+              <p className="font-bold text-foreground">
                 {aTraiter} message{aTraiter > 1 ? "s" : ""} à traiter
                 {nonLues > 0 && ` dont ${nonLues} non lu${nonLues > 1 ? "s" : ""} !`}
               </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-400">
+              <p className="text-sm text-muted-foreground">
                 Cliquez pour répondre aux garages et aux clients
               </p>
             </div>

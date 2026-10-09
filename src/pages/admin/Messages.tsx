@@ -190,7 +190,7 @@ export default function Messages() {
               {nonLues > 0 && (
                 <>
                   {" · "}
-                  <span className="font-semibold text-yellow-700 dark:text-yellow-400">
+                  <span className="font-semibold text-foreground">
                     {nonLues} non lues
                   </span>
                 </>

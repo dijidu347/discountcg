@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, Euro, ClipboardList, Clock, Archive, CreditCard, Coins } from "lucide-react";
+import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingCart, UserCog, Wrench, Bell, AlertCircle, Euro, ClipboardList, Clock, Archive, CreditCard, Coins , MessageSquare } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
@@ -81,6 +81,8 @@ export default function AdminDashboard() {
     demarchesAujourdhui: 0,
     commandesPartATraiter: 0,
     commandesPartNouvelles: 0,
+    messagesEnAttente: 0,
+    messagesNonLus: 0,
     coffreAbonnes: 0,
     coffrePaying: 0,
     coffreStripe: 0,
@@ -229,6 +231,12 @@ export default function AdminDashboard() {
     ) || [];
 
     const coffreActive = coffreSubs || [];
+    // Conversations en attente de reponse : une seule lecture pour l'encart et
+    // pour la notification, qui disaient sinon la meme chose deux fois.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data: conversations } = await supabase.rpc('messages_en_attente' as any);
+    const listeMessages = (conversations as { etat: string }[]) ?? [];
+
     setStats({
       totalGarages: garages?.length || 0,
       demarchesATraiter: demarchesATraiterCount || 0,
@@ -244,6 +252,8 @@ export default function AdminDashboard() {
       demarchesAujourdhui: Number(totauxAujourdhui?.demarches_creees ?? 0),
       commandesPartATraiter: commandesPartATraiterCount || 0,
       commandesPartNouvelles: commandesPartNouvellesCount || 0,
+      messagesEnAttente: listeMessages.length,
+      messagesNonLus: listeMessages.filter((c) => c.etat === 'non_lu').length,
       coffreAbonnes: coffreActive.length,
       coffrePaying: coffreActive.filter(s => s.status === 'active' && s.payment_mode !== 'beta').length,
       coffreStripe: coffreActive.filter(s => s.payment_mode === 'stripe').length,
@@ -401,7 +411,34 @@ export default function AdminDashboard() {
             dossiers, deux dataient de plus de quatre-vingt-dix jours. */}
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <Card
+            className="cursor-pointer hover:border-yellow-500 transition-colors"
+            onClick={() => navigate("/admin/messages")}
+          >
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardDescription className="flex items-center gap-2">
+                Messages
+                {stats.messagesNonLus > 0 && (
+                  <Badge className="bg-yellow-500 text-yellow-950 hover:bg-yellow-500">
+                    {stats.messagesNonLus}
+                  </Badge>
+                )}
+              </CardDescription>
+              <MessageSquare className="h-4 w-4 text-yellow-500" />
+            </CardHeader>
+            <CardContent>
+              <CardTitle className="text-3xl text-foreground">
+                {stats.messagesEnAttente}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                {stats.messagesNonLus > 0
+                  ? `dont ${stats.messagesNonLus} non lu${stats.messagesNonLus > 1 ? "s" : ""}`
+                  : "en attente de réponse"}
+              </p>
+            </CardContent>
+          </Card>
+
           <Card
             className="cursor-pointer hover:border-primary transition-colors"
             onClick={() => navigate("/admin/manage-garages")}
