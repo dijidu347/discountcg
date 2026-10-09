@@ -156,7 +156,7 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-france-red/10 py-12 px-4">
       <div className="max-w-2xl mx-auto">
         <Button
           variant="ghost"

@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { applyATraiterFilters } from "@/lib/demarcheFilters";
-import { garagesAvecKbisADater } from "@/lib/kbisADater";
+import { chargerAttentesKbis } from "@/lib/kbisADater";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -233,14 +233,18 @@ export default function AdminDashboard() {
     // depose — par un garage le plus souvent deja verifie. Les garages qui ont
     // par ailleurs un Kbis valable en sont exclus : chez eux la ligne non datee
     // est un doublon, pas un blocage (voir lib/kbisADater).
-    const aDater = await garagesAvecKbisADater();
+    const { aDater, enAttente: kbisEnAttente } = await chargerAttentesKbis();
 
-    const garagesAVerifier = garages?.filter(g =>
-      !aDater.has(g.id)
-      && !g.is_verified
-      && aControler.has(g.id)
-      && !(g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date())
-    ) || [];
+    // Même règle que l'onglet « À vérifier » de la page Garages, qui compte
+    // désormais deux populations : les inscriptions à instruire, et les
+    // garages déjà vérifiés qui ont redéposé un Kbis après expiration — ceux-là
+    // attendent notre approbation et ne figuraient nulle part.
+    const garagesAVerifier = garages?.filter((g) => {
+      if (aDater.has(g.id)) return false;
+      const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
+      if (g.is_verified) return Boolean(kbisPerime) && kbisEnAttente.has(g.id);
+      return aControler.has(g.id) && !kbisPerime;
+    }) || [];
 
     const coffreActive = coffreSubs || [];
     // Conversations en attente de reponse : une seule lecture pour l'encart et

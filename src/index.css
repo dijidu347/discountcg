@@ -27,8 +27,15 @@ All colors MUST be HSL.
     --muted: 0 0% 96%;
     --muted-foreground: 0 0% 45%;
 
-    --accent: 0 100% 50%; /* Rouge France */
-    --accent-foreground: 0 0% 100%;
+    /* --accent n'est pas une couleur de marque : c'est la surface de survol et
+       de selection des composants shadcn — chaque ligne d'un menu deroulant,
+       d'un Select, d'un calendrier, et le survol des boutons ghost et outline.
+       Le rouge France y etait pris pour un accent decoratif, si bien que tous
+       les menus du site se surlignaient en rouge vif. Il est ici neutre, aligne
+       sur --muted ; le rouge de marque vit dans --france-red, et ne s'emploie
+       que la ou il est voulu. */
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 20%;
 
     --france-blue: 225 100% 39%;
     --france-white: 0 0% 100%;
@@ -79,8 +86,9 @@ All colors MUST be HSL.
     --muted: 0 0% 20%;
     --muted-foreground: 0 0% 65%;
 
-    --accent: 33 100% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Meme regle en theme sombre, ou le survol virait a l'orange vif. */
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 95%;
 
     --success: 142 76% 36%;
     --success-foreground: 0 0% 100%;

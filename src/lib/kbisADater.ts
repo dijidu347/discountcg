@@ -42,16 +42,48 @@ export interface AttenteKbis {
  * Renvoie aussi depuis quand ils attendent, pour que la liste puisse se
  * trier par le plus ancien plutôt que par la dépense.
  */
-export async function garagesAvecKbisADater(): Promise<Map<string, AttenteKbis>> {
-  const { data: sansDate } = await supabase
-    .from("verification_documents")
-    .select("garage_id, created_at")
-    .eq("status", "pending")
-    .ilike("document_type", "%kbis%")
-    .not("lu_le", "is", null)
-    .is("date_emission", null);
+export interface AttentesKbis {
+  /** Garages dont un Kbis attend une date saisie à la main. */
+  aDater: Map<string, AttenteKbis>;
+  /** Garages dont un Kbis attend notre approbation, et depuis quand. */
+  enAttente: Map<string, string>;
+}
 
-  const enAttente = sansDate || [];
+export async function chargerAttentesKbis(): Promise<AttentesKbis> {
+  const { data: pending } = await supabase
+    .from("verification_documents")
+    .select("garage_id, created_at, lu_le, date_emission")
+    .eq("status", "pending")
+    .ilike("document_type", "%kbis%");
+
+  const tous = pending || [];
+  const enAttente = new Map<string, string>();
+  for (const d of tous) {
+    const vu = enAttente.get(d.garage_id);
+    if (!vu || d.created_at < vu) enAttente.set(d.garage_id, d.created_at);
+  }
+  const aDater = await garagesAvecKbisADater(tous);
+  return { aDater, enAttente };
+}
+
+type KbisEnAttente = { garage_id: string; created_at: string; lu_le: string | null; date_emission: string | null };
+
+export async function garagesAvecKbisADater(
+  deja?: KbisEnAttente[],
+): Promise<Map<string, AttenteKbis>> {
+  const lignes =
+    deja ??
+    ((
+      await supabase
+        .from("verification_documents")
+        .select("garage_id, created_at, lu_le, date_emission")
+        .eq("status", "pending")
+        .ilike("document_type", "%kbis%")
+    ).data as KbisEnAttente[] | null) ??
+    [];
+
+  // Lu par la machine, mais sans date : c'est là que la saisie manuelle sert.
+  const enAttente = lignes.filter((d) => d.lu_le && !d.date_emission);
   const candidats = [...new Set(enAttente.map((d) => d.garage_id))];
   if (!candidats.length) return new Map();
 

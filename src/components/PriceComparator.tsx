@@ -74,7 +74,7 @@ export const PriceComparator = () => {
                 }`}
               >
                 {competitor.isUs && (
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-primary to-accent text-primary-foreground text-center py-2 font-bold text-sm">
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-primary to-france-red text-primary-foreground text-center py-2 font-bold text-sm">
                     ⭐ MEILLEUR CHOIX ⭐
                   </div>
                 )}

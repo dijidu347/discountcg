@@ -53,7 +53,7 @@ export default function MajiConcepts() {
   }, [user]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>MaJi Auto — Concepts de mise en avant</title>

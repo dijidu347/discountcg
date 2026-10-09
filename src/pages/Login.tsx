@@ -111,7 +111,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/10 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-france-red/10 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <Button
           variant="ghost"
@@ -124,7 +124,7 @@ export default function Login() {
 
         {/* Compteur garages — bien mis en avant */}
         {garageCount !== null && garageCount > 0 && (
-          <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border border-primary/20 rounded-2xl px-6 py-4 flex items-center justify-center gap-4">
+          <div className="mb-6 bg-gradient-to-r from-primary/10 via-primary/5 to-france-red/10 border border-primary/20 rounded-2xl px-6 py-4 flex items-center justify-center gap-4">
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/15 flex-shrink-0">
               <TrendingUp className="h-6 w-6 text-primary" />
             </div>

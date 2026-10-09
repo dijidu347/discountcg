@@ -995,7 +995,7 @@ export default function DemarcheDetail() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Admin - Détail démarche | Discount Carte Grise</title>

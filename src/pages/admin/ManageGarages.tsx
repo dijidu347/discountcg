@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
-import { garagesAvecKbisADater, type AttenteKbis } from "@/lib/kbisADater";
+import { chargerAttentesKbis, type AttenteKbis } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -370,6 +370,10 @@ export default function ManageGarages() {
   // etapes ci-dessous ne les signalait, et un garage deja verifie se retrouvait
   // dans « Valides » avec un document en attente que personne ne voyait.
   const [kbisADater, setKbisADater] = useState<Map<string, AttenteKbis>>(new Map());
+  // Garages dont un Kbis attend notre approbation. Sert à distinguer, parmi
+  // ceux dont le Kbis a expiré, qui a déjà redéposé (c'est à nous de jouer) de
+  // qui n'a rien fait (c'est à lui).
+  const [kbisEnAttente, setKbisEnAttente] = useState<Map<string, string>>(new Map());
   // Les filtres commerciaux (activité, solde, département) servent à analyser
   // le parc, pas à vider une file. Repliés par défaut : cinq menus déroulants
   // en permanence au-dessus d'une liste de onze lignes à traiter, c'est du
@@ -463,7 +467,9 @@ export default function ManageGarages() {
     });
     setStats(parGarage);
 
-    setKbisADater(await garagesAvecKbisADater());
+    const attentes = await chargerAttentesKbis();
+    setKbisADater(attentes.aDater);
+    setKbisEnAttente(attentes.enAttente);
 
     setGarages(tous);
     setLoading(false);
@@ -515,11 +521,24 @@ export default function ManageGarages() {
     // automatique n'a pas su extraire. Verifie ou non, le document est en
     // attente. Place apres « valides », il disparaissait.
     if (kbisADater.has(g.id)) return "kbis_a_dater";
-    if (g.is_verified) return "valides";
-    // Un habitué dont le Kbis a passé six mois n'est pas un dossier à examiner :
-    // ses pièces sont toutes approuvées, il lui manque juste un papier récent.
-    // Le laisser dans « À vérifier » noyait les vraies demandes.
-    if (g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date()) return "kbis_perime";
+
+    // Le Kbis périmé ne concerne que les garages vérifiés : c'est un papier à
+    // renouveler, pas une inscription à instruire.
+    //
+    // Ce test venait APRÈS « validés », si bien qu'un garage vérifié n'y
+    // entrait jamais — il repartait en « Validés » à la ligne précédente.
+    // L'onglet ne contenait donc que des comptes jamais vérifiés, dont le
+    // vieux Kbis approuvé traîne depuis une inscription restée en route :
+    // soixante-cinq garages qui n'attendent rien et ne reviendront pas, ce qui
+    // explique qu'aucun travail ne fasse jamais baisser le compteur. Pendant
+    // ce temps les quarante-sept vrais, eux, dormaient dans « Validés ».
+    const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
+    if (g.is_verified) {
+      if (!kbisPerime) return "valides";
+      // Il a déjà redéposé : la balle est dans notre camp, pas dans le sien.
+      return kbisEnAttente.has(g.id) ? "a_verifier" : "kbis_perime";
+    }
+
     // À nous : toutes les pièces obligatoires sont là, aucune n'est refusée.
     if (stats[g.id]?.dossier_complet) return "a_verifier";
     // Au garage : une pièce obligatoire manque ou a été refusée.
@@ -606,6 +625,9 @@ export default function ManageGarages() {
       };
     }
     if (onglet === "a_verifier") {
+      if (g.is_verified) {
+        return { texte: "Kbis redéposé", depuis: kbisEnAttente.get(g.id) ?? null };
+      }
       return { texte: "Dossier complet", depuis: g.verification_requested_at };
     }
     if (onglet === "kbis_perime") {
@@ -636,7 +658,7 @@ export default function ManageGarages() {
       .filter((g) => onglet === "tous" || etape(g) === onglet)
       .sort((a, b) => (tri === "anciens" ? valeur(a) - valeur(b) : valeur(b) - valeur(a)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtres, onglet, tri, stats, kbisADater]);
+  }, [filtres, onglet, tri, stats, kbisADater, kbisEnAttente]);
 
   const PAR_PAGE = 50;
   const pages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
@@ -671,7 +693,7 @@ export default function ManageGarages() {
     {
       cle: "a_verifier",
       titre: (n) => `${n} dossier${n > 1 ? "s" : ""} à vérifier`,
-      detail: "Toutes les pièces obligatoires sont arrivées : à nous de contrôler.",
+      detail: "Des pièces sont arrivées et attendent notre contrôle.",
       action: "Voir la liste",
     },
     {

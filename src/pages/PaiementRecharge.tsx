@@ -152,7 +152,7 @@ export default function PaiementRecharge() {
   if (!garage || !pack) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Paiement recharge | Discount Carte Grise</title>
@@ -162,7 +162,7 @@ export default function PaiementRecharge() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-france-red bg-clip-text text-transparent">
                 DiscountCarteGrise
               </h1>
               <nav className="hidden md:flex items-center gap-2">

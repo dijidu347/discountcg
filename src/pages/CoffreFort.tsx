@@ -260,7 +260,7 @@ export default function CoffreFort() {
   // While syncing after Stripe redirect, show a simple loading screen
   if (isSyncing || (searchParams.get("subscribed") && subLoading)) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
         <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center">
           <Archive className="h-7 w-7 text-primary animate-pulse" />
         </div>
@@ -280,7 +280,7 @@ export default function CoffreFort() {
       <div className="container mx-auto px-4 py-3 md:py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent cursor-pointer" onClick={() => navigate("/dashboard")}>
+            <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-primary to-france-red bg-clip-text text-transparent cursor-pointer" onClick={() => navigate("/dashboard")}>
               DiscountCarteGrise
             </h1>
             <nav className="hidden md:flex items-center gap-2">
@@ -351,7 +351,7 @@ export default function CoffreFort() {
     const cat = getCategoryInfo(detailDoc.category);
     const CatIcon = cat.icon;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
         <Helmet><meta name="robots" content="noindex, nofollow" /><title>Document | Coffre-fort</title></Helmet>
         {NavBar()}
         <div className="container mx-auto px-4 py-4 md:py-6">
@@ -513,7 +513,7 @@ export default function CoffreFort() {
 
   // =================== HOME + LIST VIEW ===================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet><meta name="robots" content="noindex, nofollow" /><title>Coffre-fort factures | Discount Carte Grise</title></Helmet>
       {NavBar()}
 

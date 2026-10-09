@@ -183,7 +183,7 @@ export default function ManageUsers() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background py-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background py-8">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Admin - Utilisateurs | Discount Carte Grise</title>

@@ -25,7 +25,7 @@ const WhyUs = () => {
   ];
 
   return (
-    <section className="py-20 bg-gradient-to-br from-primary/5 to-accent/5">
+    <section className="py-20 bg-gradient-to-br from-primary/5 to-france-red/5">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-bold mb-4">Pourquoi nous choisir ?</h2>
@@ -54,15 +54,15 @@ const WhyUs = () => {
           <p className="text-sm text-muted-foreground mb-6">Des milliers de clients satisfaits</p>
           <div className="flex flex-wrap justify-center items-center gap-8">
             <div className="flex items-center space-x-2">
-              <Award className="w-6 h-6 text-accent" />
+              <Award className="w-6 h-6 text-france-red" />
               <span className="font-semibold">Service agréé</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Shield className="w-6 h-6 text-accent" />
+              <Shield className="w-6 h-6 text-france-red" />
               <span className="font-semibold">Paiement sécurisé</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Zap className="w-6 h-6 text-accent" />
+              <Zap className="w-6 h-6 text-france-red" />
               <span className="font-semibold">Délai 24h max</span>
             </div>
           </div>

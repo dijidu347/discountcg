@@ -36,7 +36,7 @@ const Pricing = () => {
           <div className="hidden md:block bg-card rounded-xl shadow-lg overflow-hidden border-2 border-border">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gradient-to-r from-primary to-accent hover:from-primary hover:to-accent">
+                <TableRow className="bg-gradient-to-r from-primary to-france-red hover:from-primary hover:to-france-red">
                   <TableHead className="text-white font-bold text-lg">Service</TableHead>
                   <TableHead className="text-white font-bold text-lg">Documents requis</TableHead>
                 </TableRow>
@@ -49,7 +49,7 @@ const Pricing = () => {
                       <ul className="space-y-1">
                         {item.documents.map((doc, idx) => (
                           <li key={idx} className="flex items-start text-sm">
-                            <FileCheck className="w-4 h-4 text-accent mr-2 flex-shrink-0 mt-0.5" />
+                            <FileCheck className="w-4 h-4 text-france-red mr-2 flex-shrink-0 mt-0.5" />
                             <span>{doc}</span>
                           </li>
                         ))}
@@ -71,7 +71,7 @@ const Pricing = () => {
                   <ul className="space-y-2">
                     {item.documents.map((doc, idx) => (
                       <li key={idx} className="flex items-start text-sm">
-                        <FileCheck className="w-4 h-4 text-accent mr-2 flex-shrink-0 mt-0.5" />
+                        <FileCheck className="w-4 h-4 text-france-red mr-2 flex-shrink-0 mt-0.5" />
                         <span>{doc}</span>
                       </li>
                     ))}

@@ -180,7 +180,7 @@ export default function Dashboard() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Tableau de bord | Discount Carte Grise</title>
@@ -190,7 +190,7 @@ export default function Dashboard() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-primary to-france-red bg-clip-text text-transparent">
                 DiscountCarteGrise
               </h1>
               <nav className="hidden md:flex items-center gap-2">
@@ -385,7 +385,7 @@ export default function Dashboard() {
 
         {/* Solde Banner */}
         {garage && (
-          <Card className="mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-accent/10 border-primary/20">
+          <Card className="mb-8 bg-gradient-to-r from-primary/10 via-primary/5 to-france-red/10 border-primary/20">
             <CardContent className="py-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">

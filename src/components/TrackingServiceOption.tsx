@@ -126,7 +126,7 @@ export function TrackingServiceOption({
       setLoading(false);
     }
   };
-  return <Card className="border-2 border-accent">
+  return <Card className="border-2 border-france-red">
       <CardHeader>
         <CardTitle className="text-xl">Options</CardTitle>
         <CardDescription>
@@ -140,10 +140,10 @@ export function TrackingServiceOption({
             const isSelected = selectedServices.includes(service.type);
             const isComingSoon = 'comingSoon' in service && service.comingSoon;
             
-            return <div key={service.type} className={`border rounded-lg p-3 transition-all ${isComingSoon ? 'border-border bg-muted/50 opacity-60' : isSelected ? 'border-accent bg-accent/10' : 'border-border'}`}>
+            return <div key={service.type} className={`border rounded-lg p-3 transition-all ${isComingSoon ? 'border-border bg-muted/50 opacity-60' : isSelected ? 'border-france-red bg-france-red/10' : 'border-border'}`}>
                   <div className="flex flex-col gap-2">
                     <div className="flex items-start gap-2">
-                      <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isComingSoon ? 'text-muted-foreground' : 'text-accent'}`} />
+                      <Icon className={`h-5 w-5 mt-0.5 flex-shrink-0 ${isComingSoon ? 'text-muted-foreground' : 'text-france-red'}`} />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm mb-0.5">{service.name}</h4>
                         <p className="text-xs text-muted-foreground line-clamp-2">{service.description}</p>

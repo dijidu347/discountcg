@@ -649,7 +649,7 @@ export default function DemarcheDetail() {
 
             {/* Documents de l'administration */}
             {documents.filter(d => d.type_document === 'admin_document').length > 0 && (
-              <Card className="border-accent bg-accent/10">
+              <Card className="border-france-red bg-france-red/10">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="h-5 w-5" />
