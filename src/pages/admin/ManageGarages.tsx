@@ -515,6 +515,8 @@ export default function ManageGarages() {
     // attend un geste de nous : saisir a la main la date que la lecture
     // automatique n'a pas su extraire. Verifie ou non, le document est en
     // attente. Place apres « valides », il disparaissait.
+    // Les comptes de la maison ne passent par aucune file de verification.
+    if ((g as { compte_interne?: boolean }).compte_interne) return "valides";
     if (kbisADater.has(g.id)) return "kbis_a_dater";
 
     // Le Kbis périmé ne concerne que les garages vérifiés : c'est un papier à

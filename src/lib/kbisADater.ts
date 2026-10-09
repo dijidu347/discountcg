@@ -101,9 +101,19 @@ export async function garagesAvecKbisADater(
       .map((d) => d.garage_id),
   );
 
+  // Les comptes de la maison ne sont soumis a aucune verification : les
+  // compter ici reviendrait a se reclamer des papiers a soi-meme.
+  // types.ts est genere depuis la base et ne connait pas encore la colonne.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: internes } = await (supabase as any)
+    .from("garages")
+    .select("id")
+    .eq("compte_interne", true);
+  const aIgnorer = new Set(((internes || []) as { id: string }[]).map((g) => g.id));
+
   const parGarage = new Map<string, AttenteKbis>();
   for (const d of enAttente) {
-    if (enRegle.has(d.garage_id)) continue;
+    if (enRegle.has(d.garage_id) || aIgnorer.has(d.garage_id)) continue;
     const vu = parGarage.get(d.garage_id);
     parGarage.set(d.garage_id, {
       depuis: vu && vu.depuis < d.created_at ? vu.depuis : d.created_at,

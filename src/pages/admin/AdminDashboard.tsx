@@ -240,6 +240,7 @@ export default function AdminDashboard() {
     // garages déjà vérifiés qui ont redéposé un Kbis après expiration — ceux-là
     // attendent notre approbation et ne figuraient nulle part.
     const garagesAVerifier = garages?.filter((g) => {
+      if ((g as { compte_interne?: boolean }).compte_interne) return false;
       if (aDater.has(g.id)) return false;
       const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
       if (g.is_verified) return Boolean(kbisPerime) && kbisEnAttente.has(g.id);

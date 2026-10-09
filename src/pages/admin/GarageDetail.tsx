@@ -215,8 +215,11 @@ export default function GarageDetail() {
 
   // Un garage qui a perdu sa vérification parce que son Kbis a dépassé six mois
   // n'est pas un garage inconnu : on le dit plutôt que de laisser « Non ».
+  // Un compte de la maison — l'adresse admin, les comptes de test — n'est pas
+  // un garage a verifier : il n'a ni Kbis a fournir ni badge a perdre.
+  const interne = Boolean((garage as { compte_interne?: boolean }).compte_interne);
   const kbisExpire = Boolean(
-    garage.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
+    !interne && garage.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
   );
 
   return (

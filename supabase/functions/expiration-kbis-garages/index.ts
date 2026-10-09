@@ -94,6 +94,7 @@ serve(async (req) => {
     const { data: perimes } = await supabase
       .from("garages")
       .select("id, raison_sociale, email, kbis_valide_jusqu_au")
+      .eq("compte_interne", false)
       .eq("is_verified", false)
       .not("kbis_valide_jusqu_au", "is", null)
       .lt("kbis_valide_jusqu_au", aujourdhui);
@@ -126,6 +127,7 @@ serve(async (req) => {
   const { data: aPrevenir } = await supabase
     .from("garages")
     .select("id, raison_sociale, email, kbis_valide_jusqu_au")
+      .eq("compte_interne", false)
     .eq("is_verified", true)
     .is("kbis_alerte_envoyee_le", null)
     .not("kbis_valide_jusqu_au", "is", null)
@@ -142,6 +144,7 @@ serve(async (req) => {
   let requete = supabase
     .from("garages")
     .select("id, raison_sociale, email, kbis_valide_jusqu_au")
+      .eq("compte_interne", false)
     .eq("is_verified", true)
     .not("kbis_valide_jusqu_au", "is", null)
     .lt("kbis_valide_jusqu_au", aujourdhui);
