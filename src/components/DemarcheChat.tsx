@@ -28,6 +28,9 @@ interface DemarcheChatProps {
   // Appele apres l'envoi d'un message. La page des messages s'en sert pour
   // retirer la conversation de la liste : y repondre la rend traitee.
   onMessageSent?: () => void;
+  // Remplit la hauteur disponible au lieu des 300 px figes : utile sur la
+  // page des messages, ou le chat occupe un volet entier.
+  pleineHauteur?: boolean;
 }
 
 export function DemarcheChat({
@@ -37,6 +40,7 @@ export function DemarcheChat({
   garageName,
   isAdmin = false,
   onMessageSent,
+  pleineHauteur = false,
   numeroDemarche,
 }: DemarcheChatProps) {
   const { user } = useAuth();
@@ -205,7 +209,7 @@ export function DemarcheChat({
   };
 
   return (
-    <Card>
+    <Card className={pleineHauteur ? "flex h-full flex-col" : undefined}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
           <MessageCircle className="h-5 w-5" />
@@ -217,11 +221,11 @@ export function DemarcheChat({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className={pleineHauteur ? "flex min-h-0 flex-1 flex-col" : undefined}>
         {/* Messages area */}
         <div
           ref={scrollRef}
-          className="h-[300px] overflow-y-auto border rounded-lg p-3 mb-3 space-y-3 bg-muted/20"
+          className={`overflow-y-auto border rounded-lg p-3 mb-3 space-y-3 bg-muted/20 ${pleineHauteur ? "min-h-0 flex-1" : "h-[300px]"}`}
         >
           {messages.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">

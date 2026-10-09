@@ -364,7 +364,7 @@ export default function Messages() {
                   )}
                 </div>
 
-                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                <div className="flex min-h-0 flex-1 flex-col p-3">
                   {choisie.source === "pro" ? (
                     <DemarcheChat
                       key={choisie.cible_id}
@@ -376,6 +376,7 @@ export default function Messages() {
                       onMessageSent={() =>
                         retirer(choisie, "Réponse envoyée", "La conversation quitte la liste.")
                       }
+                      pleineHauteur
                       isAdmin
                     />
                   ) : (
@@ -388,6 +389,7 @@ export default function Messages() {
                       onMessageSent={() =>
                         retirer(choisie, "Réponse envoyée", "La conversation quitte la liste.")
                       }
+                      pleineHauteur
                       isAdmin
                     />
                   )}
