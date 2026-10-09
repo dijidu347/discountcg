@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
-import { garagesAvecKbisADater } from "@/lib/kbisADater";
+import { garagesAvecKbisADater, type AttenteKbis } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -58,6 +58,11 @@ const jourInscription = (valeur: string | null | undefined) =>
 // Garages : onglets par étape de vérification, tri, filtres.
 type Onglet = "tous" | "a_verifier" | "kbis_a_dater" | "kbis_perime" | "en_attente" | "valides" | "sans_demande";
 type Etape = Exclude<Onglet, "tous">;
+
+// Les vues qui appellent un geste de notre part, par opposition à celles qui
+// décrivent le parc. La liste vit ici, et non dans le composant, parce que le
+// tri et les colonnes s'en servent avant que les libellés soient construits.
+const CLES_TRAVAIL: Onglet[] = ["kbis_a_dater", "a_verifier", "kbis_perime"];
 type Tri = "recents" | "anciens" | "depense" | "demarches";
 
 interface Stats {
@@ -364,7 +369,12 @@ export default function ManageGarages() {
   // le fichier, mais n'y a pas trouve la date de delivrance. Rien dans les
   // etapes ci-dessous ne les signalait, et un garage deja verifie se retrouvait
   // dans « Valides » avec un document en attente que personne ne voyait.
-  const [kbisADater, setKbisADater] = useState<Set<string>>(new Set());
+  const [kbisADater, setKbisADater] = useState<Map<string, AttenteKbis>>(new Map());
+  // Les filtres commerciaux (activité, solde, département) servent à analyser
+  // le parc, pas à vider une file. Repliés par défaut : cinq menus déroulants
+  // en permanence au-dessus d'une liste de onze lignes à traiter, c'est du
+  // décor qui pousse le travail vers le bas de l'écran.
+  const [filtresOuverts, setFiltresOuverts] = useState(false);
   const [loading, setLoading] = useState(true);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
@@ -372,6 +382,7 @@ export default function ManageGarages() {
   const [savingDoc, setSavingDoc] = useState(false);
 
   const [onglet, setOnglet] = useState<Onglet>(ongletDemande ?? memoire.onglet ?? "a_verifier");
+  const enTravail = CLES_TRAVAIL.includes(onglet);
   const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
   const [tri, setTri] = useState<Tri>(memoire.tri ?? "recents");
   const [activite, setActivite] = useState<string[]>(enListe(memoire.activite));
@@ -583,7 +594,40 @@ export default function ManageGarages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtres, stats]);
 
+  // Ce que la vue de travail doit dire de chaque ligne : la nature de
+  // l'attente, et sa date de départ. Afficher ici la dépense et le solde,
+  // comme le faisait la liste unique, ne renseignait pas sur le geste à faire.
+  const attenteDe = (g: Garage): { texte: string; depuis: string | null } => {
+    if (onglet === "kbis_a_dater") {
+      const a = kbisADater.get(g.id);
+      return {
+        texte: a && a.nb > 1 ? `${a.nb} dépôts sans date` : "Kbis sans date",
+        depuis: a?.depuis ?? null,
+      };
+    }
+    if (onglet === "a_verifier") {
+      return { texte: "Dossier complet", depuis: g.verification_requested_at };
+    }
+    if (onglet === "kbis_perime") {
+      return { texte: "Kbis périmé le", depuis: g.kbis_valide_jusqu_au };
+    }
+    return { texte: "", depuis: null };
+  };
+
   const liste = useMemo(() => {
+    // Dans une file, le plus ancien passe devant : trier par dépense faisait
+    // attendre celui qui attend depuis le plus longtemps.
+    if (enTravail) {
+      return filtres
+        .filter((g) => etape(g) === onglet)
+        .sort((a, b) => {
+          const da = attenteDe(a).depuis;
+          const db = attenteDe(b).depuis;
+          if (!da) return 1;
+          if (!db) return -1;
+          return new Date(da).getTime() - new Date(db).getTime();
+        });
+    }
     const valeur = (g: Garage) =>
       tri === "depense" ? stats[g.id]?.total || 0
         : tri === "demarches" ? stats[g.id]?.nb_demarches || 0
@@ -592,7 +636,7 @@ export default function ManageGarages() {
       .filter((g) => onglet === "tous" || etape(g) === onglet)
       .sort((a, b) => (tri === "anciens" ? valeur(a) - valeur(b) : valeur(b) - valeur(a)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtres, onglet, tri, stats]);
+  }, [filtres, onglet, tri, stats, kbisADater]);
 
   const PAR_PAGE = 50;
   const pages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));
@@ -611,17 +655,42 @@ export default function ManageGarages() {
     return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
   }
 
-  // Dans l'ordre du parcours d'un garage : inscrit sans documents, dossier
-  // incomplet, dossier complet à contrôler, validé.
-  const ONGLETS: { cle: Onglet; texte: string; aide: string }[] = [
-    { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
-    { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
-    { cle: "en_attente", texte: "Documents à compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter" },
-    { cle: "a_verifier", texte: "À vérifier", aide: "Toutes les pièces obligatoires sont envoyées : à nous de contrôler et valider" },
-    { cle: "kbis_a_dater", texte: "Date Kbis à saisir", aide: "La lecture automatique n'a pas trouvé la date de délivrance : à saisir à la main sur la fiche" },
-    { cle: "kbis_perime", texte: "Kbis expiré", aide: "Garages déjà vérifiés dont le Kbis a dépassé six mois : il leur suffit d'en déposer un récent" },
-    { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
+  // Huit onglets alignés disaient que « 467 garages n'ont rien envoyé » et
+  // « 2 dossiers attendent notre contrôle » sont deux lignes d'une même liste.
+  // Ce sont deux questions différentes : qu'est-ce qui m'attend, et qui sont
+  // mes garages. La page les sépare donc en deux étages.
+
+  // Ce qui attend un geste, par ordre d'urgence.
+  const VUES_TRAVAIL: { cle: Onglet; titre: (n: number) => string; detail: string; action: string }[] = [
+    {
+      cle: "kbis_a_dater",
+      titre: (n) => `${n} date${n > 1 ? "s" : ""} de Kbis à saisir`,
+      detail: "La lecture automatique n'a pas trouvé la date : à recopier sur le document.",
+      action: "Ouvrir la file",
+    },
+    {
+      cle: "a_verifier",
+      titre: (n) => `${n} dossier${n > 1 ? "s" : ""} à vérifier`,
+      detail: "Toutes les pièces obligatoires sont arrivées : à nous de contrôler.",
+      action: "Voir la liste",
+    },
+    {
+      cle: "kbis_perime",
+      titre: (n) => `${n} Kbis périmé${n > 1 ? "s" : ""}`,
+      detail: "Garages vérifiés dont le Kbis a passé six mois : à eux d'en déposer un récent.",
+      action: "Voir la liste",
+    },
   ];
+
+  // Le parc, dans l'ordre du parcours d'un garage.
+  const VUES_PARC: { cle: Onglet; texte: string; aide: string }[] = [
+    { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits" },
+    { cle: "valides", texte: "Validés", aide: "Compte vérifié" },
+    { cle: "sans_demande", texte: "Aucun document", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification" },
+    { cle: "en_attente", texte: "À compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter" },
+  ];
+
+  const vueTravail = VUES_TRAVAIL.find((v) => v.cle === onglet) ?? null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
@@ -641,36 +710,87 @@ export default function ManageGarages() {
           </Button>
         </div>
 
-        <h1 className="text-3xl font-bold mb-4">Garages</h1>
+        <h1 className="mb-4 text-3xl font-bold">Garages</h1>
 
-        {/* Onglets */}
-        <div role="tablist" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
-          {ONGLETS.map((o) => {
-            const actif = onglet === o.cle;
-            return (
-              <button
-                key={o.cle}
-                type="button"
-                role="tab"
-                title={o.aide}
-                aria-selected={actif}
-                onClick={() => { setOnglet(o.cle); setPage(1); }}
-                className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  actif ? "bg-blue-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {o.texte}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${
-                    actif ? "bg-white/20 text-white" : "bg-background/60 text-muted-foreground"
+        {/* Ce qui attend : trois lignes au plus, et rien quand il n'y a rien à
+            faire. C'est la seule chose que la page doit répondre tout de suite. */}
+        {VUES_TRAVAIL.some((v) => comptes[v.cle] > 0) && (
+          <Card className="mb-6 divide-y p-0">
+            {VUES_TRAVAIL.filter((v) => comptes[v.cle] > 0).map((v) => {
+              const actif = onglet === v.cle;
+              return (
+                <div
+                  key={v.cle}
+                  className={`flex flex-wrap items-center justify-between gap-3 px-4 py-3 ${actif ? "bg-muted/60" : ""}`}
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold">{v.titre(comptes[v.cle])}</p>
+                    <p className="text-sm text-muted-foreground">{v.detail}</p>
+                  </div>
+                  {v.cle === "kbis_a_dater" ? (
+                    <Button size="sm" className="shrink-0" onClick={() => navigate("/admin/kbis-a-dater")}>
+                      {v.action}
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant={actif ? "secondary" : "outline"}
+                      className="shrink-0"
+                      onClick={() => { setOnglet(v.cle); setPage(1); }}
+                    >
+                      {actif ? "Affichée ci-dessous" : v.action}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
+          </Card>
+        )}
+
+        {/* Le parc. En vue de travail, les onglets s'effacent derrière le titre
+            de la vue : on est en train de traiter une file, pas de parcourir
+            un annuaire. */}
+        {vueTravail ? (
+          <div className="mb-4 flex flex-wrap items-baseline gap-3">
+            <h2 className="text-xl font-semibold">{vueTravail.titre(comptes[onglet])}</h2>
+            <Button
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-muted-foreground"
+              onClick={() => { setOnglet("tous"); setPage(1); }}
+            >
+              Revenir au parc
+            </Button>
+          </div>
+        ) : (
+          <div role="tablist" className="mb-4 inline-flex flex-wrap gap-1 rounded-lg bg-muted p-1">
+            {VUES_PARC.map((o) => {
+              const actif = onglet === o.cle;
+              return (
+                <button
+                  key={o.cle}
+                  type="button"
+                  role="tab"
+                  title={o.aide}
+                  aria-selected={actif}
+                  onClick={() => { setOnglet(o.cle); setPage(1); }}
+                  className={`inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    actif ? "bg-blue-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {comptes[o.cle]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+                  {o.texte}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs tabular-nums ${
+                      actif ? "bg-white/20 text-white" : "bg-background/60 text-muted-foreground"
+                    }`}
+                  >
+                    {comptes[o.cle]}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Recherche, tri et filtres */}
         <div className="mb-4 space-y-3">
@@ -684,6 +804,8 @@ export default function ManageGarages() {
                 onChange={(e) => { setRecherche(e.target.value); setPage(1); }}
               />
             </div>
+            {/* En vue de travail le tri est imposé : le plus ancien d'abord. */}
+            {!enTravail && (
             <Select value={tri} onValueChange={(v) => { setTri(v as Tri); setPage(1); }}>
               <SelectTrigger className="w-[230px] bg-background">
                 <ArrowUpDown className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -696,9 +818,39 @@ export default function ManageGarages() {
                 <SelectItem value="demarches">Plus de démarches</SelectItem>
               </SelectContent>
             </Select>
+            )}
+            {enTravail && (
+              <p className="self-center text-sm text-muted-foreground">Le plus ancien d'abord</p>
+            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
+            <Button
+              variant={filtresActifs > 0 ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8"
+              onClick={() => setFiltresOuverts((v) => !v)}
+            >
+              <SlidersHorizontal className="mr-2 h-4 w-4" />
+              Filtres
+              {filtresActifs > 0 && (
+                <span className="ml-2 rounded-full bg-background/70 px-2 py-0.5 text-xs tabular-nums">
+                  {filtresActifs}
+                </span>
+              )}
+            </Button>
+            {(filtresActifs > 0 || recherche) && (
+              <>
+                <span className="text-sm text-muted-foreground">
+                  {filtres.length} garage{filtres.length > 1 ? "s" : ""}
+                </span>
+                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground" onClick={() => { reinitialiser(); setPage(1); }}>
+                  Tout effacer
+                </Button>
+              </>
+            )}
+          </div>
+
+          <div className={`flex-wrap items-center gap-2 ${filtresOuverts || filtresActifs > 0 ? "flex" : "hidden"}`}>
             <FiltreActivite
               choix={activite}
               periode={activitePeriode}
@@ -729,16 +881,6 @@ export default function ManageGarages() {
               options={departements.map((d) => ({ valeur: d, texte: d }))}
               defilant
             />
-            {(filtresActifs > 0 || recherche) && (
-              <>
-                <span className="ml-1 text-sm text-muted-foreground">
-                  {filtres.length} garage{filtres.length > 1 ? "s" : ""}
-                </span>
-                <Button variant="ghost" size="sm" className="h-8 px-2 text-muted-foreground" onClick={() => { reinitialiser(); setPage(1); }}>
-                  Tout effacer
-                </Button>
-              </>
-            )}
           </div>
         </div>
 
@@ -753,12 +895,20 @@ export default function ManageGarages() {
                   <TableRow>
                     <TableHead>Garage</TableHead>
                     <TableHead>Contact</TableHead>
-                    <TableHead>Inscrit le</TableHead>
-                    {onglet === "a_verifier" && <TableHead>Demande le</TableHead>}
-                    <TableHead>Dernière démarche</TableHead>
-                    <TableHead className="text-right">Dépensé</TableHead>
-                    <TableHead className="text-right">Démarches</TableHead>
-                    <TableHead className="text-right">Solde</TableHead>
+                    {enTravail ? (
+                      <>
+                        <TableHead>Ce qui attend</TableHead>
+                        <TableHead>Depuis</TableHead>
+                      </>
+                    ) : (
+                      <>
+                        <TableHead>Inscrit le</TableHead>
+                        <TableHead>Dernière démarche</TableHead>
+                        <TableHead className="text-right">Dépensé</TableHead>
+                        <TableHead className="text-right">Démarches</TableHead>
+                        <TableHead className="text-right">Solde</TableHead>
+                      </>
+                    )}
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -777,21 +927,29 @@ export default function ManageGarages() {
                           <p>{g.telephone || "—"}</p>
                           <p className="text-xs text-muted-foreground">{g.email}</p>
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(g.created_at)}</TableCell>
-                        {onglet === "a_verifier" && (
-                          <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(g.verification_requested_at)}</TableCell>
+                        {enTravail ? (
+                          <>
+                            <TableCell className="whitespace-nowrap text-sm">{attenteDe(g).texte}</TableCell>
+                            <TableCell className="whitespace-nowrap text-sm tabular-nums">
+                              {jour(attenteDe(g).depuis)}
+                            </TableCell>
+                          </>
+                        ) : (
+                          <>
+                            <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(g.created_at)}</TableCell>
+                            <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(st?.derniere_demarche)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatPrice(st?.total || 0)} €</TableCell>
+                            <TableCell className="text-right tabular-nums">{st?.nb_demarches || 0}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatPrice(Number(g.token_balance) || 0)} €</TableCell>
+                          </>
                         )}
-                        <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(st?.derniere_demarche)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatPrice(st?.total || 0)} €</TableCell>
-                        <TableCell className="text-right tabular-nums">{st?.nb_demarches || 0}</TableCell>
-                        <TableCell className="text-right tabular-nums">{formatPrice(Number(g.token_balance) || 0)} €</TableCell>
                         <TableCell className="text-right">
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={(e) => { e.stopPropagation(); navigate(`/admin/garages/${g.id}`); }}
                           >
-                            <Eye className="h-4 w-4 mr-1" />
+                            <Eye className="mr-1 h-4 w-4" />
                             Voir
                           </Button>
                         </TableCell>

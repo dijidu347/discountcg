@@ -28,21 +28,32 @@ export function kbisEncoreValable(dateEmission: string | null | undefined): bool
   return fin > new Date();
 }
 
+export interface AttenteKbis {
+  /** Depuis quand la plus ancienne de ses pièces attend. */
+  depuis: string;
+  /** Combien de pièces, car un garage sans réponse redépose. */
+  nb: number;
+}
+
 /**
  * Les garages dont un Kbis attend une date saisie à la main — et eux seuls :
  * ceux qui ont déjà un Kbis valable en sont exclus.
+ *
+ * Renvoie aussi depuis quand ils attendent, pour que la liste puisse se
+ * trier par le plus ancien plutôt que par la dépense.
  */
-export async function garagesAvecKbisADater(): Promise<Set<string>> {
+export async function garagesAvecKbisADater(): Promise<Map<string, AttenteKbis>> {
   const { data: sansDate } = await supabase
     .from("verification_documents")
-    .select("garage_id")
+    .select("garage_id, created_at")
     .eq("status", "pending")
     .ilike("document_type", "%kbis%")
     .not("lu_le", "is", null)
     .is("date_emission", null);
 
-  const candidats = [...new Set((sansDate || []).map((d) => d.garage_id))];
-  if (!candidats.length) return new Set();
+  const enAttente = sansDate || [];
+  const candidats = [...new Set(enAttente.map((d) => d.garage_id))];
+  if (!candidats.length) return new Map();
 
   const { data: valables } = await supabase
     .from("verification_documents")
@@ -58,5 +69,14 @@ export async function garagesAvecKbisADater(): Promise<Set<string>> {
       .map((d) => d.garage_id),
   );
 
-  return new Set(candidats.filter((id) => !enRegle.has(id)));
+  const parGarage = new Map<string, AttenteKbis>();
+  for (const d of enAttente) {
+    if (enRegle.has(d.garage_id)) continue;
+    const vu = parGarage.get(d.garage_id);
+    parGarage.set(d.garage_id, {
+      depuis: vu && vu.depuis < d.created_at ? vu.depuis : d.created_at,
+      nb: (vu?.nb ?? 0) + 1,
+    });
+  }
+  return parGarage;
 }
