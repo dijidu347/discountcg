@@ -102,7 +102,6 @@ export function GarageVerificationPanel({
   const [idChoisi, setIdChoisi] = useState<string | null>(null);
   const [classeOuvert, setClasseOuvert] = useState(false);
   const [refus, setRefus] = useState<DocumentRefuse[]>([]);
-  const [typeAUploader, setTypeAUploader] = useState("kbis");
   const [activeTab, setActiveTab] = useState("documents");
 
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
@@ -186,45 +185,26 @@ export function GarageVerificationPanel({
   const nomDuType = (code: string) =>
     requiredDocs.find((r) => r.code === code)?.nom_document ?? code;
 
-  // Un Kbis approuve, date, et encore dans ses six mois : la preuve que le
-  // garage est en regle. Elle decide du sort des autres lignes.
-  const kbisValableApprouve = verificationDocs.some((d) => {
-    if (d.document_type !== "kbis" || d.status !== "approved" || !d.date_emission) return false;
-    const fin = new Date(d.date_emission);
-    fin.setMonth(fin.getMonth() + 6);
-    return fin > new Date();
-  });
+  // Une rubrique par pièce exigée, ses dépôts du plus récent au plus ancien.
+  // Une rubrique sans dépôt reste affichée : « rien n'a été déposé » est une
+  // information, pas une absence d'information.
+  const rubriques = requiredDocs
+    .filter((r) => r.actif)
+    .map((r) => ({
+      code: r.code,
+      nom: r.nom_document,
+      obligatoire: r.obligatoire,
+      docs: verificationDocs
+        .filter((d) => d.document_type === r.code)
+        .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
+    }));
 
-  // Trois sorts possibles pour une piece, nommes par le geste qu'ils appellent.
-  //
-  // « Date a saisir » ne vaut que si le garage n'a pas deja un Kbis valable.
-  // Sinon la ligne non datee n'est pas une date a recopier : c'est un doublon,
-  // ou une piece deposee au mauvais endroit — PG AUTO SERVICES avait mis ses
-  // statuts dans l'emplacement Kbis avant de deposer le bon document vingt
-  // minutes plus tard. Il n'y a rien a lire dessus, juste a la retirer.
-  const sortDuDocument = (doc: any): "a_dater" | "a_controler" | "classe" => {
-    if (doc.status !== "pending") return "classe";
-    const sansDate = doc.document_type === "kbis" && doc.lu_le && !doc.date_emission;
-    if (sansDate && !kbisValableApprouve) return "a_dater";
-    return "a_controler";
-  };
-
-  const GROUPES = [
-    { cle: "a_dater" as const, titre: "Date à saisir" },
-    { cle: "a_controler" as const, titre: "À contrôler" },
-    { cle: "classe" as const, titre: "Classé" },
-  ];
-
-  const parGroupe = {
-    a_dater: verificationDocs.filter((d) => sortDuDocument(d) === "a_dater"),
-    a_controler: verificationDocs.filter((d) => sortDuDocument(d) === "a_controler"),
-    classe: verificationDocs.filter((d) => sortDuDocument(d) === "classe"),
-  };
-
-  // Pieces requises dont rien n'est arrive : ce que le garage doit encore faire.
-  const manquants = requiredDocs.filter(
-    (r) => r.actif && !verificationDocs.some((d) => d.document_type === r.code),
+  // Déposées sous d'anciennes exigences — les mandats d'avant le 21 septembre
+  // 2026. Elles ne disparaissent pas, elles cessent d'occuper le premier plan.
+  const autresPieces = verificationDocs.filter(
+    (d) => !requiredDocs.some((r) => r.actif && r.code === d.document_type),
   );
+
 
   const docChoisi = verificationDocs.find((d) => d.id === idChoisi) ?? null;
 
@@ -243,7 +223,13 @@ export function GarageVerificationPanel({
   useEffect(() => {
     if (!verificationDocs.length) return;
     if (idChoisi && verificationDocs.some((d) => d.id === idChoisi)) return;
-    const premier = parGroupe.a_dater[0] ?? parGroupe.a_controler[0] ?? verificationDocs[0];
+    // La premiere piece qui attend un geste : une date a saisir d'abord, un
+    // controle ensuite, a defaut la plus recente.
+    const aDater = verificationDocs.find(
+      (d) => d.status === "pending" && d.document_type === "kbis" && d.lu_le && !d.date_emission,
+    );
+    const aControler = verificationDocs.find((d) => d.status === "pending");
+    const premier = aDater ?? aControler ?? verificationDocs[0];
     setIdChoisi(premier?.id ?? null);
   }, [verificationDocs]);
 
@@ -674,11 +660,189 @@ export function GarageVerificationPanel({
           </TabsList>
 
           <TabsContent value="documents" className="mt-4">
-            {/* Deux colonnes : la pièce à gauche, le verdict à droite. Le
-                travail consiste à lire un papier puis à en tirer une
-                conclusion ; tant que les deux n'étaient pas à l'écran en même
-                temps, chaque document coûtait un aller-retour de mémoire. */}
-            <div className="grid gap-4 xl:grid-cols-[1fr_minmax(340px,400px)]">
+            {/* Une seule liste, un grand lecteur.
+                Il y avait trois blocs empilés — les pièces classées, celles
+                attendues du garage, puis une carte d'action détachée qui
+                répétait le nom du document déjà surligné deux lignes plus haut.
+                Désormais : une ligne par pièce obligatoire, présente qu'elle
+                soit déposée ou non, et l'action à l'intérieur de la ligne. */}
+            <div className="grid gap-4 xl:grid-cols-[minmax(280px,320px)_1fr]">
+              <div className="space-y-2">
+                {rubriques.map((r) => {
+                  const ouverte = r.docs.some((d) => d.id === idChoisi);
+                  return (
+                    <div
+                      key={r.code}
+                      className={`rounded-lg border transition-colors ${
+                        ouverte ? "border-primary ring-1 ring-primary" : ""
+                      } ${r.docs.length === 0 ? "border-dashed bg-muted/30" : ""}`}
+                    >
+                      <button
+                        type="button"
+                        disabled={r.docs.length === 0}
+                        onClick={() => setIdChoisi(r.docs[0]?.id ?? null)}
+                        className="flex w-full items-start justify-between gap-2 p-3 text-left disabled:cursor-default"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{r.nom}</p>
+                          {r.docs.length === 0 ? (
+                            <p className="text-xs text-muted-foreground">
+                              {r.obligatoire ? "Obligatoire — rien n'a été déposé" : "Rien n'a été déposé"}
+                            </p>
+                          ) : (
+                            <p className="truncate text-xs text-muted-foreground">
+                              {r.docs[0].nom_fichier} · {format(new Date(r.docs[0].created_at), "dd/MM/yyyy", { locale: fr })}
+                            </p>
+                          )}
+                        </div>
+                        {r.docs.length > 0 && <EtatDocument doc={r.docs[0]} kbisPerime={kbisPerime} />}
+                      </button>
+
+                      {/* Les dépôts plus anciens du même type, repliés derrière
+                          la pièce en cours : ils n'ont pas à occuper une ligne
+                          chacun tant qu'on ne les cherche pas. */}
+                      {ouverte && r.docs.length > 1 && (
+                        <div className="border-t px-3 py-2">
+                          <p className="mb-1 text-xs text-muted-foreground">
+                            Dépôts précédents ({r.docs.length - 1})
+                          </p>
+                          {r.docs.slice(1).map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => setIdChoisi(d.id)}
+                              className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-xs hover:bg-muted ${
+                                d.id === idChoisi ? "bg-muted font-medium" : ""
+                              }`}
+                            >
+                              <span className="truncate">
+                                {format(new Date(d.created_at), "dd/MM/yyyy", { locale: fr })} · {d.nom_fichier}
+                              </span>
+                              <EtatDocument doc={d} kbisPerime={kbisPerime} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* L'action dans la ligne, jamais ailleurs. */}
+                      {ouverte && docChoisi && (
+                        <div className="space-y-3 border-t p-3">
+                          {docChoisi.document_type === "kbis" && (
+                            <div className="space-y-1">
+                              <Label htmlFor="date-kbis" className="text-xs">Date de délivrance</Label>
+                              <Input
+                                id="date-kbis"
+                                type="date"
+                                className={`h-8 ${!docChoisi.date_emission ? "border-yellow-500 ring-1 ring-yellow-500" : ""}`}
+                                defaultValue={docChoisi.date_emission ?? ""}
+                                onChange={(e) => enregistrerDateKbis(docChoisi.id, e.target.value)}
+                              />
+                              <p className="text-xs text-muted-foreground">
+                                {docChoisi.date_emission
+                                  ? ageDuKbis(docChoisi.date_emission)?.texte
+                                  : docChoisi.lu_le
+                                  ? "La lecture automatique n'a pas trouvé la date : recopiez-la."
+                                  : "Pas encore lu automatiquement."}
+                              </p>
+                              {docChoisi.activite && (
+                                <p className="text-xs text-muted-foreground">
+                                  Activité lue : « {docChoisi.activite} »
+                                </p>
+                              )}
+                            </div>
+                          )}
+
+                          <div className="flex flex-wrap gap-2">
+                            {docChoisi.status !== "approved" && (
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                disabled={docChoisi.document_type === "kbis" && !docChoisi.date_emission}
+                                title={
+                                  docChoisi.document_type === "kbis" && !docChoisi.date_emission
+                                    ? "Saisissez d'abord la date de délivrance"
+                                    : undefined
+                                }
+                                onClick={() => handleSingleApprove(docChoisi.id)}
+                              >
+                                <CheckCircle className="mr-2 h-4 w-4" />
+                                Accepter
+                              </Button>
+                            )}
+                            <RefuserDocumentBouton doc={docChoisi} onRefuse={refuserDoc} />
+                            <SupprimerDocumentBouton doc={docChoisi} onSupprime={supprimerDoc} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Déposer à la place du garage : à l'endroit où la pièce
+                          manque, plutôt qu'un bouton répété sous chaque carte. */}
+                      {r.docs.length === 0 && (
+                        <div className="border-t px-3 py-2">
+                          <button
+                            type="button"
+                            className="text-xs text-primary hover:underline"
+                            onClick={() => {
+                              setUploadingDocType(r.code);
+                              adminFileInputRef.current?.click();
+                            }}
+                          >
+                            Déposer à la place du garage
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {autresPieces.length > 0 && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setClasseOuvert((v) => !v)}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Pièces d'anciennes exigences ({autresPieces.length}) — {classeOuvert ? "masquer" : "afficher"}
+                    </button>
+                    {classeOuvert && (
+                      <div className="mt-2 space-y-1">
+                        {autresPieces.map((d) => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => setIdChoisi(d.id)}
+                            className={`flex w-full items-center justify-between gap-2 rounded border px-2 py-1.5 text-left text-xs ${
+                              d.id === idChoisi ? "border-primary bg-muted" : "hover:bg-muted/50"
+                            }`}
+                          >
+                            <span className="truncate">{nomDuType(d.document_type)} · {d.nom_fichier}</span>
+                            <EtatDocument doc={d} kbisPerime={kbisPerime} />
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {refus.length > 0 && (
+                  <div className="space-y-2 border-t pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground">
+                      Refusés ({refus.length})
+                    </p>
+                    {refus.map((r) => (
+                      <div key={r.id} className="rounded border border-dashed p-2">
+                        <p className="truncate text-xs font-medium">{r.nom_fichier}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {nomDuType(r.document_type)} · refusé le{" "}
+                          {format(new Date(r.refuse_le), "dd/MM/yyyy", { locale: fr })}
+                        </p>
+                        <p className="mt-1 text-xs text-destructive">{r.raison}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="xl:sticky xl:top-4 xl:self-start">
                 {docChoisi ? (
                   <>
@@ -692,209 +856,14 @@ export function GarageVerificationPanel({
                       key={docChoisi.id}
                       documentUrl={docChoisi.url}
                       nomFichier={docChoisi.nom_fichier}
+                      className="h-[72vh]"
                     />
                   </>
                 ) : (
-                  <div className="flex h-[70vh] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-                    Choisissez une pièce à droite pour l'afficher ici.
+                  <div className="flex h-[72vh] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                    Choisissez une pièce à gauche pour l'afficher ici.
                   </div>
                 )}
-              </div>
-
-              <div className="space-y-4">
-                {GROUPES.map((groupe) => {
-                  const docs = parGroupe[groupe.cle];
-                  if (!docs.length) return null;
-                  const replie = groupe.cle === "classe" && !classeOuvert;
-                  return (
-                    <div key={groupe.cle} className="space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => groupe.cle === "classe" && setClasseOuvert((v) => !v)}
-                          className={`text-sm font-semibold ${groupe.cle === "classe" ? "text-muted-foreground hover:text-foreground" : "text-foreground"}`}
-                        >
-                          {groupe.titre} ({docs.length})
-                          {groupe.cle === "classe" && (replie ? " — afficher" : " — masquer")}
-                        </button>
-                        {groupe.cle === "a_controler" && docs.length > 1 && (
-                          <Button size="sm" variant="outline" onClick={() => handleBulkApprove(docs.map((d) => d.id))}>
-                            Tout approuver
-                          </Button>
-                        )}
-                      </div>
-                      {!replie && docs.map((doc) => {
-                        const actif = docChoisi?.id === doc.id;
-                        return (
-                          <button
-                            key={doc.id}
-                            type="button"
-                            onClick={() => setIdChoisi(doc.id)}
-                            className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                              actif
-                                ? "border-primary bg-primary/5 ring-1 ring-primary"
-                                : "hover:bg-muted/50"
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0">
-                                <p className="truncate text-sm font-medium">{nomDuType(doc.document_type)}</p>
-                                <p className="truncate text-xs text-muted-foreground">{doc.nom_fichier}</p>
-                              </div>
-                              <EtatDocument doc={doc} kbisPerime={kbisPerime} />
-                            </div>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {format(new Date(doc.created_at), "dd/MM/yyyy", { locale: fr })}
-                              {doc.document_type === "kbis" && doc.date_emission && (
-                                <> · délivré le {format(new Date(doc.date_emission), "dd/MM/yyyy", { locale: fr })}</>
-                              )}
-                            </p>
-                            {doc.rejection_reason && (
-                              <p className="mt-1 text-xs text-destructive">Refus : {doc.rejection_reason}</p>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })}
-
-                {manquants.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-semibold">Attendu du garage ({manquants.length})</p>
-                    {manquants.map((reqDoc) => (
-                      <div key={reqDoc.id} className="rounded-lg border border-dashed p-3">
-                        <p className="text-sm font-medium">{reqDoc.nom_document}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {reqDoc.obligatoire ? "Obligatoire — rien n'a été déposé" : "Optionnel — rien n'a été déposé"}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Le verdict de la pièce choisie, sous la liste : les champs
-                    relevés par la lecture automatique, puis les trois issues. */}
-                {docChoisi && (
-                  <Card className="space-y-3 border-primary/40 p-4">
-                    <div>
-                      <p className="text-sm font-semibold">{nomDuType(docChoisi.document_type)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Déposé le {format(new Date(docChoisi.created_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
-                      </p>
-                    </div>
-
-                    {docChoisi.document_type === "kbis" && (
-                      <div className="space-y-2">
-                        <Label htmlFor="date-kbis" className="text-xs">Date de délivrance</Label>
-                        <Input
-                          id="date-kbis"
-                          type="date"
-                          autoFocus={!docChoisi.date_emission}
-                          className={!docChoisi.date_emission ? "border-yellow-500 ring-1 ring-yellow-500" : ""}
-                          defaultValue={docChoisi.date_emission ?? ""}
-                          onChange={(e) => enregistrerDateKbis(docChoisi.id, e.target.value)}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          {docChoisi.date_emission
-                            ? ageDuKbis(docChoisi.date_emission)?.texte
-                            : docChoisi.lu_le
-                            ? "La lecture automatique n'a pas trouvé la date : recopiez-la sur le document."
-                            : "Pas encore lu automatiquement."}
-                        </p>
-                        {docChoisi.activite && (
-                          <p className="text-xs text-muted-foreground">Activité lue : « {docChoisi.activite} »</p>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {docChoisi.status !== "approved" && (
-                        <Button
-                          size="sm"
-                          className="bg-green-600 hover:bg-green-700"
-                          disabled={docChoisi.document_type === "kbis" && !docChoisi.date_emission}
-                          title={
-                            docChoisi.document_type === "kbis" && !docChoisi.date_emission
-                              ? "Saisissez d'abord la date de délivrance"
-                              : undefined
-                          }
-                          onClick={() => handleSingleApprove(docChoisi.id)}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Accepter
-                        </Button>
-                      )}
-                      <RefuserDocumentBouton doc={docChoisi} onRefuse={refuserDoc} />
-                      <SupprimerDocumentBouton doc={docChoisi} onSupprime={supprimerDoc} />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      « Refuser » écrit au garage, retire la pièce du dossier et la conserve dans
-                      l'historique ci-dessous. « Supprimer » ne garde rien et ne dit rien : c'est pour
-                      les doublons.
-                      {docChoisi.document_type === "kbis" && !docChoisi.date_emission && (
-                        <>
-                          {" "}
-                          <span className="font-medium text-foreground">
-                            Un Kbis ne peut pas être accepté sans sa date de délivrance :
-                          </span>{" "}
-                          sans elle, les six mois repartiraient du dépôt et la validité serait
-                          surestimée.
-                        </>
-                      )}
-                    </p>
-                  </Card>
-                )}
-
-                {refus.length > 0 && (
-                  <div className="space-y-2 border-t pt-3">
-                    <p className="text-sm font-semibold text-muted-foreground">
-                      Refusés ({refus.length})
-                    </p>
-                    {refus.map((r) => (
-                      <div key={r.id} className="rounded-lg border border-dashed p-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="truncate text-sm font-medium">{r.nom_fichier}</p>
-                          <span className="shrink-0 text-xs text-muted-foreground">
-                            {format(new Date(r.refuse_le), "dd/MM/yyyy", { locale: fr })}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {nomDuType(r.document_type)} · déposé le{" "}
-                          {format(new Date(r.depose_le), "dd/MM/yyyy", { locale: fr })}
-                        </p>
-                        <p className="mt-1 text-xs text-destructive">{r.raison}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="border-t pt-3">
-                  <Label className="text-xs text-muted-foreground">Déposer une pièce à la place du garage</Label>
-                  <div className="mt-2 flex gap-2">
-                    <select
-                      className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"
-                      value={typeAUploader}
-                      onChange={(e) => setTypeAUploader(e.target.value)}
-                    >
-                      {requiredDocs.filter((d) => d.actif).map((d) => (
-                        <option key={d.id} value={d.code}>{d.nom_document}</option>
-                      ))}
-                    </select>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setUploadingDocType(typeAUploader);
-                        adminFileInputRef.current?.click();
-                      }}
-                    >
-                      <Upload className="mr-2 h-4 w-4" />
-                      Déposer
-                    </Button>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Approuvé d'office, sans contrôle.</p>
-                </div>
               </div>
             </div>
           </TabsContent>

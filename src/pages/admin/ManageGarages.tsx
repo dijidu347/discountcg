@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
+import { RetirerBadgesManquants } from "@/components/admin/RetirerBadgesManquants";
 import { chargerAttentesKbis, garagesSansPieceObligatoire, type AttenteKbis } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -726,10 +727,13 @@ export default function ManageGarages() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour
           </Button>
-          <Button variant="outline" onClick={() => setShowManageDocsDialog(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Gérer les documents requis
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <RetirerBadgesManquants onTermine={loadGarages} />
+            <Button variant="outline" onClick={() => setShowManageDocsDialog(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Gérer les documents requis
+            </Button>
+          </div>
         </div>
 
         <h1 className="mb-4 text-3xl font-bold">Garages</h1>

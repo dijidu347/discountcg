@@ -134,15 +134,27 @@ export async function garagesAvecKbisADater(
  * On ne leur retire pas leur badge — ils travaillent — mais ils doivent
  * apparaître quelque part.
  */
+export interface PieceManquante {
+  /** Les pièces obligatoires sans document approuvé. */
+  manquantes: string[];
+  /** Parmi elles, celles dont un document attend déjà NOTRE examen. */
+  enAttenteDeNous: string[];
+}
+
 export async function garagesSansPieceObligatoire(): Promise<Set<string>> {
+  return new Set((await detailPiecesManquantes()).keys());
+}
+
+export async function detailPiecesManquantes(): Promise<Map<string, PieceManquante>> {
   const { data: requis } = await supabase
     .from("garage_verification_required_documents")
-    .select("code")
+    .select("code, nom_document")
     .eq("actif", true)
     .eq("obligatoire", true);
 
   const codes = (requis || []).map((r) => r.code);
-  if (!codes.length) return new Set();
+  const nomDe = new Map((requis || []).map((r) => [r.code, r.nom_document]));
+  if (!codes.length) return new Map();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: garages } = await (supabase as any)
@@ -151,22 +163,33 @@ export async function garagesSansPieceObligatoire(): Promise<Set<string>> {
     .eq("is_verified", true)
     .eq("compte_interne", false);
 
-  const { data: approuves } = await supabase
+  const { data: pieces } = await supabase
     .from("verification_documents")
-    .select("garage_id, document_type")
-    .eq("status", "approved")
+    .select("garage_id, document_type, status")
+    .in("status", ["approved", "pending"])
     .in("document_type", codes);
 
-  const parGarage = new Map<string, Set<string>>();
-  for (const d of approuves || []) {
-    if (!parGarage.has(d.garage_id)) parGarage.set(d.garage_id, new Set());
-    parGarage.get(d.garage_id)!.add(d.document_type);
+  const approuve = new Map<string, Set<string>>();
+  const enAttente = new Map<string, Set<string>>();
+  for (const d of pieces || []) {
+    const cible = d.status === "approved" ? approuve : enAttente;
+    if (!cible.has(d.garage_id)) cible.set(d.garage_id, new Set());
+    cible.get(d.garage_id)!.add(d.document_type);
   }
 
-  const incomplets = new Set<string>();
+  const incomplets = new Map<string, PieceManquante>();
   for (const g of ((garages || []) as { id: string }[])) {
-    const a = parGarage.get(g.id) ?? new Set<string>();
-    if (codes.some((c) => !a.has(c))) incomplets.add(g.id);
+    const a = approuve.get(g.id) ?? new Set<string>();
+    const p = enAttente.get(g.id) ?? new Set<string>();
+    const absents = codes.filter((c) => !a.has(c));
+    if (!absents.length) continue;
+    incomplets.set(g.id, {
+      manquantes: absents.map((c) => nomDe.get(c) ?? c),
+      // Distinction qui change tout dans le message : écrire « il vous manque
+      // le Kbis » à un garage qui l'a déposé il y a un mois et dont personne
+      // n'a ouvert le fichier serait faux, et c'est nous qui sommes en retard.
+      enAttenteDeNous: absents.filter((c) => p.has(c)).map((c) => nomDe.get(c) ?? c),
+    });
   }
   return incomplets;
 }

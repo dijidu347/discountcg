@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Download, ExternalLink, Loader2 } from "lucide-react";
+import { AlertCircle, Download, ExternalLink, Loader2, Minus, Plus } from "lucide-react";
 import {
   getSignedUrl,
   extractBucketFromUrl,
@@ -37,6 +37,10 @@ export function ApercuDocument({
   className = "h-[70vh]",
 }: ApercuDocumentProps) {
   const [lien, setLien] = useState<string | null>(null);
+  // Le zoom est à nous. Le lecteur du navigateur ouvrait un A4 à 45 %, avec un
+  // rail de miniatures pour un document d'une page : illisible, pour la seule
+  // chose qu'on ait à y faire — lire une date et une raison sociale.
+  const [zoom, setZoom] = useState(100);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -97,7 +101,10 @@ export function ApercuDocument({
             // #view=FitH : le lecteur du navigateur cadre la largeur de la page,
             // sans quoi un A4 arrive à 100 % et il faut le recadrer à la main.
             <iframe
-              src={`${lien}#view=FitH`}
+              // toolbar=0 et navpanes=0 retirent la barre d'outils et le rail
+              // de miniatures du navigateur ; FitH cadre la largeur de la page.
+              src={`${lien}#toolbar=0&navpanes=0&view=FitH&zoom=${zoom}`}
+              key={zoom}
               title={nomFichier || "Document"}
               className="h-full w-full border-0 bg-white"
             />
@@ -105,7 +112,8 @@ export function ApercuDocument({
             <img
               src={lien}
               alt={nomFichier || "Document"}
-              className="mx-auto h-full w-auto max-w-full object-contain"
+              style={{ width: `${zoom}%` }}
+              className="mx-auto max-w-none object-contain"
               onError={() => setErreur("Image illisible")}
             />
           )
@@ -113,7 +121,35 @@ export function ApercuDocument({
       </div>
 
       {lien && (
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="mr-auto flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              aria-label="Réduire"
+              onClick={() => setZoom((z) => Math.max(50, z - 25))}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 px-2 text-xs tabular-nums"
+              onClick={() => setZoom(100)}
+            >
+              {zoom} %
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              aria-label="Agrandir"
+              onClick={() => setZoom((z) => Math.min(300, z + 25))}
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
           <Button variant="ghost" size="sm" asChild>
             <a href={lien} target="_blank" rel="noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" />
