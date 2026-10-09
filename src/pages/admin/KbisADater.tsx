@@ -40,6 +40,7 @@ import { fr } from "date-fns/locale";
 interface Ligne {
   id: string;
   garage_id: string;
+  document_type: string;
   nom_fichier: string;
   url: string;
   created_at: string;
@@ -69,7 +70,7 @@ export default function KbisADater() {
 
     const { data: sansDate } = await supabase
       .from("verification_documents")
-      .select("id, garage_id, nom_fichier, url, created_at, lu_le, activite")
+      .select("id, garage_id, document_type, nom_fichier, url, created_at, lu_le, activite")
       .eq("status", "pending")
       .ilike("document_type", "%kbis%")
       .not("lu_le", "is", null)

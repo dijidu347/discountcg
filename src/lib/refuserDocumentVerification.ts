@@ -1,20 +1,38 @@
-// Refuser une pièce, et le dire au garage.
+// Refuser une pièce : la retirer du dossier, et le dire au garage.
 //
-// Trois sorties possibles pour une pièce, et elles ne se valent pas :
-//   — approuver, qui débloque le compte ;
-//   — supprimer, qui ne dit rien à personne, pour les doublons ;
-//   — refuser, qui est une demande adressée au garage : il doit renvoyer
+// Trois sorties possibles, et elles ne se valent pas :
+//   — approuver, qui fait avancer le dossier ;
+//   — supprimer, qui ne garde rien et ne dit rien, pour les doublons ;
+//   — refuser, qui est une demande adressée au garage : il doit redéposer
 //     quelque chose, donc il faut lui dire quoi, et pourquoi.
 //
+// Le refus retire la ligne du dossier vivant. Tant qu'elle y restait, elle
+// comptait comme la dernière pièce de son type et le garage paraissait avoir
+// fourni ce qu'on lui redemandait. Elle part donc dans l'historique — avec son
+// fichier, qui reste dans le stockage : le jour où un garage affirme avoir
+// envoyé son Kbis, un motif écrit ne suffit pas, il faut pouvoir rouvrir ce
+// qu'il avait déposé.
+//
 // Le message compte autant que le refus. « Document refusé » tout court oblige
-// le garage à deviner, et il redépose le même fichier — c'est ce qui s'est
-// passé avec les Kbis illisibles. On exige donc une raison écrite, elle part
-// par email et reste dans l'historique des notifications du garage.
+// à deviner, et le garage redépose le même fichier — c'est exactement ce qui
+// s'est passé avec les Kbis illisibles, cinq fois pour un seul garage.
 
 import { supabase } from "@/integrations/supabase/client";
 
+// types.ts est genere depuis la base et ne connait pas encore la table des
+// refus. On passe par une reference non typee plutot que de semer des `as any`
+// a chaque appel.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const tableDesRefus = () => (supabase as any).from("verification_documents_refuses");
+
 export interface RefusDocument {
-  doc: { id: string; nom_fichier?: string | null };
+  doc: {
+    id: string;
+    document_type: string;
+    nom_fichier?: string | null;
+    url?: string | null;
+    created_at: string;
+  };
   garage: { id: string; email?: string | null; raison_sociale?: string | null };
   /** L'administrateur qui refuse. */
   parUtilisateur?: string;
@@ -31,17 +49,32 @@ export async function refuserDocumentVerification({
   const texte = raison.trim();
   if (!texte) return { ok: false, message: "Une raison est nécessaire", emailEnvoye: false };
 
-  const { error } = await supabase
+  // L'historique d'abord : si l'écriture échoue, la pièce est toujours là et
+  // rien n'est perdu. L'inverse laisserait un document effacé sans trace.
+  const { error: erreurHistorique } = await tableDesRefus()
+    .insert({
+      document_id: doc.id,
+      garage_id: garage.id,
+      document_type: doc.document_type,
+      nom_fichier: doc.nom_fichier,
+      url: doc.url,
+      depose_le: doc.created_at,
+      refuse_par: parUtilisateur,
+      raison: texte,
+    });
+
+  if (erreurHistorique) {
+    return { ok: false, message: erreurHistorique.message, emailEnvoye: false };
+  }
+
+  const { error: erreurSuppression } = await supabase
     .from("verification_documents")
-    .update({
-      status: "rejected",
-      rejection_reason: texte,
-      validated_by: parUtilisateur,
-      validated_at: new Date().toISOString(),
-    })
+    .delete()
     .eq("id", doc.id);
 
-  if (error) return { ok: false, message: error.message, emailEnvoye: false };
+  if (erreurSuppression) {
+    return { ok: false, message: erreurSuppression.message, emailEnvoye: false };
+  }
 
   const sujet = "Document refusé - Action requise";
   const corps =
@@ -56,9 +89,10 @@ export async function refuserDocumentVerification({
     message: corps,
   });
 
-  // L'email peut échouer sans que le refus soit perdu : la pièce est déjà
-  // marquée, et la notification est dans l'historique. On remonte seulement
-  // l'information, pour que l'écran puisse le dire plutôt que le taire.
+  // L'email peut échouer sans que le refus soit perdu : la pièce est retirée,
+  // l'historique est écrit, la notification est dans l'espace du garage. On
+  // remonte seulement l'information, pour que l'écran puisse le dire plutôt
+  // que de laisser croire que le garage a été prévenu.
   const { error: erreurEmail } = await supabase.functions.invoke("send-email", {
     body: {
       type: "custom_notification",
@@ -72,4 +106,22 @@ export async function refuserDocumentVerification({
   });
 
   return { ok: true, emailEnvoye: !erreurEmail };
+}
+
+export interface DocumentRefuse {
+  id: string;
+  document_type: string;
+  nom_fichier: string | null;
+  url: string | null;
+  depose_le: string;
+  refuse_le: string;
+  raison: string;
+}
+
+export async function historiqueDesRefus(garageId: string): Promise<DocumentRefuse[]> {
+  const { data } = await tableDesRefus()
+    .select("id, document_type, nom_fichier, url, depose_le, refuse_le, raison")
+    .eq("garage_id", garageId)
+    .order("refuse_le", { ascending: false });
+  return (data as DocumentRefuse[]) ?? [];
 }

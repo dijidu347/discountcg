@@ -18,8 +18,9 @@ import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload,
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
-import { EtatDocument, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
+import { EtatDocument, RefuserDocumentBouton, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
 import { supprimerDocumentVerification } from "@/lib/supprimerDocumentVerification";
+import { refuserDocumentVerification, historiqueDesRefus, type DocumentRefuse } from "@/lib/refuserDocumentVerification";
 import {
   Dialog,
   DialogContent,
@@ -100,6 +101,7 @@ export function GarageVerificationPanel({
   // La piece affichee dans la colonne de gauche.
   const [idChoisi, setIdChoisi] = useState<string | null>(null);
   const [classeOuvert, setClasseOuvert] = useState(false);
+  const [refus, setRefus] = useState<DocumentRefuse[]>([]);
   const [typeAUploader, setTypeAUploader] = useState("kbis");
   const [activeTab, setActiveTab] = useState("documents");
 
@@ -130,6 +132,7 @@ export function GarageVerificationPanel({
     if (garage?.id) {
       loadVerificationDocs(garage.id);
       loadNotificationHistory(garage.id);
+      historiqueDesRefus(garage.id).then(setRefus);
     }
   }, [garage?.id]);
 
@@ -235,6 +238,30 @@ export function GarageVerificationPanel({
     setIdChoisi(premier?.id ?? null);
   }, [verificationDocs]);
 
+  const refuserDoc = async (doc: any, raison: string) => {
+    const { ok, message, emailEnvoye } = await refuserDocumentVerification({
+      doc,
+      garage,
+      parUtilisateur: user?.id,
+      raison,
+    });
+    if (!ok) {
+      toast({ title: "Refus impossible", description: message, variant: "destructive" });
+      return;
+    }
+    if (doc.id === idChoisi) setIdChoisi(null);
+    toast({
+      title: "Document refusé",
+      description: emailEnvoye
+        ? "Le garage a été prévenu par email."
+        : "Le garage retrouvera le message dans son espace — l'email, lui, n'est pas parti.",
+      variant: emailEnvoye ? undefined : "destructive",
+    });
+    await loadVerificationDocs(garage.id);
+    await loadNotificationHistory(garage.id);
+    setRefus(await historiqueDesRefus(garage.id));
+  };
+
   const supprimerDoc = async (doc: any) => {
     const { ok, message, fichierRestant } = await supprimerDocumentVerification(doc);
     if (!ok) {
@@ -334,47 +361,6 @@ export function GarageVerificationPanel({
     }
   };
 
-  const handleSingleReject = async (docId: string, reason: string) => {
-    try {
-      const { error } = await supabase
-        .from("verification_documents")
-        .update({
-          status: "rejected",
-          rejection_reason: reason,
-          validated_by: user?.id,
-          validated_at: new Date().toISOString(),
-        })
-        .eq("id", docId);
-
-      if (error) throw error;
-
-      await supabase.from("garage_verification_notifications").insert({
-        garage_id: garage.id,
-        sent_by: user?.id,
-        subject: "Document refusé - Action requise",
-        message: `Un document a été refusé.\n\nRaison: ${reason}\n\nVeuillez renvoyer le document corrigé.`,
-      });
-
-      await supabase.functions.invoke("send-email", {
-        body: {
-          type: "custom_notification",
-          to: garage.email,
-          data: {
-            customerName: garage.raison_sociale,
-            subject: "Document refusé - Action requise",
-            message: `Un document a été refusé.\n\nRaison: ${reason}\n\nVeuillez renvoyer le document corrigé dans votre espace "Paramètres > Vérification".`,
-          },
-        },
-      });
-
-      toast({ title: "Document refusé", description: "Email envoyé au garage" });
-      await loadVerificationDocs(garage.id);
-      await loadNotificationHistory(garage.id);
-    } catch (error) {
-      console.error("Error:", error);
-      toast({ title: "Erreur", variant: "destructive" });
-    }
-  };
 
   const handleAdminUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -748,7 +734,12 @@ export function GarageVerificationPanel({
                     relevés par la lecture automatique, puis les trois issues. */}
                 {docChoisi && (
                   <Card className="space-y-3 border-primary/40 p-4">
-                    <p className="text-sm font-semibold">{nomDuType(docChoisi.document_type)}</p>
+                    <div>
+                      <p className="text-sm font-semibold">{nomDuType(docChoisi.document_type)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Déposé le {format(new Date(docChoisi.created_at), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                      </p>
+                    </div>
 
                     {docChoisi.document_type === "kbis" && (
                       <div className="space-y-2">
@@ -775,26 +766,64 @@ export function GarageVerificationPanel({
                     )}
 
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {(docChoisi.status === "pending" || docChoisi.status === "rejected") && (
+                      {docChoisi.status !== "approved" && (
                         <Button
                           size="sm"
                           className="bg-green-600 hover:bg-green-700"
+                          disabled={docChoisi.document_type === "kbis" && !docChoisi.date_emission}
+                          title={
+                            docChoisi.document_type === "kbis" && !docChoisi.date_emission
+                              ? "Saisissez d'abord la date de délivrance"
+                              : undefined
+                          }
                           onClick={() => handleSingleApprove(docChoisi.id)}
                         >
                           <CheckCircle className="mr-2 h-4 w-4" />
-                          Approuver
+                          Accepter
                         </Button>
                       )}
-                      {(docChoisi.status === "pending" || docChoisi.status === "approved") && (
-                        <SingleRejectButton doc={docChoisi} onReject={handleSingleReject} />
-                      )}
+                      <RefuserDocumentBouton doc={docChoisi} onRefuse={refuserDoc} />
                       <SupprimerDocumentBouton doc={docChoisi} onSupprime={supprimerDoc} />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      « Refuser » prévient le garage par email et lui demande de renvoyer la pièce.
-                      « Supprimer » ne lui dit rien : c'est pour les doublons.
+                      « Refuser » écrit au garage, retire la pièce du dossier et la conserve dans
+                      l'historique ci-dessous. « Supprimer » ne garde rien et ne dit rien : c'est pour
+                      les doublons.
+                      {docChoisi.document_type === "kbis" && !docChoisi.date_emission && (
+                        <>
+                          {" "}
+                          <span className="font-medium text-foreground">
+                            Un Kbis ne peut pas être accepté sans sa date de délivrance :
+                          </span>{" "}
+                          sans elle, les six mois repartiraient du dépôt et la validité serait
+                          surestimée.
+                        </>
+                      )}
                     </p>
                   </Card>
+                )}
+
+                {refus.length > 0 && (
+                  <div className="space-y-2 border-t pt-3">
+                    <p className="text-sm font-semibold text-muted-foreground">
+                      Refusés ({refus.length})
+                    </p>
+                    {refus.map((r) => (
+                      <div key={r.id} className="rounded-lg border border-dashed p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="truncate text-sm font-medium">{r.nom_fichier}</p>
+                          <span className="shrink-0 text-xs text-muted-foreground">
+                            {format(new Date(r.refuse_le), "dd/MM/yyyy", { locale: fr })}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {nomDuType(r.document_type)} · déposé le{" "}
+                          {format(new Date(r.depose_le), "dd/MM/yyyy", { locale: fr })}
+                        </p>
+                        <p className="mt-1 text-xs text-destructive">{r.raison}</p>
+                      </div>
+                    ))}
+                  </div>
                 )}
 
                 <div className="border-t pt-3">
@@ -1039,56 +1068,3 @@ export function GarageVerificationPanel({
 // Bulk Reject Dialog Component
 
 // Single Reject Button Component
-function SingleRejectButton({
-  doc,
-  onReject,
-}: {
-  doc: any;
-  onReject: (docId: string, reason: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [reason, setReason] = useState("");
-
-  const handleReject = () => {
-    if (reason.trim()) {
-      onReject(doc.id, reason);
-      setOpen(false);
-      setReason("");
-    }
-  };
-
-  return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger asChild>
-        <Button size="sm" variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
-          <XCircle className="mr-2 h-4 w-4" />
-          Refuser
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Refuser ce document</AlertDialogTitle>
-          <AlertDialogDescription>
-            Indiquez la raison du refus. Le garage sera notifié par email.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <Textarea
-          placeholder="Raison du refus..."
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          rows={4}
-        />
-        <AlertDialogFooter>
-          <AlertDialogCancel>Annuler</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={handleReject}
-            disabled={!reason.trim()}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Confirmer le refus
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  );
-}

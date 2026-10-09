@@ -115,10 +115,25 @@ async function revalider(
 
   const { data: garage } = await supabase
     .from("garages")
-    .select("id, raison_sociale, email, siret, is_verified")
+    .select("id, raison_sociale, email, siret, is_verified, kbis_valide_jusqu_au")
     .eq("id", ligne.garage_id)
     .maybeSingle();
-  if (!garage || garage.is_verified) return null;
+  if (!garage) return null;
+
+  // Un garage vérifié garde son badge quinze jours après l'expiration de son
+  // Kbis (voir expiration-kbis-garages). Cette fonction refusait d'agir tant
+  // que le badge était là : le renouvellement déposé pendant ces quinze jours
+  // — le cas le plus courant, puisque c'est l'alerte qui le déclenche —
+  // n'était jamais validé automatiquement et restait en attente d'un geste que
+  // rien ne signalait. Onze dossiers dormaient ainsi.
+  //
+  // On agit donc aussi pour un garage encore vérifié, à condition que son Kbis
+  // soit effectivement périmé : sans quoi on retraiterait chaque dépôt d'un
+  // garage parfaitement à jour.
+  const perime = garage.kbis_valide_jusqu_au
+    ? new Date(garage.kbis_valide_jusqu_au) < new Date()
+    : true;
+  if (garage.is_verified && !perime) return null;
 
   const sirenGarage = String(garage.siret ?? "").replace(/\D/g, "").slice(0, 9);
   if (!sirenGarage || sirenLu.slice(0, 9) !== sirenGarage) return null;
