@@ -72,7 +72,7 @@ const SuiviCommande = () => {
   // Conversion GTM : uniquement quand la base confirme le paiement (paye === true).
   useEffect(() => {
     if (order?.paye === true && trackingNumber) {
-      pushAchatValide(trackingNumber, Number(order.montant_ttc || 0));
+      pushAchatValide(trackingNumber, Number(order.montant_ttc || 0), "particulier");
     }
   }, [order, trackingNumber]);
 

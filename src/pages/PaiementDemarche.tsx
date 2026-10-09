@@ -383,7 +383,7 @@ const PaiementDemarche = () => {
 
   useEffect(() => {
     if (!demarche || demarche.paye || calculatedTotal === null) return;
-    pushPaiementOuvert(String(demarche.id), calculatedTotal);
+    pushPaiementOuvert(String(demarche.id), calculatedTotal, "pro");
   }, [demarche, calculatedTotal]);
 
   // canPayWithBalance est calculé plus bas après le calcul de finalAmount

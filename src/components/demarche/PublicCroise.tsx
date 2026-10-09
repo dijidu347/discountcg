@@ -14,13 +14,8 @@
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Building2, Users } from "lucide-react";
+import { PRO_SEULEMENT, PRO_MAJORITAIRE } from "@/lib/audienceDemarche";
 
-// Démarches que le produit réserve aux professionnels.
-const PRO_SEULEMENT = ["DA", "W_GARAGE"];
-
-// Démarches majoritairement professionnelles à l'usage : sur douze mois, le
-// CPI WW compte 80 dépôts professionnels pour 3 particuliers.
-const PRO_MAJORITAIRE = ["CPI_WW"];
 
 interface PublicCroiseProps {
   code: string;

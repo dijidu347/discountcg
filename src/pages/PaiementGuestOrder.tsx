@@ -289,7 +289,8 @@ const PaiementGuestOrder = () => {
         certificatNonGage: order.certificat_non_gage,
         express: order.express,
         demarcheType: order.demarche_type,
-      })
+      }),
+      "particulier"
     );
   }, [order]);
 

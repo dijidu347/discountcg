@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { audienceDeLaDemarche } from "@/lib/audienceDemarche";
 import { ContenuCession } from "@/components/seo/ContenuCession";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
 import { PublicCroise } from "@/components/demarche/PublicCroise";
@@ -48,7 +49,7 @@ const DemarchePage = () => {
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
-    if (demarche) pushVueDemarche(demarche.code, demarche.shortTitle);
+    if (demarche) pushVueDemarche(demarche.code, demarche.shortTitle, audienceDeLaDemarche(demarche.code));
   }, [demarche]);
 
   const isCG = demarche ? CG_TYPES.includes(demarche.code) : false;

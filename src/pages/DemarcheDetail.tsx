@@ -137,7 +137,7 @@ export default function DemarcheDetail() {
   // Conversion GTM : uniquement quand la base confirme le paiement (paye === true).
   useEffect(() => {
     if (demarche?.paye === true && id) {
-      pushAchatValide(id, Number(demarche.montant_ttc || 0));
+      pushAchatValide(id, Number(demarche.montant_ttc || 0), "pro");
     }
   }, [demarche, id]);
 

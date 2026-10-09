@@ -13,6 +13,8 @@
 // il lui faut quelques dizaines de signaux par semaine, ce qu'une conversion
 // payante ne fournit pas au démarrage.
 
+import type { Audience } from "@/lib/audienceDemarche";
+
 declare global {
   interface Window {
     dataLayer?: any[];
@@ -43,7 +45,7 @@ function arrondi(value: number): number {
 // Purchase — paiement confirmé. Inchangé : deux garde-fous, la mémoire de
 // session et une relecture du dataLayer courant, parce qu'un même achat peut
 // être poussé depuis deux pages différentes.
-export function pushAchatValide(transactionId: string, value: number) {
+export function pushAchatValide(transactionId: string, value: number, audience: Audience) {
   if (typeof window === "undefined") return;
   if (!transactionId || !montantValide(value)) return;
   if (dejaPousses.has(`achat:${transactionId}`)) return;
@@ -61,40 +63,45 @@ export function pushAchatValide(transactionId: string, value: number) {
     value: arrondi(value),
     currency: "EUR",
     transaction_id: transactionId,
+    audience,
   });
 }
 
 // InitiateCheckout — le client arrive sur le paiement, montant connu. C'est le
 // signal qui portera l'optimisation les premières semaines : même ordre de
 // grandeur que l'achat, mais plusieurs fois plus fréquent.
-export function pushPaiementOuvert(commandeId: string, value: number) {
+export function pushPaiementOuvert(commandeId: string, value: number, audience: Audience) {
   if (!commandeId || !montantValide(value)) return;
   pousserUneFois(`paiement:${commandeId}`, {
     event: "paiement_ouvert",
     value: arrondi(value),
     currency: "EUR",
     transaction_id: commandeId,
+    audience,
   });
 }
 
 // Lead — une simulation a abouti à un prix. Le visiteur a saisi sa plaque et vu
 // un montant : il est qualifié, même s'il ne commande pas aujourd'hui.
 export function pushSimulationTerminee(code: string, value?: number) {
+  const audience: Audience = "particulier"; // le simulateur est le parcours grand public
   if (!code) return;
   pousserUneFois(`simulation:${code}:${montantValide(value) ? arrondi(value) : "0"}`, {
     event: "simulation_terminee",
     demarche: code,
+    audience,
     ...(montantValide(value) ? { value: arrondi(value), currency: "EUR" } : {}),
   });
 }
 
 // ViewContent — consultation d'une page démarche. Le plus fréquent des quatre ;
 // il sert surtout à constituer les audiences de reciblage.
-export function pushVueDemarche(code: string, nom: string) {
+export function pushVueDemarche(code: string, nom: string, audience: Audience) {
   if (!code) return;
   pousserUneFois(`vue:${code}`, {
     event: "vue_demarche",
     demarche: code,
     demarche_nom: nom,
+    audience,
   });
 }
