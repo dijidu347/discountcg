@@ -2740,7 +2740,11 @@ export type Database = {
           cible_id: string
           contact_email: string
           contact_nom: string
+          demarche_libelle: string
           dernier_message: string
+          dossier_depuis: string
+          dossier_montant: number
+          dossier_statut: string
           etat: string
           garage_id: string
           recu_le: string
