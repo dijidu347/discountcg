@@ -224,10 +224,28 @@ export default function AdminDashboard() {
     // pièces sont toutes approuvées, il lui manque un papier récent, et la
     // lecture automatique lui rendra son badge dès qu'il le déposera. Les
     // compter ici gonflait l'alerte à 82 garages dont 75 n'attendaient rien.
+    //
+    // S'y ajoutent les Kbis que la lecture automatique n'a pas su dater. Ils
+    // restent en attente sans que rien ne les signale : un garage deja verifie
+    // n'entrait dans aucun compteur, et le sien pouvait s'empiler cinq fois en
+    // quatre jours pendant qu'il attendait une reponse. Dix-huit dossiers sont
+    // dans ce cas.
+    const { data: kbisIllisibles } = await supabase
+      .from('verification_documents')
+      .select('garage_id')
+      .eq('status', 'pending')
+      .ilike('document_type', '%kbis%')
+      .not('lu_le', 'is', null)
+      .is('date_emission', null);
+    const aDater = new Set((kbisIllisibles || []).map((d) => d.garage_id));
+
     const garagesAVerifier = garages?.filter(g =>
-      !g.is_verified
-      && aControler.has(g.id)
-      && !(g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date())
+      (
+        !g.is_verified
+        && aControler.has(g.id)
+        && !(g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date())
+      )
+      || aDater.has(g.id)
     ) || [];
 
     const coffreActive = coffreSubs || [];

@@ -308,7 +308,10 @@ export default function GarageSettings() {
         }
         
         // Store the file path - signed URLs will be generated on demand
-        const fileUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/demarche-documents/${fileName}`;
+        // Le bucket est prive : on stocke le chemin, jamais une URL brute, que
+      // le navigateur ne saurait de toute facon pas ouvrir. L'affichage passe
+      // par une URL signee, et extractPathFromUrl accepte les deux formes.
+      const fileUrl = `demarche-documents/${fileName}`;
         
         const { error: insertError } = await supabase.from('verification_documents').insert({ 
           garage_id: garage.id, 

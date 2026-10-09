@@ -386,7 +386,11 @@ export function GarageVerificationPanel({
 
       if (uploadError) throw uploadError;
 
-      const fileUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/demarche-documents/${fileName}`;
+      // Le bucket est prive : on stocke le chemin, pas une URL brute. Celle
+      // qui etait construite ici omettait le mode d'acces, si bien que
+      // Supabase lisait « demarche-documents » comme le mode et repondait
+      // « Bucket not found » a l'ouverture.
+      const fileUrl = `demarche-documents/${fileName}`;
 
       const { error: dbError } = await supabase.from("verification_documents").insert({
         garage_id: garage.id,

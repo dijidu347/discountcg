@@ -170,7 +170,10 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
 
       // Store the file path - signed URLs will be generated on demand
       // since the bucket is now private
-      const fileUrl = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/demarche-documents/${fileName}`;
+      // Le bucket est prive : on stocke le chemin, jamais une URL brute, que
+      // le navigateur ne saurait de toute facon pas ouvrir. L'affichage passe
+      // par une URL signee, et extractPathFromUrl accepte les deux formes.
+      const fileUrl = `demarche-documents/${fileName}`;
 
       // Save document reference in database
       const { data: docData, error: dbError } = await supabase
