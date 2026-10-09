@@ -122,3 +122,51 @@ export async function garagesAvecKbisADater(
   }
   return parGarage;
 }
+
+/**
+ * Garages vérifiés auxquels il manque une pièce obligatoire approuvée.
+ *
+ * Le badge « Vérifié » et les pièces du dossier étaient deux vérités
+ * indépendantes : rien n'empêchait d'accorder la vérification sans que le Kbis
+ * soit là, et rien ne le signalait ensuite. Neuf garages sont dans ce cas, dont
+ * un sans aucune pièce et trois dont le Kbis attend encore notre examen.
+ *
+ * On ne leur retire pas leur badge — ils travaillent — mais ils doivent
+ * apparaître quelque part.
+ */
+export async function garagesSansPieceObligatoire(): Promise<Set<string>> {
+  const { data: requis } = await supabase
+    .from("garage_verification_required_documents")
+    .select("code")
+    .eq("actif", true)
+    .eq("obligatoire", true);
+
+  const codes = (requis || []).map((r) => r.code);
+  if (!codes.length) return new Set();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: garages } = await (supabase as any)
+    .from("garages")
+    .select("id")
+    .eq("is_verified", true)
+    .eq("compte_interne", false);
+
+  const { data: approuves } = await supabase
+    .from("verification_documents")
+    .select("garage_id, document_type")
+    .eq("status", "approved")
+    .in("document_type", codes);
+
+  const parGarage = new Map<string, Set<string>>();
+  for (const d of approuves || []) {
+    if (!parGarage.has(d.garage_id)) parGarage.set(d.garage_id, new Set());
+    parGarage.get(d.garage_id)!.add(d.document_type);
+  }
+
+  const incomplets = new Set<string>();
+  for (const g of ((garages || []) as { id: string }[])) {
+    const a = parGarage.get(g.id) ?? new Set<string>();
+    if (codes.some((c) => !a.has(c))) incomplets.add(g.id);
+  }
+  return incomplets;
+}

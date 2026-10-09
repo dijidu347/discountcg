@@ -228,6 +228,15 @@ export function GarageVerificationPanel({
 
   const docChoisi = verificationDocs.find((d) => d.id === idChoisi) ?? null;
 
+  // Les pièces obligatoires qui n'ont pas de document approuvé. Rien
+  // n'empêchait jusqu'ici d'accorder la vérification sans elles : neuf garages
+  // travaillent aujourd'hui sous notre habilitation sans Kbis au dossier, dont
+  // un sans aucune pièce. Le bouton « Vérifier » les exige désormais.
+  const obligatoiresManquantes = requiredDocs
+    .filter((r) => r.actif && r.obligatoire)
+    .filter((r) => !verificationDocs.some((d) => d.document_type === r.code && d.status === "approved"))
+    .map((r) => r.nom_document);
+
   // A l'ouverture, la page se place sur la premiere piece qui attend un geste :
   // une date a saisir d'abord, un controle ensuite. Afficher un document ne
   // declenche rien, donc le preselectionner ne coute rien.
@@ -610,6 +619,12 @@ export function GarageVerificationPanel({
               <Button
                 size="sm"
                 onClick={() => setShowVerifyDialog(true)}
+                disabled={obligatoiresManquantes.length > 0}
+                title={
+                  obligatoiresManquantes.length > 0
+                    ? `Pièce obligatoire non approuvée : ${obligatoiresManquantes.join(", ")}`
+                    : undefined
+                }
                 className="bg-green-600 hover:bg-green-700"
               >
                 <ShieldCheck className="mr-2 h-4 w-4" />
@@ -618,6 +633,34 @@ export function GarageVerificationPanel({
             )}
           </div>
         </div>
+
+        {obligatoiresManquantes.length > 0 && (
+          <div
+            className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
+              garage.is_verified
+                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                : "border-border bg-muted/50"
+            }`}
+          >
+            {garage.is_verified ? (
+              <>
+                <span className="font-semibold text-foreground">
+                  Ce garage est vérifié, mais il manque une pièce obligatoire :
+                </span>{" "}
+                {obligatoiresManquantes.join(", ")}. Il travaille sous notre habilitation sans que
+                son dossier le porte.
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-foreground">
+                  Pièce obligatoire non approuvée :
+                </span>{" "}
+                {obligatoiresManquantes.join(", ")}. La vérification ne peut pas être accordée tant
+                qu'elle manque.
+              </>
+            )}
+          </div>
+        )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">

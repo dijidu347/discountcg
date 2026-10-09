@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
-import { chargerAttentesKbis, type AttenteKbis } from "@/lib/kbisADater";
+import { chargerAttentesKbis, garagesSansPieceObligatoire, type AttenteKbis } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -374,6 +374,9 @@ export default function ManageGarages() {
   // ceux dont le Kbis a expiré, qui a déjà redéposé (c'est à nous de jouer) de
   // qui n'a rien fait (c'est à lui).
   const [kbisEnAttente, setKbisEnAttente] = useState<Map<string, string>>(new Map());
+  // Vérifiés, mais une pièce obligatoire manque : le badge et le dossier
+  // étaient deux vérités indépendantes, et personne ne voyait l'écart.
+  const [sansPiece, setSansPiece] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
@@ -465,6 +468,7 @@ export default function ManageGarages() {
     const attentes = await chargerAttentesKbis();
     setKbisADater(attentes.aDater);
     setKbisEnAttente(attentes.enAttente);
+    setSansPiece(await garagesSansPieceObligatoire());
 
     setGarages(tous);
     setLoading(false);
@@ -531,6 +535,9 @@ export default function ManageGarages() {
     // ce temps les quarante-sept vrais, eux, dormaient dans « Validés ».
     const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
     if (g.is_verified) {
+      // Vérifié sans pièce obligatoire : à traiter avant tout le reste, car le
+      // garage travaille sous notre habilitation sans que son dossier le porte.
+      if (sansPiece.has(g.id)) return "a_verifier";
       if (!kbisPerime) return "valides";
       // Il a déjà redéposé : la balle est dans notre camp, pas dans le sien.
       return kbisEnAttente.has(g.id) ? "a_verifier" : "kbis_perime";
@@ -623,6 +630,9 @@ export default function ManageGarages() {
     }
     if (onglet === "a_verifier") {
       if (g.is_verified) {
+        if (sansPiece.has(g.id)) {
+          return { texte: "Vérifié sans pièce obligatoire", depuis: g.created_at };
+        }
         return { texte: "Kbis redéposé", depuis: kbisEnAttente.get(g.id) ?? null };
       }
       return { texte: "Dossier complet", depuis: g.verification_requested_at };
@@ -655,7 +665,7 @@ export default function ManageGarages() {
       .filter((g) => onglet === "tous" || etape(g) === onglet)
       .sort((a, b) => (tri === "anciens" ? valeur(a) - valeur(b) : valeur(b) - valeur(a)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtres, onglet, tri, stats, kbisADater, kbisEnAttente]);
+  }, [filtres, onglet, tri, stats, kbisADater, kbisEnAttente, sansPiece]);
 
   const PAR_PAGE = 50;
   const pages = Math.max(1, Math.ceil(liste.length / PAR_PAGE));

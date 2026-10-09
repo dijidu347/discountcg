@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { applyATraiterFilters } from "@/lib/demarcheFilters";
-import { chargerAttentesKbis } from "@/lib/kbisADater";
+import { chargerAttentesKbis, garagesSansPieceObligatoire } from "@/lib/kbisADater";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -234,6 +234,7 @@ export default function AdminDashboard() {
     // par ailleurs un Kbis valable en sont exclus : chez eux la ligne non datee
     // est un doublon, pas un blocage (voir lib/kbisADater).
     const { aDater, enAttente: kbisEnAttente } = await chargerAttentesKbis();
+    const sansPiece = await garagesSansPieceObligatoire();
 
     // Même règle que l'onglet « À vérifier » de la page Garages, qui compte
     // désormais deux populations : les inscriptions à instruire, et les
@@ -243,7 +244,7 @@ export default function AdminDashboard() {
       if ((g as { compte_interne?: boolean }).compte_interne) return false;
       if (aDater.has(g.id)) return false;
       const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
-      if (g.is_verified) return Boolean(kbisPerime) && kbisEnAttente.has(g.id);
+      if (g.is_verified) return sansPiece.has(g.id) || (Boolean(kbisPerime) && kbisEnAttente.has(g.id));
       return aControler.has(g.id) && !kbisPerime;
     }) || [];
 
