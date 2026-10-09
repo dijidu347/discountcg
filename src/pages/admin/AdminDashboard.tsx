@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { applyATraiterFilters } from "@/lib/demarcheFilters";
+import { garagesAvecKbisADater } from "@/lib/kbisADater";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -229,15 +230,10 @@ export default function AdminDashboard() {
     // Les Kbis que la lecture automatique n'a pas su dater forment leur propre
     // file, comptée a part : le geste n'est pas le meme. Il n'y a pas un
     // dossier a examiner, il y a une date a recopier sur un document deja
-    // depose — par un garage le plus souvent deja verifie.
-    const { data: kbisIllisibles } = await supabase
-      .from('verification_documents')
-      .select('garage_id')
-      .eq('status', 'pending')
-      .ilike('document_type', '%kbis%')
-      .not('lu_le', 'is', null)
-      .is('date_emission', null);
-    const aDater = new Set((kbisIllisibles || []).map((d) => d.garage_id));
+    // depose — par un garage le plus souvent deja verifie. Les garages qui ont
+    // par ailleurs un Kbis valable en sont exclus : chez eux la ligne non datee
+    // est un doublon, pas un blocage (voir lib/kbisADater).
+    const aDater = await garagesAvecKbisADater();
 
     const garagesAVerifier = garages?.filter(g =>
       !aDater.has(g.id)
@@ -429,7 +425,7 @@ export default function AdminDashboard() {
         {stats.kbisADater > 0 && (
           <Card
             className="mb-6 cursor-pointer border-2 border-yellow-500 bg-yellow-50 transition-colors hover:bg-yellow-100 dark:bg-yellow-950/20 dark:hover:bg-yellow-950/30"
-            onClick={() => navigate("/admin/manage-garages", { state: { onglet: "kbis_a_dater" } })}
+            onClick={() => navigate("/admin/kbis-a-dater")}
           >
             <CardContent className="py-4">
               <div className="flex items-center justify-between gap-3">

@@ -23,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
+import { garagesAvecKbisADater } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
@@ -451,14 +452,7 @@ export default function ManageGarages() {
     });
     setStats(parGarage);
 
-    const { data: sansDate } = await supabase
-      .from('verification_documents')
-      .select('garage_id')
-      .eq('status', 'pending')
-      .ilike('document_type', '%kbis%')
-      .not('lu_le', 'is', null)
-      .is('date_emission', null);
-    setKbisADater(new Set((sansDate || []).map((d) => d.garage_id)));
+    setKbisADater(await garagesAvecKbisADater());
 
     setGarages(tous);
     setLoading(false);

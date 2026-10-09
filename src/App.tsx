@@ -41,6 +41,7 @@ const Prospection = React.lazy(() => import("./pages/Prospection"));
 const ManageActions = React.lazy(() => import("./pages/admin/ManageActions"));
 const ManageGarages = React.lazy(() => import("./pages/admin/ManageGarages"));
 const GarageDetail = React.lazy(() => import("./pages/admin/GarageDetail"));
+const KbisADater = React.lazy(() => import("./pages/admin/KbisADater"));
 const ManageAccounts = React.lazy(() => import("./pages/admin/ManageAccounts"));
 const GuestOrders = React.lazy(() => import("./pages/admin/GuestOrders"));
 const GuestOrderDetail = React.lazy(() => import("./pages/admin/GuestOrderDetail"));
@@ -132,6 +133,7 @@ const App = () => (
           <Route path="/admin/manage-users" element={<AdminGuard><ManageUsers /></AdminGuard>} />
           <Route path="/admin/manage-garages" element={<AdminGuard><ManageGarages /></AdminGuard>} />
           <Route path="/admin/garages/:id" element={<AdminGuard><GarageDetail /></AdminGuard>} />
+          <Route path="/admin/kbis-a-dater" element={<AdminGuard><KbisADater /></AdminGuard>} />
           <Route path="/admin/manage-accounts" element={<AdminGuard><ManageAccounts /></AdminGuard>} />
           <Route path="/admin/notifications" element={<AdminGuard><AdminNotifications /></AdminGuard>} />
           <Route path="/admin/historique-paiements" element={<AdminGuard><HistoriquePaiements /></AdminGuard>} />
