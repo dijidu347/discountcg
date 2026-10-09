@@ -275,12 +275,10 @@ export default function Messages() {
 
                 {/* Sous le chat : c'est ici qu'on decide, apres avoir lu. */}
                 <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
-                  {choisie.etat !== "non_lu" && (
-                    <Button variant="ghost" onClick={() => void remettreNonLu(choisie)}>
-                      <MailOpen className="mr-2 h-4 w-4" />
-                      Marquer comme non lu
-                    </Button>
-                  )}
+                  <Button variant="ghost" onClick={() => void remettreNonLu(choisie)}>
+                    <MailOpen className="mr-2 h-4 w-4" />
+                    Marquer comme non lu
+                  </Button>
                   <Button
                     variant="outline"
                     disabled={classement}
