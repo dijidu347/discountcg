@@ -30,6 +30,10 @@ interface Conversation {
   garage_id: string | null;
   contact_email: string | null;
   contact_nom: string | null;
+  demarche_libelle: string | null;
+  dossier_statut: string | null;
+  dossier_montant: number | null;
+  dossier_depuis: string | null;
 }
 
 function depuis(iso: string): string {
@@ -120,6 +124,16 @@ export default function Messages() {
       (liste ?? []).map((x) => (x.cible_id === c.cible_id ? { ...x, etat: "non_lu" } : x))
     );
     setChoisie(null);
+  };
+
+  // Repondre rend la conversation traitee par definition. Sans ce retrait, la
+  // liste mentait : au bout de dix reponses on ne savait plus lesquelles
+  // avaient ete traitees, et on rouvrait les memes.
+  const apresReponse = (c: Conversation) => {
+    const reste = (conversations ?? []).filter((x) => x.cible_id !== c.cible_id);
+    setConversations(reste);
+    setChoisie(null);
+    toast({ title: "Réponse envoyée", description: "La conversation quitte la liste." });
   };
 
   const ouvrirDossier = (c: Conversation) =>
@@ -252,6 +266,28 @@ export default function Messages() {
                   </Button>
                 </div>
 
+                {/* De quoi repondre sans ouvrir le dossier dans une autre page. */}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                  {choisie.demarche_libelle && (
+                    <span className="font-medium text-foreground">{choisie.demarche_libelle}</span>
+                  )}
+                  {choisie.dossier_statut && (
+                    <span className="text-muted-foreground">
+                      {choisie.dossier_statut.replace(/_/g, " ")}
+                    </span>
+                  )}
+                  {choisie.dossier_montant != null && choisie.dossier_montant > 0 && (
+                    <span className="tabular-nums text-muted-foreground">
+                      {Number(choisie.dossier_montant).toFixed(2).replace(".", ",")} €
+                    </span>
+                  )}
+                  {choisie.dossier_depuis && (
+                    <span className="text-muted-foreground">
+                      déposée {depuis(choisie.dossier_depuis)}
+                    </span>
+                  )}
+                </div>
+
                 {choisie.source === "pro" ? (
                   <DemarcheChat
                     key={choisie.cible_id}
@@ -260,6 +296,7 @@ export default function Messages() {
                     garageEmail={choisie.contact_email ?? undefined}
                     garageName={choisie.contact_nom ?? undefined}
                     numeroDemarche={choisie.reference}
+                    onMessageSent={() => apresReponse(choisie)}
                     isAdmin
                   />
                 ) : (
@@ -269,6 +306,7 @@ export default function Messages() {
                     trackingNumber={choisie.reference}
                     guestEmail={choisie.contact_email ?? undefined}
                     guestName={choisie.contact_nom ?? undefined}
+                    onMessageSent={() => apresReponse(choisie)}
                     isAdmin
                   />
                 )}

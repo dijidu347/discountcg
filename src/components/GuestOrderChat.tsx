@@ -22,6 +22,8 @@ interface GuestOrderChatProps {
   trackingNumber?: string;
   guestEmail?: string;
   guestName?: string;
+  // Voir DemarcheChat : la page des messages retire la conversation traitee.
+  onMessageSent?: () => void;
 }
 
 export function GuestOrderChat({
@@ -29,6 +31,7 @@ export function GuestOrderChat({
   isAdmin,
   trackingNumber,
   guestEmail,
+  onMessageSent,
   guestName,
 }: GuestOrderChatProps) {
   const { toast } = useToast();
@@ -221,6 +224,7 @@ export function GuestOrderChat({
 
     setNewMessage("");
     setSending(false);
+    onMessageSent?.();
 
     // Reload messages for guest (no realtime without auth)
     if (!isAdmin) {

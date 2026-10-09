@@ -25,6 +25,9 @@ interface DemarcheChatProps {
   garageName?: string;
   isAdmin?: boolean;
   numeroDemarche?: string;
+  // Appele apres l'envoi d'un message. La page des messages s'en sert pour
+  // retirer la conversation de la liste : y repondre la rend traitee.
+  onMessageSent?: () => void;
 }
 
 export function DemarcheChat({
@@ -33,6 +36,7 @@ export function DemarcheChat({
   garageEmail,
   garageName,
   isAdmin = false,
+  onMessageSent,
   numeroDemarche,
 }: DemarcheChatProps) {
   const { user } = useAuth();
@@ -190,6 +194,7 @@ export function DemarcheChat({
 
     setNewMessage("");
     setSending(false);
+    onMessageSent?.();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
