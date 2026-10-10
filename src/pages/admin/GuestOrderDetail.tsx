@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban, Loader2, Package, CreditCard, Truck, Clock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, XCircle, FileText, User, Car, MapPin, Mail, Phone, Calendar, Euro, Download, Eye, AlertCircle, Send, FileCheck, Ban, Loader2, Package, CreditCard, Truck, Clock, BellRing, BellOff } from "lucide-react";
 import { SecureDownloadButton } from "@/components/SecureDownloadButton";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
 import { getExpressSurcharge } from "@/lib/expressOption";
@@ -75,6 +75,7 @@ interface GuestOrder {
   is_mineur?: boolean;
   is_heberge?: boolean;
   demarche_type?: string;
+  admin_viewed?: boolean | null;
 }
 
 interface Document {
@@ -227,6 +228,36 @@ export default function GuestOrderDetail() {
     const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
     if (!roles?.some((r) => r.role === "admin")) { navigate("/dashboard"); return; }
     await loadOrderData();
+  };
+
+  // Repasser une commande en « non traitée ».
+  //
+  // Le bouton existait côté professionnel mais pas côté particulier, alors que
+  // les deux reposent sur la même colonne : ouvrir une commande la marque vue,
+  // et rien ne permettait de revenir en arrière. Une commande ouverte par
+  // mégarde sortait donc définitivement de « à traiter ».
+  const basculerVue = async () => {
+    if (!order) return;
+    const nouvelle = !order.admin_viewed;
+    // L'écran suit tout de suite ; on revient en arrière si le serveur refuse.
+    setOrder({ ...order, admin_viewed: nouvelle });
+
+    const { error } = await supabase
+      .from("guest_orders")
+      .update({ admin_viewed: nouvelle })
+      .eq("id", order.id);
+
+    if (error) {
+      setOrder({ ...order, admin_viewed: !nouvelle });
+      toast({ title: "Modification impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: nouvelle ? "Marquée comme traitée" : "Marquée comme non traitée",
+      description: nouvelle
+        ? "La commande ne clignotera plus dans la liste"
+        : "La commande va de nouveau clignoter dans la liste",
+    });
   };
 
   const loadOrderData = async () => {
@@ -461,10 +492,30 @@ export default function GuestOrderDetail() {
             <h1 className="text-2xl md:text-3xl font-bold">Commande {order.tracking_number}</h1>
             <p className="text-sm text-muted-foreground">Créée le {new Date(order.created_at).toLocaleDateString("fr-FR")}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {order.demarche_type && <Badge variant="outline">{order.demarche_type}</Badge>}
             <Badge className={getStatusColor(order.status)}>{order.status}</Badge>
             <ExpressBadge express={order.express} />
+            <Button
+              variant={order.admin_viewed ? "outline" : "destructive"}
+              size="sm"
+              onClick={basculerVue}
+              className={order.admin_viewed
+                ? "border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                : ""}
+            >
+              {order.admin_viewed ? (
+                <>
+                  <BellRing className="mr-2 h-4 w-4" />
+                  Marquer comme non traitée
+                </>
+              ) : (
+                <>
+                  <BellOff className="mr-2 h-4 w-4" />
+                  Marquer comme traitée
+                </>
+              )}
+            </Button>
           </div>
         </div>
 

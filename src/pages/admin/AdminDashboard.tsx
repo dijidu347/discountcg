@@ -453,7 +453,7 @@ export default function AdminDashboard() {
               <CardTitle className="text-3xl">{stats.totalGarages}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
                 {stats.garagesAVerifier > 0
-                  ? `dont ${stats.garagesAVerifier} à vérifier`
+                  ? `dont ${stats.garagesAVerifier} complet${stats.garagesAVerifier > 1 ? "s" : ""}, à vérifier`
                   : "Entreprises inscrites"}
               </p>
             </CardContent>

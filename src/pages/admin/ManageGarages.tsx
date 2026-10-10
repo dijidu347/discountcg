@@ -87,8 +87,8 @@ const JOUR = 86_400_000;
 // Bleu = à nous de jouer, ambre = au garage, orange = anomalie, vert = acquis.
 const TEINTE_ETAPE: Record<string, { texte: string; classe: string }> = {
   verifie: { texte: "Vérifié", classe: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
-  a_verifier: { texte: "À vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
-  a_completer: { texte: "À compléter", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
+  a_verifier: { texte: "Complet, à vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
+  a_completer: { texte: "Dossier incomplet", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
   aucun_document: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
 };
 
@@ -704,9 +704,9 @@ export default function ManageGarages() {
       fond: "bg-muted", chiffre: "text-foreground", label: "text-muted-foreground" },
     { cle: "verifie", texte: "Vérifié", aide: "Pièce d'identité acceptée et Kbis accepté de moins de six mois",
       fond: "bg-green-100 dark:bg-green-950/50", chiffre: "text-green-800 dark:text-green-300", label: "text-green-700 dark:text-green-400" },
-    { cle: "a_verifier", texte: "À vérifier", aide: "Des pièces sont arrivées et attendent notre contrôle",
+    { cle: "a_verifier", texte: "Complet, à vérifier", aide: "Des pièces sont arrivées et attendent notre contrôle",
       fond: "bg-blue-100 dark:bg-blue-950/50", chiffre: "text-blue-800 dark:text-blue-300", label: "text-blue-700 dark:text-blue-400" },
-    { cle: "a_completer", texte: "À compléter", aide: "Une pièce manque, a été refusée, ou le Kbis a plus de six mois : au garage d'agir",
+    { cle: "a_completer", texte: "Dossier incomplet", aide: "Une pièce manque, a été refusée, ou le Kbis a plus de six mois : au garage d'agir",
       fond: "bg-amber-100 dark:bg-amber-950/50", chiffre: "text-amber-900 dark:text-amber-300", label: "text-amber-800 dark:text-amber-400" },
     { cle: "aucun_document", texte: "Aucun document", aide: "Inscrits, n'ont jamais rien envoyé",
       fond: "bg-muted", chiffre: "text-muted-foreground", label: "text-muted-foreground" },
