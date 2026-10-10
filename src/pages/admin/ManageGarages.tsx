@@ -852,8 +852,17 @@ export default function ManageGarages() {
                     <TableHead>Contact</TableHead>
                     {enTravail ? (
                       <>
+                        {/* L'état et le détail sont deux colonnes distinctes :
+                            l'un dit la file, l'autre ce qui la retient. Et la
+                            dépense accompagne désormais le travail — on ne
+                            traite pas de la même façon un garage à 1 800 € et
+                            un compte sans une seule démarche. */}
+                        <TableHead>État</TableHead>
                         <TableHead>Ce qui attend</TableHead>
                         <TableHead>Depuis</TableHead>
+                        <TableHead>Dernière démarche</TableHead>
+                        <TableHead className="text-right">Dépensé</TableHead>
+                        <TableHead className="text-right">Démarches</TableHead>
                       </>
                     ) : (
                       <>
@@ -890,14 +899,11 @@ export default function ManageGarages() {
                                 texte={attenteDe(g).texte}
                                 classe={TEINTE_ETAPE[etape(g)]?.classe ?? "bg-muted text-muted-foreground"}
                               />
-                              {/* Le détail sous la pastille : « Kbis périmé »
-                                  et « date à saisir » étaient des onglets, ils
-                                  sont désormais la précision d'un état. */}
-                              {attenteDe(g).motifs.length > 0 && (
-                                <p className="mt-1 text-xs text-muted-foreground">
-                                  {attenteDe(g).motifs.join(" · ")}
-                                </p>
-                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {attenteDe(g).motifs.length > 0
+                                ? attenteDe(g).motifs.join(" · ")
+                                : "—"}
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-sm">
                               {anciennete(attenteDe(g).depuis) ? (
@@ -913,6 +919,9 @@ export default function ManageGarages() {
                                 "—"
                               )}
                             </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(st?.derniere_demarche)}</TableCell>
+                            <TableCell className="text-right tabular-nums">{formatPrice(st?.total || 0)} €</TableCell>
+                            <TableCell className="text-right tabular-nums">{st?.nb_demarches || 0}</TableCell>
                           </>
                         ) : (
                           <>
