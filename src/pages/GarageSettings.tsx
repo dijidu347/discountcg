@@ -1003,7 +1003,12 @@ export default function GarageSettings() {
                                         <Eye className="mr-1 h-3.5 w-3.5" />
                                         Ouvrir
                                       </Button>
-                                      {doc.status !== 'approved' && (
+                                      {/* La corbeille sur toutes ses pièces, y compris
+                                          validées : le garage reste maître de ce qu'il a
+                                          envoyé. Le prix en est dit au moment du clic —
+                                          retirer une pièce validée rend le dossier
+                                          incomplet, et l'écran le rappelle. */}
+                                      {(
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                             <button
@@ -1020,6 +1025,13 @@ export default function GarageSettings() {
                                               <AlertDialogDescription>
                                                 {doc.nom_fichier} sera supprimé définitivement. Vous
                                                 pourrez en déposer un autre à la place.
+                                                {doc.status === 'approved' && (
+                                                  <span className="mt-2 block font-medium text-destructive">
+                                                    Cette pièce est validée : la retirer rendra votre
+                                                    dossier incomplet, et votre compte devra être
+                                                    vérifié à nouveau.
+                                                  </span>
+                                                )}
                                               </AlertDialogDescription>
                                             </AlertDialogHeader>
                                             <AlertDialogFooter>
