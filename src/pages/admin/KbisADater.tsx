@@ -129,7 +129,19 @@ export default function KbisADater() {
     charger();
   }, [charger]);
 
-  const courant = lignes[position] ?? null;
+  // Deux files, et non une seule qui glisse de l'une à l'autre.
+  //
+  // Les dates à saisir débloquent un garage ; les doublons sont du ménage sur
+  // des garages qui ont déjà un Kbis valable. Enchaînées sans rien dire, la
+  // seconde donnait l'impression d'être renvoyé sur des dossiers déjà validés
+  // une fois le vrai travail terminé. On s'arrête donc à la fin de la
+  // première, et le passage à la seconde se demande.
+  const [modeDoublons, setModeDoublons] = useState(false);
+  const file = useMemo(
+    () => lignes.filter((l) => (modeDoublons ? l.doublon : !l.doublon)),
+    [lignes, modeDoublons],
+  );
+  const courant = file[position] ?? null;
 
   // Le champ repart vide à chaque pièce : une date qui traîne d'un document à
   // l'autre serait pire que pas de date du tout.
@@ -148,7 +160,8 @@ export default function KbisADater() {
   const retirerDeLaFile = (id: string) => {
     setLignes((prev) => {
       const suivantes = prev.filter((l) => l.id !== id);
-      setPosition((p) => Math.min(p, Math.max(0, suivantes.length - 1)));
+      const restantesDansLaFile = suivantes.filter((l) => (modeDoublons ? l.doublon : !l.doublon));
+      setPosition((p) => Math.min(p, Math.max(0, restantesDansLaFile.length - 1)));
       return suivantes;
     });
     setTraites((n) => n + 1);
@@ -215,7 +228,7 @@ export default function KbisADater() {
     retirerDeLaFile(doc.id);
   };
 
-  const passer = () => setPosition((p) => (p + 1) % Math.max(1, lignes.length));
+  const passer = () => setPosition((p) => (p + 1) % Math.max(1, file.length));
 
   const entete = (
     <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
@@ -255,11 +268,40 @@ export default function KbisADater() {
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
               <CheckCircle className="h-12 w-12 text-green-600" />
-              <p className="text-lg font-semibold">Plus aucun Kbis n'attend sa date.</p>
+              <p className="text-lg font-semibold">
+                {modeDoublons
+                  ? "Plus aucun doublon à nettoyer."
+                  : "Il n'y a plus aucun Kbis à vérifier."}
+              </p>
               {traites > 0 && (
                 <p className="text-sm text-muted-foreground">
                   {traites} pièce{traites > 1 ? "s" : ""} traitée{traites > 1 ? "s" : ""} dans cette session.
                 </p>
+              )}
+
+              {/* Le ménage se propose, il ne s'enchaîne pas. */}
+              {!modeDoublons && restants.doublons > 0 && (
+                <div className="mt-4 max-w-md rounded-lg border bg-muted/40 p-4">
+                  <p className="text-sm">
+                    Il reste {restants.doublons} Kbis déposé{restants.doublons > 1 ? "s" : ""} par
+                    {restants.doublons > 1 ? " des garages qui ont déjà" : " un garage qui a déjà"} un
+                    Kbis valable. Rien n'est bloqué de leur côté : c'est du ménage, pas une
+                    vérification.
+                  </p>
+                  <Button
+                    className="mt-3"
+                    variant="outline"
+                    onClick={() => { setModeDoublons(true); setPosition(0); }}
+                  >
+                    Nettoyer les doublons
+                  </Button>
+                </div>
+              )}
+
+              {modeDoublons && (
+                <Button variant="ghost" className="mt-2" onClick={() => navigate("/admin")}>
+                  Retour au tableau de bord
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -293,7 +335,7 @@ export default function KbisADater() {
               </>
             )}
             {" · pièce "}
-            {position + 1} sur {lignes.length}
+            {position + 1} sur {file.length}
           </p>
         </div>
 
@@ -351,7 +393,7 @@ export default function KbisADater() {
                       libelle="Supprimer et suivant"
                     />
                     <RefuserDocumentBouton doc={courant} onRefuse={refuser} />
-                    {lignes.length > 1 && (
+                    {file.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={passer}>
                         Passer
                         <ArrowRight className="ml-2 h-4 w-4" />
@@ -402,7 +444,7 @@ export default function KbisADater() {
                   <div className="flex flex-wrap items-center gap-2 border-t pt-3">
                     <RefuserDocumentBouton doc={courant} onRefuse={refuser} />
                     <SupprimerDocumentBouton doc={courant} onSupprime={supprimer} />
-                    {lignes.length > 1 && (
+                    {file.length > 1 && (
                       <Button variant="ghost" size="sm" onClick={passer}>
                         Passer
                         <ArrowRight className="ml-2 h-4 w-4" />
