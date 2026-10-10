@@ -12,17 +12,40 @@
 // minifié, ce qui m'a déjà fait annoncer à tort une mise en ligne parce que la
 // chaîne venait du commit précédent.
 //
-// Usage : node scripts/attendre-publication.mjs [minutes]
+// Le script ne peut pas relancer le déploiement lui-même : celui-ci se
+// déclenche par l'API Lovable, dont aucune clé n'est disponible ici
+// (LOVABLE_API_KEY n'existe que comme secret d'edge function, et c'est la
+// passerelle IA, pas l'API de déploiement). Il fait donc la seule chose utile
+// à sa portée : repérer vite qu'un déclenchement est resté sans effet.
+//
+// Deux déploiements sur six ont été ignorés au premier appel et ont demandé un
+// second. Le second a sorti le site en vingt secondes — le temps perdu n'était
+// pas le déploiement, c'était l'attente avant de comprendre qu'il fallait
+// relancer. D'où la détection d'enlisement : si le bundle servi n'a pas bougé
+// depuis douze minutes, on sort tout de suite avec le code 3 et on le dit,
+// plutôt que de laisser filer la demi-heure.
+//
+// Usage : node scripts/attendre-publication.mjs [minutes] [minutesEnlisement]
 
 import { readFileSync } from "node:fs";
 
 const SITE = "https://discountcartegrise.fr";
 const minutes = Number(process.argv[2] ?? 30);
+// Au-dela de douze minutes sans le moindre mouvement, un declenchement est
+// reste sans effet : les deploiements qui aboutissent sortent en sept a neuf
+// minutes. Relancer est sans danger, l'appel est idempotent.
+const enlisement = Number(process.argv[3] ?? 12) * 60_000;
 const limite = Date.now() + minutes * 60_000;
 
 const bundleDe = (html) => html.match(/\/?assets\/(index-[A-Za-z0-9_-]+\.js)/)?.[1] ?? null;
 
-const attendu = bundleDe(readFileSync("dist/index.html", "utf8"));
+// La cible est relue a chaque tour, et non figee au demarrage. Fige, un
+// guetteur lance avant deux reconstructions attend un bundle qui ne sortira
+// jamais, puis annonce un echec alors que tout s'est bien passe — c'est
+// exactement ce qui est arrive, et un faux echec coute plus cher qu'un retard.
+const cible = () => bundleDe(readFileSync("dist/index.html", "utf8"));
+
+let attendu = cible();
 if (!attendu) {
   console.error("Impossible de lire le bundle local. Lancez `npm run build` d'abord.");
   process.exit(2);
@@ -31,8 +54,15 @@ console.log(`attendu : ${attendu}`);
 
 const heure = () => new Date().toLocaleTimeString("fr-FR");
 let precedent = null;
+let dernierMouvement = Date.now();
 
 while (Date.now() < limite) {
+  const maintenant = cible();
+  if (maintenant && maintenant !== attendu) {
+    console.log(`\n(nouveau build local : ${maintenant} — c'est lui qu'on attend désormais)`);
+    attendu = maintenant;
+  }
+
   let enLigne = null;
   try {
     // Le paramètre casse les caches intermédiaires, qui serviraient sinon la
@@ -53,8 +83,19 @@ while (Date.now() < limite) {
     // bien sorti, mais ce n'est pas le nôtre — il en reste un derrière.
     console.log(`${heure()}  ${enLigne}  (pas encore le nôtre)`);
     precedent = enLigne;
+    dernierMouvement = Date.now();
   } else if (enLigne) {
     process.stdout.write(".");
+  }
+
+  if (Date.now() - dernierMouvement > enlisement) {
+    const attente = Math.round((Date.now() - dernierMouvement) / 60_000);
+    console.log(
+      `\n${heure()}  RELANCER LE DÉPLOIEMENT — rien n'a bougé depuis ${attente} min.` +
+        `\nLe site sert toujours ${enLigne ?? "?"}, on attend ${attendu}.` +
+        `\nUn déclenchement est resté sans effet : rappeler deploy_project suffit.`,
+    );
+    process.exit(3);
   }
 
   await new Promise((r) => setTimeout(r, 20_000));
