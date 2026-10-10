@@ -103,6 +103,67 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
   return dossiers;
 }
 
+/**
+ * Le même calcul pour un seul garage, depuis la fiche d'une démarche.
+ *
+ * On y apprend qu'un dossier n'est pas en règle au moment où ça compte : une
+ * démarche vient d'arriver, et c'est elle qui donne le prétexte — et l'urgence
+ * — pour réclamer la pièce.
+ */
+export async function chargerDossierGarage(garageId: string): Promise<DossierGarage> {
+  const { data: requis } = await supabase
+    .from("garage_verification_required_documents")
+    .select("code, nom_document")
+    .eq("actif", true)
+    .eq("obligatoire", true);
+
+  const { data: lignes } = await supabase
+    .from("verification_documents")
+    .select("document_type, status, date_emission, created_at, lu_le")
+    .eq("garage_id", garageId)
+    .in("status", ["pending", "approved", "rejected"]);
+
+  if (!lignes || lignes.length === 0) return SANS_DOCUMENT;
+
+  const motifs: string[] = [];
+  let toutEnRegle = true;
+
+  for (const r of requis || []) {
+    const duType = lignes.filter((l) => l.document_type === r.code);
+    const accepte = duType.find((l) => l.status === "approved");
+
+    if (r.code === "kbis") {
+      if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
+      toutEnRegle = false;
+      motifs.push(
+        accepte
+          ? `Kbis périmé — délivré le ${accepte.date_emission ? new Date(accepte.date_emission).toLocaleDateString("fr-FR") : "?"}`
+          : duType.length
+          ? "Kbis déposé, pas encore contrôlé"
+          : "Kbis manquant",
+      );
+      continue;
+    }
+
+    if (accepte) continue;
+    toutEnRegle = false;
+    motifs.push(
+      duType.length ? `${r.nom_document} déposée, pas encore contrôlée` : `${r.nom_document} manquante`,
+    );
+  }
+
+  const enAttente = lignes.filter((l) => l.status === "pending");
+  const enAttenteDepuis = enAttente.length
+    ? enAttente.reduce((a, b) => (a.created_at < b.created_at ? a : b)).created_at
+    : null;
+
+  return {
+    etat: toutEnRegle ? "verifie" : enAttente.length ? "a_verifier" : "a_completer",
+    motifs,
+    enAttenteDepuis,
+  };
+}
+
 /** Un garage absent de la table n'a jamais rien déposé. */
 export const SANS_DOCUMENT: DossierGarage = {
   etat: "aucun_document",
