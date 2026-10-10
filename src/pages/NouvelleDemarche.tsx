@@ -169,6 +169,7 @@ export default function NouvelleDemarche() {
   // d'identité d'une DC : rien si c'est le garage lui-même, sa pièce d'identité
   // si c'est un particulier, son Kbis en plus si c'est une autre société.
   const [questionQuiVendId, setQuestionQuiVendId] = useState<string | null>(null);
+  const [questionQuiAcheteId, setQuestionQuiAcheteId] = useState<string | null>(null);
   // Payment mode state
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("pro_pays_all");
   const [clientEmail, setClientEmail] = useState<string | undefined>();
@@ -375,6 +376,25 @@ export default function NouvelleDemarche() {
     return null;
   }, [questionnaireAnswerTexts, questionQuiVendId]);
 
+  // Qui achète décide des pièces de l'acquéreur, comme qui vend décide de
+  // celles du vendeur. Un particulier fournit sa pièce d'identité ; une société
+  // n'en a pas, elle fournit son Kbis et la pièce de son dirigeant.
+  //
+  // « Autre » couvre ce qui reste et qui existe vraiment — une association, une
+  // mairie, un centre VHU agréé quand le véhicule part à la destruction, un
+  // acheteur à l'étranger, plusieurs co-acquéreurs. Trop rare pour mériter une
+  // option chacun, trop réel pour bloquer le garage sur une pièce qui n'existe
+  // pas dans son cas : aucune pièce d'acquéreur n'est alors exigée.
+  type QualiteAcquereur = "particulier" | "societe" | "autre" | null;
+  const quiAchete = useMemo<QualiteAcquereur>(() => {
+    if (!questionQuiAcheteId) return null;
+    const reponse = (questionnaireAnswerTexts[questionQuiAcheteId] ?? "").trim();
+    if (/particulier/i.test(reponse)) return "particulier";
+    if (/soci[ée]t[ée]/i.test(reponse)) return "societe";
+    if (/autre/i.test(reponse)) return "autre";
+    return null;
+  }, [questionnaireAnswerTexts, questionQuiAcheteId]);
+
   // L'ordre d'affichage des pièces, qui n'est pas celui de la configuration :
   // les rangs y valent « doc_1 », « doc_2 »… et les changer renommerait toutes
   // les pièces déjà déposées. On réordonne donc à l'écran seulement, en gardant
@@ -401,13 +421,22 @@ export default function NouvelleDemarche() {
     const nom = doc.nom_document ?? "";
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro && formData.type === "DA";
     if (formData.type === "DC") {
+      // Les pièces de l'acquéreur d'abord : leurs libellés contiennent
+      // « Kbis » et « dirigeant » comme ceux du vendeur, et seule la mention
+      // de l'acquéreur les distingue.
+      if (/acqu[ée]reur/i.test(nom)) {
+        if (/kbis/i.test(nom) || /dirigeant/i.test(nom)) return quiAchete === "societe";
+        // Sans réponse — un brouillon ouvert avant que la question existe —
+        // on en reste à ce qui était demandé jusqu'ici.
+        return quiAchete === null || quiAchete === "particulier";
+      }
       // Sans réponse — un brouillon ouvert avant que la question existe — on
       // en reste à ce qui était demandé jusqu'ici : la pièce d'identité.
       if (/identit[ée] du vendeur/i.test(nom)) return quiVend !== "garage";
       if (/kbis/i.test(nom)) return quiVend === "societe";
     }
     return false;
-  }, [venduParUnPro, quiVend, formData.type]);
+  }, [venduParUnPro, quiVend, quiAchete, formData.type]);
 
   // Les pièces dont la réponse à la question décide. Celle que la réponse
   // écarte ne s'affiche pas du tout : une case « optionnel » qui ne correspond
@@ -418,7 +447,8 @@ export default function NouvelleDemarche() {
     const nom = doc.nom_document ?? "";
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return formData.type === "DA";
     if (formData.type === "DC") {
-      return /identit[ée] du vendeur/i.test(nom) || /kbis/i.test(nom);
+      return /identit[ée] du vendeur/i.test(nom) || /kbis/i.test(nom)
+        || /acqu[ée]reur/i.test(nom);
     }
     return false;
   }, [formData.type]);
@@ -686,6 +716,10 @@ export default function NouvelleDemarche() {
       const quiVend = (questions ?? []).find((q: { question_text?: string | null }) =>
         /qui vend/i.test(q.question_text ?? ""));
       setQuestionQuiVendId(quiVend?.id ?? null);
+
+      const quiAchete = (questions ?? []).find((q: { question_text?: string | null }) =>
+        /qui ach[eè]te/i.test(q.question_text ?? ""));
+      setQuestionQuiAcheteId(quiAchete?.id ?? null);
 
       const { data: docs } = await supabase
         .from('action_documents')
