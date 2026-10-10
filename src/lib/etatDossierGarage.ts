@@ -84,6 +84,7 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
       const accepte = duType.find((l) => l.status === "approved");
 
       const enExamen = duType.some((l) => l.status === "pending");
+      const refuse = !enExamen && duType.some((l) => l.status === "rejected");
 
       if (code === "kbis") {
         // Un Kbis accepté mais daté de plus de six mois ne vaut plus : c'est au
@@ -91,14 +92,23 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
         if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
         toutEnRegle = false;
         if (!enExamen) auGarageDeJouer = true;
-        motifs.push(accepte ? "Kbis périmé" : duType.length ? "Kbis à contrôler" : "Kbis manquant");
+        motifs.push(
+          accepte ? "Kbis périmé"
+            : refuse ? "Kbis refusé, à redéposer"
+            : enExamen ? "Kbis à contrôler"
+            : "Kbis manquant",
+        );
         continue;
       }
 
       if (accepte) continue;
       toutEnRegle = false;
       if (!enExamen) auGarageDeJouer = true;
-      motifs.push(duType.length ? `${nomDe.get(code)} à contrôler` : `${nomDe.get(code)} manquant`);
+      motifs.push(
+        refuse ? `${nomDe.get(code)} refusé, à redéposer`
+          : enExamen ? `${nomDe.get(code)} à contrôler`
+          : `${nomDe.get(code)} manquant`,
+      );
     }
 
     const enAttente = lignes.filter((l) => l.status === "pending");
@@ -164,6 +174,7 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
     const accepte = duType.find((l) => l.status === "approved");
 
     const enExamen = duType.some((l) => l.status === "pending");
+    const refuse = !enExamen && duType.some((l) => l.status === "rejected");
 
     if (r.code === "kbis") {
       if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
@@ -172,7 +183,9 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
       motifs.push(
         accepte
           ? `Kbis périmé — délivré le ${accepte.date_emission ? new Date(accepte.date_emission).toLocaleDateString("fr-FR") : "?"}`
-          : duType.length
+          : refuse
+          ? "Kbis refusé, en attente d'un nouveau"
+          : enExamen
           ? "Kbis déposé, pas encore contrôlé"
           : "Kbis manquant",
       );
@@ -183,7 +196,9 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
     toutEnRegle = false;
     if (!enExamen) auGarageDeJouer = true;
     motifs.push(
-      duType.length ? `${r.nom_document} déposée, pas encore contrôlée` : `${r.nom_document} manquante`,
+      refuse ? `${r.nom_document} refusée, en attente d'une nouvelle`
+        : enExamen ? `${r.nom_document} déposée, pas encore contrôlée`
+        : `${r.nom_document} manquante`,
     );
   }
 
