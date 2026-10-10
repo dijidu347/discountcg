@@ -347,6 +347,32 @@ async function principal() {
     console.warn("[prerender] contenu professionnel ignoré :", e?.message ?? e);
   }
 
+  try {
+    const { BENEFICIAIRES, CONDITIONS, OBLIGATIONS, FAQ } = await chargerTs(
+      "src/data/habilitationSivContenu.ts",
+      "habilitationSiv"
+    );
+    supplementsPages["/habilitation-siv"] =
+      `<h2>Qui peut être habilité</h2><ul>` +
+      BENEFICIAIRES.map((b) => `<li>${echappe(b)}</li>`).join("") +
+      `</ul>` +
+      `<h2>Les conditions à remplir</h2>` +
+      CONDITIONS.map(
+        (c) =>
+          `<h3>${echappe(c.titre)}</h3><p>${echappe(c.texte)}</p>` +
+          `<p><strong>${echappe(c.bloquant)}</strong></p>`
+      ).join("") +
+      `<h2>Ce à quoi l'habilitation engage</h2><ul>` +
+      OBLIGATIONS.map(
+        (o) => `<li><strong>${echappe(o.quoi)}</strong> — ${echappe(o.detail)}</li>`
+      ).join("") +
+      `</ul>` +
+      faqHtml(FAQ);
+    faqsPages["/habilitation-siv"] = FAQ;
+  } catch (e) {
+    console.warn("[prerender] contenu habilitation SIV ignoré :", e?.message ?? e);
+  }
+
   // Le sommaire des démarches, et le pied de page qui les relie toutes.
   //
   // Chaque page prérendue ne portait qu'un seul lien interne, et l'accueil —
