@@ -2511,8 +2511,10 @@ export type Database = {
           created_at: string | null
           date_emission: string | null
           document_type: string
+          forme_juridique: string | null
           garage_id: string
           id: string
+          inscrit_rcs: boolean | null
           lu_le: string | null
           nature_document: string | null
           nom_fichier: string
@@ -2529,8 +2531,10 @@ export type Database = {
           created_at?: string | null
           date_emission?: string | null
           document_type: string
+          forme_juridique?: string | null
           garage_id: string
           id?: string
+          inscrit_rcs?: boolean | null
           lu_le?: string | null
           nature_document?: string | null
           nom_fichier: string
@@ -2547,8 +2551,10 @@ export type Database = {
           created_at?: string | null
           date_emission?: string | null
           document_type?: string
+          forme_juridique?: string | null
           garage_id?: string
           id?: string
+          inscrit_rcs?: boolean | null
           lu_le?: string | null
           nature_document?: string | null
           nom_fichier?: string
