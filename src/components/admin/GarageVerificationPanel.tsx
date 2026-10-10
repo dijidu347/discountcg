@@ -521,7 +521,29 @@ export function GarageVerificationPanel({
 
   const handleSingleApprove = async (docId: string) => {
     const avant = verificationDocs.find((d) => d.id === docId);
-    majLocale(docId, { status: "approved", rejection_reason: null });
+
+    // Accepter une pièce accepte TOUTES les faces déposées ce jour-là.
+    //
+    // Une carte d'identité arrive en deux fichiers envoyés ensemble. Le bouton
+    // n'en validait qu'un — celui affiché — et l'autre restait « en attente »
+    // pour toujours : l'administration croyait la pièce traitée, le garage
+    // voyait encore « En attente », et personne ne revenait dessus. Vingt-
+    // quatre pièces sont dans cet état, dont douze depuis le jour même du
+    // dépôt.
+    //
+    // Le même jour, et pas plus : un fichier déposé plus tard est un
+    // remplacement, il doit être regardé pour lui-même.
+    const jour = (d: { created_at: string }) => new Date(d.created_at).toISOString().slice(0, 10);
+    const compagnons = avant
+      ? verificationDocs.filter((d) =>
+          d.id !== docId
+          && d.document_type === avant.document_type
+          && d.status === "pending"
+          && jour(d) === jour(avant))
+      : [];
+    const aValider = [docId, ...compagnons.map((d) => d.id)];
+
+    aValider.forEach((id) => majLocale(id, { status: "approved", rejection_reason: null }));
 
     const { error } = await supabase
       .from("verification_documents")
@@ -531,7 +553,7 @@ export function GarageVerificationPanel({
         validated_at: new Date().toISOString(),
         rejection_reason: null,
       })
-      .eq("id", docId);
+      .in("id", aValider);
 
     if (error) {
       if (avant) majLocale(docId, { status: avant.status, rejection_reason: avant.rejection_reason });
