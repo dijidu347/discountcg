@@ -15,13 +15,13 @@ export const ETAPES = [
   {
     titre: "Vous créez votre compte",
     texte:
-      "Deux pièces suffisent : un extrait Kbis de moins de six mois et la pièce d'identité du dirigeant. Pas de mandat à faire signer, pas de dossier à monter.",
+      "Deux pièces suffisent : un extrait Kbis de moins de six mois — ou, si vous êtes artisan ou entrepreneur individuel, votre attestation d'immatriculation au RNE, gratuite sur data.inpi.fr — et la pièce d'identité du dirigeant. Pas de mandat à faire signer, pas de dossier à monter.",
     icone: "Building2" as const,
   },
   {
     titre: "Nous vérifions votre entreprise",
     texte:
-      "La date du Kbis est lue automatiquement et votre compte passe en vérifié. Vous êtes prévenu quinze jours avant son expiration, puis le jour où elle tombe.",
+      "La date du document est lue automatiquement et votre compte passe en vérifié. Vous êtes prévenu quinze jours avant son expiration, puis le jour où elle tombe.",
     icone: "ShieldCheck" as const,
   },
   {
@@ -60,7 +60,7 @@ export const FAQ = [
       "Le certificat provisoire d'immatriculation est transmis par e-mail dès la validation du dossier : votre client repart avec son véhicule le jour même. Sur le dernier trimestre, le délai médian entre le dépôt et la finalisation a été de 21 heures sur 1 744 démarches.",
   },
   {
-    question: "Que se passe-t-il si mon Kbis expire ?",
+    question: "Que se passe-t-il si mon Kbis ou mon attestation RNE expire ?",
     answer:
       "Vous recevez un rappel quinze jours avant, puis le jour de l'expiration. Vous déposez le nouveau Kbis depuis votre espace : sa date est lue automatiquement et votre compte est revalidé sans intervention de notre part. L'ancien document est supprimé.",
   },

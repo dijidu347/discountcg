@@ -200,7 +200,7 @@ const getEmailTemplate = (type: string, data: any) => {
     case "kbis_a_renouveler":
       return {
         subject: data.expire
-          ? "Votre compte n'est plus vérifié : Kbis à renouveler"
+          ? "Votre compte n'est plus vérifié : justificatif à renouveler"
           : data.depasse
           ? "Votre extrait Kbis a dépassé six mois"
           : "Votre extrait Kbis arrive à échéance",
@@ -211,16 +211,16 @@ const getEmailTemplate = (type: string, data: any) => {
             </h1>
             <p>Bonjour ${data.nom || ""},</p>
             ${data.expire
-              ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre a dépassé cette limite : <strong>votre compte n'est plus marqué comme vérifié</strong>.</p>
-                 <p>Vos démarches continuent de fonctionner normalement. Pour retrouver votre vérification, déposez simplement un extrait Kbis récent depuis vos paramètres.</p>`
+              ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois, ou une attestation d'immatriculation au RNE pour qui n'est pas inscrit au registre du commerce. Le vôtre a dépassé cette limite : <strong>votre compte n'est plus marqué comme vérifié</strong>.</p>
+                 <p>Vos démarches continuent de fonctionner normalement. Pour retrouver votre vérification, déposez simplement un extrait Kbis — ou votre attestation d'immatriculation au RNE, gratuite sur data.inpi.fr, si vous n'êtes pas inscrit au registre du commerce — récent depuis vos paramètres.</p>`
               : data.depasse
-              ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre a été délivré${data.echeance ? ` il y a plus de six mois : il a dépassé l'échéance du <strong>${dateFr(data.echeance)}</strong>` : " il y a plus de six mois"}.</p>
+              ? `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois, ou une attestation d'immatriculation au RNE pour qui n'est pas inscrit au registre du commerce. Le vôtre a été délivré${data.echeance ? ` il y a plus de six mois : il a dépassé l'échéance du <strong>${dateFr(data.echeance)}</strong>` : " il y a plus de six mois"}.</p>
                  <p><strong>Votre compte reste vérifié quinze jours.</strong> Déposez un extrait récent avant pour le conserver — le dépôt se fait en une minute, et votre vérification revient automatiquement.</p>`
-              : `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois. Le vôtre arrive à échéance${data.echeance ? ` le <strong>${dateFr(data.echeance)}</strong>` : ""}.</p>
+              : `<p>Les démarches d'immatriculation exigent un extrait Kbis de moins de six mois, ou une attestation d'immatriculation au RNE pour qui n'est pas inscrit au registre du commerce. Le vôtre arrive à échéance${data.echeance ? ` le <strong>${dateFr(data.echeance)}</strong>` : ""}.</p>
                  <p>Déposez un extrait récent depuis vos paramètres pour conserver votre vérification.</p>`}
 
             <a href="${baseUrl}/garage-settings?tab=verification" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Déposer mon Kbis
+              Déposer mon justificatif
             </a>
 
             ${guestReplyBlock}
@@ -480,7 +480,7 @@ const getEmailTemplate = (type: string, data: any) => {
             <p>Déposez-en un récent depuis votre espace : votre vérification revient automatiquement, et nous reprenons votre dossier.</p>
 
             <a href="${baseUrl}/garage-settings?tab=verification" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Déposer mon Kbis
+              Déposer mon justificatif
             </a>
 
             ${guestReplyBlock}

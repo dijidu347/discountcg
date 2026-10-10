@@ -181,7 +181,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     documents: [
       "Carte grise du véhicule",
       "Pièce d'identité du professionnel",
-      "Justificatif professionnel (Kbis, carte pro)",
+      "Justificatif professionnel (Kbis, attestation RNE ou carte pro)",
     ],
     delai: "Immédiat",
     steps: [
@@ -755,7 +755,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     description: "Plaques professionnelles W pour garages et professionnels de l'automobile",
     longDescription: "Les plaques W (ou plaques de garage) sont des immatriculations provisoires réservées aux professionnels de l'automobile (garagistes, concessionnaires, négociants en véhicules). Elles permettent de faire circuler des véhicules non immatriculés à titre définitif dans le cadre de l'activité professionnelle : essais, convoyage, présentation à la vente.\n\nLa première demande de plaques W garage nécessite de justifier de son statut de professionnel de l'automobile et de l'activité exercée. Une fois obtenues, ces plaques sont valables pour tous les véhicules de l'entreprise dans le cadre professionnel.\n\nAvec Discount Carte Grise, nous vous accompagnons dans la constitution de votre dossier de première demande et gérons l'ensemble de la procédure auprès de l'administration.",
     documents: [
-      "Extrait Kbis de moins de 6 mois",
+      "Extrait Kbis de moins de 6 mois, ou attestation d'immatriculation au RNE",
       "Justificatif d'activité professionnelle automobile",
       "Pièce d'identité du dirigeant",
       "Justificatif de domicile professionnel",

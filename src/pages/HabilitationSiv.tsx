@@ -150,7 +150,7 @@ export default function HabilitationSiv() {
           </p>
           <ul className="mb-6 space-y-2">
             {[
-              "Un extrait Kbis de moins de six mois, ou votre numéro de SIRET",
+              "Un extrait Kbis de moins de six mois — ou, sans inscription au RCS, une attestation d'immatriculation au RNE — ou votre numéro de SIRET",
               "La pièce d'identité du gérant de la société",
               "La pièce d'identité de chaque personne qui aura accès au SIV",
             ].map((p) => (

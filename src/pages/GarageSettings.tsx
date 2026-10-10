@@ -624,10 +624,12 @@ export default function GarageSettings() {
                         <div className="flex items-start gap-3">
                           <AlertCircle className="h-6 w-6 text-orange-500 shrink-0" />
                           <div>
-                            <h3 className="font-semibold mb-1">Votre extrait Kbis a plus de six mois</h3>
+                            <h3 className="font-semibold mb-1">Votre justificatif d'immatriculation a plus de six mois</h3>
                             <p className="text-muted-foreground text-sm">
-                              Déposez-en un récent ci-dessous, avec le bouton « Remplacer ».
-                              Vos démarches continuent de fonctionner normalement.
+                              Déposez-en un récent ci-dessous, avec le bouton « Remplacer » : un
+                              extrait Kbis, ou votre attestation d'immatriculation au RNE si vous
+                              n'êtes pas inscrit au registre du commerce — elle est gratuite sur
+                              data.inpi.fr. Vos démarches continuent de fonctionner normalement.
                             </p>
                           </div>
                         </div>

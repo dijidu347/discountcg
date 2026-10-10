@@ -210,7 +210,7 @@ export default function CarteGriseProfessionnel() {
               Ouvrez votre compte professionnel
             </h2>
             <p className="mx-auto mb-6 max-w-2xl text-muted-foreground">
-              Kbis et pièce d'identité du dirigeant, et votre première déclaration est offerte. Ni
+              Kbis ou attestation RNE, pièce d'identité du dirigeant, et votre première déclaration est offerte. Ni
               abonnement, ni engagement.
             </p>
             <Button asChild size="lg">
