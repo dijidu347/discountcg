@@ -85,9 +85,14 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
 
       const enExamen = duType.some((l) => l.status === "pending");
       const refuse = !enExamen && duType.some((l) => l.status === "rejected");
-      // RÈGLE : un dossier est complet dès que chaque pièce obligatoire a reçu
-      // un document, quel que soit son sort — en attente, refusé, périmé. Seule
-      // une pièce dont RIEN n'est arrivé rend le dossier incomplet.
+      // RÈGLE : le dossier est complet tant qu'il reste quelque chose à
+      // regarder. Refuser une pièce la SUPPRIME — elle part dans
+      // verification_documents_refuses et sa ligne est effacée — donc un refus
+      // d'aujourd'hui rend le dossier incomplet de lui-même.
+      //
+      // Restent trente-cinq lignes « rejected » héritées d'un mécanisme qui ne
+      // supprimait pas : leur document est encore là, encore ouvrable, encore
+      // acceptable. Il y a donc encore à vérifier, et le dossier est complet.
       const rienRecu = duType.length === 0;
 
       if (code === "kbis") {

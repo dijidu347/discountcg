@@ -369,7 +369,11 @@ export function GarageVerificationPanel({
     ...notificationHistory.map((n) => ({
       date: n.created_at,
       icone: "message" as const,
-      texte: n.subject,
+      texte: n.email_envoye === false
+        ? `${n.subject} — email NON parti`
+        : n.email_envoye === true
+        ? `${n.subject} — email envoyé`
+        : n.subject,
       note: n.message,
     })),
     ...(garage.kbis_alerte_envoyee_le

@@ -76,23 +76,19 @@ export async function refuserDocumentVerification({
     return { ok: false, message: erreurSuppression.message, emailEnvoye: false };
   }
 
-  const sujet = "Document refusé - Action requise";
+  const sujet = `${nomDePiece(doc.document_type)} refusé — action requise`;
   const corps =
-    `Le document « ${doc.nom_fichier ?? "déposé"} » a été refusé.\n\n` +
+    `Votre ${nomDePiece(doc.document_type).toLowerCase()} « ${doc.nom_fichier ?? "déposé"} » a été refusé.\n\n` +
     `${texte}\n\n` +
     `Merci de déposer la pièce corrigée depuis votre espace « Paramètres > Vérification ».`;
 
-  await supabase.from("garage_verification_notifications").insert({
-    garage_id: garage.id,
-    sent_by: parUtilisateur,
-    subject: sujet,
-    message: corps,
-  });
-
-  // L'email peut échouer sans que le refus soit perdu : la pièce est retirée,
-  // l'historique est écrit, la notification est dans l'espace du garage. On
-  // remonte seulement l'information, pour que l'écran puisse le dire plutôt
-  // que de laisser croire que le garage a été prévenu.
+  // L'email part AVANT que la notification soit écrite, pour que celle-ci
+  // puisse dire s'il est réellement sorti. Une notification enregistrée ne
+  // prouve pas qu'un message a quitté le serveur, et l'historique laissait
+  // croire que le garage avait été prévenu dans tous les cas.
+  //
+  // Un échec d'envoi ne perd pas le refus : la pièce est retirée, l'archive
+  // est écrite, la notification s'affiche dans l'espace du garage.
   const { error: erreurEmail } = await supabase.functions.invoke("send-email", {
     body: {
       type: "custom_notification",
@@ -105,7 +101,27 @@ export async function refuserDocumentVerification({
     },
   });
 
+  // types.ts est généré depuis la base et ne connaît pas encore la colonne.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any).from("garage_verification_notifications").insert({
+    garage_id: garage.id,
+    sent_by: parUtilisateur,
+    subject: sujet,
+    message: corps,
+    email_envoye: !erreurEmail,
+  });
+
   return { ok: true, emailEnvoye: !erreurEmail };
+}
+
+/** Le nom d'une pièce tel qu'un garage le lit, et non son code technique. */
+function nomDePiece(code: string): string {
+  const noms: Record<string, string> = {
+    kbis: "Kbis ou attestation RNE",
+    carte_identite: "Carte d'identité",
+    mandat: "Mandat",
+  };
+  return noms[code] ?? "Document";
 }
 
 export interface DocumentRefuse {
