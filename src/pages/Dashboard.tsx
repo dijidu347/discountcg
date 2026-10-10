@@ -34,10 +34,18 @@ export default function Dashboard() {
   const [garage, setGarage] = useState<any>(null);
   // Même préalable que dans les paramètres : sans raison sociale ni SIRET, on
   // ne sait pas quelle pièce réclamer, et le dépôt n'a pas de sens.
+  // Ce qui manque exactement, et non « la fiche est incomplète ».
+  //
+  // Trente-cinq garages ont donné un SIRET trop court — neuf ou douze
+  // chiffres, hérités du formulaire qui les acceptait — mais leur raison
+  // sociale, elle, est bonne. Leur redemander les deux revient à leur faire
+  // ressaisir ce qu'on tient déjà, et à laisser croire que leur fiche est
+  // vide alors qu'il manque deux chiffres.
+  const raisonSocialeManquante = Boolean(garage && !String(garage.raison_sociale ?? "").trim());
+  const chiffresSiret = String(garage?.siret ?? "").replace(/\D/g, "").length;
+  const siretIncomplet = Boolean(garage && chiffresSiret !== 14);
   const ficheIncomplete = Boolean(
-    garage
-      && (!String(garage.raison_sociale ?? "").trim()
-        || String(garage.siret ?? "").replace(/\D/g, "").length !== 14),
+    garage && (raisonSocialeManquante || siretIncomplet),
   );
   const [stats, setStats] = useState({
     totalDemarches: 0,
@@ -443,14 +451,20 @@ export default function Dashboard() {
                 <div className="min-w-0">
                   <p className="font-bold text-primary">
                     {ficheIncomplete
-                      ? "Faites vérifier votre compte"
+                      ? (raisonSocialeManquante
+                          ? "Faites vérifier votre compte"
+                          : "Votre SIRET est incomplet")
                       : aucunDocEnvoye
                       ? "Il reste une étape"
                       : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
                   </p>
                   <p className="mt-0.5 text-sm text-primary/90">
                     {ficheIncomplete
-                      ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Votre raison sociale et votre SIRET d'abord, puis ${
+                      ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. ${
+                          raisonSocialeManquante
+                            ? "Votre raison sociale et votre SIRET d'abord"
+                            : `Le SIRET enregistré ne compte que ${chiffresSiret} chiffre${chiffresSiret > 1 ? "s" : ""} sur 14 : corrigez-le`
+                        }, puis ${
                           requiredDocNames.length === 1
                             ? "une pièce"
                             : requiredDocNames.length === 2
@@ -480,21 +494,26 @@ export default function Dashboard() {
                 tant que les deux ne sont pas valables : sans eux, la pièce
                 déposée ne se rattacherait à aucune entreprise. */}
             {ficheIncomplete && (
-              <div className="mt-4 grid gap-3 border-t border-primary/25 pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-                <div>
-                  <Label htmlFor="bandeau-raison-sociale" className="text-primary">
-                    Raison sociale <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="bandeau-raison-sociale"
-                    className="mt-1 bg-background"
-                    value={ficheSaisie.raison_sociale}
-                    onChange={(e) =>
-                      setFicheSaisie((f) => ({ ...f, raison_sociale: e.target.value }))
-                    }
-                    placeholder="Nom de votre entreprise"
-                  />
-                </div>
+              <div className={`mt-4 grid gap-3 border-t border-primary/25 pt-4 sm:items-end ${
+                raisonSocialeManquante ? "sm:grid-cols-[1fr_1fr_auto]" : "sm:grid-cols-[1fr_auto]"
+              }`}>
+                {/* Pas de case pour ce qu'on possède déjà. */}
+                {raisonSocialeManquante && (
+                  <div>
+                    <Label htmlFor="bandeau-raison-sociale" className="text-primary">
+                      Raison sociale <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="bandeau-raison-sociale"
+                      className="mt-1 bg-background"
+                      value={ficheSaisie.raison_sociale}
+                      onChange={(e) =>
+                        setFicheSaisie((f) => ({ ...f, raison_sociale: e.target.value }))
+                      }
+                      placeholder="Nom de votre entreprise"
+                    />
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="bandeau-siret" className="text-primary">
                     SIRET <span className="text-destructive">*</span>
@@ -521,10 +540,12 @@ export default function Dashboard() {
                 >
                   {enregistrementFiche ? "Enregistrement…" : "Déposer mes pièces"}
                 </Button>
-                <p className="text-xs text-primary/80 sm:col-span-3">
+                <p className={`text-xs text-primary/80 ${raisonSocialeManquante ? "sm:col-span-3" : "sm:col-span-2"}`}>
                   {ficheSaisie.siret.length > 0 && ficheSaisie.siret.length < 14
-                    ? `${14 - ficheSaisie.siret.length} chiffre${14 - ficheSaisie.siret.length > 1 ? "s" : ""} manquant${14 - ficheSaisie.siret.length > 1 ? "s" : ""} au SIRET.`
-                    : "Les deux champs sont nécessaires avant de déposer vos pièces."}
+                    ? `${14 - ficheSaisie.siret.length} chiffre${14 - ficheSaisie.siret.length > 1 ? "s" : ""} manquant${14 - ficheSaisie.siret.length > 1 ? "s" : ""}.`
+                    : raisonSocialeManquante
+                      ? "Les deux champs sont nécessaires avant de déposer vos pièces."
+                      : "Le SIRET complet est nécessaire avant de déposer vos pièces."}
                 </p>
               </div>
             )}
