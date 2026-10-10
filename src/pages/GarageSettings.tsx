@@ -398,6 +398,17 @@ export default function GarageSettings() {
   // Documents approuvés dont le garage a demandé le remplacement.
   const [remplacements, setRemplacements] = useState<Set<string>>(new Set());
 
+  // La fiche entreprise est le préalable aux pièces, et non un à-côté.
+  //
+  // La lecture automatique compare le SIREN imprimé sur le Kbis à celui du
+  // garage : sans SIRET enregistré, la comparaison échoue en silence, et
+  // l'administration n'a rien à quoi rapprocher le document. Un garage pouvait
+  // pourtant déposer ses deux pièces avec une fiche vide — quarante-six
+  // comptes n'ont ni raison sociale ni SIRET.
+  const ficheIncomplete =
+    !String(garage?.raison_sociale ?? "").trim()
+    || String(garage?.siret ?? "").replace(/\D/g, "").length !== 14;
+
   // Quelle pièce d'immatriculation ce professionnel peut fournir. Déduite de
   // son SIRET, sans rien lui demander : beaucoup ignorent s'ils relèvent du
   // registre du commerce ou du répertoire des métiers, et répondraient au
@@ -520,7 +531,7 @@ export default function GarageSettings() {
                 <CardTitle>Informations de l'entreprise</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-4" id="fiche-entreprise">
                   <div className="grid md:grid-cols-2 gap-4">
                     {/* Raison sociale et SIRET se verrouillent une fois le
                         compte vérifié : à ce moment nous avons contrôlé les
@@ -664,7 +675,9 @@ export default function GarageSettings() {
                   <div>
                     <CardTitle>Vérification du compte</CardTitle>
                     <CardDescription>
-                      Soumettez les documents requis pour obtenir le badge vérifié
+                      {ficheIncomplete && !garage?.is_verified
+                        ? "Complétez d'abord votre fiche entreprise, puis déposez vos pièces"
+                        : "Soumettez les documents requis pour obtenir le badge vérifié"}
                     </CardDescription>
                   </div>
                   {garage?.is_verified && (
@@ -676,6 +689,46 @@ export default function GarageSettings() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Le préalable, avant toute pièce : sans raison sociale ni
+                    SIRET, un Kbis déposé ne se rattache à rien. Le dire ici
+                    plutôt que de laisser déposer des documents inexploitables. */}
+                {ficheIncomplete && !garage?.is_verified && (
+                  <div className="rounded-lg border-2 border-primary bg-primary/10 px-5 py-4">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-start gap-3">
+                        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                        <div className="min-w-0">
+                          <p className="font-bold text-primary">
+                            Commencez par votre fiche entreprise
+                          </p>
+                          <p className="mt-0.5 text-sm text-primary/90">
+                            Il manque{" "}
+                            {!String(garage?.raison_sociale ?? "").trim() && "votre raison sociale"}
+                            {!String(garage?.raison_sociale ?? "").trim()
+                              && String(garage?.siret ?? "").replace(/\D/g, "").length !== 14
+                              && " et "}
+                            {String(garage?.siret ?? "").replace(/\D/g, "").length !== 14
+                              && "votre SIRET"}
+                            . Sans eux, nous ne pouvons pas rattacher votre Kbis à votre
+                            entreprise : déposer vos pièces maintenant ne servirait à rien.
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        className="shrink-0"
+                        onClick={() =>
+                          document.getElementById("fiche-entreprise")?.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start",
+                          })
+                        }
+                      >
+                        Compléter ma fiche
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {garage?.is_verified && (
                   <div className="text-center py-6 mb-2 rounded-lg border border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20">
                     <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-3" />
