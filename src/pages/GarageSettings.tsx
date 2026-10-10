@@ -812,15 +812,7 @@ export default function GarageSettings() {
                       <div className="py-4 mb-4 px-4 bg-orange-50 border border-orange-200 rounded-lg dark:bg-orange-950/20 dark:border-orange-800">
                         <div className="flex items-start gap-3">
                           <AlertCircle className="h-6 w-6 text-orange-500 shrink-0" />
-                          <div>
-                            <h3 className="font-semibold mb-1">Votre justificatif d'immatriculation a plus de six mois</h3>
-                            <p className="text-muted-foreground text-sm">
-                              Déposez-en un récent ci-dessous, avec le bouton « Remplacer » : un
-                              extrait Kbis, ou votre attestation d'immatriculation au RNE si vous
-                              n'êtes pas inscrit au registre du commerce — elle est gratuite sur
-                              data.inpi.fr. Vos démarches continuent de fonctionner normalement.
-                            </p>
-                          </div>
+                          <h3 className="font-semibold">Votre justificatif d'immatriculation a plus de six mois</h3>
                         </div>
                       </div>
                     )}
