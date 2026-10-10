@@ -276,7 +276,7 @@ export default function GarageSettings() {
     setSaving(false);
   };
 
-  const handleFileUpload = async (documentType: string, files: File[]) => {
+  const handleFileUpload = async (documentType: string, files: File[], face?: "recto" | "verso") => {
     if (!garage || files.length === 0) return;
     const refus = formatRefuse(files);
     if (refus) {
@@ -372,8 +372,9 @@ export default function GarageSettings() {
           document_type: documentType, 
           url: fileUrl, 
           nom_fichier: file.name, 
-          status: 'pending' 
-        });
+          status: 'pending',
+          ...(face ? { face } : {}),
+        } as any);
         
         if (insertError) {
           console.error('Insert error:', insertError);
@@ -390,15 +391,22 @@ export default function GarageSettings() {
       // anciens s'effacent. Sans cela un garage qui redépose son Kbis en
       // laisse deux à l'écran, et l'administration ignore lequel est le bon.
       const capacite = capaciteDe(documentType);
-      const { data: presents } = await supabase
+      // types.ts est généré depuis la base et ne connaît pas encore `face`.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: presents } = await (supabase as any)
         .from('verification_documents')
-        .select('id, url, created_at')
+        .select('id, url, created_at, face')
         .eq('garage_id', garage.id)
         .eq('document_type', documentType)
         .in('status', ['pending', 'approved'])
         .order('created_at', { ascending: false });
 
-      const surnumeraires = (presents ?? []).slice(capacite);
+      // Déposer un recto ne doit pas effacer le verso. Quand la face est
+      // connue, c'est l'ancienne image de CETTE face qui s'en va ; sinon on
+      // retombe sur la règle générale, le plus ancien au-delà de la capacité.
+      const surnumeraires = face
+        ? (presents ?? []).filter((d: any) => d.face === face).slice(1)
+        : (presents ?? []).slice(capacite);
       for (const vieux of surnumeraires) {
         try {
           const parts = String(vieux.url ?? "").split('/demarche-documents/');
@@ -460,10 +468,6 @@ export default function GarageSettings() {
   };
 
   // Documents approuvés dont le garage a demandé le remplacement.
-  // Le détail des fichiers est replié par défaut, et seulement pour ce qui
-  // est réglé : une pièce refusée ou périmée s'ouvre d'elle-même, puisque
-  // c'est précisément celle qu'il faut regarder.
-  const [detailsOuverts, setDetailsOuverts] = useState<Set<string>>(new Set());
   const [remplacements, setRemplacements] = useState<Set<string>>(new Set());
 
   // La fiche entreprise est le préalable aux pièces, et non un à-côté.
@@ -910,152 +914,84 @@ export default function GarageSettings() {
                               </div>
                             )}
                             
-                            {/* Tous les fichiers reçus, pas seulement le dernier.
-                                Une carte d'identité tient souvent en deux photos :
-                                l'écran n'en montrait qu'une, et le garage croyait
-                                que son verso avait écrasé son recto. */}
-                            {status.doc && (() => {
+                            {/* Un emplacement par face, et le fichier déposé juste
+                                en dessous, cliquable.
+                                
+                                Une liste de fichiers horodatés obligeait à lire une
+                                date pour savoir s'il manquait le verso. Deux
+                                emplacements nommés le disent d'un coup d'œil : celui
+                                qui est vide est celui qui manque.
+                                
+                                Les dépôts antérieurs n'ont pas de face enregistrée :
+                                on les rattache dans l'ordre d'arrivée, le premier au
+                                recto. */}
+                            {(() => {
                               const recus = verificationDocs
                                 .filter((d) => d.document_type === reqDoc.code
                                   && (d.status === 'pending' || d.status === 'approved'))
                                 .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
-                              return (
-                                (() => {
-                                const aRegler = status.status === "rejected" || status.status === "expire";
-                                // Deux fichiers portant le même nom dans la même pièce :
-                                // c'est presque toujours le même document déposé deux
-                                // fois, par un double clic ou un envoi qui semblait
-                                // avoir échoué. Personne ne s'en rend compte, et
-                                // l'écran affichait « Fichier 1 sur 2 » comme si le
-                                // dossier était complet alors qu'il manquait le verso.
-                                const vus = new Set<string>();
-                                const doublons = new Set<string>();
-                                recus.forEach((d) => {
-                                  const cle = String(d.nom_fichier ?? "").trim().toLowerCase();
-                                  if (!cle) return;
-                                  if (vus.has(cle)) doublons.add(d.id);
-                                  else vus.add(cle);
-                                });
-                                const ouvert = aRegler || detailsOuverts.has(reqDoc.code);
-                                const dernier = recus[recus.length - 1];
-                                return (
-                                <div className="mb-2 space-y-1">
-                                  {/* Une ligne de résumé plutôt qu'un gros bouton par
-                                      fichier. Le nom du fichier n'apprend rien à
-                                      personne — « Capture d'écran 2025-12-16 à
-                                      11.56.33.png » — et prenait toute la largeur ;
-                                      la date, elle, dit si la pièce est à jour. */}
-                                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                    <span>
-                                      {recus.length === 1
-                                        ? `1 fichier reçu, le ${format(new Date(dernier.created_at), "dd/MM/yyyy", { locale: fr })}`
-                                        : `${recus.length} fichiers reçus, le dernier le ${format(new Date(dernier.created_at), "dd/MM/yyyy", { locale: fr })}`}
-                                    </span>
-                                    {doublons.size > 0 && (
-                                      <span className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
-                                        {doublons.size === 1
-                                          ? "un fichier semble être un doublon"
-                                          : `${doublons.size} fichiers semblent être des doublons`}
-                                      </span>
-                                    )}
-                                    {!aRegler && (
-                                      <button
-                                        type="button"
-                                        className="text-primary hover:underline"
-                                        onClick={() => setDetailsOuverts((o) => {
-                                          const suivant = new Set(o);
-                                          if (suivant.has(reqDoc.code)) suivant.delete(reqDoc.code);
-                                          else suivant.add(reqDoc.code);
-                                          return suivant;
-                                        })}
-                                      >
-                                        {ouvert ? "Masquer le détail" : "Voir le détail"}
-                                      </button>
-                                    )}
-                                  </div>
+                              const sansFace = recus.filter((d: any) => !d.face);
+                              const pourFace = (face: "recto" | "verso") =>
+                                recus.find((d: any) => d.face === face)
+                                  ?? sansFace[face === "recto" ? 0 : 1];
 
-                                  {ouvert && recus.map((d, i) => (
-                                    <div key={d.id} className="flex items-center gap-3 border-t py-1.5 text-sm">
-                                      <span className="w-10 shrink-0 text-muted-foreground">
-                                        {recus.length > 1 ? `${i + 1} / ${recus.length}` : ""}
-                                      </span>
-                                      <span className="min-w-0 flex-1 truncate">
-                                        Déposé le {format(new Date(d.created_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}
-                                        {doublons.has(d.id) && (
-                                          <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
-                                            même fichier que plus haut
-                                          </span>
-                                        )}
-                                      </span>
-                                      <button
-                                        type="button"
-                                        className="shrink-0 text-primary hover:underline"
-                                        onClick={() => window.open(d.url, '_blank')}
-                                      >
-                                        Voir
-                                      </button>
-                                    </div>
-                                  ))}
-
-                                  {status.remplacable && !status.canUpload && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="mt-1"
-                                      onClick={() => setRemplacements((d) => new Set(d).add(reqDoc.code))}
+                              const emplacement = (
+                                face: "recto" | "verso" | null,
+                                intitule: string,
+                                aide: string,
+                                doc: any,
+                              ) => (
+                                <div key={intitule} className="space-y-1">
+                                  <ChampFichiers
+                                    variante="zone"
+                                    accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
+                                    multiple={!face && capaciteDe(reqDoc.code) > 1}
+                                    disabled={uploadingDoc === reqDoc.code}
+                                    libelle={doc ? `Remplacer ${intitule.toLowerCase().replace(/^ajouter /, "")}` : intitule}
+                                    vide={aide}
+                                    onChoisis={(fichiers) =>
+                                      handleFileUpload(reqDoc.code, fichiers, face ?? undefined)}
+                                  />
+                                  {doc && (
+                                    <button
+                                      type="button"
+                                      onClick={() => window.open(doc.url, '_blank')}
+                                      className="ml-1 max-w-full truncate text-left text-sm text-primary hover:underline"
                                     >
-                                      <Upload className="h-4 w-4 mr-1" />
-                                      Remplacer
-                                    </Button>
+                                      {doc.nom_fichier}
+                                    </button>
                                   )}
                                 </div>
+                              );
+
+                              if (reqDoc.code === "carte_identite") {
+                                return (
+                                  <div className="space-y-3">
+                                    {emplacement("recto", "Ajouter le recto",
+                                      "La face avec la photo", pourFace("recto"))}
+                                    {emplacement("verso", "Ajouter le verso",
+                                      "Inutile si le recto contient déjà les deux faces", pourFace("verso"))}
+                                  </div>
                                 );
-                                })()
+                              }
+
+                              const seul = recus[recus.length - 1];
+                              return emplacement(
+                                null,
+                                seul ? "Remplacer" : "Choisir un fichier",
+                                status.status === "expire"
+                                  ? "Déposez un justificatif de moins de six mois"
+                                  : seul
+                                  ? "Le nouveau fichier remplacera celui déjà déposé"
+                                  : "Aucun fichier choisi",
+                                seul,
                               );
                             })()}
-                            
-                            {status.canUpload && (
-                              <div className="space-y-2">
-                                {/* Un seul champ : trois cases donnaient à croire qu'il
-                                    fallait trois fichiers. Il en accepte plusieurs d'un
-                                    coup, pour un recto et un verso. */}
-                                <ChampFichiers
-                                  variante="zone"
-                                  accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
-                                  multiple={capaciteDe(reqDoc.code) > 1}
-                                  disabled={uploadingDoc === reqDoc.code}
-                                  libelle={
-                                    // Une pièce qui ne tient qu'en un fichier ne
-                                    // s'« ajoute » jamais : elle se remplace, et le
-                                    // bouton doit le dire avant le clic.
-                                    capaciteDe(reqDoc.code) === 1 && status.doc
-                                      ? "Remplacer"
-                                      : status.status === "approved" || status.status === "expire"
-                                      ? "Remplacer"
-                                      : status.doc ? "Ajouter un fichier" : undefined
-                                  }
-                                  vide={
-                                    status.status === "expire"
-                                      ? "Déposez un justificatif de moins de six mois"
-                                      : capaciteDe(reqDoc.code) === 1 && status.doc
-                                      ? "Le nouveau fichier remplacera celui déjà déposé"
-                                      : status.doc
-                                      ? (verificationDocs.filter((d) => d.document_type === reqDoc.code
-                                          && (d.status === 'pending' || d.status === 'approved')).length >= capaciteDe(reqDoc.code)
-                                          ? "Le nouveau fichier remplacera le plus ancien"
-                                          : "Vous pouvez en ajouter un autre — le verso, par exemple")
-                                      : reqDoc.code === "carte_identite"
-                                      ? "Recto et verso : choisissez les deux fichiers à la fois, ou un seul s'il contient les deux faces"
-                                      : "Aucun fichier choisi"
-                                  }
-                                  onChoisis={(fichiers) => handleFileUpload(reqDoc.code, fichiers)}
-                                />
-                                {uploadingDoc === reqDoc.code && (
-                                  <div className="flex items-center justify-center py-2">
-                                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                                    <span className="text-sm">Envoi en cours...</span>
-                                  </div>
-                                )}
+
+                            {uploadingDoc === reqDoc.code && (
+                              <div className="flex items-center justify-center py-2">
+                                <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                                <span className="text-sm">Envoi en cours...</span>
                               </div>
                             )}
                           </div>
