@@ -619,12 +619,27 @@ export default function ManageGarages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [horsActivite, stats, activite, activitePeriode, maintenant]);
 
+  // Le compte de chaque choix se lit dans l'onglet où l'on est.
+  //
+  // Il portait sur tout le parc : l'onglet « Vérifié » affichait cent
+  // vingt-neuf garages et proposait en même temps de filtrer sur cinq cent
+  // trois « jamais de démarche », qui ne pouvaient évidemment pas s'y trouver.
+  // Le nombre annonçait un résultat que le clic ne donnait pas.
+  const horsActiviteOnglet = useMemo(
+    () => horsActivite.filter((g) => onglet === "tous" || etape(g) === onglet),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [horsActivite, onglet, dossiers],
+  );
+
   const OPTIONS_ACTIVITE = [
     { valeur: "actif", texte: "Actif (moins de 30 j)" },
     { valeur: "ralenti", texte: "En perte de vitesse (30 à 90 j)" },
     { valeur: "inactif", texte: "Inactif (plus de 90 j)" },
     { valeur: "jamais", texte: "Jamais de démarche" },
-  ].map((o) => ({ ...o, nombre: horsActivite.filter((g) => correspondActivite(o.valeur, ageDerniere(g))).length }));
+  ].map((o) => ({
+    ...o,
+    nombre: horsActiviteOnglet.filter((g) => correspondActivite(o.valeur, ageDerniere(g))).length,
+  }));
 
   const comptes = useMemo(() => {
     const c: Record<Onglet, number> = { tous: filtres.length, verifie: 0, a_verifier: 0, a_completer: 0, aucun_document: 0 };
