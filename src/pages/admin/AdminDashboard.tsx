@@ -383,14 +383,17 @@ export default function AdminDashboard() {
                   <CalendarClock className="h-8 w-8 shrink-0 text-yellow-600" />
                   <div>
                     <p className="font-bold text-foreground">
-                      {stats.kbisADater} Kbis {stats.kbisADater > 1 ? "attendent" : "attend"} leur date
+                      {stats.kbisADater} Kbis {stats.kbisADater > 1 ? "attendent leur date" : "attend sa date"}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       La lecture automatique n'a pas trouvé la date de délivrance : à recopier à la main
                     </p>
                   </div>
                 </div>
-                <Button variant="outline" className="shrink-0 border-yellow-600 text-foreground hover:bg-yellow-100 dark:hover:bg-yellow-950/40">
+                <Button
+                  variant="outline"
+                  className="shrink-0 border-yellow-600 bg-background text-yellow-900 hover:bg-yellow-100 hover:text-yellow-900 dark:text-yellow-200 dark:hover:bg-yellow-950/40 dark:hover:text-yellow-100"
+                >
                   Saisir les dates
                 </Button>
               </div>
