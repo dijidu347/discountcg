@@ -968,6 +968,7 @@ export function GarageVerificationPanel({
                                 </span>
                               </div>
                               <Input
+                                key={docActif.id}
                                 id="date-kbis"
                                 type="date"
                                 className={`h-8 ${!docActif.date_emission ? "border-yellow-500 ring-1 ring-yellow-500" : ""}`}
