@@ -2514,6 +2514,7 @@ export type Database = {
           garage_id: string
           id: string
           lu_le: string | null
+          nature_document: string | null
           nom_fichier: string
           rejection_reason: string | null
           siren: string | null
@@ -2531,6 +2532,7 @@ export type Database = {
           garage_id: string
           id?: string
           lu_le?: string | null
+          nature_document?: string | null
           nom_fichier: string
           rejection_reason?: string | null
           siren?: string | null
@@ -2548,6 +2550,7 @@ export type Database = {
           garage_id?: string
           id?: string
           lu_le?: string | null
+          nature_document?: string | null
           nom_fichier?: string
           rejection_reason?: string | null
           siren?: string | null
