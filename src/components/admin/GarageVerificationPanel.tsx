@@ -1086,7 +1086,15 @@ export function GarageVerificationPanel({
                                 onClick={() => handleSingleApprove(docActif.id)}
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
-                                Accepter
+                                {(() => {
+                                  const jour = (d: { created_at: string }) =>
+                                    new Date(d.created_at).toISOString().slice(0, 10);
+                                  const ensemble = r.docs.filter((d) =>
+                                    d.status === "pending" && jour(d) === jour(docActif));
+                                  return ensemble.length > 1
+                                    ? `Accepter les ${ensemble.length} fichiers`
+                                    : "Accepter";
+                                })()}
                               </Button>
                             )}
                             {docActif.document_type === "kbis" && docActif.lu_le && !docActif.date_emission && (
