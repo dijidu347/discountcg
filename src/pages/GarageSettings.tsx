@@ -10,7 +10,7 @@ import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { GarageSignatureSettings } from "@/components/signature/GarageSignatureSettings";
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye, Trash2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye, Trash2, FileText } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -970,7 +970,7 @@ export default function GarageSettings() {
                                 aide: string,
                                 doc: any,
                               ) => (
-                                <div key={intitule} className="space-y-1">
+                                <div key={intitule} className="space-y-2">
                                   <ChampFichiers
                                     variante="zone"
                                     accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
@@ -981,15 +981,25 @@ export default function GarageSettings() {
                                     onChoisis={(fichiers) =>
                                       handleFileUpload(reqDoc.code, fichiers, face ?? undefined)}
                                   />
+                                  {/* Le fichier déposé devient un objet posé dans
+                                      son cadre, avec ses deux actions nommées. Un nom
+                                      en bleu ressemblait à une étiquette colorée : rien
+                                      ne disait ce qui se passait au clic, et la
+                                      corbeille flottait à côté sans cadre. */}
                                   {doc && (
-                                    <div className="ml-1 flex items-center gap-2">
-                                      <button
+                                    <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                                      <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                      <span className="min-w-0 flex-1 truncate text-sm">{doc.nom_fichier}</span>
+                                      <Button
                                         type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 shrink-0 px-2 text-xs"
                                         onClick={() => window.open(doc.url, '_blank')}
-                                        className="min-w-0 flex-1 truncate text-left text-sm text-primary hover:underline"
                                       >
-                                        {doc.nom_fichier}
-                                      </button>
+                                        <Eye className="mr-1 h-3.5 w-3.5" />
+                                        Ouvrir
+                                      </Button>
                                       {doc.status !== 'approved' && (
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
