@@ -19,21 +19,29 @@ import { supabase } from "@/integrations/supabase/client";
 
 const API = "https://recherche-entreprises.api.gouv.fr/search";
 
-export type PieceAttendue = "kbis" | "rne" | "indetermine";
+export type PieceAttendue = "kbis" | "indetermine";
 
 /**
  * Catégorie juridique INSEE → la pièce que ce professionnel peut fournir.
  *
- * Les codes commençant par 5 sont les sociétés commerciales — SARL, SAS, SA,
- * SNC — immatriculées au registre du commerce : elles ont un Kbis.
- * Le code 1000 est l'entrepreneur individuel, qui n'a pas de Kbis de société.
- * Pour tout le reste on ne tranche pas, et l'écran garde sa formulation
- * générale plutôt que d'affirmer une bêtise.
+ * On ne nomme une pièce unique que lorsqu'on en est sûr. Les codes commençant
+ * par 5 sont les sociétés commerciales — SARL, SAS, SA, SNC — immatriculées au
+ * registre du commerce : elles ont un Kbis, sans exception.
+ *
+ * Partout ailleurs, l'écran garde sa formulation générale et nomme les deux
+ * documents. Le code 1000, l'entrepreneur individuel, en est l'exemple
+ * principal et le piège : il recouvre deux situations opposées. L'artisan
+ * réparateur relève du répertoire des métiers et n'a pas de Kbis ; le marchand
+ * de voitures, lui, fait des actes de commerce, il est donc immatriculé au
+ * registre du commerce et en a un — y compris en auto-entrepreneur, où
+ * l'immatriculation est obligatoire depuis 2015.
+ *
+ * Affirmer « vous n'avez pas de Kbis » à ce dernier, c'est lui demander une
+ * attestation RNE alors qu'il tient son Kbis à la main.
  */
 export function pieceAttendue(code: string | null | undefined): PieceAttendue {
   if (!code) return "indetermine";
   if (code.startsWith("5")) return "kbis";
-  if (code === "1000") return "rne";
   return "indetermine";
 }
 
@@ -120,12 +128,6 @@ export function libellePiece(attendue: PieceAttendue): { nom: string; aide: stri
     return {
       nom: "Extrait Kbis",
       aide: "De moins de six mois, mentionnant une activité d'achat-vente de véhicules. Vous pouvez l'obtenir gratuitement sur monidenum.fr.",
-    };
-  }
-  if (attendue === "rne") {
-    return {
-      nom: "Attestation d'immatriculation au RNE",
-      aide: "De moins de six mois. En tant qu'entrepreneur individuel vous n'avez pas de Kbis : c'est cette attestation qui en tient lieu. Elle est gratuite et immédiate sur data.inpi.fr.",
     };
   }
   return {

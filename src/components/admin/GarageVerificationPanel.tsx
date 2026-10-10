@@ -846,11 +846,9 @@ export function GarageVerificationPanel({
                       {/* Ce que ce professionnel peut produire, lu sur son
                           SIRET. Dit avant même d'ouvrir le document, pour ne
                           plus réclamer un Kbis à qui n'en aura jamais. */}
-                      {r.code === "kbis" && attendue !== "indetermine" && (
+                      {r.code === "kbis" && attendue === "kbis" && (
                         <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
-                          {attendue === "kbis"
-                            ? "Société au registre du commerce : un extrait Kbis existe, il est exigible."
-                            : "Entrepreneur individuel : pas de Kbis, l'attestation RNE en tient lieu."}
+                          Société au registre du commerce : un extrait Kbis existe, il est exigible.
                         </p>
                       )}
 
