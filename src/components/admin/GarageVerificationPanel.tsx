@@ -889,6 +889,44 @@ export function GarageVerificationPanel({
                                   Activité lue : « {docChoisi.activite} »
                                 </p>
                               )}
+
+                              {/* Le Kbis reste la règle pour une société ;
+                                  l'attestation RNE n'est admise que pour qui ne
+                                  peut pas en obtenir. Le document le dit
+                                  lui-même : un Kbis mentionne toujours le RCS,
+                                  l'attestation d'un artisan jamais. */}
+                              {docChoisi.nature_document === "rne" && (
+                                <div
+                                  className={`rounded-md border p-2 text-xs ${
+                                    docChoisi.inscrit_rcs
+                                      ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
+                                      : "border-border bg-muted/50"
+                                  }`}
+                                >
+                                  <p className="font-medium text-foreground">
+                                    Attestation RNE
+                                    {docChoisi.forme_juridique ? ` — ${docChoisi.forme_juridique}` : ""}
+                                  </p>
+                                  {docChoisi.inscrit_rcs ? (
+                                    <p className="mt-0.5 text-foreground">
+                                      Le document mentionne une inscription au RCS : cette entreprise
+                                      a donc un extrait Kbis. Demandez-le — l'attestation n'est
+                                      admise que pour qui ne peut pas en obtenir.
+                                    </p>
+                                  ) : docChoisi.inscrit_rcs === false ? (
+                                    <p className="mt-0.5 text-muted-foreground">
+                                      Aucune inscription au RCS mentionnée : ce professionnel n'a pas
+                                      de Kbis, l'attestation est la pièce qui en tient lieu.
+                                    </p>
+                                  ) : (
+                                    <p className="mt-0.5 text-muted-foreground">
+                                      La lecture n'a pas pu dire si l'entreprise est inscrite au RCS.
+                                      Vérifiez sur le document : s'il mentionne le registre du
+                                      commerce, un Kbis existe et doit être demandé.
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
 

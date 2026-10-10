@@ -61,6 +61,14 @@ Rends exactement ceci, et rien d'autre :
   "est_un_kbis": true si le document est un extrait Kbis OU une attestation
     d'immatriculation au RNE, false sinon,
   "nature": "kbis" ou "rne" selon le document lu, null si ni l'un ni l'autre,
+  "forme_juridique": la forme juridique imprimée sur le document — « SARL »,
+    « SAS », « Entrepreneur individuel », « EURL »… — recopiée telle quelle,
+    null si absente,
+  "inscrit_rcs": true si le document mentionne une immatriculation au registre
+    du commerce et des sociétés (RCS), false s'il n'en mentionne aucune, null si
+    tu ne peux pas trancher. Un extrait Kbis en mentionne toujours une. Une
+    attestation RNE en mentionne une si l'entreprise est une société, et aucune
+    si c'est un artisan inscrit au seul répertoire des métiers,
   "date_imprimee": la date TELLE QU'ELLE EST ÉCRITE sur le document, recopiée
     caractère par caractère, par exemple "28/09/2026" ou "28 septembre 2026",
     null si tu ne la vois pas,
@@ -116,11 +124,22 @@ async function revalider(
   iso: string,
   sirenLu: string,
   estUnKbis: boolean,
+  nature: string | null,
 ): Promise<string | null> {
   // Le dépôt vient du garage (en attente) ou de l'administration, qui approuve
   // en déposant : dans les deux cas, c'est la lecture qui rend le badge.
   if (!["pending", "approved"].includes(ligne.status) || !estUnKbis) return null;
   if (!/kbis/i.test(ligne.document_type ?? "")) return null;
+
+  // Une attestation RNE ne se valide jamais toute seule.
+  //
+  // Le Kbis reste la règle pour une société ; l'attestation n'est admise que
+  // pour qui ne peut pas en obtenir — un artisan, une profession libérale. Ce
+  // discernement demande de lire la forme juridique, et une lecture
+  // automatique qui se tromperait accorderait la vérification à une société
+  // sur un document qui ne lui suffit pas. On laisse donc l'administration
+  // trancher, avec sous les yeux ce que la lecture a relevé.
+  if (nature === "rne") return null;
 
   const moins6Mois = new Date();
   moins6Mois.setMonth(moins6Mois.getMonth() - 6);
@@ -310,6 +329,10 @@ serve(async (req) => {
       // La nature lue est conservée : un artisan n'a pas de Kbis, et le dire
       // évite qu'on lui réclame l'impossible — c'est déjà arrivé deux fois.
       if (lu?.nature === "kbis" || lu?.nature === "rne") marqueur.nature_document = lu.nature;
+      if (typeof lu?.forme_juridique === "string" && lu.forme_juridique.trim()) {
+        marqueur.forme_juridique = lu.forme_juridique.trim().slice(0, 120);
+      }
+      if (typeof lu?.inscrit_rcs === "boolean") marqueur.inscrit_rcs = lu.inscrit_rcs;
       if (typeof lu?.activite === "string" && lu.activite.trim()) {
         marqueur.activite = lu.activite.trim().slice(0, 500);
       }
@@ -335,7 +358,7 @@ serve(async (req) => {
       if (erreurEcriture) throw new Error(erreurEcriture.message);
 
       const rendu = iso && datePlausible(iso)
-        ? await revalider(supabase, ligne as any, iso, sirenLu, lu?.est_un_kbis !== false)
+        ? await revalider(supabase, ligne as any, iso, sirenLu, lu?.est_un_kbis !== false, lu?.nature ?? null)
         : null;
       if (rendu) {
         revalides.push(rendu);
