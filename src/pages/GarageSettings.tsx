@@ -396,6 +396,10 @@ export default function GarageSettings() {
   };
 
   // Documents approuvés dont le garage a demandé le remplacement.
+  // Le détail des fichiers est replié par défaut, et seulement pour ce qui
+  // est réglé : une pièce refusée ou périmée s'ouvre d'elle-même, puisque
+  // c'est précisément celle qu'il faut regarder.
+  const [detailsOuverts, setDetailsOuverts] = useState<Set<string>>(new Set());
   const [remplacements, setRemplacements] = useState<Set<string>>(new Set());
 
   // La fiche entreprise est le préalable aux pièces, et non un à-côté.
@@ -857,27 +861,62 @@ export default function GarageSettings() {
                                   && (d.status === 'pending' || d.status === 'approved'))
                                 .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
                               return (
+                                (() => {
+                                const aRegler = status.status === "rejected" || status.status === "expire";
+                                const ouvert = aRegler || detailsOuverts.has(reqDoc.code);
+                                const dernier = recus[recus.length - 1];
+                                return (
                                 <div className="mb-2 space-y-1">
-                                  {recus.map((d, i) => (
-                                    <div key={d.id} className="flex flex-wrap items-center gap-2">
-                                      <p className="text-sm text-muted-foreground">
-                                        {recus.length > 1 ? `Fichier ${i + 1} sur ${recus.length} : ` : "Envoyé : "}
-                                        {d.nom_fichier} ({format(new Date(d.created_at), "dd/MM/yyyy HH:mm", { locale: fr })})
-                                      </p>
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
+                                  {/* Une ligne de résumé plutôt qu'un gros bouton par
+                                      fichier. Le nom du fichier n'apprend rien à
+                                      personne — « Capture d'écran 2025-12-16 à
+                                      11.56.33.png » — et prenait toute la largeur ;
+                                      la date, elle, dit si la pièce est à jour. */}
+                                  <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                    <span>
+                                      {recus.length === 1
+                                        ? `1 fichier reçu, le ${format(new Date(dernier.created_at), "dd/MM/yyyy", { locale: fr })}`
+                                        : `${recus.length} fichiers reçus, le dernier le ${format(new Date(dernier.created_at), "dd/MM/yyyy", { locale: fr })}`}
+                                    </span>
+                                    {!aRegler && (
+                                      <button
+                                        type="button"
+                                        className="text-primary hover:underline"
+                                        onClick={() => setDetailsOuverts((o) => {
+                                          const suivant = new Set(o);
+                                          if (suivant.has(reqDoc.code)) suivant.delete(reqDoc.code);
+                                          else suivant.add(reqDoc.code);
+                                          return suivant;
+                                        })}
+                                      >
+                                        {ouvert ? "masquer le détail" : "voir le détail"}
+                                      </button>
+                                    )}
+                                  </div>
+
+                                  {ouvert && recus.map((d, i) => (
+                                    <div key={d.id} className="flex items-center gap-3 border-t py-1.5 text-sm">
+                                      <span className="w-10 shrink-0 text-muted-foreground">
+                                        {recus.length > 1 ? `${i + 1} / ${recus.length}` : ""}
+                                      </span>
+                                      <span className="min-w-0 flex-1 truncate">
+                                        Déposé le {format(new Date(d.created_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        className="shrink-0 text-primary hover:underline"
                                         onClick={() => window.open(d.url, '_blank')}
                                       >
-                                        <Eye className="h-4 w-4 mr-1" />
                                         Voir
-                                      </Button>
+                                      </button>
                                     </div>
                                   ))}
+
                                   {status.remplacable && !status.canUpload && (
                                     <Button
                                       variant="outline"
                                       size="sm"
+                                      className="mt-1"
                                       onClick={() => setRemplacements((d) => new Set(d).add(reqDoc.code))}
                                     >
                                       <Upload className="h-4 w-4 mr-1" />
@@ -885,6 +924,8 @@ export default function GarageSettings() {
                                     </Button>
                                   )}
                                 </div>
+                                );
+                                })()
                               );
                             })()}
                             
@@ -896,10 +937,19 @@ export default function GarageSettings() {
                                 <ChampFichiers
                                   multiple
                                   disabled={uploadingDoc === reqDoc.code}
-                                  libelle={status.doc ? "Ajouter un fichier" : undefined}
+                                  libelle={
+                                    status.status === "approved" || status.status === "expire"
+                                      ? "Remplacer"
+                                      : status.doc ? "Ajouter un fichier" : undefined
+                                  }
                                   vide={
-                                    status.doc
-                                      ? "Vous pouvez en ajouter un autre — le verso, par exemple"
+                                    status.status === "expire"
+                                      ? "Déposez un justificatif de moins de six mois"
+                                      : status.doc
+                                      ? (verificationDocs.filter((d) => d.document_type === reqDoc.code
+                                          && (d.status === 'pending' || d.status === 'approved')).length >= 2
+                                          ? "Vous pouvez en ajouter un autre si nécessaire"
+                                          : "Vous pouvez en ajouter un autre — le verso, par exemple")
                                       : reqDoc.code === "carte_identite"
                                       ? "Recto et verso : choisissez les deux fichiers à la fois, ou un seul s'il contient les deux faces"
                                       : "Aucun fichier choisi"
