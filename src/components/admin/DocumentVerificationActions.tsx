@@ -49,6 +49,11 @@ export function EtatDocument({ doc, kbisPerime }: { doc: Doc; kbisPerime?: boole
   const expire = doc.document_type === "kbis" && doc.status === "approved" && perimeCeDocument;
   const sansDate = doc.document_type === "kbis" && doc.status === "pending" && !doc.date_emission;
 
+  // Une attestation RNE se signale : un artisan n'a pas de Kbis et n'en aura
+  // jamais, et deux garages se sont vu réclamer l'impossible avant qu'on le
+  // sache. Le dire sur la pièce évite le troisième refus.
+  const estRne = doc.nature_document === "rne";
+
   if (doc.status === "approved") {
     return (
       <Badge className={expire ? "shrink-0 bg-orange-500" : "shrink-0 bg-green-600"}>
@@ -58,6 +63,13 @@ export function EtatDocument({ doc, kbisPerime }: { doc: Doc; kbisPerime?: boole
   }
   if (doc.status === "rejected") {
     return <Badge variant="destructive" className="shrink-0">Refusé</Badge>;
+  }
+  if (estRne) {
+    return (
+      <Badge variant="secondary" className="shrink-0 bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+        Attestation RNE
+      </Badge>
+    );
   }
   return (
     <Badge variant="secondary" className={sansDate ? "shrink-0 bg-yellow-500 text-yellow-950" : "shrink-0"}>
