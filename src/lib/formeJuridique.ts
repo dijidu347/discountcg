@@ -125,13 +125,7 @@ export async function formeJuridiqueDuGarage(garage: {
 /** Ce qu'on demande à l'écran, selon ce que ce professionnel peut fournir. */
 export function libellePiece(attendue: PieceAttendue): { nom: string; aide: string } {
   if (attendue === "kbis") {
-    return {
-      nom: "Extrait Kbis",
-      aide: "De moins de six mois, mentionnant une activité d'achat-vente de véhicules. Vous pouvez l'obtenir gratuitement sur monidenum.fr.",
-    };
+    return { nom: "Extrait Kbis de moins de 6 mois", aide: "" };
   }
-  return {
-    nom: "Kbis ou attestation RNE",
-    aide: "De moins de six mois : un extrait Kbis si vous êtes inscrit au registre du commerce, sinon votre attestation d'immatriculation au RNE, gratuite sur data.inpi.fr.",
-  };
+  return { nom: "Kbis ou attestation RNE de moins de 6 mois", aide: "" };
 }

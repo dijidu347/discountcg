@@ -886,7 +886,9 @@ export default function GarageSettings() {
                                   )}
                                 </h3>
                                 {reqDoc.code === 'kbis' ? (
-                                  <p className="text-sm text-muted-foreground">{libellePiece(attendue).aide}</p>
+                                  libellePiece(attendue).aide
+                                    ? <p className="text-sm text-muted-foreground">{libellePiece(attendue).aide}</p>
+                                    : null
                                 ) : reqDoc.description ? (
                                   <p className="text-sm text-muted-foreground">{reqDoc.description}</p>
                                 ) : null}
