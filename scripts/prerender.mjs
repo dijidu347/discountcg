@@ -302,6 +302,51 @@ async function principal() {
     );
   };
 
+  // Le contenu des deux pages écrites à la main, désormais hors du JSX.
+  //
+  // Elles ne servaient que leur paragraphe d'introduction — 283 mots pour le
+  // non-gage, 419 pour la page professionnelle — alors que le visiteur en lit
+  // trois à quatre fois plus. Tout le reste vivait dans le composant React,
+  // donc hors de portée du prérendu.
+  const supplementsPages = {};
+  const faqsPages = {};
+  try {
+    const { RUBRIQUES, FAQ } = await chargerTs("src/data/nonGageContenu.ts", "nonGage");
+    supplementsPages["/certificat-de-non-gage"] =
+      `<h2>Les six rubriques du certificat, et ce que chacune veut dire</h2>` +
+      `<table><thead><tr><th>Rubrique</th><th>Véhicule libre</th>` +
+      `<th>Ce que ça signifie</th></tr></thead><tbody>` +
+      RUBRIQUES.map(
+        (r) =>
+          `<tr><td>${echappe(r.titre)}</td><td>${echappe(r.vierge)}</td>` +
+          `<td>${echappe(r.sens)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      faqHtml(FAQ);
+    faqsPages["/certificat-de-non-gage"] = FAQ;
+  } catch (e) {
+    console.warn("[prerender] contenu non-gage ignoré :", e?.message ?? e);
+  }
+
+  try {
+    const { PREUVES, ETAPES, FAQ } = await chargerTs(
+      "src/data/professionnelContenu.ts",
+      "professionnel"
+    );
+    supplementsPages["/carte-grise-professionnel"] =
+      `<h2>Ce que nous traitons pour les garages</h2><ul>` +
+      PREUVES.map(
+        (p) => `<li><strong>${echappe(p.valeur)}</strong> ${echappe(p.libelle)} — ${echappe(p.detail)}</li>`
+      ).join("") +
+      `</ul>` +
+      `<h2>Comment un garage ouvre son compte</h2>` +
+      ETAPES.map((e) => `<h3>${echappe(e.titre)}</h3><p>${echappe(e.texte)}</p>`).join("") +
+      faqHtml(FAQ);
+    faqsPages["/carte-grise-professionnel"] = FAQ;
+  } catch (e) {
+    console.warn("[prerender] contenu professionnel ignoré :", e?.message ?? e);
+  }
+
   // Le sommaire des démarches, et le pied de page qui les relie toutes.
   //
   // Chaque page prérendue ne portait qu'un seul lien interne, et l'accueil —
@@ -336,6 +381,7 @@ async function principal() {
       blocs: [
         paragraphes(seo.intro),
         supplement,
+        supplementsPages[route] ?? "",
         blocCerfa(route.replace(/^\//, "")),
         route === "/" ? sommaireDemarches : "",
       ],
@@ -360,6 +406,19 @@ async function principal() {
                 url: seo.canonical,
                 inLanguage: "fr",
               },
+              ...(faqsPages[route]
+                ? [
+                    {
+                      "@context": "https://schema.org",
+                      "@type": "FAQPage",
+                      mainEntity: faqsPages[route].map((f) => ({
+                        "@type": "Question",
+                        name: f.question,
+                        acceptedAnswer: { "@type": "Answer", text: f.answer },
+                      })),
+                    },
+                  ]
+                : []),
             ],
         html,
       })
