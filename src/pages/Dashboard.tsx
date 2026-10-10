@@ -9,6 +9,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Sparkles, PenLine, Camera, FolderOpen, Download } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
@@ -53,6 +56,42 @@ export default function Dashboard() {
   const [requiredDocNames, setRequiredDocNames] = useState<string[]>([]);
   const aucunDocEnvoye = requiredDocNames.length > 0 && missingDocsCount === requiredDocNames.length;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { toast } = useToast();
+  // La fiche se remplit dans le bandeau, pas ailleurs. Deux champs, et le
+  // dépôt des pièces s'ouvre juste derrière.
+  const [ficheSaisie, setFicheSaisie] = useState({ raison_sociale: "", siret: "" });
+  const [enregistrementFiche, setEnregistrementFiche] = useState(false);
+  const ficheSaisieValide =
+    ficheSaisie.raison_sociale.trim().length > 1 && ficheSaisie.siret.length === 14;
+
+  const enregistrerFiche = async () => {
+    if (!garage?.id || !ficheSaisieValide) return;
+    setEnregistrementFiche(true);
+    const { error } = await supabase
+      .from("garages")
+      .update({
+        raison_sociale: ficheSaisie.raison_sociale.trim(),
+        siret: ficheSaisie.siret,
+      })
+      .eq("id", garage.id);
+    setEnregistrementFiche(false);
+
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Enregistrement impossible",
+        description: "Vérifiez votre SIRET, puis réessayez.",
+      });
+      return;
+    }
+
+    // Le bandeau change sous les yeux du garage : il passe de « complétez
+    // votre fiche » à « déposez vos pièces », sans rechargement.
+    setGarage((g: any) =>
+      g ? { ...g, raison_sociale: ficheSaisie.raison_sociale.trim(), siret: ficheSaisie.siret } : g,
+    );
+    navigate("/garage-settings?tab=verification");
+  };
   const { isActive: coffreActive, isBetaAllowed: coffreBeta } = useCoffreSubscription();
   const coffreLink = coffreActive ? "/coffre-fort" : "/coffre-fort-sales";
 
@@ -381,42 +420,92 @@ export default function Dashboard() {
              autres. La vraie raison est meilleure, et elle se dit : nous
              sommes habilités par la préfecture, et nous devons pouvoir
              justifier que chaque garage exerce bien une activité automobile. */
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-lg border-2 border-primary bg-primary/10 px-5 py-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-              <div className="min-w-0">
-                <p className="font-bold text-primary">
-                  {ficheIncomplete
-                    ? "Complétez votre fiche entreprise"
-                    : aucunDocEnvoye
-                    ? "Il reste une étape"
-                    : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
-                </p>
-                <p className="mt-0.5 text-sm text-primary/90">
-                  {ficheIncomplete
-                    ? "Renseignez d'abord votre raison sociale et votre SIRET : c'est le SIRET qui nous dit quelle pièce vous devez fournir."
-                    : aucunDocEnvoye
-                    ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
-                    : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
+          <div className="mb-8 rounded-lg border-2 border-primary bg-primary/10 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex min-w-0 items-start gap-3">
+                <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div className="min-w-0">
+                  <p className="font-bold text-primary">
+                    {ficheIncomplete
+                      ? "Complétez votre fiche entreprise"
+                      : aucunDocEnvoye
+                      ? "Il reste une étape"
+                      : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
+                  </p>
+                  <p className="mt-0.5 text-sm text-primary/90">
+                    {ficheIncomplete
+                      ? "Renseignez votre raison sociale et votre SIRET : c'est le SIRET qui nous dit quelle pièce vous devez fournir."
+                      : aucunDocEnvoye
+                      ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
+                      : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
+                  </p>
+                </div>
+              </div>
+              {!ficheIncomplete && (
+                <Button
+                  className="shrink-0"
+                  onClick={() => navigate("/garage-settings?tab=verification")}
+                >
+                  {aucunDocEnvoye ? "Déposer mes pièces" : "Compléter mon dossier"}
+                </Button>
+              )}
+            </div>
+
+            {/* Les deux champs se remplissent ici, dans le bandeau. Renvoyer le
+                garage vers une autre page pour deux cases, puis le faire
+                revenir, c'était trois écrans pour une minute de saisie — et
+                autant d'occasions d'abandonner. Le bouton de dépôt reste fermé
+                tant que les deux ne sont pas valables : sans eux, la pièce
+                déposée ne se rattacherait à aucune entreprise. */}
+            {ficheIncomplete && (
+              <div className="mt-4 grid gap-3 border-t border-primary/25 pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <div>
+                  <Label htmlFor="bandeau-raison-sociale" className="text-primary">
+                    Raison sociale <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="bandeau-raison-sociale"
+                    className="mt-1 bg-background"
+                    value={ficheSaisie.raison_sociale}
+                    onChange={(e) =>
+                      setFicheSaisie((f) => ({ ...f, raison_sociale: e.target.value }))
+                    }
+                    placeholder="Nom de votre entreprise"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="bandeau-siret" className="text-primary">
+                    SIRET <span className="text-destructive">*</span>
+                  </Label>
+                  <Input
+                    id="bandeau-siret"
+                    className="mt-1 bg-background"
+                    value={ficheSaisie.siret}
+                    onChange={(e) =>
+                      setFicheSaisie((f) => ({
+                        ...f,
+                        siret: e.target.value.replace(/\D/g, "").slice(0, 14),
+                      }))
+                    }
+                    inputMode="numeric"
+                    maxLength={14}
+                    placeholder="14 chiffres"
+                  />
+                </div>
+                <Button
+                  className="sm:mb-px"
+                  disabled={!ficheSaisieValide || enregistrementFiche}
+                  onClick={enregistrerFiche}
+                >
+                  {enregistrementFiche ? "Enregistrement…" : "Déposer mes pièces"}
+                </Button>
+                <p className="text-xs text-primary/80 sm:col-span-3">
+                  {ficheSaisie.siret.length > 0 && ficheSaisie.siret.length < 14
+                    ? `${14 - ficheSaisie.siret.length} chiffre${14 - ficheSaisie.siret.length > 1 ? "s" : ""} manquant${14 - ficheSaisie.siret.length > 1 ? "s" : ""} au SIRET.`
+                    : "Les deux champs sont nécessaires avant de déposer vos pièces."}
                 </p>
               </div>
-            </div>
-            <Button
-              className="shrink-0"
-              onClick={() =>
-                navigate(
-                  ficheIncomplete
-                    ? "/garage-settings#fiche-entreprise"
-                    : "/garage-settings?tab=verification",
-                )
-              }
-            >
-              {ficheIncomplete
-                ? "Compléter ma fiche"
-                : aucunDocEnvoye
-                ? "Déposer mes pièces"
-                : "Compléter mon dossier"}
-            </Button>
+            )}
           </div>
         )}
 
