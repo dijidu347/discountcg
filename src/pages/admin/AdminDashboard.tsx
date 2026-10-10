@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
 
-// Fenêtre glissante utilisée par la carte Revenus et la carte Démarches 30J.
+// Fenêtre glissante utilisée par la carte Revenus.
 const REVENUE_PERIOD_DAYS = 30;
 
 const PARIS_TZ = "Europe/Paris";
@@ -79,8 +79,6 @@ export default function AdminDashboard() {
     traiteesPeriode: 0,
     traiteesAujourdhui: 0,
     kbisADater: 0,
-    demarches30j: 0,
-    demarchesAujourdhui: 0,
     commandesPartATraiter: 0,
     commandesPartNouvelles: 0,
     messagesEnAttente: 0,
@@ -245,8 +243,6 @@ export default function AdminDashboard() {
       traiteesPeriode: Number(totaux30j?.demarches_traitees ?? 0),
       traiteesAujourdhui: Number(totauxAujourdhui?.demarches_traitees ?? 0),
       kbisADater: garages?.filter((g) => aDater.has(g.id)).length || 0,
-      demarches30j: Number(totaux30j?.demarches_creees ?? 0),
-      demarchesAujourdhui: Number(totauxAujourdhui?.demarches_creees ?? 0),
       commandesPartATraiter: commandesPartATraiterCount || 0,
       commandesPartNouvelles: commandesPartNouvellesCount || 0,
       garagesAVerifier: aVerifier,
@@ -465,7 +461,7 @@ export default function AdminDashboard() {
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardDescription className="flex items-center gap-2">
-                À traiter
+                Pros à traiter
                 {stats.demarchesNonVues > 0 && (
                   <Badge className="bg-red-500 text-white animate-pulse">
                     {stats.demarchesNonVues}
@@ -484,15 +480,34 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* La jumelle particulier de « À traiter ».
+              Elle remplace « Démarches 30J », qui comptait les démarches pro
+              créées sur trente jours — ni le même périmètre, ni la même date,
+              ni la même condition de paiement que la carte Revenus juste en
+              dessous, pour un libellé qui ne disait rien de tout cela. Deux
+              nombres voisins qui ne mesuraient pas la même chose. Ici, deux
+              cartes identiques : le pro à gauche, le particulier à droite. */}
+          <Card
+            className="cursor-pointer transition-colors hover:border-primary"
+            onClick={() => navigate("/admin/guest-orders")}
+          >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>Démarches 30J</CardDescription>
-              <FileText className="h-4 w-4 text-muted-foreground" />
+              <CardDescription className="flex items-center gap-2">
+                Particuliers à traiter
+                {stats.commandesPartNouvelles > 0 && (
+                  <Badge className="animate-pulse bg-red-500 text-white">
+                    {stats.commandesPartNouvelles}
+                  </Badge>
+                )}
+              </CardDescription>
+              <ShoppingCart className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <CardTitle className="text-3xl">{stats.demarches30j}</CardTitle>
+              <CardTitle className="text-3xl text-primary">
+                {stats.commandesPartATraiter}
+              </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                {stats.demarchesAujourdhui} aujourd'hui
+                Commandes payées
               </p>
             </CardContent>
           </Card>
@@ -662,13 +677,6 @@ export default function AdminDashboard() {
 
         <Separator className="my-8" />
 
-        {/* Annonces générales */}
-        <div className="mb-8">
-          <AnnouncementManager />
-        </div>
-
-        <Separator className="my-8" />
-
         {/* Section Particuliers */}
         <Card className="mb-8">
           <CardHeader>
@@ -709,6 +717,14 @@ export default function AdminDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        <Separator className="my-8" />
+
+        {/* Annonces générales */}
+        <div className="mb-8">
+          <AnnouncementManager />
+        </div>
+
       </div>
     </div>
   );
