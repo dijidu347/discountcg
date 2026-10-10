@@ -458,7 +458,11 @@ export default function NouvelleDemarche() {
     if (doc.masque) return false;
     if (doc.obligatoire) return true;
     const nom = doc.nom_document ?? "";
-    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return venduParUnPro && formData.type === "DA";
+    if (/r[ée]c[ée]piss[ée]/i.test(nom) && !/association/i.test(nom)) {
+      if (formData.type === "DA") return venduParUnPro;
+      if (formData.type === "DC") return quiVend === "garage";
+      return false;
+    }
     if (formData.type === "DC") {
       // Les pièces de l'acquéreur d'abord : leurs libellés contiennent
       // « Kbis » et « dirigeant » comme ceux du vendeur, et seule la mention
@@ -504,7 +508,9 @@ export default function NouvelleDemarche() {
   const pieceConditionnelle = useCallback((doc: { nom_document?: string | null; obligatoire?: boolean | null }) => {
     if (doc.obligatoire) return false;
     const nom = doc.nom_document ?? "";
-    if (/r[ée]c[ée]piss[ée]/i.test(nom)) return formData.type === "DA";
+    if (/r[ée]c[ée]piss[ée]/i.test(nom) && !/association/i.test(nom)) {
+      return formData.type === "DA" || formData.type === "DC";
+    }
     if (formData.type === "DC") {
       return /identit[ée] du vendeur/i.test(nom) || /kbis/i.test(nom)
         || /acqu[ée]reur/i.test(nom) || /co-acqu/i.test(nom) || /association/i.test(nom)
