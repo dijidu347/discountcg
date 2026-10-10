@@ -112,10 +112,11 @@ function faqHtml(faqs) {
 
 // Le corps est volontairement sobre et lisible : il s'affiche réellement, le
 // temps que React prenne la main. Le masquer serait du cloaking.
-function corps({ h1, blocs }) {
+function corps({ h1, blocs, pied = "" }) {
   return `<div style="max-width:52rem;margin:0 auto;padding:2rem 1rem;font-family:system-ui,-apple-system,'Segoe UI',sans-serif;line-height:1.6;color:#1f2937">
 <h1>${echappe(h1)}</h1>
 ${blocs.filter(Boolean).join("\n")}
+${pied}
 </div>`;
 }
 
@@ -301,12 +302,44 @@ async function principal() {
     );
   };
 
+  // Le sommaire des démarches, et le pied de page qui les relie toutes.
+  //
+  // Chaque page prérendue ne portait qu'un seul lien interne, et l'accueil —
+  // la page qui a le plus d'autorité — n'en avait pas un seul vers les dix-huit
+  // pages démarche. Les robots pouvaient atteindre le site sans jamais trouver
+  // de chemin vers ce qu'il vend. C'est aussi ce que montre la vraie page
+  // d'accueil, sous « Nos démarches » : le HTML servi ne faisait que ne pas le
+  // dire.
+  const sommaireDemarches =
+    `<h2>Nos démarches d'immatriculation</h2><ul>` +
+    demarchesConfig
+      .map(
+        (d) =>
+          `<li><a href="${BASE}/${d.slug}">${echappe(d.title)}</a> — ${echappe(d.description)}</li>`
+      )
+      .join("") +
+    `</ul>`;
+
+  const piedDeLiens = (slugCourant) =>
+    `<h2>Toutes les démarches</h2><p>` +
+    demarchesConfig
+      .filter((d) => d.slug !== slugCourant)
+      .map((d) => `<a href="${BASE}/${d.slug}">${echappe(d.shortTitle ?? d.title)}</a>`)
+      .join(" · ") +
+    `</p>`;
+
   // Pages écrites à la main.
   for (const [route, seo] of Object.entries(ROUTES_SEO)) {
     const supplement = route === "/simulateur" ? tableauDepartements : "";
     const html = corps({
       h1: seo.h1,
-      blocs: [paragraphes(seo.intro), supplement, blocCerfa(route.replace(/^\//, ""))],
+      blocs: [
+        paragraphes(seo.intro),
+        supplement,
+        blocCerfa(route.replace(/^\//, "")),
+        route === "/" ? sommaireDemarches : "",
+      ],
+      pied: route === "/" ? "" : piedDeLiens(null),
     });
     await ecrire(
       route,
@@ -351,6 +384,7 @@ async function principal() {
         faqHtml(d.faqs),
         publicCroise(d.code),
       ],
+      pied: piedDeLiens(d.slug),
     });
 
     await ecrire(
