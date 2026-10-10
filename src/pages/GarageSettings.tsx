@@ -1005,6 +1005,7 @@ export default function GarageSettings() {
                                     fallait trois fichiers. Il en accepte plusieurs d'un
                                     coup, pour un recto et un verso. */}
                                 <ChampFichiers
+                                  variante="zone"
                                   multiple={capaciteDe(reqDoc.code) > 1}
                                   disabled={uploadingDoc === reqDoc.code}
                                   libelle={

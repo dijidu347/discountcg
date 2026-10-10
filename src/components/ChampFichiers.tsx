@@ -28,6 +28,12 @@ interface ChampFichiersProps {
   libelle?: string;
   /** Phrase affichée tant qu'aucun fichier n'est choisi. */
   vide?: string;
+  /**
+   * « zone » : une surface pointillée qui occupe la largeur, pour un dépôt
+   * attendu. « bouton » : la forme compacte d'origine, pour un formulaire où
+   * le fichier n'est qu'un champ parmi d'autres.
+   */
+  variante?: "zone" | "bouton";
   className?: string;
 }
 
@@ -38,6 +44,7 @@ export function ChampFichiers({
   disabled = false,
   libelle,
   vide = "Aucun fichier choisi",
+  variante = "bouton",
   className = "",
 }: ChampFichiersProps) {
   const champ = useRef<HTMLInputElement>(null);
@@ -50,8 +57,7 @@ export function ChampFichiers({
       ? derniers[0]
       : `${derniers.length} fichiers choisis`;
 
-  return (
-    <div className={`flex flex-wrap items-center gap-3 ${className}`}>
+  const champ_natif = (
       <input
         ref={champ}
         type="file"
@@ -69,6 +75,38 @@ export function ChampFichiers({
           onChoisis(choisis);
         }}
       />
+  );
+
+  const intitule = libelle ?? (multiple ? "Choisir des fichiers" : "Choisir un fichier");
+
+  // La surface pointillée dit « déposez ici » d'un seul tenant, au lieu d'un
+  // bouton posé à côté d'une phrase grise : deux éléments pour une seule
+  // action, qui ne s'alignaient avec rien autour d'eux.
+  if (variante === "zone") {
+    return (
+      <div className={className}>
+        {champ_natif}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => champ.current?.click()}
+          className="flex w-full items-center gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 text-left transition-colors hover:border-primary hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Upload className="h-4 w-4" />
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-medium text-foreground">{intitule}</span>
+            <span className="block truncate text-xs text-muted-foreground">{texte}</span>
+          </span>
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`flex flex-wrap items-center gap-3 ${className}`}>
+      {champ_natif}
       <Button
         type="button"
         variant="outline"
@@ -76,7 +114,7 @@ export function ChampFichiers({
         onClick={() => champ.current?.click()}
       >
         <Upload className="mr-2 h-4 w-4" />
-        {libelle ?? (multiple ? "Choisir des fichiers" : "Choisir un fichier")}
+        {intitule}
       </Button>
       <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">{texte}</span>
     </div>
