@@ -69,14 +69,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           nom: userData.nom || '',
           prenom: userData.prenom || '',
           telephone: userData.telephone || '',
-          reseau: userData.reseau || '',
-          // Garage-specific fields (for trigger + CompleteProfile fallback)
-          raison_sociale: userData.raison_sociale || '',
-          siret: userData.siret || '',
-          adresse: userData.adresse || '',
-          code_postal: userData.code_postal || userData.codePostal || '',
-          ville: userData.ville || '',
           referral_source: userData.referral_source || '',
+          // Les champs d'entreprise ne sont joints QUE pour une inscription
+          // professionnelle.
+          //
+          // Ils étaient envoyés pour tout le monde, à vide pour un
+          // particulier. Or le déclencheur en base crée une fiche garage dès
+          // que `raison_sociale` n'est pas NULL — et une chaîne vide n'est pas
+          // NULL. Chaque inscription de particulier fabriquait donc un compte
+          // garage fantôme, avec le rôle garage par-dessus le marché : la
+          // personne pouvait entrer dans l'espace professionnel, où une
+          // déclaration de cession coûte 5 € au lieu de 20 €.
+          //
+          // Quarante-six comptes sont dans ce cas, le dernier du 8 octobre.
+          ...(userData.account_type === 'garage'
+            ? {
+                reseau: userData.reseau || '',
+                raison_sociale: userData.raison_sociale || '',
+                siret: userData.siret || '',
+                adresse: userData.adresse || '',
+                code_postal: userData.code_postal || userData.codePostal || '',
+                ville: userData.ville || '',
+              }
+            : {}),
         }
       }
     });

@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -79,12 +79,22 @@ export default function MesDemarches() {
   const [brouillons, setBrouillons] = useState<any[]>([]);
   const [filteredDemarches, setFilteredDemarches] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  // Le filtre peut arriver par l'URL : les cartes du tableau de bord mènent
+  // ici déjà filtrées (?statut=en_cours, ?statut=finalise…). Il est lu une
+  // fois, à l'ouverture, et n'enferme pas la page : changer le menu déroulant
+  // reprend la main.
+  const [parametresUrl] = useSearchParams();
+  const statutDemande = parametresUrl.get("statut");
+  const [statusFilter, setStatusFilter] = useState(
+    STATUS_CATEGORIES.some((c) => c.value === statutDemande) ? (statutDemande as string) : "all",
+  );
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortField, setSortField] = useState<string>("created_at");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [loading, setLoading] = useState(true);
-  const [showAllBrouillons, setShowAllBrouillons] = useState(false);
+  // « Brouillons » n'est pas un statut de démarche mais une section à part :
+  // la carte du tableau de bord l'ouvre en entier et amène l'écran dessus.
+  const [showAllBrouillons, setShowAllBrouillons] = useState(statutDemande === "brouillon");
   // État documentaire par démarche — extensible : "rejected" (rouge) maintenant,
   // "missing" (orange) plus tard, sans changer la structure.
   const [docIssues, setDocIssues] = useState<Record<string, { rejected: boolean; missing: boolean }>>({});
@@ -100,6 +110,11 @@ export default function MesDemarches() {
       loadData();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (statutDemande !== "brouillon" || brouillons.length === 0) return;
+    document.getElementById("brouillons")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [statutDemande, brouillons.length]);
 
   useEffect(() => {
     let filtered = demarches;
@@ -304,7 +319,7 @@ export default function MesDemarches() {
 
         {/* Section Brouillons */}
         {brouillons.length > 0 && (
-          <Card className="p-4 mb-6 border-dashed border-2 border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/20">
+          <Card id="brouillons" className="p-4 mb-6 border-dashed border-2 border-amber-500/50 bg-amber-50/30 dark:bg-amber-950/20">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
                 <Edit className="h-4 w-4" />

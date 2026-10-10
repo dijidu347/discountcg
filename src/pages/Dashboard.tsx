@@ -1,11 +1,12 @@
 import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getStatusCategory } from "@/lib/demarcheStatusBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Sparkles, Camera, FolderOpen, Download } from "lucide-react";
+import { FileText, Plus, LogOut, Settings, UserCircle, Clock, CheckCircle, AlertCircle, Receipt, Gift, Coins, Menu, X, HelpCircle, LayoutDashboard, Archive, Sparkles, PenLine, Camera, FolderOpen, Download } from "lucide-react";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -37,7 +38,8 @@ export default function Dashboard() {
   const [stats, setStats] = useState({
     totalDemarches: 0,
     enAttente: 0,
-    validees: 0
+    validees: 0,
+    brouillons: 0,
   });
   const [recentDemarches, setRecentDemarches] = useState<any[]>([]);
   // Toutes les démarches payées du garage — déjà chargées pour les statistiques,
@@ -135,10 +137,24 @@ export default function Dashboard() {
         .eq('paye', true)
         .order('created_at', { ascending: false });
 
+      // Les brouillons ne sont pas payés : ils ne figurent pas dans la requête
+      // ci-dessus, qui ne ramène que les démarches parties.
+      const { count: nbBrouillons } = await supabase
+        .from('demarches')
+        .select('*', { count: 'exact', head: true })
+        .eq('garage_id', garageData.id)
+        .eq('is_draft', true)
+        .eq('paye', false);
+
+      // Les comptes se font avec la MÊME fonction de catégorie que la page
+      // « Mes démarches ». Sans cela, la carte annoncerait un nombre et la
+      // liste filtrée en montrerait un autre — chaque carte étant désormais un
+      // lien vers cette liste, l'écart se verrait au premier clic.
       setStats({
         totalDemarches: demarches?.length || 0,
-        enAttente: demarches?.filter(d => d.status === 'en_attente' || d.status === 'paye').length || 0,
-        validees: demarches?.filter(d => d.status === 'valide' || d.status === 'finalise').length || 0
+        enAttente: demarches?.filter(d => getStatusCategory(d.status) === 'en_cours').length || 0,
+        validees: demarches?.filter(d => getStatusCategory(d.status) === 'finalise').length || 0,
+        brouillons: nbBrouillons || 0,
       });
       setRecentDemarches(demarches?.slice(0, 5) || []);
       setToutesDemarches(demarches || []);
@@ -469,6 +485,40 @@ export default function Dashboard() {
           </div>
         )}
 
+        {/* Les quatre états d'une démarche, et le chemin pour y aller.
+            Chaque carte est un lien vers « Mes démarches » déjà filtré : le
+            nombre affiché cessait d'être une information morte au moment où
+            l'on pouvait cliquer dessus pour voir lesquelles. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            { cle: "all", libelle: "Total des démarches", valeur: stats.totalDemarches, icone: FileText, teinte: "text-primary", bord: "border-l-primary" },
+            { cle: "en_cours", libelle: "En attente", valeur: stats.enAttente, icone: Clock, teinte: "text-orange-500", bord: "border-l-orange-500" },
+            { cle: "finalise", libelle: "Validées", valeur: stats.validees, icone: CheckCircle, teinte: "text-green-500", bord: "border-l-green-500" },
+            { cle: "brouillon", libelle: "Brouillons", valeur: stats.brouillons, icone: PenLine, teinte: "text-muted-foreground", bord: "border-l-muted-foreground" },
+          ].map((carte) => (
+            <button
+              key={carte.cle}
+              type="button"
+              onClick={() => navigate(`/mes-demarches?statut=${carte.cle}`)}
+              className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
+            >
+              <Card className={`h-full border-l-4 ${carte.bord} transition-shadow hover:shadow-md`}>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm font-medium flex items-center gap-2">
+                    <carte.icone className={`h-4 w-4 ${carte.teinte}`} />
+                    {carte.libelle}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-3xl font-bold ${carte.cle === "all" ? "" : carte.teinte}`}>
+                    {carte.valeur}
+                  </div>
+                </CardContent>
+              </Card>
+            </button>
+          ))}
+        </div>
+
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-4">Actions rapides</h2>
@@ -536,42 +586,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-l-4 border-l-primary">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <FileText className="h-4 w-4 text-primary" />
-                Total des démarches
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.totalDemarches}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4 text-orange-500" />
-                En attente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-orange-500">{stats.enAttente}</div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-green-500">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                Validées
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-green-500">{stats.validees}</div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Company Info & Recent Demarches - Side by Side */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
