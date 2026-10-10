@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { passwordChangeSchema } from "@/lib/validations";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
+import { formeJuridiqueDuGarage, pieceAttendue, libellePiece } from "@/lib/formeJuridique";
 import { fr } from "date-fns/locale";
 
 interface RequiredDocument {
@@ -380,6 +381,21 @@ export default function GarageSettings() {
   // Documents approuvés dont le garage a demandé le remplacement.
   const [remplacements, setRemplacements] = useState<Set<string>>(new Set());
 
+  // Quelle pièce d'immatriculation ce professionnel peut fournir. Déduite de
+  // son SIRET, sans rien lui demander : beaucoup ignorent s'ils relèvent du
+  // registre du commerce ou du répertoire des métiers, et répondraient au
+  // hasard à la question.
+  const [attendue, setAttendue] = useState<ReturnType<typeof pieceAttendue>>("indetermine");
+
+  useEffect(() => {
+    if (!garage?.id) return;
+    let vivant = true;
+    formeJuridiqueDuGarage(garage).then((code) => {
+      if (vivant) setAttendue(pieceAttendue(code));
+    });
+    return () => { vivant = false; };
+  }, [garage?.id, garage?.siret, garage?.forme_juridique_code]);
+
   const getDocumentStatus = (docCode: string) => {
     const docs = verificationDocs.filter(d => d.document_type === docCode);
     if (docs.length === 0) return { status: 'missing', canUpload: true };
@@ -674,16 +690,18 @@ export default function GarageSettings() {
                             <div className="flex justify-between items-start mb-2">
                               <div>
                                 <h3 className="font-medium flex items-center gap-2">
-                                  {reqDoc.nom_document}
+                                  {reqDoc.code === 'kbis' ? libellePiece(attendue).nom : reqDoc.nom_document}
                                   {reqDoc.obligatoire ? (
                                     <Badge variant="outline" className="text-xs">Obligatoire</Badge>
                                   ) : (
                                     <Badge variant="secondary" className="text-xs">Optionnel</Badge>
                                   )}
                                 </h3>
-                                {reqDoc.description && (
+                                {reqDoc.code === 'kbis' ? (
+                                  <p className="text-sm text-muted-foreground">{libellePiece(attendue).aide}</p>
+                                ) : reqDoc.description ? (
                                   <p className="text-sm text-muted-foreground">{reqDoc.description}</p>
-                                )}
+                                ) : null}
                                 {reqDoc.code === 'mandat' && (
                                   <div className="flex flex-col gap-1">
                                     <p className="text-sm text-muted-foreground italic">

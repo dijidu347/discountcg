@@ -20,6 +20,7 @@ import { ApercuDocument } from "@/components/admin/ApercuDocument";
 import { EtatDocument, RefuserDocumentBouton, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
 import { supprimerDocumentVerification } from "@/lib/supprimerDocumentVerification";
 import { refuserDocumentVerification, historiqueDesRefus, type DocumentRefuse } from "@/lib/refuserDocumentVerification";
+import { formeJuridiqueDuGarage, pieceAttendue } from "@/lib/formeJuridique";
 import {
   Dialog,
   DialogContent,
@@ -101,6 +102,10 @@ export function GarageVerificationPanel({
   const [idChoisi, setIdChoisi] = useState<string | null>(null);
   const [classeOuvert, setClasseOuvert] = useState(false);
   const [refus, setRefus] = useState<DocumentRefuse[]>([]);
+  // Ce que ce professionnel peut fournir, déduit de son SIRET. Résolu à la
+  // première consultation de la fiche et mémorisé : une forme juridique ne
+  // change presque jamais, l'API de l'État n'a pas à être rappelée.
+  const [attendue, setAttendue] = useState<ReturnType<typeof pieceAttendue>>("indetermine");
 
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -130,6 +135,7 @@ export function GarageVerificationPanel({
       loadVerificationDocs(garage.id);
       loadNotificationHistory(garage.id);
       historiqueDesRefus(garage.id).then(setRefus);
+      formeJuridiqueDuGarage(garage).then((code) => setAttendue(pieceAttendue(code)));
     }
   }, [garage?.id]);
 
@@ -837,6 +843,16 @@ export function GarageVerificationPanel({
                         </div>
                         {r.docs.length > 0 && <EtatDocument doc={r.docs[0]} kbisPerime={kbisPerime} />}
                       </button>
+                      {/* Ce que ce professionnel peut produire, lu sur son
+                          SIRET. Dit avant même d'ouvrir le document, pour ne
+                          plus réclamer un Kbis à qui n'en aura jamais. */}
+                      {r.code === "kbis" && attendue !== "indetermine" && (
+                        <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
+                          {attendue === "kbis"
+                            ? "Société au registre du commerce : un extrait Kbis existe, il est exigible."
+                            : "Entrepreneur individuel : pas de Kbis, l'attestation RNE en tient lieu."}
+                        </p>
+                      )}
 
                       {/* Les dépôts plus anciens du même type, repliés derrière
                           la pièce en cours : ils n'ont pas à occuper une ligne
