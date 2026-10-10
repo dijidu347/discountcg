@@ -10,7 +10,7 @@ import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { GarageSignatureSettings } from "@/components/signature/GarageSignatureSettings";
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye, Trash2, FileText } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, AlertTriangle, History, Send, Upload, Loader2, Eye, Trash2, FileText } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -1074,10 +1074,13 @@ export default function GarageSettings() {
                                     {emplacement("verso", "Ajouter le verso",
                                       "Inutile si le recto contient déjà les deux faces", verso)}
                                     {memeFichier && (
-                                      <p className="rounded-md bg-orange-50 px-3 py-2 text-sm text-orange-800 dark:bg-orange-950/30 dark:text-orange-300">
-                                        Le recto et le verso sont le même fichier. Vérifiez que
-                                        vous avez bien déposé les deux faces.
-                                      </p>
+                                      <div className="flex items-start gap-2.5 rounded-md border border-orange-300 bg-orange-100 px-3 py-2.5 text-sm text-orange-900 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-200">
+                                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-orange-600 dark:text-orange-400" />
+                                        <span>
+                                          Le recto et le verso sont le même fichier. Vérifiez que
+                                          vous avez bien déposé les deux faces.
+                                        </span>
+                                      </div>
                                     )}
                                   </div>
                                 );
