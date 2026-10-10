@@ -434,17 +434,13 @@ export default function Dashboard() {
                   </p>
                   <p className="mt-0.5 text-sm text-primary/90">
                     {ficheIncomplete
-                      ? `Votre entreprise ici, puis ${
-                          requiredDocNames.length > 0
-                            ? `${
-                                requiredDocNames.length === 1
-                                  ? "sa pièce justificative"
-                                  : requiredDocNames.length === 2
-                                  ? "ses deux pièces"
-                                  : `ses ${requiredDocNames.length} pièces`
-                              } : ${requiredDocNames.join(" et ")}`
-                            : "ses pièces justificatives"
-                        }. Nous sommes habilités par la préfecture, et devons pouvoir justifier que chaque garage exerce bien une activité automobile.`
+                      ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Votre raison sociale et votre SIRET d'abord, puis ${
+                          requiredDocNames.length === 1
+                            ? "une pièce"
+                            : requiredDocNames.length === 2
+                            ? "deux pièces"
+                            : `${requiredDocNames.length} pièces`
+                        }${requiredDocNames.length > 0 ? ` : ${requiredDocNames.join(" et ")}` : " justificatives"}.`
                       : aucunDocEnvoye
                       ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
                       : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
