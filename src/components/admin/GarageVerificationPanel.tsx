@@ -81,6 +81,13 @@ interface GarageVerificationPanelProps {
    */
   ecrireOuvert?: boolean;
   onEcrireOuvertChange?: (ouvert: boolean) => void;
+  /**
+   * Les pièces viennent de changer. La fiche du garage en déduit son état —
+   * « Complet, à vérifier », « Dossier incomplet » — et doit le recalculer :
+   * refuser un Kbis ici rendait le dossier incomplet sans que la carte
+   * « Compte », plus haut, ne bouge.
+   */
+  onDossierChange?: () => void;
 }
 
 /**
@@ -115,6 +122,7 @@ export function GarageVerificationPanel({
   onDonJetonsOuvertChange,
   ecrireOuvert,
   onEcrireOuvertChange,
+  onDossierChange,
 }: GarageVerificationPanelProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -183,6 +191,9 @@ export function GarageVerificationPanel({
       .eq("garage_id", garageId)
       .order("created_at", { ascending: false });
     setVerificationDocs(data || []);
+    // Toute action sur une pièce passe par ici : accepter, refuser,
+    // supprimer, déposer. Un seul endroit à prévenir.
+    onDossierChange?.();
   };
 
   const loadNotificationHistory = async (garageId: string) => {

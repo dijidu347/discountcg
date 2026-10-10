@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { chargerDossierGarage, LIBELLE_ETAT, type DossierGarage } from "@/lib/etatDossierGarage";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -143,12 +143,12 @@ export default function GarageDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, id]);
 
-  useEffect(() => {
+  const rechargerDossier = useCallback(() => {
     if (!id) return;
-    let vivant = true;
-    chargerDossierGarage(id).then((d) => { if (vivant) setDossier(d); });
-    return () => { vivant = false; };
+    chargerDossierGarage(id).then(setDossier);
   }, [id]);
+
+  useEffect(() => { rechargerDossier(); }, [rechargerDossier]);
 
   const checkAdminAndLoad = async () => {
     // Même garde que les autres écrans admin : filtre sur le rôle admin, sinon
@@ -409,6 +409,7 @@ export default function GarageDetail() {
             onDonJetonsOuvertChange={setDonJetonsOuvert}
             ecrireOuvert={ecrireOuvert}
             onEcrireOuvertChange={setEcrireOuvert}
+            onDossierChange={rechargerDossier}
           />
         </div>
 
