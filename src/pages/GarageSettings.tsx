@@ -17,6 +17,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { formeJuridiqueDuGarage, pieceAttendue, libellePiece } from "@/lib/formeJuridique";
 import { ChampFichiers } from "@/components/ChampFichiers";
+import { compressFile, isHeicFile } from "@/lib/file-compression";
 import { fr } from "date-fns/locale";
 
 interface RequiredDocument {
@@ -44,7 +45,12 @@ interface Notification {
   created_at: string;
 }
 
-const FORMATS_ACCEPTES = ["pdf", "jpg", "jpeg", "png"];
+// HEIC et HEIF sont le format par défaut des photos iPhone. Un garage qui
+// photographie sa carte d'identité avec son téléphone envoie ce format sans
+// le savoir, et se voyait répondre « format non accepté » pour une photo tout
+// à fait ordinaire. Ils sont convertis en JPEG avant l'envoi : ni les
+// navigateurs ni l'administration ne savent lire une HEIC.
+const FORMATS_ACCEPTES = ["pdf", "jpg", "jpeg", "png", "heic", "heif"];
 
 // Rend le message à afficher si un fichier ne peut pas être lu, sinon null.
 function formatRefuse(files: File[]): string | null {
@@ -320,7 +326,21 @@ export default function GarageSettings() {
       
       // Upload all selected files
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        let file = files[i];
+
+        // Une photo d'iPhone arrive en HEIC : illisible par le navigateur comme
+        // par l'administration. Elle devient un JPEG avant de partir, et garde
+        // son nom à l'extension près. Si la conversion échoue, on envoie
+        // l'original plutôt que de perdre le dépôt — l'administration pourra
+        // toujours le réclamer autrement.
+        if (isHeicFile(file)) {
+          toast({ title: "Conversion de la photo…", description: file.name });
+          try {
+            file = (await compressFile(file)).file;
+          } catch (e) {
+            console.error("Conversion HEIC impossible", e);
+          }
+        }
         
         // Toast "Upload en cours..."
         toast({ 
@@ -1007,6 +1027,7 @@ export default function GarageSettings() {
                                     coup, pour un recto et un verso. */}
                                 <ChampFichiers
                                   variante="zone"
+                                  accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
                                   multiple={capaciteDe(reqDoc.code) > 1}
                                   disabled={uploadingDoc === reqDoc.code}
                                   libelle={
