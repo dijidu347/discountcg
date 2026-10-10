@@ -567,7 +567,7 @@ export default function GarageSettings() {
       const latestPending = pendingDocs[0]; // Already sorted by created_at desc
       return { 
         status: 'pending', 
-        badge: <Badge className="bg-yellow-400 text-yellow-950 hover:bg-yellow-400"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>,
+        badge: <Badge className="bg-yellow-500 text-white hover:bg-yellow-500"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>,
         canUpload: true,
         doc: latestPending,
         allPendingDocs: pendingDocs
