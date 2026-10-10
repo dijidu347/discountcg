@@ -65,6 +65,21 @@ export default function Dashboard() {
   const ficheSaisieValide =
     ficheSaisie.raison_sociale.trim().length > 1 && ficheSaisie.siret.length === 14;
 
+  // Les champs arrivent remplis de ce qu'on sait déjà.
+  //
+  // Le bandeau s'ouvre aussi quand une seule des deux valeurs cloche — un
+  // SIRET à neuf ou douze chiffres, hérité de l'ancien formulaire. Deux cases
+  // vides demandaient alors de tout ressaisir, raison sociale comprise, pour
+  // corriger deux chiffres. Pré-remplies, le compteur sous les champs dit
+  // immédiatement ce qui manque.
+  useEffect(() => {
+    if (!garage?.id) return;
+    setFicheSaisie({
+      raison_sociale: String(garage.raison_sociale ?? ""),
+      siret: String(garage.siret ?? "").replace(/\D/g, "").slice(0, 14),
+    });
+  }, [garage?.id]);
+
   const enregistrerFiche = async () => {
     if (!garage?.id || !ficheSaisieValide) return;
     setEnregistrementFiche(true);
