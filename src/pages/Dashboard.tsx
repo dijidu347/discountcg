@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { getStatusCategory } from "@/lib/demarcheStatusBadge";
+import { StatusPill } from "@/components/StatusPill";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -749,19 +750,18 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-3">
                   {recentDemarches.map((demarche) => {
-                    const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-                      en_saisie: { label: "En saisie", color: "text-gray-500", icon: UserCircle },
-                      en_attente: { label: "En attente", color: "text-orange-500", icon: Clock },
-                      paye: { label: "Payée", color: "text-blue-500", icon: CheckCircle },
-                      valide: { label: "Validée", color: "text-green-500", icon: CheckCircle },
-                      finalise: { label: "Finalisée", color: "text-primary", icon: CheckCircle },
-                      // Sans ces entrees, un dossier refuse s'affichait « En attente ».
-                      refuse: { label: "Refusée", color: "text-red-500", icon: AlertCircle },
-                      en_attente_paiement_client: { label: "Attente paiement client", color: "text-orange-500", icon: Clock },
-                      en_attente_paiement_pro: { label: "Attente de votre paiement", color: "text-orange-500", icon: Clock },
-                    };
-                    const config = statusConfig[demarche.status] || { label: demarche.status, color: "text-gray-500", icon: Clock };
-                    const StatusIcon = config.icon;
+                    // L'icône suit la même catégorie que la pastille, et non
+                    // une table de statuts tenue à part : les deux disaient
+                    // autrefois des choses différentes du même dossier.
+                    const categorie = getStatusCategory(demarche.status);
+                    const ROND = {
+                      refuse: { fond: "bg-gray-200 dark:bg-gray-800", teinte: "text-gray-700 dark:text-gray-300", icone: AlertCircle },
+                      paiement_attente: { fond: "bg-amber-100 dark:bg-amber-950/40", teinte: "text-amber-600", icone: Clock },
+                      finalise: { fond: "bg-green-100 dark:bg-green-950/40", teinte: "text-green-600", icone: CheckCircle },
+                      en_cours: { fond: "bg-blue-100 dark:bg-blue-950/40", teinte: "text-blue-600", icone: Clock },
+                    } as const;
+                    const rond = ROND[categorie as keyof typeof ROND] ?? ROND.en_cours;
+                    const StatusIcon = rond.icone;
 
                     return (
                       <div
@@ -770,20 +770,8 @@ export default function Dashboard() {
                         onClick={() => navigate(`/demarche/${demarche.id}`)}
                       >
                         <div className="flex items-center gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              config.color.includes('red')
-                                ? 'bg-red-100'
-                                : config.color.includes('blue')
-                                ? 'bg-blue-100'
-                                : config.color.includes('green')
-                                ? 'bg-green-100'
-                                : config.color.includes('orange')
-                                ? 'bg-orange-100'
-                                : 'bg-gray-100'
-                            }`}
-                          >
-                            <StatusIcon className={`h-4 w-4 ${config.color}`} />
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${rond.fond}`}>
+                            <StatusIcon className={`h-4 w-4 ${rond.teinte}`} />
                           </div>
                           <div>
                             <div className="font-medium">{demarche.immatriculation}</div>
@@ -798,7 +786,13 @@ export default function Dashboard() {
                             </div>
                           </div>
                         </div>
-                        <Badge className={config.color}>{config.label}</Badge>
+                        {/* La pastille vient de la source commune, comme sur
+                            « Mes démarches ». Elle était construite ici avec la
+                            seule couleur du texte : « text-red-500 » posé sur le
+                            fond bleu que la pastille porte par défaut, soit du
+                            rouge sur du bleu. Illisible pour « Refusée », et
+                            faux pour tous les autres statuts. */}
+                        <StatusPill statut={demarche.status} />
                       </div>
                     );
                   })}
