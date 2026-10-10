@@ -799,10 +799,14 @@ export function GarageVerificationPanel({
                 répétait le nom du document déjà surligné deux lignes plus haut.
                 Désormais : une ligne par pièce obligatoire, présente qu'elle
                 soit déposée ou non, et l'action à l'intérieur de la ligne. */}
-            <div className="grid gap-4 xl:grid-cols-[minmax(280px,320px)_1fr]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(320px,420px)_1fr]">
               <div className="space-y-2">
                 {rubriques.map((r) => {
                   const ouverte = r.docs.some((d) => d.id === idChoisi);
+                  // La pièce sur laquelle cette carte agit : celle qu'on a
+                  // sélectionnée si elle appartient à cette carte, sinon son
+                  // dépôt le plus récent.
+                  const docActif = r.docs.find((d) => d.id === idChoisi) ?? r.docs[0] ?? null;
                   return (
                     <div
                       key={r.code}
@@ -915,28 +919,32 @@ export function GarageVerificationPanel({
                       })()}
 
                       {/* L'action dans la ligne, jamais ailleurs. */}
-                      {ouverte && docChoisi && (
+                      {/* Les deux pièces restent ouvertes : replier celle qu'on ne
+                          regarde pas obligeait à cliquer pour voir qu'il n'y
+                          avait rien à y faire. Chaque carte agit sur SA pièce,
+                          la sélection ne sert plus qu'à l'aperçu de droite. */}
+                      {docActif && (
                         <div className="space-y-3 border-t p-3">
-                          {docChoisi.document_type === "kbis" && (
+                          {docActif.document_type === "kbis" && (
                             <div className="space-y-1">
                               <Label htmlFor="date-kbis" className="text-xs">Date de délivrance</Label>
                               <Input
                                 id="date-kbis"
                                 type="date"
-                                className={`h-8 ${!docChoisi.date_emission ? "border-yellow-500 ring-1 ring-yellow-500" : ""}`}
-                                defaultValue={docChoisi.date_emission ?? ""}
-                                onChange={(e) => enregistrerDateKbis(docChoisi.id, e.target.value)}
+                                className={`h-8 ${!docActif.date_emission ? "border-yellow-500 ring-1 ring-yellow-500" : ""}`}
+                                defaultValue={docActif.date_emission ?? ""}
+                                onChange={(e) => enregistrerDateKbis(docActif.id, e.target.value)}
                               />
                               <p className="text-xs text-muted-foreground">
-                                {docChoisi.date_emission
-                                  ? ageDuKbis(docChoisi.date_emission)?.texte
-                                  : docChoisi.lu_le
+                                {docActif.date_emission
+                                  ? ageDuKbis(docActif.date_emission)?.texte
+                                  : docActif.lu_le
                                   ? "La lecture automatique n'a pas trouvé la date : recopiez-la."
                                   : "Pas encore lu automatiquement."}
                               </p>
-                              {docChoisi.activite && (
+                              {docActif.activite && (
                                 <p className="text-xs text-muted-foreground">
-                                  Activité lue : « {docChoisi.activite} »
+                                  Activité lue : « {docActif.activite} »
                                 </p>
                               )}
 
@@ -945,25 +953,25 @@ export function GarageVerificationPanel({
                                   peut pas en obtenir. Le document le dit
                                   lui-même : un Kbis mentionne toujours le RCS,
                                   l'attestation d'un artisan jamais. */}
-                              {docChoisi.nature_document === "rne" && (
+                              {docActif.nature_document === "rne" && (
                                 <div
                                   className={`rounded-md border p-2 text-xs ${
-                                    docChoisi.inscrit_rcs
+                                    docActif.inscrit_rcs
                                       ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
                                       : "border-border bg-muted/50"
                                   }`}
                                 >
                                   <p className="font-medium text-foreground">
                                     Attestation RNE
-                                    {docChoisi.forme_juridique ? ` — ${docChoisi.forme_juridique}` : ""}
+                                    {docActif.forme_juridique ? ` — ${docActif.forme_juridique}` : ""}
                                   </p>
-                                  {docChoisi.inscrit_rcs ? (
+                                  {docActif.inscrit_rcs ? (
                                     <p className="mt-0.5 text-foreground">
                                       Le document mentionne une inscription au RCS : cette entreprise
                                       a donc un extrait Kbis. Demandez-le — l'attestation n'est
                                       admise que pour qui ne peut pas en obtenir.
                                     </p>
-                                  ) : docChoisi.inscrit_rcs === false ? (
+                                  ) : docActif.inscrit_rcs === false ? (
                                     <p className="mt-0.5 text-muted-foreground">
                                       Aucune inscription au RCS mentionnée : ce professionnel n'a pas
                                       de Kbis, l'attestation est la pièce qui en tient lieu.
@@ -986,36 +994,36 @@ export function GarageVerificationPanel({
                               droite — ce n'est pas une décision sur la pièce,
                               c'est un retrait. */}
                           <div className="flex flex-wrap items-center gap-2">
-                            {docChoisi.status !== "approved" && (
+                            {docActif.status !== "approved" && (
                               <Button
                                 size="sm"
                                 className="bg-green-600 hover:bg-green-700"
-                                disabled={docChoisi.document_type === "kbis" && !docChoisi.date_emission}
+                                disabled={docActif.document_type === "kbis" && !docActif.date_emission}
                                 title={
-                                  docChoisi.document_type === "kbis" && !docChoisi.date_emission
+                                  docActif.document_type === "kbis" && !docActif.date_emission
                                     ? "Saisissez d'abord la date de délivrance"
                                     : undefined
                                 }
-                                onClick={() => handleSingleApprove(docChoisi.id)}
+                                onClick={() => handleSingleApprove(docActif.id)}
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Accepter
                               </Button>
                             )}
-                            {docChoisi.document_type === "kbis" && docChoisi.lu_le && !docChoisi.date_emission && (
+                            {docActif.document_type === "kbis" && docActif.lu_le && !docActif.date_emission && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => relireDocument(docChoisi)}
+                                onClick={() => relireDocument(docActif)}
                                 title="La lecture automatique n'a pas trouvé de date : lui redonner une chance"
                               >
                                 <RefreshCw className="mr-2 h-4 w-4" />
                                 Relire
                               </Button>
                             )}
-                            <RefuserDocumentBouton doc={docChoisi} onRefuse={refuserDoc} />
+                            <RefuserDocumentBouton doc={docActif} onRefuse={refuserDoc} />
                             <div className="ml-auto">
-                              <SupprimerDocumentBouton doc={docChoisi} onSupprime={supprimerDoc} />
+                              <SupprimerDocumentBouton doc={docActif} onSupprime={supprimerDoc} />
                             </div>
                           </div>
                         </div>
@@ -1070,6 +1078,62 @@ export function GarageVerificationPanel({
                   </div>
                 )}
 
+
+              {/* L'historique tient dans la colonne des pièces : elle s'arrêtait
+                  après la dernière carte et laissait un vide sur toute la
+                  hauteur de l'aperçu.
+
+                  Zone 3 — un seul fil. Il absorbe l'onglet « Notifications », le
+                  bloc « Refusés » et le repli des anciennes exigences : trois
+                  endroits pour une même relation. Le bouton d'écriture est en tête,
+                  là où l'on voit ce qu'on a déjà envoyé. */}
+              <div className="mt-4 border-t pt-4">
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                  <h3 className="font-semibold">Historique</h3>
+                  <Button variant="outline" size="sm" onClick={() => setShowNotificationDialog(true)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Écrire au garage
+                  </Button>
+                </div>
+
+                {fil.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Aucun échange pour l'instant.</p>
+                ) : (
+                  <div className="divide-y">
+                    {filVisible.map((e, i) => (
+                      <div key={`${e.date}-${i}`} className="flex gap-3 py-2">
+                        {e.icone === "accepte" && <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />}
+                        {e.icone === "refuse" && <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+                        {e.icone === "depot" && <Upload className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                        {e.icone === "message" && <Send className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+                        {e.icone === "relance" && <History className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />}
+                        <div className="min-w-0">
+                          <p className="text-sm">{e.texte}</p>
+                          {e.note && (
+                            <p className="whitespace-pre-line text-xs text-muted-foreground">{e.note}</p>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(e.date), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {fil.length > 5 && (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="mt-1 h-auto p-0"
+                    onClick={() => setFilOuvert((v) => !v)}
+                  >
+                    {filOuvert
+                      ? "Réduire"
+                      : `Afficher les ${fil.length - 5} événements plus anciens`}
+                  </Button>
+                )}
+              </div>
               </div>
 
               <div className="xl:sticky xl:top-4 xl:self-start">
@@ -1085,68 +1149,17 @@ export function GarageVerificationPanel({
                       key={docChoisi.id}
                       documentUrl={docChoisi.url}
                       nomFichier={docChoisi.nom_fichier}
-                      className="h-[72vh]"
+                      className="h-[46vh] min-h-[320px]"
                     />
                   </>
                 ) : (
-                  <div className="flex h-[72vh] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                  <div className="flex h-[46vh] min-h-[320px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
                     Choisissez une pièce à gauche pour l'afficher ici.
                   </div>
                 )}
               </div>
             </div>
 
-        {/* Zone 3 — un seul fil. Il absorbe l'onglet « Notifications », le
-            bloc « Refusés » et le repli des anciennes exigences : trois
-            endroits pour une même relation. Le bouton d'écriture est en tête,
-            là où l'on voit ce qu'on a déjà envoyé. */}
-        <div className="mt-6 border-t pt-4">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-            <h3 className="font-semibold">Historique</h3>
-            <Button variant="outline" size="sm" onClick={() => setShowNotificationDialog(true)}>
-              <Send className="mr-2 h-4 w-4" />
-              Écrire au garage
-            </Button>
-          </div>
-
-          {fil.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun échange pour l'instant.</p>
-          ) : (
-            <div className="divide-y">
-              {filVisible.map((e, i) => (
-                <div key={`${e.date}-${i}`} className="flex gap-3 py-2">
-                  {e.icone === "accepte" && <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />}
-                  {e.icone === "refuse" && <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
-                  {e.icone === "depot" && <Upload className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
-                  {e.icone === "message" && <Send className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
-                  {e.icone === "relance" && <History className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />}
-                  <div className="min-w-0">
-                    <p className="text-sm">{e.texte}</p>
-                    {e.note && (
-                      <p className="whitespace-pre-line text-xs text-muted-foreground">{e.note}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(e.date), "dd/MM/yyyy à HH:mm", { locale: fr })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {fil.length > 5 && (
-            <Button
-              variant="link"
-              size="sm"
-              className="mt-1 h-auto p-0"
-              onClick={() => setFilOuvert((v) => !v)}
-            >
-              {filOuvert
-                ? "Réduire"
-                : `Afficher les ${fil.length - 5} événements plus anciens`}
-            </Button>
-          )}
-        </div>
       </Card>
 
       {viewerDoc && (
