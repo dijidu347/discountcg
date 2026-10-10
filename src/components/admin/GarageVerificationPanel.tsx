@@ -966,11 +966,7 @@ export function GarageVerificationPanel({
                               )}
                             </p>
                           )}
-                          {r.docs.length > 0 && (
-                            <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
-                              {r.docs[0].nom_fichier}
-                            </p>
-                          )}
+
                         </div>
                       </button>
                       {/* Plusieurs fichiers pour une même pièce, repliés
@@ -980,24 +976,26 @@ export function GarageVerificationPanel({
                           ensemble — ce sont deux faces, pas un historique —
                           alors qu'un Kbis redéposé des semaines plus tard
                           remplace le précédent. Le même jour les sépare. */}
-                      {ouverte && r.docs.length > 1 && (() => {
+                      {ouverte && r.docs.length > 0 && (() => {
                         const jour = (d: { created_at: string }) =>
                           new Date(d.created_at).toISOString().slice(0, 10);
                         const memeJour = r.docs.every((d) => jour(d) === jour(r.docs[0]));
                         return (
-                        <div className="border-t px-3 py-2">
-                          <p className="mb-1 text-xs text-muted-foreground">
-                            {memeJour
-                              ? `${r.docs.length} fichiers pour cette pièce`
-                              : `Dépôts précédents (${r.docs.length - 1})`}
-                          </p>
-                          {r.docs.slice(1).map((d) => (
+                        <div className="border-t px-3 py-2 space-y-1">
+                          {r.docs.length > 1 && (
+                            <p className="text-xs text-muted-foreground">
+                              {memeJour
+                                ? `${r.docs.length} fichiers pour cette pièce`
+                                : `${r.docs.length} dépôts, du plus récent au plus ancien`}
+                            </p>
+                          )}
+                          {r.docs.map((d) => (
                             <button
                               key={d.id}
                               type="button"
                               onClick={() => setIdChoisi(d.id)}
-                              className={`flex w-full items-center justify-between gap-2 rounded px-2 py-1 text-left text-xs hover:bg-muted ${
-                                d.id === idChoisi ? "bg-muted font-medium" : ""
+                              className={`flex w-full items-center justify-between gap-2 rounded border px-2 py-1.5 text-left text-xs transition-colors hover:bg-muted ${
+                                d.id === idChoisi ? "border-foreground/30 bg-muted font-medium" : "border-transparent"
                               }`}
                             >
                               <span className="truncate">
