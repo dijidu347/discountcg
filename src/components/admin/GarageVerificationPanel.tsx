@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
 
 // Les mouvements de solde passent par le serveur : le site ne peut plus
 // modifier lui-meme token_balance (voir migration 20260915100000).
@@ -635,9 +636,9 @@ export function GarageVerificationPanel({
       );
       for (const vieux of anciens) {
         try {
-          const parts = String(vieux.url ?? "").split("/demarche-documents/");
-          const chemin = parts.length > 1 ? parts[1].split("?")[0] : null;
-          if (chemin) await supabase.storage.from("demarche-documents").remove([chemin]);
+          const bucket = extractBucketFromUrl(String(vieux.url ?? ""));
+          const chemin = extractPathFromUrl(String(vieux.url ?? ""));
+          if (bucket && chemin) await supabase.storage.from(bucket).remove([chemin]);
         } catch (e) {
           console.error("Ancien Kbis non supprimé du stockage", e);
         }

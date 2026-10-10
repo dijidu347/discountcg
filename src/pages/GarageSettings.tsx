@@ -23,6 +23,7 @@ import { format } from "date-fns";
 import { formeJuridiqueDuGarage, pieceAttendue, libellePiece } from "@/lib/formeJuridique";
 import { ChampFichiers } from "@/components/ChampFichiers";
 import { compressFile, isHeicFile } from "@/lib/file-compression";
+import { extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
 import { fr } from "date-fns/locale";
 
 interface RequiredDocument {
@@ -290,9 +291,9 @@ export default function GarageSettings() {
   // fait partie du dossier et seule l'administration peut y toucher.
   const supprimerSonDocument = async (doc: any) => {
     try {
-      const parts = String(doc.url ?? "").split('/demarche-documents/');
-      const chemin = parts.length > 1 ? parts[1].split('?')[0] : null;
-      if (chemin) await supabase.storage.from('demarche-documents').remove([chemin]);
+      const bucket = extractBucketFromUrl(String(doc.url ?? ""));
+      const chemin = extractPathFromUrl(String(doc.url ?? ""));
+      if (bucket && chemin) await supabase.storage.from(bucket).remove([chemin]);
     } catch (e) {
       console.error("Fichier non supprimé du stockage", e);
     }
@@ -438,9 +439,9 @@ export default function GarageSettings() {
         : (presents ?? []).slice(capacite);
       for (const vieux of surnumeraires) {
         try {
-          const parts = String(vieux.url ?? "").split('/demarche-documents/');
-          const chemin = parts.length > 1 ? parts[1].split('?')[0] : null;
-          if (chemin) await supabase.storage.from('demarche-documents').remove([chemin]);
+          const bucket = extractBucketFromUrl(String(vieux.url ?? ''));
+          const chemin = extractPathFromUrl(String(vieux.url ?? ''));
+          if (bucket && chemin) await supabase.storage.from(bucket).remove([chemin]);
         } catch (e) {
           console.error('Fichier remplacé non supprimé du stockage', e);
         }
