@@ -6,7 +6,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { formatDateTimeParis } from "@/lib/dateFormat";
-import { StickyNote } from "lucide-react";
+import { StickyNote, Pencil, Trash2, Check, X } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 // Notes de suivi de prospection d'un garage : écrites et lues par les
 // prospecteurs et les administrateurs (mêmes fonctions en base, qui refusent
@@ -45,6 +50,10 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
   const aujourdhui = new Date().toISOString().slice(0, 10);
   const [dateNote, setDateNote] = useState(aujourdhui);
   const [enregistrement, setEnregistrement] = useState(false);
+  // Une note se corrige : on note vite, entre deux appels, et une faute de
+  // frappe ou un rappel mal daté restait gravé.
+  const [edition, setEdition] = useState<string | null>(null);
+  const [brouillon, setBrouillon] = useState({ contenu: "", prenom: "", date_note: "", rappel: "" });
 
   const charger = useCallback(async () => {
     const { data } = await rpc("notes_prospection_garage", { p_garage_id: garageId });
@@ -95,6 +104,44 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
     setRappel("");
     await charger();
     onNoteAjoutee?.();
+  };
+
+  const ouvrirEdition = (n: NoteProspection) => {
+    setEdition(n.id);
+    setBrouillon({
+      contenu: n.contenu,
+      prenom: n.auteur_prenom ?? "",
+      date_note: n.date_note ?? n.created_at.slice(0, 10),
+      rappel: n.rappel_le ?? "",
+    });
+  };
+
+  const enregistrerEdition = async () => {
+    if (!edition) return;
+    const { error } = await rpc("modifier_note_prospection", {
+      p_note_id: edition,
+      p_contenu: brouillon.contenu,
+      p_rappel_le: brouillon.rappel || null,
+      p_auteur_prenom: brouillon.prenom,
+      p_date_note: brouillon.date_note || null,
+    });
+    if (error) {
+      toast({ title: "Modification impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEdition(null);
+    toast({ title: "Note modifiée" });
+    await charger();
+  };
+
+  const supprimerNote = async (id: string) => {
+    const { error } = await rpc("supprimer_note_prospection", { p_note_id: id });
+    if (error) {
+      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Note supprimée" });
+    await charger();
   };
 
   return (
@@ -151,13 +198,91 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
         ) : (
           notes.map((n) => (
             <div key={n.id} className="rounded-md border p-3 text-sm">
-              <p className="whitespace-pre-wrap">{n.contenu}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {n.auteur_prenom || n.auteur_email || "—"}
-                {" · "}
-                {n.date_note ? jourCalendrier(n.date_note) : formatDateTimeParis(n.created_at)}
-                {n.rappel_le ? ` · rappel le ${jourCalendrier(n.rappel_le)}` : ""}
-              </p>
+              {edition === n.id ? (
+                <div className="space-y-2">
+                  <Textarea
+                    value={brouillon.contenu}
+                    onChange={(e) => setBrouillon((b) => ({ ...b, contenu: e.target.value }))}
+                    rows={3}
+                  />
+                  <div className="flex flex-wrap items-end gap-2">
+                    <Input
+                      value={brouillon.prenom}
+                      onChange={(e) => setBrouillon((b) => ({ ...b, prenom: e.target.value }))}
+                      placeholder="Prénom"
+                      className="h-8 w-32"
+                    />
+                    <Input
+                      type="date"
+                      value={brouillon.date_note}
+                      onChange={(e) => setBrouillon((b) => ({ ...b, date_note: e.target.value }))}
+                      className="h-8 w-40"
+                    />
+                    <Input
+                      type="date"
+                      value={brouillon.rappel}
+                      onChange={(e) => setBrouillon((b) => ({ ...b, rappel: e.target.value }))}
+                      className="h-8 w-40"
+                      title="Date de rappel"
+                    />
+                    <Button size="sm" className="h-8" onClick={enregistrerEdition}>
+                      <Check className="mr-1 h-3.5 w-3.5" />
+                      Enregistrer
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-8" onClick={() => setEdition(null)}>
+                      <X className="mr-1 h-3.5 w-3.5" />
+                      Annuler
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="whitespace-pre-wrap">{n.contenu}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {n.auteur_prenom || n.auteur_email || "—"}
+                      {" · "}
+                      {n.date_note ? jourCalendrier(n.date_note) : formatDateTimeParis(n.created_at)}
+                      {n.rappel_le ? ` · rappel le ${jourCalendrier(n.rappel_le)}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      type="button"
+                      aria-label="Modifier la note"
+                      className="text-muted-foreground transition-colors hover:text-foreground"
+                      onClick={() => ouvrirEdition(n)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          type="button"
+                          aria-label="Supprimer la note"
+                          className="text-muted-foreground transition-colors hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer cette note ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Elle disparaîtra pour tout le monde, définitivement.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => supprimerNote(n.id)}>
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              )}
             </div>
           ))
         )}
