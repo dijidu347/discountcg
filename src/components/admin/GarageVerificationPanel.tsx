@@ -17,7 +17,7 @@ import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload,
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
-import { EtatDocument, RefuserDocumentBouton, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
+import { EtatDocument, etatPiece, RefuserDocumentBouton, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
 import { supprimerDocumentVerification } from "@/lib/supprimerDocumentVerification";
 import { refuserDocumentVerification, historiqueDesRefus, type DocumentRefuse } from "@/lib/refuserDocumentVerification";
 import { formeJuridiqueDuGarage } from "@/lib/formeJuridique";
@@ -85,6 +85,15 @@ interface GarageVerificationPanelProps {
  * été extrait tel quel pour être rendu en pleine page dans la fiche garage,
  * quand les deux boutons de la liste ont été remplacés par "Voir la fiche".
  */
+// Le fond d'une pièce dit son état avant qu'on lise sa pastille.
+// Vert = acquis, rouge = refusé, jaune = en attente, orange = périmé.
+const TEINTE_PIECE: Record<string, string> = {
+  approuve: "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30",
+  expire: "border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30",
+  refuse: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30",
+  attente: "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30",
+};
+
 export function GarageVerificationPanel({
   garage,
   onGarageChanged,
@@ -345,7 +354,11 @@ export function GarageVerificationPanel({
     .filter((e) => e.date)
     .sort((a, b) => +new Date(b.date) - +new Date(a.date));
 
-  const filVisible = filOuvert ? fil : fil.slice(0, 5);
+  // Trois événements suffisent à savoir où l'on en est : l'historique est
+  // remonté dans la colonne des pièces, et cinq entrées y repoussaient les
+  // cartes hors de l'écran.
+  const EVENEMENTS_VISIBLES = 3;
+  const filVisible = filOuvert ? fil : fil.slice(0, EVENEMENTS_VISIBLES);
 
   // A l'ouverture, la page se place sur la premiere piece qui attend un geste :
   // une date a saisir d'abord, un controle ensuite. Afficher un document ne
@@ -809,7 +822,10 @@ export function GarageVerificationPanel({
             )}
           </div>
           {garage.is_verified ? (
-            <Button variant="destructive" className="shrink-0" onClick={() => setShowRejectDialog(true)}>
+            <Button
+              className="shrink-0 bg-red-100 text-red-800 shadow-none hover:bg-red-200 dark:bg-red-950/60 dark:text-red-200 dark:hover:bg-red-900/60"
+              onClick={() => setShowRejectDialog(true)}
+            >
               <ShieldCheck className="mr-2 h-4 w-4" />
               Retirer la vérification
             </Button>
@@ -848,10 +864,12 @@ export function GarageVerificationPanel({
                     <div
                       key={r.code}
                       className={`rounded-lg border transition-colors ${
-                        ouverte
-                          ? "border-primary bg-background shadow-sm ring-1 ring-primary"
-                          : "bg-muted/40 hover:bg-muted/60"
-                      } ${r.docs.length === 0 ? "border-dashed bg-muted/20" : ""}`}
+                        ouverte ? "border-primary shadow-sm ring-1 ring-primary" : ""
+                      } ${
+                        r.docs.length === 0
+                          ? "border-dashed bg-muted/20"
+                          : TEINTE_PIECE[etatPiece(r.docs[0], kbisPerime)]
+                      }`}
                     >
                       <button
                         type="button"
@@ -1149,7 +1167,7 @@ export function GarageVerificationPanel({
                   </div>
                 )}
 
-                {fil.length > 5 && (
+                {fil.length > EVENEMENTS_VISIBLES && (
                   <Button
                     variant="link"
                     size="sm"
@@ -1158,7 +1176,7 @@ export function GarageVerificationPanel({
                   >
                     {filOuvert
                       ? "Réduire"
-                      : `Afficher les ${fil.length - 5} événements plus anciens`}
+                      : `Afficher les ${fil.length - EVENEMENTS_VISIBLES} événements plus anciens`}
                   </Button>
                 )}
               </div>

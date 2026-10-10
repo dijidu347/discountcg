@@ -36,6 +36,29 @@ type Doc = any;
  * Même règle qu'en base (validite_kbis) : six mois à compter de la date portée
  * sur le document, à défaut de sa date de dépôt.
  */
+/**
+ * L'état d'une pièce, en un mot, pour qui a besoin d'en teinter le fond.
+ *
+ * Même règle d'expiration que la pastille : la lire deux fois, c'est
+ * s'exposer à ce que le fond dise vert pendant que la pastille dit orange.
+ */
+export type EtatPiece = "approuve" | "expire" | "refuse" | "attente";
+
+export function etatPiece(doc: Doc, kbisPerime?: boolean): EtatPiece {
+  if (!doc) return "attente";
+  const perime = (() => {
+    if (doc.document_type !== "kbis") return false;
+    const base = doc.date_emission ?? doc.created_at;
+    if (!base) return Boolean(kbisPerime);
+    const fin = new Date(base);
+    fin.setMonth(fin.getMonth() + 6);
+    return fin < new Date();
+  })();
+  if (doc.status === "approved") return perime ? "expire" : "approuve";
+  if (doc.status === "rejected") return "refuse";
+  return "attente";
+}
+
 export function EtatDocument({ doc, kbisPerime }: { doc: Doc; kbisPerime?: boolean }) {
   const perimeCeDocument = (() => {
     if (doc.document_type !== "kbis") return false;
@@ -266,7 +289,10 @@ export function RefuserDocumentBouton({
   return (
     <AlertDialog open={ouvert} onOpenChange={fermer}>
       <AlertDialogTrigger asChild>
-        <Button size="sm" variant="destructive">
+        <Button
+          size="sm"
+          className="bg-red-100 text-red-800 shadow-none hover:bg-red-200 dark:bg-red-950/60 dark:text-red-200 dark:hover:bg-red-900/60"
+        >
           <XCircle className="mr-2 h-4 w-4" />
           {libelle}
         </Button>
