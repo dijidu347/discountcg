@@ -69,7 +69,7 @@ type Etape = Exclude<Onglet, "tous">;
 // décrivent le parc. La liste vit ici, et non dans le composant, parce que le
 // tri et les colonnes s'en servent avant que les libellés soient construits.
 const CLES_TRAVAIL: Onglet[] = ["a_verifier", "a_completer"];
-type Tri = "recents" | "anciens" | "depense" | "demarches";
+type Tri = "attente" | "recents" | "anciens" | "depense" | "demarches";
 
 interface Stats {
   total: number;
@@ -426,20 +426,28 @@ export default function ManageGarages() {
   const [onglet, setOnglet] = useState<Onglet>(ongletDemande ?? memoire.onglet ?? "a_verifier");
   const enTravail = CLES_TRAVAIL.includes(onglet);
   const [recherche, setRecherche] = useState<string>(memoire.recherche ?? "");
-  const [tri, setTri] = useState<Tri>(memoire.tri ?? "recents");
+  // L'ordre de file est un choix de tri comme un autre, et le défaut des
+  // onglets de travail. Il était imposé sans pouvoir en sortir.
+  const [tri, setTri] = useState<Tri>(
+    memoire.tri ?? (CLES_TRAVAIL.includes(ongletDemande ?? memoire.onglet ?? "a_verifier") ? "attente" : "recents"),
+  );
   const [activite, setActivite] = useState<string[]>(enListe(memoire.activite));
   const [activitePeriode, setActivitePeriode] = useState<Periode>(lirePeriode(memoire.activitePeriode));
   const [solde, setSolde] = useState<string[]>(enListe(memoire.solde));
   const [offerte, setOfferte] = useState<string[]>(enListe(memoire.offerte));
   const [inscription, setInscription] = useState<Periode>(lirePeriode(memoire.inscription));
   const [departement, setDepartement] = useState<string[]>(enListe(memoire.departement));
+  // Filtrer sur ce qui attend : « Kbis manquant » et « Kbis périmé » appellent
+  // deux gestes différents — l'un se relance, l'autre s'examine — et ils
+  // étaient mélangés dans le même onglet.
+  const [attente, setAttente] = useState<string[]>(enListe(memoire.attente));
   const [page, setPage] = useState<number>(memoire.page ?? 1);
 
   useEffect(() => {
     try {
-      sessionStorage.setItem("gerer-garages", JSON.stringify({ onglet, recherche, tri, activite, activitePeriode, solde, offerte, inscription, departement, page }));
+      sessionStorage.setItem("gerer-garages", JSON.stringify({ onglet, recherche, tri, activite, activitePeriode, solde, offerte, inscription, departement, attente, page }));
     } catch { /* navigation privée */ }
-  }, [onglet, recherche, tri, activite, activitePeriode, solde, offerte, inscription, departement, page]);
+  }, [onglet, recherche, tri, activite, activitePeriode, solde, offerte, inscription, departement, attente, page]);
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -585,6 +593,10 @@ export default function ManageGarages() {
     return garages.filter((g) => {
       if (q && ![g.raison_sociale, g.email, g.ville, g.siret, g.telephone].some((v) => (v || "").toLowerCase().includes(q))) return false;
       if (departement.length && !departement.includes(departementDe(g.code_postal) ?? "")) return false;
+      if (attente.length) {
+        const motifs = (dossiers.get(g.id) ?? SANS_DOCUMENT).motifs;
+        if (!motifs.some((m) => attente.includes(m))) return false;
+      }
       if (solde.length) {
         const aDuSolde = Number(g.token_balance) > 0;
         if (!solde.includes(aDuSolde ? "avec" : "vide")) return false;
@@ -597,7 +609,7 @@ export default function ManageGarages() {
       }
       return true;
     });
-  }, [garages, recherche, departement, solde, offerte, inscription]);
+  }, [garages, recherche, departement, solde, offerte, inscription, attente, dossiers]);
 
   const filtres = useMemo(() => {
     return horsActivite.filter((g) => {
@@ -643,6 +655,22 @@ export default function ManageGarages() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtres, dossiers]);
 
+  // Les motifs réellement présents dans l'onglet où l'on se trouve, avec leur
+  // compte. Proposer une liste figée ferait offrir « Kbis périmé » là où il
+  // n'y en a aucun.
+  const motifsDisponibles = useMemo(() => {
+    const compte = new Map<string, number>();
+    horsActiviteOnglet.forEach((g) => {
+      (dossiers.get(g.id) ?? SANS_DOCUMENT).motifs.forEach((m) => {
+        compte.set(m, (compte.get(m) ?? 0) + 1);
+      });
+    });
+    return [...compte.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([valeur, n]) => ({ valeur, texte: valeur, compte: n }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [horsActiviteOnglet, dossiers]);
+
   // Ce que la vue de travail doit dire de chaque ligne : la nature de
   // l'attente, et sa date de départ. Afficher ici la dépense et le solde,
   // comme le faisait la liste unique, ne renseignait pas sur le geste à faire.
@@ -656,11 +684,13 @@ export default function ManageGarages() {
   };
 
   const liste = useMemo(() => {
-    // Dans une file, le plus ancien passe devant : trier par dépense faisait
-    // attendre celui qui attend depuis le plus longtemps.
-    if (enTravail) {
+    // Dans une file, le plus ancien passe devant — c'est le défaut, et il
+    // reste le bon dans l'immense majorité des cas. Mais le tri choisi est
+    // maintenant respecté : on veut parfois voir d'abord le garage qui
+    // dépense le plus.
+    if (tri === "attente") {
       return filtres
-        .filter((g) => etape(g) === onglet)
+        .filter((g) => onglet === "tous" || etape(g) === onglet)
         .sort((a, b) => {
           const da = attenteDe(a).depuis;
           const db = attenteDe(b).depuis;
@@ -684,11 +714,11 @@ export default function ManageGarages() {
   const pageCourante = Math.min(page, pages);
   const visibles = liste.slice((pageCourante - 1) * PAR_PAGE, pageCourante * PAR_PAGE);
 
-  const filtresActifs = [solde, offerte, departement].filter((v) => v.length > 0).length
+  const filtresActifs = [solde, offerte, departement, attente].filter((v) => v.length > 0).length
     + (activite.length || activitePeriode.du || activitePeriode.au ? 1 : 0)
     + (inscription.du || inscription.au ? 1 : 0);
   const reinitialiser = () => {
-    setActivite([]); setActivitePeriode(PERIODE_VIDE); setSolde([]); setOfferte([]); setInscription(PERIODE_VIDE); setDepartement([]); setRecherche("");
+    setActivite([]); setActivitePeriode(PERIODE_VIDE); setSolde([]); setOfferte([]); setInscription(PERIODE_VIDE); setDepartement([]); setAttente([]); setRecherche("");
   };
   const changer = <T,>(setter: (v: T) => void) => (v: T) => { setter(v); setPage(1); };
 
@@ -782,24 +812,24 @@ export default function ManageGarages() {
                 onChange={(e) => { setRecherche(e.target.value); setPage(1); }}
               />
             </div>
-            {/* En vue de travail le tri est imposé : le plus ancien d'abord. */}
-            {!enTravail && (
+            {/* Le plus ancien d'abord reste le défaut d'une file de travail,
+                mais il n'a plus à être imposé : on veut parfois voir d'abord
+                le garage qui dépense le plus, ou celui qui vient d'arriver.
+                Le menu était remplacé par un texte, et cliquer dessus ne
+                faisait rien. */}
             <Select value={tri} onValueChange={(v) => { setTri(v as Tri); setPage(1); }}>
               <SelectTrigger className="w-[230px] bg-background">
                 <ArrowUpDown className="mr-2 h-4 w-4 shrink-0 text-muted-foreground" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="attente">Le plus ancien d'abord</SelectItem>
                 <SelectItem value="recents">Plus récents</SelectItem>
                 <SelectItem value="anciens">Plus anciens</SelectItem>
                 <SelectItem value="depense">Plus grosse dépense</SelectItem>
                 <SelectItem value="demarches">Plus de démarches</SelectItem>
               </SelectContent>
             </Select>
-            )}
-            {enTravail && (
-              <p className="self-center text-sm text-muted-foreground">Le plus ancien d'abord</p>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
@@ -839,6 +869,14 @@ export default function ManageGarages() {
               options={[{ valeur: "non_utilisee", texte: "Pas encore utilisée" }]}
             />
             <FiltrePeriode titre="Inscription" valeur={inscription} onChange={changer(setInscription)} />
+            {motifsDisponibles.length > 0 && (
+              <FiltrePastille
+                titre="Ce qui attend"
+                valeurs={attente}
+                onChange={changer(setAttente)}
+                options={motifsDisponibles}
+              />
+            )}
             <FiltrePastille
               titre="Département"
               valeurs={departement}
