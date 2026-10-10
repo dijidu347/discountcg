@@ -71,7 +71,7 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
       return;
     }
     if (!dateNote) {
-      toast({ title: "Date manquante", description: "Indiquez le jour de l'échange.", variant: "destructive" });
+      toast({ title: "Date manquante", description: "Indiquez la date de la note.", variant: "destructive" });
       return;
     }
     setEnregistrement(true);
@@ -122,7 +122,7 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
           </div>
           <div className="space-y-1">
             <Label htmlFor={`date-note-${garageId}`} className="text-xs">
-              Date de l'échange <span className="text-destructive">*</span>
+              Date de la note <span className="text-destructive">*</span>
             </Label>
             <Input
               id={`date-note-${garageId}`}
