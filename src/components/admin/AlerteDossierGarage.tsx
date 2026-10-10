@@ -25,6 +25,11 @@ import { useToast } from "@/hooks/use-toast";
 import { chargerDossierGarage, type DossierGarage } from "@/lib/etatDossierGarage";
 
 const LIEN_DEPOT = "https://discountcartegrise.fr/garage-settings";
+const SUJET = "Pièces à déposer pour traiter votre démarche";
+// L'ancien libellé de la relance Kbis : une demande d'hier reste une demande.
+const SUJETS_DE_DEMANDE = [SUJET, "Votre Kbis doit être mis à jour"];
+// Au-delà, la demande est restée lettre morte et on peut relancer.
+const JOURS_AVANT_RELANCE = 7;
 
 interface Props {
   garage: { id: string; email?: string | null; raison_sociale?: string | null } | null;
@@ -36,11 +41,23 @@ export function AlerteDossierGarage({ garage, reference }: Props) {
   const { toast } = useToast();
   const [dossier, setDossier] = useState<DossierGarage | null>(null);
   const [envoi, setEnvoi] = useState(false);
-  const [envoyee, setEnvoyee] = useState(false);
+  // Quand la dernière demande est partie. Lue en base, pas gardée en mémoire :
+  // un même garage a souvent plusieurs démarches ouvertes — trente-neuf d'entre
+  // eux en portent cent huit — et le bouton s'affichait neuf comme si de rien
+  // n'était sur chacune des autres.
+  const [demandeeLe, setDemandeeLe] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     if (!garage?.id) return;
     setDossier(await chargerDossierGarage(garage.id));
+    const { data } = await supabase
+      .from("garage_verification_notifications")
+      .select("created_at")
+      .eq("garage_id", garage.id)
+      .in("subject", SUJETS_DE_DEMANDE)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    setDemandeeLe(data?.[0]?.created_at ?? null);
   }, [garage?.id]);
 
   useEffect(() => {
@@ -48,6 +65,13 @@ export function AlerteDossierGarage({ garage, reference }: Props) {
   }, [charger]);
 
   if (!garage?.id || !dossier || dossier.etat === "verifie") return null;
+
+  const joursDepuisDemande = demandeeLe
+    ? Math.floor((Date.now() - new Date(demandeeLe).getTime()) / 86400000)
+    : null;
+  // Une demande restée sans réponse une semaine n'a plus à bloquer le bouton :
+  // il devient « Relancer » plutôt que de rester grisé indéfiniment.
+  const relanceAutorisee = joursDepuisDemande !== null && joursDepuisDemande >= JOURS_AVANT_RELANCE;
 
   const demander = async () => {
     if (!garage.email) {
@@ -69,7 +93,7 @@ export function AlerteDossierGarage({ garage, reference }: Props) {
         to: garage.email,
         data: {
           customerName: garage.raison_sociale,
-          subject: "Pièces à déposer pour traiter votre démarche",
+          subject: SUJET,
           message,
         },
       },
@@ -79,12 +103,12 @@ export function AlerteDossierGarage({ garage, reference }: Props) {
     // retrouve en se connectant.
     await supabase.from("garage_verification_notifications").insert({
       garage_id: garage.id,
-      subject: "Pièces à déposer pour traiter votre démarche",
+      subject: SUJET,
       message,
     });
 
     setEnvoi(false);
-    setEnvoyee(true);
+    setDemandeeLe(new Date().toISOString());
     toast({
       title: error ? "Demande enregistrée, email non parti" : "Demande envoyée",
       description: error ? "Le garage la retrouvera dans son espace." : garage.email,
@@ -139,18 +163,31 @@ export function AlerteDossierGarage({ garage, reference }: Props) {
               ))}
             </ul>
             <p className="mt-2 text-sm text-muted-foreground">
-              La démarche se traite quand même — mais demandez la pièce, elle sera exigée tôt ou
-              tard.
+              {demandeeLe ? (
+                <>
+                  Demandée le {new Date(demandeeLe).toLocaleDateString("fr-FR")}
+                  {joursDepuisDemande !== null && joursDepuisDemande > 0 && (
+                    <> — il y a {joursDepuisDemande} jour{joursDepuisDemande > 1 ? "s" : ""}</>
+                  )}
+                  , sans réponse. {relanceAutorisee ? "Vous pouvez relancer." : ""}
+                </>
+              ) : (
+                <>La démarche se traite quand même — mais demandez la pièce, elle sera exigée tôt ou tard.</>
+              )}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
               <Button
                 size="sm"
                 className="bg-orange-600 hover:bg-orange-700"
-                disabled={envoi || envoyee}
+                disabled={envoi || (demandeeLe !== null && !relanceAutorisee)}
                 onClick={demander}
               >
                 {envoi && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {envoyee ? "Demande envoyée" : "Demander les pièces"}
+                {!demandeeLe
+                  ? "Demander les pièces"
+                  : relanceAutorisee
+                  ? "Relancer"
+                  : "Demande envoyée"}
               </Button>
               <Button size="sm" variant="outline" onClick={() => navigate(`/admin/garages/${garage.id}`)}>
                 Ouvrir la fiche
