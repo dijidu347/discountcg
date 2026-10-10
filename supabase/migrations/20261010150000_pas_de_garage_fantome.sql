@@ -9,8 +9,15 @@
 -- rôle « garage » par-dessus le marché. Ce rôle ouvre l'espace professionnel,
 -- où une déclaration de cession coûte 5 € au lieu de 20 €.
 --
--- Quarante-six comptes sont nés ainsi, du 15 avril au 8 octobre 2026. Aucun
--- n'a jamais déposé la moindre démarche professionnelle.
+-- Quarante-six comptes sont nés ainsi, du 15 avril au 8 octobre 2026. Sept
+-- démarches professionnelles ont été commencées depuis ces fiches, toutes
+-- restées en brouillon : aucune n'a été payée au tarif pro.
+--
+-- Attention au tri : « raison sociale vide ET SIRET vide » ne suffit pas à
+-- désigner un fantôme. Un vrai garage, vérifié en août sur Kbis et pièce
+-- d'identité, a une fiche vide lui aussi — sa raison sociale n'a jamais été
+-- saisie. Le critère qui sépare vraiment les deux est l'activité : pièces
+-- déposées, vérification demandée, adresse renseignée.
 --
 -- Deux verrous désormais, et non un seul : le type de compte déclaré, et une
 -- raison sociale réellement renseignée. Le client a cessé d'envoyer ces champs

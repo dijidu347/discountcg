@@ -782,8 +782,16 @@ export default function GarageSettings() {
                         complète : c'est le SIRET qui décide laquelle demander.
                         Sans lui on afficherait « Kbis ou attestation RNE » à
                         tout le monde, en laissant le garage choisir — et un
-                        artisan choisirait le Kbis, qu'il ne peut pas obtenir. */}
-                    {!ficheIncomplete && (
+                        artisan choisirait le Kbis, qu'il ne peut pas obtenir.
+
+                        Sauf pour un compte déjà vérifié. Douze garages sont
+                        vérifiés avec un SIRET à neuf chiffres, hérité de
+                        l'époque où le formulaire les acceptait. Ils ne voyaient
+                        ni le bandeau (réservé aux comptes non vérifiés) ni la
+                        liste : un écran vide, et aucun moyen de remplacer un
+                        Kbis périmé. Leur fiche a déjà été acceptée ; le verrou
+                        ne protège que le premier dépôt. */}
+                    {(!ficheIncomplete || garage?.is_verified) && (
                     <div className="space-y-4">
                       {requiredDocs.map(reqDoc => {
                         const status = getDocumentStatus(reqDoc.code);
