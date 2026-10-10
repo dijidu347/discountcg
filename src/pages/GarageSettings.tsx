@@ -514,7 +514,7 @@ export default function GarageSettings() {
       const latestPending = pendingDocs[0]; // Already sorted by created_at desc
       return { 
         status: 'pending', 
-        badge: <Badge className="bg-yellow-500 text-black hover:bg-yellow-500"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>,
+        badge: <Badge className="bg-yellow-600 text-white hover:bg-yellow-600"><AlertCircle className="h-3 w-3 mr-1" />En attente</Badge>,
         canUpload: true,
         doc: latestPending,
         allPendingDocs: pendingDocs
@@ -851,6 +851,7 @@ export default function GarageSettings() {
                               status.status === 'rejected' ? 'border-red-300 bg-red-50/50 dark:bg-red-950/10' :
                               status.status === 'expire' ? 'border-orange-300 bg-orange-50/50 dark:bg-orange-950/10' :
                               status.status === 'approved' ? 'border-green-300 bg-green-50/50 dark:bg-green-950/10' :
+                              status.status === 'pending' ? 'border-yellow-300 bg-yellow-50/50 dark:bg-yellow-950/10' :
                               ''
                             }`}
                           >
