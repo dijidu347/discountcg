@@ -17,6 +17,20 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type EtatDossier = "verifie" | "a_verifier" | "a_completer" | "aucun_document";
 
+/**
+ * Le nom et la couleur de chaque état, pour tous les écrans qui l'affichent.
+ *
+ * Bleu = à nous de jouer, ambre = au garage, vert = acquis. Deux écrans qui
+ * nommaient le même état différemment donnaient deux vérités sur le même
+ * garage : la liste disait « Dossier incomplet », la fiche disait « Non ».
+ */
+export const LIBELLE_ETAT: Record<EtatDossier, { texte: string; classe: string }> = {
+  verifie: { texte: "Vérifié", classe: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
+  a_verifier: { texte: "Complet, à vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
+  a_completer: { texte: "Dossier incomplet", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
+  aucun_document: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
+};
+
 export interface DossierGarage {
   etat: EtatDossier;
   /** Ce qui manque ou cloche, pour l'afficher sans rouvrir la fiche. */

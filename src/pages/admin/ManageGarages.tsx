@@ -24,7 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import { RetirerBadgesManquants } from "@/components/admin/RetirerBadgesManquants";
-import { chargerDossiers, SANS_DOCUMENT, type DossierGarage } from "@/lib/etatDossierGarage";
+import { chargerDossiers, LIBELLE_ETAT, SANS_DOCUMENT, type DossierGarage } from "@/lib/etatDossierGarage";
 import { chargerAttentesKbis, garagesSansPieceObligatoire, type AttenteKbis } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -85,12 +85,7 @@ const JOUR = 86_400_000;
 // colonne « État » et dans « Ce qui attend ». Onze lignes de texte gris
 // identique ne se distinguent pas ; onze pastilles de couleur, si.
 // Bleu = à nous de jouer, ambre = au garage, orange = anomalie, vert = acquis.
-const TEINTE_ETAPE: Record<string, { texte: string; classe: string }> = {
-  verifie: { texte: "Vérifié", classe: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
-  a_verifier: { texte: "Complet, à vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
-  a_completer: { texte: "Dossier incomplet", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
-  aucun_document: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
-};
+const TEINTE_ETAPE: Record<string, { texte: string; classe: string }> = LIBELLE_ETAT;
 
 function Pastille({ texte, classe }: { texte: string; classe: string }) {
   return (

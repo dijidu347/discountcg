@@ -1,4 +1,5 @@
 import { Helmet } from "react-helmet-async";
+import { chargerDossierGarage, LIBELLE_ETAT, type DossierGarage } from "@/lib/etatDossierGarage";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -112,6 +113,10 @@ export default function GarageDetail() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [garage, setGarage] = useState<any>(null);
+  // L'état du dossier, celui que montre la liste des garages. « Vérifié :
+  // oui / non » ne disait pas la différence entre un garage qui n'a rien
+  // envoyé et un garage dont les pièces attendent notre contrôle.
+  const [dossier, setDossier] = useState<DossierGarage | null>(null);
   const [stats, setStats] = useState<DemarcheStats | null>(null);
   const [demarches, setDemarches] = useState<any[]>([]);
   // Démarches récentes : en cours (payées) et brouillons (non payés) séparés.
@@ -134,6 +139,13 @@ export default function GarageDetail() {
     if (user && id) checkAdminAndLoad();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, id]);
+
+  useEffect(() => {
+    if (!id) return;
+    let vivant = true;
+    chargerDossierGarage(id).then((d) => { if (vivant) setDossier(d); });
+    return () => { vivant = false; };
+  }, [id]);
 
   const checkAdminAndLoad = async () => {
     // Même garde que les autres écrans admin : filtre sur le rôle admin, sinon
@@ -326,14 +338,16 @@ export default function GarageDetail() {
                 <dd className="font-bold">{garage.token_balance ?? 0} €</dd>
               </div>
               <div className="flex justify-between gap-4">
-                <dt className="text-muted-foreground">Vérifié</dt>
+                <dt className="text-muted-foreground">Statut</dt>
                 <dd>
-                  {garage.is_verified ? (
-                    <Badge className="bg-green-500">Oui</Badge>
-                  ) : kbisExpire ? (
-                    <Badge className="bg-orange-500">Kbis expiré</Badge>
+                  {kbisExpire ? (
+                    <Badge className="bg-orange-500 hover:bg-orange-500">Kbis expiré</Badge>
+                  ) : dossier ? (
+                    <Badge variant="secondary" className={LIBELLE_ETAT[dossier.etat].classe}>
+                      {LIBELLE_ETAT[dossier.etat].texte}
+                    </Badge>
                   ) : (
-                    <Badge variant="secondary">Non</Badge>
+                    <Badge variant="secondary">—</Badge>
                   )}
                 </dd>
               </div>
