@@ -170,6 +170,7 @@ export default function NouvelleDemarche() {
   // si c'est un particulier, son Kbis en plus si c'est une autre société.
   const [questionQuiVendId, setQuestionQuiVendId] = useState<string | null>(null);
   const [questionQuiAcheteId, setQuestionQuiAcheteId] = useState<string | null>(null);
+  const [questionPrecisionId, setQuestionPrecisionId] = useState<string | null>(null);
   // Payment mode state
   const [paymentMode, setPaymentMode] = useState<PaymentMode>("pro_pays_all");
   const [clientEmail, setClientEmail] = useState<string | undefined>();
@@ -395,6 +396,33 @@ export default function NouvelleDemarche() {
     return null;
   }, [questionnaireAnswerTexts, questionQuiAcheteId]);
 
+  // Le détail derrière « Autre ». Chacun de ces cas appelle une pièce
+  // différente, et deux d'entre eux n'ont pas de pièce d'identité du tout :
+  // une association prouve son existence par sa déclaration en préfecture,
+  // une mairie par la signature de qui l'engage.
+  type CasAutre = "association" | "administration" | "vhu" | "etranger" | "coacquereurs" | null;
+  const precisionAcquereur = useMemo<CasAutre>(() => {
+    if (!questionPrecisionId) return null;
+    const reponse = (questionnaireAnswerTexts[questionPrecisionId] ?? "").trim();
+    if (/association/i.test(reponse)) return "association";
+    if (/administration|collectivit/i.test(reponse)) return "administration";
+    if (/vhu|destruction/i.test(reponse)) return "vhu";
+    if (/[ée]tranger/i.test(reponse)) return "etranger";
+    if (/co-acqu/i.test(reponse)) return "coacquereurs";
+    return null;
+  }, [questionnaireAnswerTexts, questionPrecisionId]);
+
+  // Combien de personnes achètent ensemble : chacune figure sur la carte
+  // grise, donc chacune doit être identifiée.
+  const nombreCoAcquereurs = useMemo<number | null>(() => {
+    if (precisionAcquereur !== "coacquereurs" || !questionPrecisionId) return null;
+    const reponse = (questionnaireAnswerTexts[questionPrecisionId] ?? "").trim();
+    if (/^deux/i.test(reponse)) return 2;
+    if (/^trois/i.test(reponse)) return 3;
+    if (/^quatre/i.test(reponse)) return 4;
+    return null;
+  }, [precisionAcquereur, questionnaireAnswerTexts, questionPrecisionId]);
+
   // L'ordre d'affichage des pièces, qui n'est pas celui de la configuration :
   // les rangs y valent « doc_1 », « doc_2 »… et les changer renommerait toutes
   // les pièces déjà déposées. On réordonne donc à l'écran seulement, en gardant
@@ -406,6 +434,17 @@ export default function NouvelleDemarche() {
   const mentionOptionnelle = (
     <span className="ml-1 text-xs font-normal text-muted-foreground">(optionnel)</span>
   );
+
+  // Le libellé d'une pièce dit combien d'exemplaires sont attendus quand la
+  // réponse le précise. « Pièce d'identité de l'acquéreur » au singulier, face
+  // à trois acheteurs en indivision, se remplit une fois et le dossier repart
+  // incomplet — le champ accepte pourtant plusieurs fichiers.
+  const libelleAdapte = useCallback((nom: string | null | undefined): string => {
+    const texte = nom ?? "";
+    if (!nombreCoAcquereurs) return texte;
+    if (!/acqu[ée]reur/i.test(texte) || /kbis|dirigeant/i.test(texte)) return texte;
+    return `Pièce d'identité de chacun des ${nombreCoAcquereurs} co-acquéreurs (recto/verso)`;
+  }, [nombreCoAcquereurs]);
 
   // Ce qui est dû d'abord, le facultatif en bas.
   const rangVoulu = (nom: string): number => {
@@ -424,10 +463,23 @@ export default function NouvelleDemarche() {
       // Les pièces de l'acquéreur d'abord : leurs libellés contiennent
       // « Kbis » et « dirigeant » comme ceux du vendeur, et seule la mention
       // de l'acquéreur les distingue.
+      // Les pièces propres à un cas d'« Autre », reconnues à leur libellé.
+      if (/association/i.test(nom)) return precisionAcquereur === "association";
+      if (/administration|collectivit/i.test(nom)) return precisionAcquereur === "administration";
+      if (/vhu/i.test(nom)) return precisionAcquereur === "vhu";
+
       if (/acqu[ée]reur/i.test(nom)) {
-        if (/kbis/i.test(nom) || /dirigeant/i.test(nom)) return quiAchete === "societe";
+        // Le Kbis et la pièce du dirigeant valent pour une société, et pour un
+        // centre VHU — qui en est une, avec un agrément en plus.
+        if (/kbis/i.test(nom) || /dirigeant/i.test(nom)) {
+          return quiAchete === "societe" || precisionAcquereur === "vhu";
+        }
+        // La pièce d'identité : du particulier, du président de l'association,
+        // de qui signe pour la collectivité, de l'acheteur étranger, et de
+        // chacun des co-acquéreurs. Pas celle d'une société, qui n'en a pas.
         // Sans réponse — un brouillon ouvert avant que la question existe —
         // on en reste à ce qui était demandé jusqu'ici.
+        if (quiAchete === "autre") return precisionAcquereur !== "vhu" && precisionAcquereur !== null;
         return quiAchete === null || quiAchete === "particulier";
       }
       // Sans réponse — un brouillon ouvert avant que la question existe — on
@@ -436,7 +488,7 @@ export default function NouvelleDemarche() {
       if (/kbis/i.test(nom)) return quiVend === "societe";
     }
     return false;
-  }, [venduParUnPro, quiVend, quiAchete, formData.type]);
+  }, [venduParUnPro, quiVend, quiAchete, precisionAcquereur, formData.type]);
 
   // Les pièces dont la réponse à la question décide. Celle que la réponse
   // écarte ne s'affiche pas du tout : une case « optionnel » qui ne correspond
@@ -448,7 +500,8 @@ export default function NouvelleDemarche() {
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return formData.type === "DA";
     if (formData.type === "DC") {
       return /identit[ée] du vendeur/i.test(nom) || /kbis/i.test(nom)
-        || /acqu[ée]reur/i.test(nom);
+        || /acqu[ée]reur/i.test(nom) || /association/i.test(nom)
+        || /administration|collectivit/i.test(nom) || /vhu/i.test(nom);
     }
     return false;
   }, [formData.type]);
@@ -720,6 +773,10 @@ export default function NouvelleDemarche() {
       const quiAchete = (questions ?? []).find((q: { question_text?: string | null }) =>
         /qui ach[eè]te/i.test(q.question_text ?? ""));
       setQuestionQuiAcheteId(quiAchete?.id ?? null);
+
+      const precision = (questions ?? []).find((q: { question_text?: string | null }) =>
+        /^pr[ée]cisez/i.test((q.question_text ?? "").trim()));
+      setQuestionPrecisionId(precision?.id ?? null);
 
       const { data: docs } = await supabase
         .from('action_documents')
@@ -2017,7 +2074,7 @@ export default function NouvelleDemarche() {
                                   <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`space-y-3 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
                                     <div className="flex items-center gap-4">
                                       <div className="flex-1">
-                                        {renderDocLabel(doc.nom_document, pieceDue(doc))}
+                                        {renderDocLabel(libelleAdapte(doc.nom_document), pieceDue(doc))}
                                       </div>
                                       <div className="w-[400px]">
                                         <DocumentUpload
