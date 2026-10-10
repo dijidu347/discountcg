@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { GarageSignatureSettings } from "@/components/signature/GarageSignatureSettings";
@@ -577,8 +578,7 @@ export default function GarageSettings() {
                 <form onSubmit={handlePasswordChange} className="space-y-4">
                   <div>
                     <Label>Nouveau mot de passe</Label>
-                    <Input 
-                      type="password" 
+                    <ChampMotDePasse
                       value={passwordData.newPassword} 
                       onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })} 
                       required 
@@ -586,8 +586,7 @@ export default function GarageSettings() {
                   </div>
                   <div>
                     <Label>Confirmer</Label>
-                    <Input 
-                      type="password" 
+                    <ChampMotDePasse
                       value={passwordData.confirmPassword} 
                       onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} 
                       required 

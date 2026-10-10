@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
@@ -180,9 +181,8 @@ export default function RegisterParticulier() {
 
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe <span className="text-destructive">*</span></Label>
-                <Input
+                <ChampMotDePasse
                   id="password"
-                  type="password"
                   placeholder="••••••••"
                   value={formData.password}
                   onChange={(e) => handleChange("password", e.target.value)}
@@ -193,9 +193,8 @@ export default function RegisterParticulier() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmer le mot de passe <span className="text-destructive">*</span></Label>
-                <Input
+                <ChampMotDePasse
                   id="confirmPassword"
-                  type="password"
                   placeholder="••••••••"
                   value={formData.confirmPassword}
                   onChange={(e) => handleChange("confirmPassword", e.target.value)}

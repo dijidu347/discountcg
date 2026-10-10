@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -359,9 +360,8 @@ export default function Register() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="password">Mot de passe <span className="text-destructive">*</span></Label>
-                    <Input
+                    <ChampMotDePasse
                       id="password"
-                      type="password"
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={(e) => handleChange("password", e.target.value)}
@@ -372,9 +372,8 @@ export default function Register() {
 
                   <div className="space-y-2">
                     <Label htmlFor="confirmPassword">Confirmer le mot de passe <span className="text-destructive">*</span></Label>
-                    <Input
+                    <ChampMotDePasse
                       id="confirmPassword"
-                      type="password"
                       placeholder="••••••••"
                       value={formData.confirmPassword}
                       onChange={(e) => handleChange("confirmPassword", e.target.value)}
