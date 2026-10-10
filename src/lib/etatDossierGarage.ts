@@ -74,22 +74,30 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
   for (const [garageId, lignes] of parGarage) {
     const motifs: string[] = [];
     let toutEnRegle = true;
+    // Une pièce qui manque appelle le garage ; une pièce déposée nous appelle,
+    // nous. Les deux ne se rangent pas dans le même onglet, et il suffit
+    // qu'UNE seule manque pour que le dossier soit incomplet.
+    let auGarageDeJouer = false;
 
     for (const code of codes) {
       const duType = lignes.filter((l) => l.document_type === code);
       const accepte = duType.find((l) => l.status === "approved");
+
+      const enExamen = duType.some((l) => l.status === "pending");
 
       if (code === "kbis") {
         // Un Kbis accepté mais daté de plus de six mois ne vaut plus : c'est au
         // garage d'en déposer un récent, pas à nous de le contrôler.
         if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
         toutEnRegle = false;
+        if (!enExamen) auGarageDeJouer = true;
         motifs.push(accepte ? "Kbis périmé" : duType.length ? "Kbis à contrôler" : "Kbis manquant");
         continue;
       }
 
       if (accepte) continue;
       toutEnRegle = false;
+      if (!enExamen) auGarageDeJouer = true;
       motifs.push(duType.length ? `${nomDe.get(code)} à contrôler` : `${nomDe.get(code)} manquant`);
     }
 
@@ -103,13 +111,21 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
       ? enAttente.reduce((a, b) => (a.created_at < b.created_at ? a : b)).created_at
       : null;
 
-    // L'ordre décide de l'onglet : en règle d'abord, puis ce qui nous revient,
-    // puis ce qui revient au garage.
+    // « Complet, à vérifier » doit vouloir dire complet.
+    //
+    // La règle regardait s'il existait UNE pièce en attente, et rangeait là
+    // tout dossier qui en avait une — même s'il manquait un Kbis par ailleurs.
+    // Un garage sans aucun Kbis, dont la carte d'identité attendait notre
+    // contrôle, s'affichait donc « Complet, à vérifier ».
+    //
+    // Il suffit maintenant qu'une pièce obligatoire manque, ou soit périmée,
+    // pour que le dossier soit incomplet : c'est au garage de jouer, et notre
+    // file de contrôle ne doit pas le porter.
     const etat: EtatDossier = toutEnRegle
       ? "verifie"
-      : enAttente.length
-      ? "a_verifier"
-      : "a_completer";
+      : auGarageDeJouer
+      ? "a_completer"
+      : "a_verifier";
 
     dossiers.set(garageId, { etat, motifs, enAttenteDepuis });
   }
@@ -141,14 +157,18 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
 
   const motifs: string[] = [];
   let toutEnRegle = true;
+  let auGarageDeJouer = false;
 
   for (const r of requis || []) {
     const duType = lignes.filter((l) => l.document_type === r.code);
     const accepte = duType.find((l) => l.status === "approved");
 
+    const enExamen = duType.some((l) => l.status === "pending");
+
     if (r.code === "kbis") {
       if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
       toutEnRegle = false;
+      if (!enExamen) auGarageDeJouer = true;
       motifs.push(
         accepte
           ? `Kbis périmé — délivré le ${accepte.date_emission ? new Date(accepte.date_emission).toLocaleDateString("fr-FR") : "?"}`
@@ -161,6 +181,7 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
 
     if (accepte) continue;
     toutEnRegle = false;
+    if (!enExamen) auGarageDeJouer = true;
     motifs.push(
       duType.length ? `${r.nom_document} déposée, pas encore contrôlée` : `${r.nom_document} manquante`,
     );
@@ -172,7 +193,7 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
     : null;
 
   return {
-    etat: toutEnRegle ? "verifie" : enAttente.length ? "a_verifier" : "a_completer",
+    etat: toutEnRegle ? "verifie" : auGarageDeJouer ? "a_completer" : "a_verifier",
     motifs,
     enAttenteDepuis,
   };
