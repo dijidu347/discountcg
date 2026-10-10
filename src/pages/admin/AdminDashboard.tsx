@@ -14,6 +14,7 @@ import { ArrowLeft, Building2, FileText, DollarSign, Mail, Calculator, ShoppingC
 import { useToast } from "@/hooks/use-toast";
 import RevenueStats from "@/components/admin/RevenueStats";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
+import { NettoyageStockage } from "@/components/admin/NettoyageStockage";
 
 // Fenêtre glissante utilisée par la carte Revenus.
 const REVENUE_PERIOD_DAYS = 30;
@@ -729,6 +730,11 @@ export default function AdminDashboard() {
         {/* Annonces générales */}
         <div className="mb-8">
           <AnnouncementManager />
+        </div>
+
+        {/* Entretien : en bas de page, c'est un geste rare. */}
+        <div className="mb-8">
+          <NettoyageStockage />
         </div>
 
       </div>

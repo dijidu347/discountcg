@@ -49,11 +49,25 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if ((req.headers.get("Authorization") ?? "") !== `Bearer ${serviceKey}`) {
-    return json({ error: "Non autorisé" }, 401);
-  }
+  const entete = req.headers.get("Authorization") ?? "";
 
+  // Deux appelants possibles, et aucun autre.
+  //
+  // La clé de service, pour un déclenchement programmé ; ou un administrateur
+  // connecté, depuis l'écran d'administration. N'accepter que la clé rendait
+  // la fonction inappelable par qui que ce soit, puisque personne ne détient
+  // cette clé hors du serveur.
   const supabase = createClient(supabaseUrl, serviceKey);
+  if (entete !== `Bearer ${serviceKey}`) {
+    const jeton = entete.replace(/^Bearer /, "");
+    const { data: auth } = await supabase.auth.getUser(jeton);
+    if (!auth?.user) return json({ error: "Non autorisé" }, 401);
+    const { data: estAdmin } = await supabase.rpc("has_role", {
+      _user_id: auth.user.id,
+      _role: "admin",
+    });
+    if (estAdmin !== true) return json({ error: "Réservé à l'administration" }, 403);
+  }
   const corps = await req.json().catch(() => ({}));
   // Rien n'est supprimé sans le dire explicitement. Le défaut est l'aperçu.
   const supprimer = corps?.supprimer === true;
