@@ -41,6 +41,13 @@ export default function Dashboard() {
   // sociale, elle, est bonne. Leur redemander les deux revient à leur faire
   // ressaisir ce qu'on tient déjà, et à laisser croire que leur fiche est
   // vide alors qu'il manque deux chiffres.
+  // Un Kbis accepté puis périmé compte comme « déposé » : il ne manquait donc
+  // aucune pièce, et le bandeau ne s'affichait pas. Cinquante et un garages
+  // auraient perdu leur badge sans qu'un mot ne leur dise pourquoi, ni quoi
+  // faire pour le retrouver.
+  const kbisPerime = Boolean(
+    garage?.kbis_valide_jusqu_au && new Date(garage.kbis_valide_jusqu_au) < new Date(),
+  );
   const raisonSocialeManquante = Boolean(garage && !String(garage.raison_sociale ?? "").trim());
   const chiffresSiret = String(garage?.siret ?? "").replace(/\D/g, "").length;
   const siretIncomplet = Boolean(garage && chiffresSiret !== 14);
@@ -432,7 +439,7 @@ export default function Dashboard() {
         </div>
 
         {/* Verification Alert */}
-        {garage && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete) && (
+        {garage && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete || kbisPerime) && (
           /* Le bouton était glissé à la suite du texte, à gauche, en contour
              pâle : l'action tenait la place d'un mot dans une phrase. Il passe
              à droite, plein, à la hauteur du titre — c'est la seule chose à
@@ -454,6 +461,8 @@ export default function Dashboard() {
                       ? (raisonSocialeManquante
                           ? "Faites vérifier votre compte"
                           : "Votre SIRET est incomplet")
+                      : kbisPerime
+                      ? "Votre justificatif d'immatriculation a plus de six mois"
                       : aucunDocEnvoye
                       ? "Il reste une étape"
                       : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
@@ -471,6 +480,8 @@ export default function Dashboard() {
                             ? "deux pièces"
                             : `${requiredDocNames.length} pièces`
                         }${requiredDocNames.length > 0 ? ` : ${requiredDocNames.join(" et ")}` : " justificatives"}.`
+                      : kbisPerime
+                      ? "Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Déposez un justificatif de moins de six mois pour retrouver votre badge vérifié. Vos démarches continuent de fonctionner normalement."
                       : aucunDocEnvoye
                       ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
                       : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
@@ -482,7 +493,7 @@ export default function Dashboard() {
                   className="shrink-0"
                   onClick={() => navigate("/garage-settings?tab=verification")}
                 >
-                  {aucunDocEnvoye ? "Déposer mes pièces" : "Compléter mon dossier"}
+                  {kbisPerime ? "Remplacer mon justificatif" : aucunDocEnvoye ? "Déposer mes pièces" : "Compléter mon dossier"}
                 </Button>
               )}
             </div>
