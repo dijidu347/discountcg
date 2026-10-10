@@ -1,11 +1,11 @@
 import { Helmet } from "react-helmet-async";
-import { MessagesEnAttente } from "@/components/admin/MessagesEnAttente";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { applyATraiterFilters } from "@/lib/demarcheFilters";
-import { chargerAttentesKbis, garagesSansPieceObligatoire } from "@/lib/kbisADater";
+import { chargerAttentesKbis } from "@/lib/kbisADater";
+import { chargerDossiers } from "@/lib/etatDossierGarage";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -69,6 +69,7 @@ export default function AdminDashboard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [stats, setStats] = useState({
     totalGarages: 0,
+    garagesAVerifier: 0,
     demarchesATraiter: 0,
     demarchesNonVues: 0,
     netPeriode: 0,
@@ -77,7 +78,6 @@ export default function AdminDashboard() {
     recuesAujourdhui: 0,
     traiteesPeriode: 0,
     traiteesAujourdhui: 0,
-    garagesAVerifier: 0,
     kbisADater: 0,
     demarches30j: 0,
     demarchesAujourdhui: 0,
@@ -213,40 +213,19 @@ export default function AdminDashboard() {
       .select('status, payment_mode')
       .in('status', ['active', 'trialing']);
 
-    // Garages à vérifier : même règle que l'onglet « À vérifier » de la page
-    // Garages (toutes les pièces obligatoires envoyées, aucune refusée).
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: chiffresGarages } = await supabase.rpc('depense_par_garage' as any);
-    const aControler = new Set(
-      ((chiffresGarages || []) as { garage_id: string; dossier_complet: boolean }[])
-        .filter((c) => c.dossier_complet)
-        .map((c) => c.garage_id),
-    );
-    // Un garage dont le Kbis a expiré n'est pas un dossier à examiner : ses
-    // pièces sont toutes approuvées, il lui manque un papier récent, et la
-    // lecture automatique lui rendra son badge dès qu'il le déposera. Les
-    // compter ici gonflait l'alerte à 82 garages dont 75 n'attendaient rien.
-    //
-    // Les Kbis que la lecture automatique n'a pas su dater forment leur propre
-    // file, comptée a part : le geste n'est pas le meme. Il n'y a pas un
-    // dossier a examiner, il y a une date a recopier sur un document deja
-    // depose — par un garage le plus souvent deja verifie. Les garages qui ont
-    // par ailleurs un Kbis valable en sont exclus : chez eux la ligne non datee
-    // est un doublon, pas un blocage (voir lib/kbisADater).
-    const { aDater, enAttente: kbisEnAttente } = await chargerAttentesKbis();
-    const sansPiece = await garagesSansPieceObligatoire();
+    // Reste la seule file encore annoncée ici : les Kbis que la lecture
+    // automatique n'a pas su dater. Le comptage des garages à vérifier a
+    // disparu avec son bandeau — la page Garages le porte, en tuiles.
+    const { aDater } = await chargerAttentesKbis();
 
-    // Même règle que l'onglet « À vérifier » de la page Garages, qui compte
-    // désormais deux populations : les inscriptions à instruire, et les
-    // garages déjà vérifiés qui ont redéposé un Kbis après expiration — ceux-là
-    // attendent notre approbation et ne figuraient nulle part.
-    const garagesAVerifier = garages?.filter((g) => {
-      if ((g as { compte_interne?: boolean }).compte_interne) return false;
-      if (aDater.has(g.id)) return false;
-      const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
-      if (g.is_verified) return sansPiece.has(g.id) || (Boolean(kbisPerime) && kbisEnAttente.has(g.id));
-      return aControler.has(g.id) && !kbisPerime;
-    }) || [];
+    // « À vérifier » au sens de la page Garages : des pièces attendent notre
+    // contrôle. Le bandeau supprimé comptait autre chose et affichait 13 là où
+    // la tuile en montre 40 ; la pastille doit mener à ce qu'elle annonce.
+    const dossiers = await chargerDossiers();
+    const aVerifier = (garages || []).filter(
+      (g) => !(g as { compte_interne?: boolean }).compte_interne
+        && dossiers.get(g.id)?.etat === "a_verifier",
+    ).length;
 
     const coffreActive = coffreSubs || [];
     // Conversations en attente de reponse : une seule lecture pour l'encart et
@@ -265,12 +244,12 @@ export default function AdminDashboard() {
       recuesAujourdhui: Number(totauxAujourdhui?.demarches_recues ?? 0),
       traiteesPeriode: Number(totaux30j?.demarches_traitees ?? 0),
       traiteesAujourdhui: Number(totauxAujourdhui?.demarches_traitees ?? 0),
-      garagesAVerifier: garagesAVerifier.length,
       kbisADater: garages?.filter((g) => aDater.has(g.id)).length || 0,
       demarches30j: Number(totaux30j?.demarches_creees ?? 0),
       demarchesAujourdhui: Number(totauxAujourdhui?.demarches_creees ?? 0),
       commandesPartATraiter: commandesPartATraiterCount || 0,
       commandesPartNouvelles: commandesPartNouvellesCount || 0,
+      garagesAVerifier: aVerifier,
       messagesEnAttente: listeMessages.length,
       messagesNonLus: listeMessages.filter((c) => c.etat === 'non_lu').length,
       coffreAbonnes: coffreActive.length,
@@ -389,40 +368,6 @@ export default function AdminDashboard() {
           </Card>
         )}
 
-        <MessagesEnAttente />
-
-        {/* Alerte garages à vérifier */}
-        {stats.garagesAVerifier > 0 && (
-          <Card className="mb-6 border-2 border-orange-500 bg-orange-50 dark:bg-orange-950/20 cursor-pointer hover:bg-orange-100 dark:hover:bg-orange-950/30 transition-colors"
-                onClick={() => navigate("/admin/manage-garages", { state: { onglet: "a_verifier" } })}>
-            <CardContent className="py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Building2 className="h-8 w-8 text-orange-500" />
-                    <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-4 w-4 bg-orange-500"></span>
-                    </span>
-                  </div>
-                  <div>
-                    <p className="font-bold text-orange-700 dark:text-orange-400">
-                      {stats.garagesAVerifier} garage{stats.garagesAVerifier > 1 ? 's' : ''} à vérifier !
-                    </p>
-                    <p className="text-sm text-orange-600 dark:text-orange-500">
-                      Cliquez pour vérifier les documents soumis
-                    </p>
-                  </div>
-                </div>
-                <Button className="bg-orange-500 hover:bg-orange-600">
-                  <Bell className="h-4 w-4 mr-2" />
-                  Vérifier
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         {/* Date de Kbis a saisir : un geste different de la verification d'un
             dossier, donc une file a part. Le garage a fait sa part, le document
             est la, il ne manque qu'une date que la lecture automatique n'a pas
@@ -470,12 +415,12 @@ export default function AdminDashboard() {
               <CardDescription className="flex items-center gap-2">
                 Messages
                 {stats.messagesNonLus > 0 && (
-                  <Badge className="bg-yellow-500 text-yellow-950 hover:bg-yellow-500">
+                  <Badge className="animate-pulse bg-orange-500 text-white hover:bg-orange-500">
                     {stats.messagesNonLus}
                   </Badge>
                 )}
               </CardDescription>
-              <MessageSquare className="h-4 w-4 text-yellow-500" />
+              <MessageSquare className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
               <CardTitle className="text-3xl text-foreground">
@@ -494,13 +439,22 @@ export default function AdminDashboard() {
             onClick={() => navigate("/admin/manage-garages")}
           >
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardDescription>Total Garages</CardDescription>
-              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <CardDescription className="flex items-center gap-2">
+                Total Garages
+                {stats.garagesAVerifier > 0 && (
+                  <Badge className="animate-pulse bg-yellow-400 text-yellow-950 hover:bg-yellow-400">
+                    {stats.garagesAVerifier}
+                  </Badge>
+                )}
+              </CardDescription>
+              <Building2 className={`h-4 w-4 ${stats.garagesAVerifier > 0 ? "text-yellow-500" : "text-muted-foreground"}`} />
             </CardHeader>
             <CardContent>
               <CardTitle className="text-3xl">{stats.totalGarages}</CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Entreprises inscrites
+                {stats.garagesAVerifier > 0
+                  ? `dont ${stats.garagesAVerifier} à vérifier`
+                  : "Entreprises inscrites"}
               </p>
             </CardContent>
           </Card>
