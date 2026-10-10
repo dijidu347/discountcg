@@ -1201,6 +1201,7 @@ export type Database = {
           compte_interne: boolean
           created_at: string
           email: string
+          forme_juridique_code: string | null
           free_token_available: boolean | null
           id: string
           is_gold: boolean | null
@@ -1230,6 +1231,7 @@ export type Database = {
           compte_interne?: boolean
           created_at?: string
           email: string
+          forme_juridique_code?: string | null
           free_token_available?: boolean | null
           id?: string
           is_gold?: boolean | null
@@ -1259,6 +1261,7 @@ export type Database = {
           compte_interne?: boolean
           created_at?: string
           email?: string
+          forme_juridique_code?: string | null
           free_token_available?: boolean | null
           id?: string
           is_gold?: boolean | null
@@ -1768,8 +1771,10 @@ export type Database = {
         Row: {
           auteur_email: string | null
           auteur_id: string
+          auteur_prenom: string | null
           contenu: string
           created_at: string
+          date_note: string | null
           garage_id: string
           id: string
           rappel_le: string | null
@@ -1777,8 +1782,10 @@ export type Database = {
         Insert: {
           auteur_email?: string | null
           auteur_id: string
+          auteur_prenom?: string | null
           contenu: string
           created_at?: string
+          date_note?: string | null
           garage_id: string
           id?: string
           rappel_le?: string | null
@@ -1786,8 +1793,10 @@ export type Database = {
         Update: {
           auteur_email?: string | null
           auteur_id?: string
+          auteur_prenom?: string | null
           contenu?: string
           created_at?: string
+          date_note?: string | null
           garage_id?: string
           id?: string
           rappel_le?: string | null
@@ -2511,6 +2520,7 @@ export type Database = {
           created_at: string | null
           date_emission: string | null
           document_type: string
+          face: string | null
           forme_juridique: string | null
           garage_id: string
           id: string
@@ -2531,6 +2541,7 @@ export type Database = {
           created_at?: string | null
           date_emission?: string | null
           document_type: string
+          face?: string | null
           forme_juridique?: string | null
           garage_id: string
           id?: string
@@ -2551,6 +2562,7 @@ export type Database = {
           created_at?: string | null
           date_emission?: string | null
           document_type?: string
+          face?: string | null
           forme_juridique?: string | null
           garage_id?: string
           id?: string
@@ -2632,10 +2644,25 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: undefined
       }
-      ajouter_note_prospection: {
-        Args: { p_contenu: string; p_garage_id: string; p_rappel_le?: string }
-        Returns: string
-      }
+      ajouter_note_prospection:
+        | {
+            Args: {
+              p_contenu: string
+              p_garage_id: string
+              p_rappel_le?: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_auteur_prenom?: string
+              p_contenu: string
+              p_date_note?: string
+              p_garage_id: string
+              p_rappel_le?: string
+            }
+            Returns: string
+          }
       annuler_piece_demandee: { Args: { p_id: string }; Returns: undefined }
       appel_de_confiance: { Args: never; Returns: boolean }
       bilan_compression: {
@@ -2725,6 +2752,12 @@ export type Database = {
           chemin: string
           taille: number
           type_mime: string
+        }[]
+      }
+      fichiers_orphelins_a_retirer: {
+        Args: never
+        Returns: {
+          chemin: string
         }[]
       }
       garages_prospection: {
@@ -2824,8 +2857,10 @@ export type Database = {
         Args: { p_garage_id: string }
         Returns: {
           auteur_email: string
+          auteur_prenom: string
           contenu: string
           created_at: string
+          date_note: string
           id: string
           rappel_le: string
         }[]
