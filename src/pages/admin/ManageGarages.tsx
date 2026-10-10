@@ -24,6 +24,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatPrice } from "@/lib/utils";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import { RetirerBadgesManquants } from "@/components/admin/RetirerBadgesManquants";
+import { chargerDossiers, SANS_DOCUMENT, type DossierGarage } from "@/lib/etatDossierGarage";
 import { chargerAttentesKbis, garagesSansPieceObligatoire, type AttenteKbis } from "@/lib/kbisADater";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
@@ -57,13 +58,17 @@ const jourInscription = (valeur: string | null | undefined) =>
   formatDateTimeParis(valeur)?.slice(0, 10) ?? "—";
 
 // Garages : onglets par étape de vérification, tri, filtres.
-type Onglet = "tous" | "a_verifier" | "kbis_a_dater" | "kbis_perime" | "en_attente" | "valides" | "sans_demande";
+// Cinq états, et un seul chemin pour y arriver : ils se déduisent des pièces.
+// « Date Kbis à saisir » et « Kbis périmé » ne sont plus des onglets — le
+// premier est un cas d'« à vérifier », le second d'« à compléter ; ils
+// s'affichent en badge sur la ligne.
+type Onglet = "tous" | "verifie" | "a_verifier" | "a_completer" | "aucun_document";
 type Etape = Exclude<Onglet, "tous">;
 
 // Les vues qui appellent un geste de notre part, par opposition à celles qui
 // décrivent le parc. La liste vit ici, et non dans le composant, parce que le
 // tri et les colonnes s'en servent avant que les libellés soient construits.
-const CLES_TRAVAIL: Onglet[] = ["kbis_a_dater", "a_verifier", "kbis_perime"];
+const CLES_TRAVAIL: Onglet[] = ["a_verifier", "a_completer"];
 type Tri = "recents" | "anciens" | "depense" | "demarches";
 
 interface Stats {
@@ -81,12 +86,10 @@ const JOUR = 86_400_000;
 // identique ne se distinguent pas ; onze pastilles de couleur, si.
 // Bleu = à nous de jouer, ambre = au garage, orange = anomalie, vert = acquis.
 const TEINTE_ETAPE: Record<string, { texte: string; classe: string }> = {
-  valides: { texte: "Validé", classe: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
+  verifie: { texte: "Vérifié", classe: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
   a_verifier: { texte: "À vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
-  kbis_a_dater: { texte: "Date à saisir", classe: "bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-300" },
-  kbis_perime: { texte: "Kbis périmé", classe: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300" },
-  en_attente: { texte: "À compléter", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
-  sans_demande: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
+  a_completer: { texte: "À compléter", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
+  aucun_document: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
 };
 
 function Pastille({ texte, classe }: { texte: string; classe: string }) {
@@ -417,6 +420,8 @@ export default function ManageGarages() {
   // Vérifiés, mais une pièce obligatoire manque : le badge et le dossier
   // étaient deux vérités indépendantes, et personne ne voyait l'écart.
   const [sansPiece, setSansPiece] = useState<Set<string>>(new Set());
+  // L'état de chaque dossier, déduit des pièces plutôt que lu dans un drapeau.
+  const [dossiers, setDossiers] = useState<Map<string, DossierGarage>>(new Map());
   const [loading, setLoading] = useState(true);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [showManageDocsDialog, setShowManageDocsDialog] = useState(false);
@@ -509,6 +514,7 @@ export default function ManageGarages() {
     setKbisADater(attentes.aDater);
     setKbisEnAttente(attentes.enAttente);
     setSansPiece(await garagesSansPieceObligatoire());
+    setDossiers(await chargerDossiers());
 
     setGarages(tous);
     setLoading(false);
@@ -555,39 +561,9 @@ export default function ManageGarages() {
   // Étape de vérification de chaque garage (mêmes règles qu'avant, plus un
   // onglet pour ceux qui n'ont jamais rien demandé, jusqu'ici invisibles).
   const etape = (g: Garage): Etape => {
-    // En premier, car c'est le seul cas ou le garage a deja fait sa part et
-    // attend un geste de nous : saisir a la main la date que la lecture
-    // automatique n'a pas su extraire. Verifie ou non, le document est en
-    // attente. Place apres « valides », il disparaissait.
-    // Les comptes de la maison ne passent par aucune file de verification.
-    if ((g as { compte_interne?: boolean }).compte_interne) return "valides";
-    if (kbisADater.has(g.id)) return "kbis_a_dater";
-
-    // Le Kbis périmé ne concerne que les garages vérifiés : c'est un papier à
-    // renouveler, pas une inscription à instruire.
-    //
-    // Ce test venait APRÈS « validés », si bien qu'un garage vérifié n'y
-    // entrait jamais — il repartait en « Validés » à la ligne précédente.
-    // L'onglet ne contenait donc que des comptes jamais vérifiés, dont le
-    // vieux Kbis approuvé traîne depuis une inscription restée en route :
-    // soixante-cinq garages qui n'attendent rien et ne reviendront pas, ce qui
-    // explique qu'aucun travail ne fasse jamais baisser le compteur. Pendant
-    // ce temps les quarante-sept vrais, eux, dormaient dans « Validés ».
-    const kbisPerime = g.kbis_valide_jusqu_au && new Date(g.kbis_valide_jusqu_au) < new Date();
-    if (g.is_verified) {
-      // Vérifié sans pièce obligatoire : à traiter avant tout le reste, car le
-      // garage travaille sous notre habilitation sans que son dossier le porte.
-      if (sansPiece.has(g.id)) return "a_verifier";
-      if (!kbisPerime) return "valides";
-      // Il a déjà redéposé : la balle est dans notre camp, pas dans le sien.
-      return kbisEnAttente.has(g.id) ? "a_verifier" : "kbis_perime";
-    }
-
-    // À nous : toutes les pièces obligatoires sont là, aucune n'est refusée.
-    if (stats[g.id]?.dossier_complet) return "a_verifier";
-    // Au garage : une pièce obligatoire manque ou a été refusée.
-    if (stats[g.id]?.a_des_documents) return "en_attente";
-    return "sans_demande";
+    // Les comptes de la maison ne passent par aucune vérification.
+    if ((g as { compte_interne?: boolean }).compte_interne) return "verifie";
+    return (dossiers.get(g.id) ?? SANS_DOCUMENT).etat;
   };
 
   const departements = useMemo(
@@ -651,36 +627,22 @@ export default function ManageGarages() {
   ].map((o) => ({ ...o, nombre: horsActivite.filter((g) => correspondActivite(o.valeur, ageDerniere(g))).length }));
 
   const comptes = useMemo(() => {
-    const c: Record<Onglet, number> = { tous: filtres.length, a_verifier: 0, kbis_a_dater: 0, kbis_perime: 0, en_attente: 0, valides: 0, sans_demande: 0 };
+    const c: Record<Onglet, number> = { tous: filtres.length, verifie: 0, a_verifier: 0, a_completer: 0, aucun_document: 0 };
     filtres.forEach((g) => { c[etape(g)]++; });
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtres, stats]);
+  }, [filtres, dossiers]);
 
   // Ce que la vue de travail doit dire de chaque ligne : la nature de
   // l'attente, et sa date de départ. Afficher ici la dépense et le solde,
   // comme le faisait la liste unique, ne renseignait pas sur le geste à faire.
-  const attenteDe = (g: Garage): { texte: string; depuis: string | null } => {
-    if (onglet === "kbis_a_dater") {
-      const a = kbisADater.get(g.id);
-      return {
-        texte: a && a.nb > 1 ? `${a.nb} dépôts sans date` : "Kbis sans date",
-        depuis: a?.depuis ?? null,
-      };
-    }
-    if (onglet === "a_verifier") {
-      if (g.is_verified) {
-        if (sansPiece.has(g.id)) {
-          return { texte: "Vérifié sans pièce obligatoire", depuis: g.created_at };
-        }
-        return { texte: "Kbis redéposé", depuis: kbisEnAttente.get(g.id) ?? null };
-      }
-      return { texte: "Dossier complet", depuis: g.verification_requested_at };
-    }
-    if (onglet === "kbis_perime") {
-      return { texte: "Kbis périmé le", depuis: g.kbis_valide_jusqu_au };
-    }
-    return { texte: "", depuis: null };
+  const attenteDe = (g: Garage): { texte: string; motifs: string[]; depuis: string | null } => {
+    const d = dossiers.get(g.id) ?? SANS_DOCUMENT;
+    return {
+      texte: TEINTE_ETAPE[d.etat]?.texte ?? d.etat,
+      motifs: d.motifs,
+      depuis: d.enAttenteDepuis ?? g.verification_requested_at ?? g.created_at,
+    };
   };
 
   const liste = useMemo(() => {
@@ -735,24 +697,20 @@ export default function ManageGarages() {
   // pour trouver celui qu'on cherche, alors qu'une couleur se repère d'un
   // coup d'œil. Elles disent aussi la nature de l'étape — ce qui nous revient
   // en bleu, ce qui revient au garage en ambre, ce qui est acquis en vert.
-  const ONGLETS: { cle: Onglet; texte: string; aide: string; teinte: string; actif: string }[] = [
+  // Dans l'ordre du parcours : tout le parc, ce qui est en règle, ce qui nous
+  // revient, ce qui revient au garage, et ceux qui n'ont jamais rien envoyé.
+  const ONGLETS: { cle: Onglet; texte: string; aide: string; fond: string; chiffre: string; label: string }[] = [
     { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits",
-      teinte: "text-slate-700 dark:text-slate-300", actif: "bg-slate-700 text-white" },
-    { cle: "sans_demande", texte: "Aucun document envoyé", aide: "Inscrits, mais n'ont jamais envoyé leurs documents de vérification",
-      teinte: "text-zinc-600 dark:text-zinc-400", actif: "bg-zinc-600 text-white" },
-    { cle: "en_attente", texte: "Documents à compléter", aide: "Une pièce obligatoire manque ou a été refusée : le garage doit compléter",
-      teinte: "text-amber-700 dark:text-amber-400", actif: "bg-amber-600 text-white" },
+      fond: "bg-muted", chiffre: "text-foreground", label: "text-muted-foreground" },
+    { cle: "verifie", texte: "Vérifié", aide: "Pièce d'identité acceptée et Kbis accepté de moins de six mois",
+      fond: "bg-green-100 dark:bg-green-950/50", chiffre: "text-green-800 dark:text-green-300", label: "text-green-700 dark:text-green-400" },
     { cle: "a_verifier", texte: "À vérifier", aide: "Des pièces sont arrivées et attendent notre contrôle",
-      teinte: "text-blue-700 dark:text-blue-400", actif: "bg-blue-600 text-white" },
-    { cle: "kbis_a_dater", texte: "Date Kbis à saisir", aide: "La lecture automatique n'a pas trouvé la date de délivrance : à recopier à la main",
-      teinte: "text-yellow-700 dark:text-yellow-400", actif: "bg-yellow-500 text-yellow-950" },
-    { cle: "kbis_perime", texte: "Kbis périmé", aide: "Garages vérifiés dont le Kbis a passé six mois : à eux d'en déposer un récent",
-      teinte: "text-orange-700 dark:text-orange-400", actif: "bg-orange-500 text-white" },
-    { cle: "valides", texte: "Validés", aide: "Compte vérifié, Kbis à jour",
-      teinte: "text-green-700 dark:text-green-400", actif: "bg-green-600 text-white" },
+      fond: "bg-blue-100 dark:bg-blue-950/50", chiffre: "text-blue-800 dark:text-blue-300", label: "text-blue-700 dark:text-blue-400" },
+    { cle: "a_completer", texte: "À compléter", aide: "Une pièce manque, a été refusée, ou le Kbis a plus de six mois : au garage d'agir",
+      fond: "bg-amber-100 dark:bg-amber-950/50", chiffre: "text-amber-900 dark:text-amber-300", label: "text-amber-800 dark:text-amber-400" },
+    { cle: "aucun_document", texte: "Aucun document", aide: "Inscrits, n'ont jamais rien envoyé",
+      fond: "bg-muted", chiffre: "text-muted-foreground", label: "text-muted-foreground" },
   ];
-
-  const ongletCourant = ONGLETS.find((o) => o.cle === onglet) ?? ONGLETS[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
@@ -776,13 +734,14 @@ export default function ManageGarages() {
         </div>
 
         <h1 className="mb-4 text-3xl font-bold">Garages</h1>
-        {/* Les onglets, tous visibles : ils servent autant à traiter une file
-            qu'à parcourir le parc pour la prospection. Les replier derrière un
-            bandeau privait de la seconde lecture. */}
-        <div role="tablist" className="mb-4 flex flex-wrap gap-1.5">
+        {/* Les cinq états, en tuiles : le chiffre d'abord, puisque c'est lui
+            qu'on vient lire. Les sept onglets bordés d'avant alignaient trois
+            mécanismes visuels contradictoires — une bordure par état, du texte
+            coloré au repos, et un pavé gris pour l'actif, dont la couleur
+            n'avait aucun rapport avec celle de l'onglet. */}
+        <div role="tablist" className="mb-5 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
           {ONGLETS.map((o) => {
             const actif = onglet === o.cle;
-            const n = comptes[o.cle];
             return (
               <button
                 key={o.cle}
@@ -791,41 +750,16 @@ export default function ManageGarages() {
                 title={o.aide}
                 aria-selected={actif}
                 onClick={() => { setOnglet(o.cle); setPage(1); }}
-                className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  actif
-                    ? `${o.actif} border-transparent shadow-sm`
-                    : `border-border bg-background ${o.teinte} hover:bg-muted`
+                className={`rounded-xl px-4 py-3 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${o.fond} ${
+                  actif ? "ring-2 ring-foreground/70" : "opacity-85 hover:opacity-100"
                 }`}
               >
-                {o.texte}
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums ${
-                    actif ? "bg-white/25" : n > 0 ? "bg-muted" : "bg-transparent text-muted-foreground"
-                  }`}
-                >
-                  {n}
-                </span>
+                <p className={`text-2xl font-semibold tabular-nums ${o.chiffre}`}>{comptes[o.cle]}</p>
+                <p className={`text-xs ${o.label}`}>{o.texte}</p>
               </button>
             );
           })}
         </div>
-
-        {/* La file des dates se traite bien plus vite d'un écran dédié que
-            garage par garage : le raccourci reste à portée, sans occuper la
-            page quand on fait autre chose. */}
-        {onglet === "kbis_a_dater" && comptes.kbis_a_dater > 0 && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-yellow-500/60 bg-yellow-50 px-4 py-3 dark:bg-yellow-950/20">
-            <p className="text-sm text-foreground">
-              Le document à gauche, le champ à droite, Entrée pour enchaîner — plutôt qu'un
-              aller-retour par fiche.
-            </p>
-            <Button size="sm" className="shrink-0" onClick={() => navigate("/admin/kbis-a-dater")}>
-              Ouvrir la file
-            </Button>
-          </div>
-        )}
-
-
         {/* Recherche, tri et filtres */}
         <div className="mb-4 space-y-3">
           <div className="flex flex-wrap gap-3">
@@ -956,6 +890,14 @@ export default function ManageGarages() {
                                 texte={attenteDe(g).texte}
                                 classe={TEINTE_ETAPE[etape(g)]?.classe ?? "bg-muted text-muted-foreground"}
                               />
+                              {/* Le détail sous la pastille : « Kbis périmé »
+                                  et « date à saisir » étaient des onglets, ils
+                                  sont désormais la précision d'un état. */}
+                              {attenteDe(g).motifs.length > 0 && (
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                  {attenteDe(g).motifs.join(" · ")}
+                                </p>
+                              )}
                             </TableCell>
                             <TableCell className="whitespace-nowrap text-sm">
                               {anciennete(attenteDe(g).depuis) ? (
