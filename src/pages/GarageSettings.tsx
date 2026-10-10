@@ -975,7 +975,7 @@ export default function GarageSettings() {
                                           return suivant;
                                         })}
                                       >
-                                        {ouvert ? "masquer le détail" : "voir le détail"}
+                                        {ouvert ? "Masquer le détail" : "Voir le détail"}
                                       </button>
                                     )}
                                   </div>
