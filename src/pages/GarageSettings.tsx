@@ -10,7 +10,12 @@ import { ChampMotDePasse } from "@/components/ChampMotDePasse";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { GarageSignatureSettings } from "@/components/signature/GarageSignatureSettings";
-import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye } from "lucide-react";
+import { ArrowLeft, CheckCircle, XCircle, AlertCircle, History, Send, Upload, Loader2, Eye, Trash2 } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { passwordChangeSchema } from "@/lib/validations";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -274,6 +279,30 @@ export default function GarageSettings() {
       toast({ title: "Erreur", description: error.errors?.[0]?.message || "Données invalides", variant: "destructive" });
     }
     setSaving(false);
+  };
+
+  // Retirer une pièce qu'on vient de déposer.
+  //
+  // Un garage qui s'aperçoit qu'il a envoyé la mauvaise photo n'avait aucun
+  // moyen de la reprendre : il redéposait par-dessus, et l'administration
+  // recevait deux fichiers sans savoir lequel compte. Tant que la pièce n'est
+  // pas approuvée, elle n'appartient qu'au garage ; une fois acceptée, elle
+  // fait partie du dossier et seule l'administration peut y toucher.
+  const supprimerSonDocument = async (doc: any) => {
+    try {
+      const parts = String(doc.url ?? "").split('/demarche-documents/');
+      const chemin = parts.length > 1 ? parts[1].split('?')[0] : null;
+      if (chemin) await supabase.storage.from('demarche-documents').remove([chemin]);
+    } catch (e) {
+      console.error("Fichier non supprimé du stockage", e);
+    }
+    const { error } = await supabase.from('verification_documents').delete().eq('id', doc.id);
+    if (error) {
+      toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Document retiré" });
+    setVerificationDocs((docs) => docs.filter((d) => d.id !== doc.id));
   };
 
   const handleFileUpload = async (documentType: string, files: File[], face?: "recto" | "verso") => {
@@ -953,13 +982,43 @@ export default function GarageSettings() {
                                       handleFileUpload(reqDoc.code, fichiers, face ?? undefined)}
                                   />
                                   {doc && (
-                                    <button
-                                      type="button"
-                                      onClick={() => window.open(doc.url, '_blank')}
-                                      className="ml-1 max-w-full truncate text-left text-sm text-primary hover:underline"
-                                    >
-                                      {doc.nom_fichier}
-                                    </button>
+                                    <div className="ml-1 flex items-center gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => window.open(doc.url, '_blank')}
+                                        className="min-w-0 flex-1 truncate text-left text-sm text-primary hover:underline"
+                                      >
+                                        {doc.nom_fichier}
+                                      </button>
+                                      {doc.status !== 'approved' && (
+                                        <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                            <button
+                                              type="button"
+                                              aria-label={`Retirer ${doc.nom_fichier}`}
+                                              className="shrink-0 text-muted-foreground transition-colors hover:text-destructive"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </button>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                              <AlertDialogTitle>Retirer ce document ?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                {doc.nom_fichier} sera supprimé définitivement. Vous
+                                                pourrez en déposer un autre à la place.
+                                              </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => supprimerSonDocument(doc)}>
+                                                Retirer
+                                              </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                        </AlertDialog>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
                               );
