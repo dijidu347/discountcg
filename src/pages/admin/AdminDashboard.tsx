@@ -35,7 +35,10 @@ interface RevenuNetRow {
   revenu_net: number | null;
   demarches_recues: number | null;
   demarches_traitees: number | null;
-  demarches_creees: number | null;
+  // La fonction renvoie aussi `demarches_creees`, qui compte les démarches
+  // déposées qu'elles soient payées ou non. On ne le lit plus : une démarche ne
+  // compte qu'une fois payée. C'est ce champ qui affichait 682 au-dessus d'une
+  // carte annonçant 692 reçues, sans que rien n'explique l'écart.
 }
 
 // Décalage d'un fuseau à un instant donné (gère l'heure d'été).
