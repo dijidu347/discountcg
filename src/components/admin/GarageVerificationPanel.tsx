@@ -957,7 +957,16 @@ export function GarageVerificationPanel({
                         <div className="space-y-3 border-t p-3">
                           {docActif.document_type === "kbis" && (
                             <div className="space-y-1">
-                              <Label htmlFor="date-kbis" className="text-xs">Date de délivrance</Label>
+                              <div className="flex items-baseline justify-between gap-3">
+                                <Label htmlFor="date-kbis" className="text-xs">Date de délivrance</Label>
+                                <span className="shrink-0 text-xs text-muted-foreground">
+                                  {docActif.date_emission
+                                    ? ageDuKbis(docActif.date_emission)?.texte
+                                    : docActif.lu_le
+                                    ? "Lecture automatique sans date : recopiez-la"
+                                    : "Pas encore lu automatiquement"}
+                                </span>
+                              </div>
                               <Input
                                 id="date-kbis"
                                 type="date"
@@ -965,13 +974,6 @@ export function GarageVerificationPanel({
                                 defaultValue={docActif.date_emission ?? ""}
                                 onChange={(e) => enregistrerDateKbis(docActif.id, e.target.value)}
                               />
-                              <p className="text-xs text-muted-foreground">
-                                {docActif.date_emission
-                                  ? ageDuKbis(docActif.date_emission)?.texte
-                                  : docActif.lu_le
-                                  ? "La lecture automatique n'a pas trouvé la date : recopiez-la."
-                                  : "Pas encore lu automatiquement."}
-                              </p>
                               {/* L'activité d'un Kbis fait parfois dix lignes —
                                   « vente, achat, importation, exportation,
                                   courtage, négoce de tous véhicules… » — et
