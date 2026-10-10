@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowUpDown, CalendarDays, Check, ChevronDown, Eye, Plus, Search, SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeft, ArrowUpDown, CalendarDays, Check, ChevronDown, Eye, Plus, Search, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CALENDRIER_BLEU } from "@/components/admin/calendrierBleu";
@@ -832,7 +832,6 @@ export default function ManageGarages() {
             </Select>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <SlidersHorizontal className="h-4 w-4 text-muted-foreground" aria-hidden />
             {(filtresActifs > 0 || recherche) && (
               <>
                 <span className="text-sm text-muted-foreground">
