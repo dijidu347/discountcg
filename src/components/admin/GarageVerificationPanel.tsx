@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw } from "lucide-react";
+import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw, FileText, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
@@ -814,34 +814,59 @@ export function GarageVerificationPanel({
                         type="button"
                         disabled={r.docs.length === 0}
                         onClick={() => setIdChoisi(r.docs[0]?.id ?? null)}
-                        className="flex w-full items-start justify-between gap-2 p-3 text-left disabled:cursor-default"
+                        className="flex w-full items-start gap-3 p-3 text-left disabled:cursor-default"
                       >
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium">{r.nom}</p>
+                        {/* Une vignette rappelle qu'on juge un document, pas une
+                            ligne de liste : enchaîner vingt pièces sans repère
+                            visuel fait perdre le fil. L'icône dit déjà
+                            l'essentiel — un PDF scanné n'appelle pas la même
+                            attention qu'une photo prise de travers. */}
+                        <div
+                          className={`flex h-[68px] w-[54px] shrink-0 items-center justify-center rounded-md border ${
+                            r.docs.length === 0 ? "border-dashed text-muted-foreground/60" : "bg-muted/40 text-muted-foreground"
+                          }`}
+                        >
+                          {r.docs.length === 0
+                            ? <FileText className="h-5 w-5" />
+                            : /\.(pdf)$/i.test(String(r.docs[0].nom_fichier ?? ""))
+                              ? <FileText className="h-5 w-5" />
+                              : <ImageIcon className="h-5 w-5" />}
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-sm font-medium">{r.nom}</p>
+                            {r.docs.length > 0 && <EtatDocument doc={r.docs[0]} kbisPerime={kbisPerime} />}
+                          </div>
                           {r.docs.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">
+                            <p className="mt-1 text-xs text-muted-foreground">
                               {r.obligatoire ? "Obligatoire — rien n'a été déposé" : "Rien n'a été déposé"}
                             </p>
                           ) : (
-                            <>
-                              <p className="truncate text-xs text-muted-foreground">
-                                {r.docs[0].nom_fichier} · {format(new Date(r.docs[0].created_at), "dd/MM/yyyy", { locale: fr })}
-                              </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Déposé le {format(new Date(r.docs[0].created_at), "dd/MM/yyyy", { locale: fr })}
                               {attenteDepuis(r.docs[0]) && (
-                                <p
-                                  className={`text-xs ${
-                                    attenteDepuis(r.docs[0])!.alerte
-                                      ? "font-medium text-orange-600 dark:text-orange-400"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {attenteDepuis(r.docs[0])!.texte}
-                                </p>
+                                <>
+                                  {" · "}
+                                  <span
+                                    className={
+                                      attenteDepuis(r.docs[0])!.alerte
+                                        ? "font-medium text-orange-600 dark:text-orange-400"
+                                        : ""
+                                    }
+                                  >
+                                    {attenteDepuis(r.docs[0])!.texte}
+                                  </span>
+                                </>
                               )}
-                            </>
+                            </p>
+                          )}
+                          {r.docs.length > 0 && (
+                            <p className="mt-0.5 truncate text-xs text-muted-foreground/70">
+                              {r.docs[0].nom_fichier}
+                            </p>
                           )}
                         </div>
-                        {r.docs.length > 0 && <EtatDocument doc={r.docs[0]} kbisPerime={kbisPerime} />}
                       </button>
                       {/* Ce que ce professionnel peut produire, lu sur son
                           SIRET. Dit avant même d'ouvrir le document, pour ne
@@ -955,7 +980,12 @@ export function GarageVerificationPanel({
                             </div>
                           )}
 
-                          <div className="flex flex-wrap gap-2">
+                          {/* Accepter et refuser sont deux décisions également
+                              légitimes face à une pièce douteuse : elles pèsent
+                              le même poids visuel. La suppression, elle, part à
+                              droite — ce n'est pas une décision sur la pièce,
+                              c'est un retrait. */}
+                          <div className="flex flex-wrap items-center gap-2">
                             {docChoisi.status !== "approved" && (
                               <Button
                                 size="sm"
@@ -984,7 +1014,9 @@ export function GarageVerificationPanel({
                               </Button>
                             )}
                             <RefuserDocumentBouton doc={docChoisi} onRefuse={refuserDoc} />
-                            <SupprimerDocumentBouton doc={docChoisi} onSupprime={supprimerDoc} />
+                            <div className="ml-auto">
+                              <SupprimerDocumentBouton doc={docChoisi} onSupprime={supprimerDoc} />
+                            </div>
                           </div>
                         </div>
                       )}

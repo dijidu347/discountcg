@@ -260,7 +260,7 @@ export function RefuserDocumentBouton({
   return (
     <AlertDialog open={ouvert} onOpenChange={fermer}>
       <AlertDialogTrigger asChild>
-        <Button size="sm" variant="outline" className="border-destructive/50 text-destructive hover:bg-destructive/10">
+        <Button size="sm" variant="destructive">
           <XCircle className="mr-2 h-4 w-4" />
           {libelle}
         </Button>
