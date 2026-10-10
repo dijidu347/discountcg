@@ -25,7 +25,7 @@ const BASE = "https://discountcartegrise.fr";
 
 export const ROUTES_SEO: Record<string, RouteSeo> = {
   "/": {
-    title: "Carte Grise Pas Chere en Ligne | Discount Carte Grise - 24h",
+    title: "Carte Grise en Ligne | Discount Carte Grise",
     description:
       "Faites votre carte grise en ligne au meilleur prix. Service agréé par l'État, traitement sous 24h, dès 30 euros. Simulez et commandez maintenant.",
     canonical: `${BASE}/`,
@@ -38,7 +38,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   },
 
   "/simulateur": {
-    title: "Simulateur Prix Carte Grise 2026 | Tarif du Cheval Fiscal",
+    title: "Simulateur Prix Carte Grise 2026",
     description:
       "Calculez le prix de votre carte grise en 30 secondes, et consultez le tarif du cheval fiscal des 101 départements en 2026. Gratuit, sans inscription.",
     canonical: `${BASE}/simulateur`,
@@ -52,7 +52,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   },
 
   "/certificat-de-non-gage": {
-    title: "Certificat de Non-Gage Gratuit | Situation Administrative",
+    title: "Certificat de Non-Gage Gratuit",
     description:
       "Le certificat de non-gage est gratuit auprès du ministère de l'Intérieur et s'obtient en deux minutes. Ses six rubriques expliquées, sa durée de validité, et les démarches qui l'exigent.",
     canonical: `${BASE}/certificat-de-non-gage`,
@@ -66,7 +66,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   },
 
   "/carte-grise-professionnel": {
-    title: "Carte Grise Professionnel | Garages, Concessions, Négociants",
+    title: "Carte Grise pour les Professionnels",
     description:
       "Déposez les cartes grises de vos clients sous notre habilitation SIV. Déclaration d'achat et de cession dès 5 €, sans abonnement. Première déclaration offerte.",
     canonical: `${BASE}/carte-grise-professionnel`,
@@ -81,7 +81,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   },
 
   "/habilitation-siv": {
-    title: "Habilitation SIV : Conditions, Procédure et Obligations",
+    title: "Habilitation SIV : les Conditions",
     description:
       "Comment obtenir l'habilitation au SIV : les deux conditions cumulatives, les pièces, la pré-demande ANTS et ce qu'elle engage une fois obtenue. Et quand il vaut mieux passer par un habilité.",
     canonical: `${BASE}/habilitation-siv`,
@@ -96,7 +96,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   },
 
   "/a-propos": {
-    title: "A propos | Discount Carte Grise - Service Agree par l'Etat",
+    title: "À propos | Discount Carte Grise",
     description:
       "DISCOUNT AUTO / PAREBRISE, service d'immatriculation habilite par la Prefecture (N° 285046) et agree par le Tresor Public (N° 63198).",
     canonical: `${BASE}/a-propos`,
