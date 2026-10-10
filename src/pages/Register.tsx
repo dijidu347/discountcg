@@ -43,6 +43,35 @@ export default function Register() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Le navigateur vérifie les champs qu'il connaît ; ceux-ci lui échappent.
+    if (formData.siret.length !== 14) {
+      toast({
+        title: "SIRET incomplet",
+        description: "Le SIRET comporte exactement quatorze chiffres : les neuf du SIREN, puis les cinq de l'établissement.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Un menu déroulant n'est pas un champ de formulaire aux yeux du
+    // navigateur : son caractère obligatoire se vérifie ici.
+    if (!formData.referralSource) {
+      toast({
+        title: "Dites-nous comment vous nous avez connu",
+        description: "C'est la seule façon pour nous de savoir ce qui vous a amené jusqu'ici.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (formData.referralSource === "autre" && !formData.referralSourceOther.trim()) {
+      toast({
+        title: "Précisez comment vous nous avez connu",
+        description: "Quelques mots suffisent.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Erreur",
@@ -243,15 +272,30 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="siret">SIRET * (14 chiffres)</Label>
+                    <Label htmlFor="siret">SIRET <span className="text-destructive">*</span> (14 chiffres)</Label>
                     <Input
                       id="siret"
                       placeholder="12345678900012"
                       value={formData.siret}
                       onChange={(e) => handleChange("siret", e.target.value.replace(/\D/g, '').slice(0, 14))}
                       maxLength={14}
+                      inputMode="numeric"
+                      // Le champ était « obligatoire » sans l'être vraiment :
+                      // il refusait le vide, pas les SIRET incomplets. Trente-
+                      // quatre comptes en portent un de deux à treize chiffres,
+                      // dont vingt et un arrêtés à neuf — le SIREN seul.
+                      pattern="\d{14}"
+                      title="Le SIRET comporte exactement 14 chiffres"
                       required
                     />
+                    {formData.siret.length > 0 && formData.siret.length < 14 && (
+                      <p className="text-xs text-destructive">
+                        {14 - formData.siret.length} chiffre
+                        {14 - formData.siret.length > 1 ? "s" : ""} manquant
+                        {14 - formData.siret.length > 1 ? "s" : ""} — le SIRET en compte quatorze,
+                        les neuf du SIREN plus les cinq de l'établissement.
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -325,7 +369,9 @@ export default function Register() {
               </div>
 
               <div className="space-y-4">
-                <h3 className="font-semibold text-lg">Comment nous avez-vous connu ?</h3>
+                <h3 className="font-semibold text-lg">
+                  Comment nous avez-vous connu ? <span className="text-destructive">*</span>
+                </h3>
                 <div className="space-y-2">
                   <Select
                     value={formData.referralSource}
