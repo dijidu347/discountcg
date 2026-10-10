@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle, CheckCircle2, HelpCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Question {
   id: string;
@@ -23,6 +24,16 @@ interface Option {
   blocking_message: string | null;
   ordre: number;
 }
+
+// Une question dont le texte commence par « Précisez » n'est pas une question
+// de plus : c'est le détail de celle qui la précède, et elle ne s'affiche que
+// si la réponse donnée est « Autre ». Elle se présente en liste déroulante
+// plutôt qu'en boutons radio — cinq cas rares alignés sous trois cas courants
+// feraient passer l'exception pour la règle.
+const estPrecision = (texte: string | null | undefined) =>
+  /^pr[ée]cisez/i.test((texte ?? "").trim());
+
+const OPTION_AUTRE = /^autre/i;
 
 interface ConditionalDocument {
   id: string;
@@ -93,7 +104,24 @@ export function ActionQuestionnaire({ actionId, onAnswersChange, reponsesInitial
     
     // IMPORTANT: ne pas marquer “complété” pendant le chargement.
     // Une fois chargé: si pas de questions => complété; sinon => toutes les questions doivent être répondues.
-    const allQuestionsAnswered = !loading && (questions.length === 0 || questions.every(q => answers[q.id]));
+    // Une précision masquée ne se réclame pas : elle n'existe que si la
+    // réponse de sa question mère est « Autre ».
+    const texteOptionChoisie = (questionId: string) => {
+      const choisie = options[questionId]?.find((o) => o.id === answers[questionId]);
+      return choisie?.option_text ?? "";
+    };
+    const mereDe = (precision: Question) => {
+      const avant = questions
+        .filter((q) => !estPrecision(q.question_text) && q.ordre < precision.ordre)
+        .sort((a, b) => b.ordre - a.ordre);
+      return avant[0] ?? null;
+    };
+    const aRepondre = questions.filter((q) => {
+      if (!estPrecision(q.question_text)) return true;
+      const mere = mereDe(q);
+      return Boolean(mere && OPTION_AUTRE.test(texteOptionChoisie(mere.id)));
+    });
+    const allQuestionsAnswered = !loading && (aRepondre.length === 0 || aRepondre.every(q => answers[q.id]));
     
     onAnswersChange(answers, isBlocked, collectedDocs, allQuestionsAnswered, answerTexts);
   }, [answers, options, conditionalDocs, questions, loading]);
@@ -210,11 +238,28 @@ export function ActionQuestionnaire({ actionId, onAnswersChange, reponsesInitial
           </Alert>
         )}
 
-        {questions.map((question, idx) => (
+        {questions.filter((q) => !estPrecision(q.question_text)).map((question, idx) => {
+          // La précision rattachée à cette question : la première « Précisez »
+          // qui la suit, avant la question principale suivante.
+          const suivantePrincipale = questions
+            .filter((q) => !estPrecision(q.question_text) && q.ordre > question.ordre)
+            .sort((a, b) => a.ordre - b.ordre)[0];
+          const precision = questions.find((q) =>
+            estPrecision(q.question_text)
+            && q.ordre > question.ordre
+            && (!suivantePrincipale || q.ordre < suivantePrincipale.ordre));
+          const texteChoisi = options[question.id]
+            ?.find((o) => o.id === answers[question.id])?.option_text ?? "";
+          const precisionVisible = Boolean(precision && OPTION_AUTRE.test(texteChoisi));
+
+          return (
           <div key={question.id} className="space-y-3">
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="shrink-0">{idx + 1}</Badge>
-              <Label className="text-sm font-medium">{question.question_text}</Label>
+              <Label className="text-sm font-medium">
+                {question.question_text}
+                <span className="ml-1 text-destructive">*</span>
+              </Label>
             </div>
             
             <RadioGroup
@@ -262,8 +307,31 @@ export function ActionQuestionnaire({ actionId, onAnswersChange, reponsesInitial
                 );
               })}
             </RadioGroup>
+
+            {precisionVisible && precision && (
+              <div className="pl-8 space-y-2">
+                <Label className="text-sm font-medium">
+                  {precision.question_text}
+                  <span className="ml-1 text-destructive">*</span>
+                </Label>
+                <Select
+                  value={answers[precision.id] || ""}
+                  onValueChange={(value) => handleAnswerChange(precision.id, value)}
+                >
+                  <SelectTrigger className="bg-background">
+                    <SelectValue placeholder="Choisissez le cas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {options[precision.id]?.map((o) => (
+                      <SelectItem key={o.id} value={o.id}>{o.option_text}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
-        ))}
+          );
+        })}
 
         {allQuestionsAnswered && !blockingMessage && (
           <Alert className="border-green-500 bg-green-500/10">
