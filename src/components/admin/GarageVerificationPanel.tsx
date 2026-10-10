@@ -513,6 +513,41 @@ export function GarageVerificationPanel({
       return;
     }
 
+    // Le Kbis accepté remplace les précédents, qui n'ont plus aucune raison
+    // d'exister : un seul extrait fait foi à la fois. Ils restaient affichés
+    // sous « Dépôts précédents », avec leurs pastilles « En attente » et
+    // « Expiré », et l'écran donnait à croire qu'il restait du travail.
+    //
+    // Le fichier part avec la ligne. Ce n'est pas une archive : l'historique
+    // en dessous garde la trace de chaque dépôt et de chaque décision.
+    if (avant?.document_type === "kbis") {
+      const anciens = verificationDocs.filter(
+        (d) => d.document_type === "kbis" && d.id !== docId,
+      );
+      for (const vieux of anciens) {
+        try {
+          const parts = String(vieux.url ?? "").split("/demarche-documents/");
+          const chemin = parts.length > 1 ? parts[1].split("?")[0] : null;
+          if (chemin) await supabase.storage.from("demarche-documents").remove([chemin]);
+        } catch (e) {
+          console.error("Ancien Kbis non supprimé du stockage", e);
+        }
+        const { error: effacement } = await supabase
+          .from("verification_documents")
+          .delete()
+          .eq("id", vieux.id);
+        if (effacement) console.error("Ancien Kbis non supprimé", effacement);
+      }
+      if (anciens.length > 0) {
+        toast({
+          title: "Kbis accepté",
+          description: `${anciens.length} extrait${anciens.length > 1 ? "s" : ""} précédent${anciens.length > 1 ? "s" : ""} supprimé${anciens.length > 1 ? "s" : ""}.`,
+        });
+        await Promise.all([loadVerificationDocs(garage.id), rafraichirGarage()]);
+        return;
+      }
+    }
+
     toast({ title: "Pièce acceptée" });
     await Promise.all([loadVerificationDocs(garage.id), rafraichirGarage()]);
   };
@@ -772,7 +807,7 @@ export function GarageVerificationPanel({
             )}
           </div>
           {garage.is_verified ? (
-            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setShowRejectDialog(true)}>
+            <Button variant="destructive" className="shrink-0" onClick={() => setShowRejectDialog(true)}>
               <ShieldCheck className="mr-2 h-4 w-4" />
               Retirer la vérification
             </Button>
@@ -942,10 +977,23 @@ export function GarageVerificationPanel({
                                   ? "La lecture automatique n'a pas trouvé la date : recopiez-la."
                                   : "Pas encore lu automatiquement."}
                               </p>
+                              {/* L'activité d'un Kbis fait parfois dix lignes —
+                                  « vente, achat, importation, exportation,
+                                  courtage, négoce de tous véhicules… » — et
+                                  repoussait les boutons hors de l'écran. Ce qui
+                                  compte tient dans les premiers mots : on y
+                                  cherche « véhicule », « automobile »,
+                                  « négoce ». Le reste s'ouvre au clic. */}
                               {docActif.activite && (
-                                <p className="text-xs text-muted-foreground">
-                                  Activité lue : « {docActif.activite} »
-                                </p>
+                                <details className="text-xs text-muted-foreground">
+                                  <summary className="cursor-pointer list-none truncate">
+                                    Activité lue : « {String(docActif.activite).slice(0, 70)}
+                                    {String(docActif.activite).length > 70 ? "… »" : " »"}
+                                  </summary>
+                                  {String(docActif.activite).length > 70 && (
+                                    <p className="mt-1 whitespace-pre-wrap">« {docActif.activite} »</p>
+                                  )}
+                                </details>
                               )}
 
                               {/* Le Kbis reste la règle pour une société ;

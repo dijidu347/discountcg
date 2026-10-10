@@ -56,7 +56,13 @@ export function EtatDocument({ doc, kbisPerime }: { doc: Doc; kbisPerime?: boole
 
   if (doc.status === "approved") {
     return (
-      <Badge className={expire ? "shrink-0 bg-orange-500" : "shrink-0 bg-green-600"}>
+      <Badge
+        className={
+          expire
+            ? "shrink-0 bg-orange-500 hover:bg-orange-500"
+            : "shrink-0 bg-green-600 hover:bg-green-600"
+        }
+      >
         {expire ? "Expiré" : "Approuvé"}
       </Badge>
     );
@@ -72,7 +78,7 @@ export function EtatDocument({ doc, kbisPerime }: { doc: Doc; kbisPerime?: boole
     );
   }
   return (
-    <Badge variant="secondary" className={sansDate ? "shrink-0 bg-yellow-500 text-yellow-950" : "shrink-0"}>
+    <Badge variant="secondary" className={sansDate ? "shrink-0 bg-yellow-500 text-yellow-950 hover:bg-yellow-500" : "shrink-0"}>
       {sansDate ? "Sans date" : "En attente"}
     </Badge>
   );
