@@ -27,7 +27,7 @@
 //
 // Usage : node scripts/attendre-publication.mjs [minutes] [minutesEnlisement]
 
-import { readFileSync } from "node:fs";
+import { execSync } from "node:child_process";
 
 const SITE = "https://discountcartegrise.fr";
 const minutes = Number(process.argv[2] ?? 30);
@@ -37,20 +37,26 @@ const minutes = Number(process.argv[2] ?? 30);
 const enlisement = Number(process.argv[3] ?? 12) * 60_000;
 const limite = Date.now() + minutes * 60_000;
 
-const bundleDe = (html) => html.match(/\/?assets\/(index-[A-Za-z0-9_-]+\.js)/)?.[1] ?? null;
+// Le serveur injecte dans chaque page un script portant le SHA du commit
+// deploye. C'est le repere exact, et le seul qui vaille : l'empreinte du
+// bundle JavaScript ne bouge pas quand le commit ne touche que du contenu —
+// un texte, un titre, le prerendu. Elle m'a fait annoncer une mise en ligne
+// deux minutes avant qu'elle n'arrive.
+const shaDe = (html) => html.match(/data-commit-sha="([0-9a-f]{40})"/)?.[1] ?? null;
 
 // La cible est relue a chaque tour, et non figee au demarrage. Fige, un
 // guetteur lance avant deux reconstructions attend un bundle qui ne sortira
 // jamais, puis annonce un echec alors que tout s'est bien passe — c'est
 // exactement ce qui est arrive, et un faux echec coute plus cher qu'un retard.
-const cible = () => bundleDe(readFileSync("dist/index.html", "utf8"));
+const cible = () =>
+  execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
 
 let attendu = cible();
 if (!attendu) {
-  console.error("Impossible de lire le bundle local. Lancez `npm run build` d'abord.");
+  console.error("Impossible de lire le commit local.");
   process.exit(2);
 }
-console.log(`attendu : ${attendu}`);
+console.log(`attendu : ${attendu.slice(0, 10)}  ${execSync("git log -1 --format=%s", { encoding: "utf8" }).trim()}`);
 
 const heure = () => new Date().toLocaleTimeString("fr-FR");
 let precedent = null;
@@ -59,7 +65,7 @@ let dernierMouvement = Date.now();
 while (Date.now() < limite) {
   const maintenant = cible();
   if (maintenant && maintenant !== attendu) {
-    console.log(`\n(nouveau build local : ${maintenant} — c'est lui qu'on attend désormais)`);
+    console.log(`\n(nouveau commit local : ${maintenant.slice(0, 10)} — c'est lui qu'on attend désormais)`);
     attendu = maintenant;
   }
 
@@ -68,20 +74,20 @@ while (Date.now() < limite) {
     // Le paramètre casse les caches intermédiaires, qui serviraient sinon la
     // page d'il y a dix minutes et feraient croire que rien ne bouge.
     const r = await fetch(`${SITE}/?verif=${Date.now()}`, { cache: "no-store" });
-    enLigne = bundleDe(await r.text());
+    enLigne = shaDe(await r.text());
   } catch (e) {
     console.log(`${heure()}  site injoignable (${e.message})`);
   }
 
   if (enLigne === attendu) {
-    console.log(`${heure()}  ${enLigne}  <-- EN LIGNE`);
+    console.log(`${heure()}  ${enLigne.slice(0, 10)}  <-- EN LIGNE`);
     process.exit(0);
   }
 
   if (enLigne && enLigne !== precedent) {
     // Un bundle différent de l'attendu ET du précédent : un déploiement est
     // bien sorti, mais ce n'est pas le nôtre — il en reste un derrière.
-    console.log(`${heure()}  ${enLigne}  (pas encore le nôtre)`);
+    console.log(`${heure()}  ${enLigne.slice(0, 10)}  (pas encore le nôtre)`);
     precedent = enLigne;
     dernierMouvement = Date.now();
   } else if (enLigne) {
@@ -92,7 +98,7 @@ while (Date.now() < limite) {
     const attente = Math.round((Date.now() - dernierMouvement) / 60_000);
     console.log(
       `\n${heure()}  RELANCER LE DÉPLOIEMENT — rien n'a bougé depuis ${attente} min.` +
-        `\nLe site sert toujours ${enLigne ?? "?"}, on attend ${attendu}.` +
+        `\nLe site sert toujours ${enLigne?.slice(0, 10) ?? "?"}, on attend ${attendu.slice(0, 10)}.` +
         `\nUn déclenchement est resté sans effet : rappeler deploy_project suffit.`,
     );
     process.exit(3);
