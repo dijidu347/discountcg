@@ -17,7 +17,7 @@ export type StatusCategory = "refuse" | "doc_refuse" | "paiement_attente" | "fin
  * filtre (STATUS_CATEGORIES) restent automatiquement alignés.
  */
 const CATEGORY_BADGE: Record<StatusCategory, DemarcheStatusBadge> = {
-  refuse:           { color: "bg-gray-800 text-white hover:bg-gray-800", label: "Refusé" },
+  refuse:           { color: "bg-red-600 text-white hover:bg-red-600", label: "Refusé" },
   doc_refuse:       { color: "bg-red-600 text-white hover:bg-red-600", label: "Doc refusé" },
   paiement_attente: { color: "bg-amber-500 text-black hover:bg-amber-500", label: "Paiement en attente" },
   finalise:         { color: "bg-green-600 text-white hover:bg-green-600", label: "Finalisé" },

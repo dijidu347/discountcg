@@ -751,7 +751,7 @@ export default function Dashboard() {
                     // autrefois des choses différentes du même dossier.
                     const categorie = getStatusCategory(demarche.status);
                     const ROND = {
-                      refuse: { fond: "bg-gray-200 dark:bg-gray-800", teinte: "text-gray-700 dark:text-gray-300", icone: AlertCircle },
+                      refuse: { fond: "bg-red-100 dark:bg-red-950/40", teinte: "text-red-600", icone: AlertCircle },
                       paiement_attente: { fond: "bg-amber-100 dark:bg-amber-950/40", teinte: "text-amber-600", icone: Clock },
                       finalise: { fond: "bg-green-100 dark:bg-green-950/40", teinte: "text-green-600", icone: CheckCircle },
                       en_cours: { fond: "bg-blue-100 dark:bg-blue-950/40", teinte: "text-blue-600", icone: Clock },
