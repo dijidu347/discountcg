@@ -976,7 +976,11 @@ export default function GarageSettings() {
                                     accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
                                     multiple={!face && capaciteDe(reqDoc.code) > 1}
                                     disabled={uploadingDoc === reqDoc.code}
-                                    libelle={doc ? `Remplacer ${intitule.toLowerCase().replace(/^ajouter /, "")}` : intitule}
+                                    libelle={
+                                      doc && /^ajouter /i.test(intitule)
+                                        ? `Remplacer ${intitule.replace(/^ajouter /i, "")}`
+                                        : intitule
+                                    }
                                     vide={aide}
                                     onChoisis={(fichiers) =>
                                       handleFileUpload(reqDoc.code, fichiers, face ?? undefined)}
@@ -987,12 +991,11 @@ export default function GarageSettings() {
                                       ne disait ce qui se passait au clic, et la
                                       corbeille flottait à côté sans cadre. */}
                                   {doc && (
-                                    <div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+                                    <div className="flex items-center gap-2 rounded-md border bg-background px-3 py-2">
                                       <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                                       <span className="min-w-0 flex-1 truncate text-sm">{doc.nom_fichier}</span>
                                       <Button
                                         type="button"
-                                        variant="outline"
                                         size="sm"
                                         className="h-7 shrink-0 px-2 text-xs"
                                         onClick={() => window.open(doc.url, '_blank')}
