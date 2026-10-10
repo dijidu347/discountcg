@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
@@ -102,7 +101,6 @@ export function GarageVerificationPanel({
   const [idChoisi, setIdChoisi] = useState<string | null>(null);
   const [classeOuvert, setClasseOuvert] = useState(false);
   const [refus, setRefus] = useState<DocumentRefuse[]>([]);
-  const [activeTab, setActiveTab] = useState("documents");
 
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -212,10 +210,96 @@ export function GarageVerificationPanel({
   // n'empêchait jusqu'ici d'accorder la vérification sans elles : neuf garages
   // travaillent aujourd'hui sous notre habilitation sans Kbis au dossier, dont
   // un sans aucune pièce. Le bouton « Vérifier » les exige désormais.
+  const [filOuvert, setFilOuvert] = useState(false);
+
   const obligatoiresManquantes = requiredDocs
     .filter((r) => r.actif && r.obligatoire)
     .filter((r) => !verificationDocs.some((d) => d.document_type === r.code && d.status === "approved"))
     .map((r) => r.nom_document);
+
+  // L'état du dossier en une phrase.
+  //
+  // Le panneau ne disait rien quand tout allait bien, et ne nommait la
+  // contradiction que dans un bandeau d'alerte. Or c'est la première question
+  // qu'on se pose en ouvrant une fiche, et elle se déduisait jusqu'ici en
+  // recoupant deux zones éloignées — c'est ce qui a laissé passer un garage
+  // vérifié sans Kbis.
+  const verdict = (() => {
+    const liste = obligatoiresManquantes.join(", ");
+    if (obligatoiresManquantes.length) {
+      return garage.is_verified
+        ? { phrase: `Vérifié, mais il manque ${liste}`, detail: "Le garage travaille sous notre habilitation sans que son dossier le porte.", alerte: true }
+        : { phrase: `Il manque ${liste}`, detail: "La vérification ne peut pas être accordée tant que la pièce n'est pas acceptée.", alerte: false };
+    }
+    const kbisSansDate = verificationDocs.find(
+      (d) => d.document_type === "kbis" && d.status === "pending" && !d.date_emission,
+    );
+    if (kbisSansDate) {
+      return { phrase: "Le Kbis attend sa date de délivrance", detail: "Sans elle, les six mois repartiraient de la date de dépôt.", alerte: false };
+    }
+    const enAttente = verificationDocs.filter((d) => d.status === "pending");
+    if (enAttente.length) {
+      return {
+        phrase: `${enAttente.length} pièce${enAttente.length > 1 ? "s" : ""} attend${enAttente.length > 1 ? "ent" : ""} votre contrôle`,
+        detail: "",
+        alerte: false,
+      };
+    }
+    const acceptees = rubriques.filter((r) => r.docs.some((d) => d.status === "approved")).length;
+    return {
+      phrase: garage.kbis_valide_jusqu_au
+        ? `Dossier complet — Kbis valable jusqu'au ${format(new Date(garage.kbis_valide_jusqu_au), "dd/MM/yyyy", { locale: fr })}`
+        : "Dossier complet",
+      detail: `${acceptees} pièce${acceptees > 1 ? "s" : ""} sur ${rubriques.length} acceptée${acceptees > 1 ? "s" : ""}. Rien n'attend votre contrôle.`,
+      alerte: false,
+    };
+  })();
+
+  // Un seul fil, antéchronologique : dépôts, décisions, messages et relances.
+  // Ils vivaient dans trois endroits distincts — un onglet, un bloc et un repli
+  // — si bien que « je le lui ai déjà demandé deux fois », qui change la
+  // décision, n'était jamais visible au moment de décider.
+  type Evenement = { date: string; icone: "depot" | "accepte" | "refuse" | "message" | "relance"; texte: string; note?: string };
+  const fil: Evenement[] = [
+    ...verificationDocs.map((d) => ({
+      date: d.created_at,
+      icone: "depot" as const,
+      texte: `${nomDuType(d.document_type)} déposé — ${d.nom_fichier}`,
+    })),
+    ...verificationDocs
+      .filter((d) => d.status === "approved" && d.validated_at)
+      .map((d) => ({
+        date: d.validated_at,
+        icone: "accepte" as const,
+        texte: `${nomDuType(d.document_type)} accepté`,
+        note: d.date_emission
+          ? `délivré le ${format(new Date(d.date_emission), "dd/MM/yyyy", { locale: fr })}`
+          : undefined,
+      })),
+    ...refus.map((r) => ({
+      date: r.refuse_le,
+      icone: "refuse" as const,
+      texte: `${nomDuType(r.document_type)} refusé — ${r.nom_fichier}`,
+      note: r.raison,
+    })),
+    ...notificationHistory.map((n) => ({
+      date: n.created_at,
+      icone: "message" as const,
+      texte: n.subject,
+      note: n.message,
+    })),
+    ...(garage.kbis_alerte_envoyee_le
+      ? [{
+          date: garage.kbis_alerte_envoyee_le,
+          icone: "relance" as const,
+          texte: "Relance automatique — échéance du Kbis",
+        }]
+      : []),
+  ]
+    .filter((e) => e.date)
+    .sort((a, b) => +new Date(b.date) - +new Date(a.date));
+
+  const filVisible = filOuvert ? fil : fil.slice(0, 5);
 
   // A l'ouverture, la page se place sur la premiere piece qui attend un geste :
   // une date a saisir d'abord, un controle ensuite. Afficher un document ne
@@ -627,72 +711,44 @@ export function GarageVerificationPanel({
       />
 
       <Card className="p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-lg font-semibold">Vérification</h2>
-          <div className="flex gap-2">
-            <Button variant="destructive" size="sm" onClick={() => setShowRejectDialog(true)}>
-              <XCircle className="mr-2 h-4 w-4" />
-              {garage.is_verified ? "Retirer la vérification" : "Refuser"}
+        {/* Zone 1 — l'état en une phrase, et la seule décision qui a du sens
+            à cet instant. Les deux boutons voisinaient avec le même mot que
+            l'action sur une pièce : « Refuser » retirait son habilitation à un
+            garage en activité, « Refuser » juste en dessous écartait une page
+            de PDF. Le mot n'appartient plus qu'aux pièces. */}
+        <div
+          className={`mb-4 flex flex-wrap items-start justify-between gap-4 rounded-lg border px-4 py-3 ${
+            verdict.alerte ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20" : "bg-muted/40"
+          }`}
+        >
+          <div className="min-w-0">
+            <p className="font-semibold text-foreground">{verdict.phrase}</p>
+            {verdict.detail && (
+              <p className="mt-0.5 text-sm text-muted-foreground">{verdict.detail}</p>
+            )}
+          </div>
+          {garage.is_verified ? (
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setShowRejectDialog(true)}>
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Retirer la vérification
             </Button>
-            {!garage.is_verified && (
-              <Button
-                size="sm"
-                onClick={() => setShowVerifyDialog(true)}
-                disabled={obligatoiresManquantes.length > 0}
-                title={
-                  obligatoiresManquantes.length > 0
-                    ? `Pièce obligatoire non approuvée : ${obligatoiresManquantes.join(", ")}`
-                    : undefined
-                }
-                className="bg-green-600 hover:bg-green-700"
-              >
-                <ShieldCheck className="mr-2 h-4 w-4" />
-                Vérifier
-              </Button>
-            )}
-          </div>
+          ) : (
+            <Button
+              size="sm"
+              className="shrink-0 bg-green-600 hover:bg-green-700"
+              onClick={() => setShowVerifyDialog(true)}
+              disabled={obligatoiresManquantes.length > 0}
+              title={
+                obligatoiresManquantes.length > 0
+                  ? `Pièce obligatoire non acceptée : ${obligatoiresManquantes.join(", ")}`
+                  : undefined
+              }
+            >
+              <ShieldCheck className="mr-2 h-4 w-4" />
+              Vérifier ce garage
+            </Button>
+          )}
         </div>
-
-        {obligatoiresManquantes.length > 0 && (
-          <div
-            className={`mb-4 rounded-lg border px-4 py-3 text-sm ${
-              garage.is_verified
-                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/20"
-                : "border-border bg-muted/50"
-            }`}
-          >
-            {garage.is_verified ? (
-              <>
-                <span className="font-semibold text-foreground">
-                  Ce garage est vérifié, mais il manque une pièce obligatoire :
-                </span>{" "}
-                {obligatoiresManquantes.join(", ")}. Il travaille sous notre habilitation sans que
-                son dossier le porte.
-              </>
-            ) : (
-              <>
-                <span className="font-medium text-foreground">
-                  Pièce obligatoire non approuvée :
-                </span>{" "}
-                {obligatoiresManquantes.join(", ")}. La vérification ne peut pas être accordée tant
-                qu'elle manque.
-              </>
-            )}
-          </div>
-        )}
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              Notifications
-              {notificationHistory.length > 0 && (
-                <Badge variant="secondary" className="text-xs">{notificationHistory.length}</Badge>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="documents" className="mt-4">
             {/* Une seule liste, un grand lecteur.
                 Il y avait trois blocs empilés — les pièces classées, celles
                 attendues du garage, puis une carte d'action détachée qui
@@ -857,23 +913,6 @@ export function GarageVerificationPanel({
                   </div>
                 )}
 
-                {refus.length > 0 && (
-                  <div className="space-y-2 border-t pt-3">
-                    <p className="text-xs font-semibold text-muted-foreground">
-                      Refusés ({refus.length})
-                    </p>
-                    {refus.map((r) => (
-                      <div key={r.id} className="rounded border border-dashed p-2">
-                        <p className="truncate text-xs font-medium">{r.nom_fichier}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {nomDuType(r.document_type)} · refusé le{" "}
-                          {format(new Date(r.refuse_le), "dd/MM/yyyy", { locale: fr })}
-                        </p>
-                        <p className="mt-1 text-xs text-destructive">{r.raison}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
 
               <div className="xl:sticky xl:top-4 xl:self-start">
@@ -899,45 +938,58 @@ export function GarageVerificationPanel({
                 )}
               </div>
             </div>
-          </TabsContent>
 
-          <TabsContent value="notifications" className="mt-4">
-            <div className="space-y-4">
-              <Button onClick={() => setShowNotificationDialog(true)} className="w-full">
-                <Send className="mr-2 h-4 w-4" />
-                Envoyer une notification
-              </Button>
+        {/* Zone 3 — un seul fil. Il absorbe l'onglet « Notifications », le
+            bloc « Refusés » et le repli des anciennes exigences : trois
+            endroits pour une même relation. Le bouton d'écriture est en tête,
+            là où l'on voit ce qu'on a déjà envoyé. */}
+        <div className="mt-6 border-t pt-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-semibold">Historique</h3>
+            <Button variant="outline" size="sm" onClick={() => setShowNotificationDialog(true)}>
+              <Send className="mr-2 h-4 w-4" />
+              Écrire au garage
+            </Button>
+          </div>
 
-              <ScrollArea className="h-[350px] pr-4">
-                <h3 className="font-medium mb-3 flex items-center gap-2">
-                  <History className="h-4 w-4" />
-                  Historique des notifications
-                </h3>
-                {notificationHistory.length === 0 ? (
-                  <p className="text-muted-foreground text-center py-8">Aucune notification envoyée</p>
-                ) : (
-                  <div className="space-y-3">
-                    {notificationHistory.map((notif) => (
-                      <Card key={notif.id} className="p-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm">{notif.subject}</h4>
-                            <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">
-                              {notif.message}
-                            </p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(notif.created_at), "dd/MM/yyyy HH:mm", { locale: fr })}
-                          </span>
-                        </div>
-                      </Card>
-                    ))}
+          {fil.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucun échange pour l'instant.</p>
+          ) : (
+            <div className="divide-y">
+              {filVisible.map((e, i) => (
+                <div key={`${e.date}-${i}`} className="flex gap-3 py-2">
+                  {e.icone === "accepte" && <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />}
+                  {e.icone === "refuse" && <XCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />}
+                  {e.icone === "depot" && <Upload className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />}
+                  {e.icone === "message" && <Send className="mt-0.5 h-4 w-4 shrink-0 text-primary" />}
+                  {e.icone === "relance" && <History className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />}
+                  <div className="min-w-0">
+                    <p className="text-sm">{e.texte}</p>
+                    {e.note && (
+                      <p className="whitespace-pre-line text-xs text-muted-foreground">{e.note}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(e.date), "dd/MM/yyyy à HH:mm", { locale: fr })}
+                    </p>
                   </div>
-                )}
-              </ScrollArea>
+                </div>
+              ))}
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+
+          {fil.length > 5 && (
+            <Button
+              variant="link"
+              size="sm"
+              className="mt-1 h-auto p-0"
+              onClick={() => setFilOuvert((v) => !v)}
+            >
+              {filOuvert
+                ? "Réduire"
+                : `Afficher les ${fil.length - 5} événements plus anciens`}
+            </Button>
+          )}
+        </div>
       </Card>
 
       {viewerDoc && (
