@@ -26,6 +26,7 @@ import { isPdfOnlyProDemarche } from "@/lib/documentRestrictions";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { QuestionnaireResponses } from "@/components/QuestionnaireResponses";
 import { Badge } from "@/components/ui/badge";
+import { StatusPill } from "@/components/StatusPill";
 import { FactureButton } from "@/components/FactureButton";
 import { DemarcheChat } from "@/components/DemarcheChat";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -1165,41 +1166,34 @@ export default function DemarcheDetail() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Type</Label>
-                    <p className="text-sm font-medium mt-1">{demarche.type}</p>
-                  </div>
-                  <div>
-                    <Label>Statut actuel</Label>
-                    <p className="text-sm font-medium mt-1">{demarche.status}</p>
-                  </div>
-                  <div>
-                    <Label>Paiement</Label>
-                    <p className="text-sm font-medium mt-1">
-                      {demarche.is_free_token 
-                        ? "🎁 Jeton gratuit" 
-                        : demarche.paid_with_tokens
-                          ? "💳 Payé avec solde"
-                          : demarche.paye 
-                            ? "✅ Payé" 
-                            : "❌ Non payé"}
-                    </p>
-                  </div>
-                  {typeHasPaymentChoice(demarche.type) && (
-                    <div>
-                      <Label>Mode de paiement</Label>
-                      <p className="text-sm font-medium mt-1">{paymentModeLabel(demarche.payment_mode)}</p>
-                    </div>
-                  )}
+              <CardContent className="space-y-3">
+                {/* Quatre champs étiquetés occupaient quatre lignes pour quatre
+                    mots. Ils tiennent sur une, et le statut se lit mieux en
+                    pastille qu'en nom technique — « en_attente » était affiché
+                    tel quel, juste au-dessus du menu qui le change. */}
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <Badge variant="outline">{demarche.type}</Badge>
+                  <StatusPill statut={demarche.status} />
+                  <span className="text-muted-foreground">
+                    {demarche.is_free_token
+                      ? "Démarche offerte"
+                      : demarche.paid_with_tokens
+                        ? "Payé avec le solde"
+                        : demarche.paye
+                          ? "Payé"
+                          : "Non payé"}
+                    {typeHasPaymentChoice(demarche.type)
+                      && ` · ${paymentModeLabel(demarche.payment_mode)}`}
+                  </span>
                 </div>
 
                 {/* Détails des prix */}
-                <div className="border rounded-lg p-4 bg-muted/30">
-                  <h4 className="font-medium text-sm mb-3">Détails des prix</h4>
-                  <div className="space-y-2 text-sm">
-                    {demarche.prix_carte_grise && demarche.prix_carte_grise > 0 && (
+                <div className="border rounded-lg px-3 py-2 bg-muted/30">
+                  <div className="space-y-1 text-sm">
+                    {/* Le test rendait le nombre lui-même quand il valait zéro :
+                        un « 0 » orphelin s'affichait au-dessus de la première
+                        ligne de prix. */}
+                    {Number(demarche.prix_carte_grise) > 0 && (
                       <>
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Prix de la carte grise</span>
@@ -1208,7 +1202,7 @@ export default function DemarcheDetail() {
                         {carteGriseDetail && <DetailsCollapse detail={carteGriseDetail} />}
                       </>
                     )}
-                    {demarche.frais_dossier && demarche.frais_dossier > 0 && (
+                    {Number(demarche.frais_dossier) > 0 && (
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Frais de dossier</span>
                         <span className="font-medium">{demarche.frais_dossier.toFixed(2)} €</span>
@@ -1236,7 +1230,7 @@ export default function DemarcheDetail() {
                         ))}
                       </>
                     )}
-                    <div className="border-t pt-2 mt-2 flex justify-between font-semibold">
+                    <div className="border-t pt-1 mt-1 flex justify-between font-semibold">
                       <span>Total TTC</span>
                       <span className="text-primary">{demarche.montant_ttc?.toFixed(2) || '0.00'} €</span>
                     </div>
