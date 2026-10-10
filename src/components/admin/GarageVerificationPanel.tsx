@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins } from "lucide-react";
+import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
@@ -179,6 +179,44 @@ export function GarageVerificationPanel({
 
   const getDocumentsByType = (docType: string) =>
     verificationDocs.filter((d) => d.document_type === docType);
+
+  // Depuis combien de temps une pièce attend notre examen. Rien ne distinguait
+  // une pièce arrivée hier d'une qui patiente depuis trois mois : cent cinq
+  // d'entre elles dépassent trente jours. Au-delà de quinze, on le dit en
+  // couleur — c'est le délai au bout duquel un garage relance ou redépose.
+  const attenteDepuis = (doc: { status?: string; created_at?: string }) => {
+    if (doc.status !== "pending" || !doc.created_at) return null;
+    const jours = Math.floor((Date.now() - new Date(doc.created_at).getTime()) / 86400000);
+    if (jours < 1) return { texte: "déposé aujourd'hui", alerte: false };
+    return {
+      texte: `en attente depuis ${jours} jour${jours > 1 ? "s" : ""}`,
+      alerte: jours >= 15,
+    };
+  };
+
+  // Redonner une chance à la lecture automatique.
+  //
+  // Une fois `lu_le` posé, le document n'était plus jamais repris — même quand
+  // la lecture avait échoué, ce qui est le cas de cinquante Kbis sur trois cent
+  // trente-neuf. Remettre ce marqueur à zéro suffit : la tâche repasse toutes
+  // les quinze minutes et reprend ce qui n'a pas encore été lu.
+  const relireDocument = async (doc: { id: string }) => {
+    majLocale(doc.id, { lu_le: null });
+    const { error } = await supabase
+      .from("verification_documents")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update({ lu_le: null } as any)
+      .eq("id", doc.id);
+    if (error) {
+      toast({ title: "Relecture impossible", description: error.message, variant: "destructive" });
+      await loadVerificationDocs(garage.id);
+      return;
+    }
+    toast({
+      title: "Relecture demandée",
+      description: "La lecture automatique repassera dans les quinze minutes.",
+    });
+  };
 
   const nomDuType = (code: string) =>
     requiredDocs.find((r) => r.code === code)?.nom_document ?? code;
@@ -779,9 +817,22 @@ export function GarageVerificationPanel({
                               {r.obligatoire ? "Obligatoire — rien n'a été déposé" : "Rien n'a été déposé"}
                             </p>
                           ) : (
-                            <p className="truncate text-xs text-muted-foreground">
-                              {r.docs[0].nom_fichier} · {format(new Date(r.docs[0].created_at), "dd/MM/yyyy", { locale: fr })}
-                            </p>
+                            <>
+                              <p className="truncate text-xs text-muted-foreground">
+                                {r.docs[0].nom_fichier} · {format(new Date(r.docs[0].created_at), "dd/MM/yyyy", { locale: fr })}
+                              </p>
+                              {attenteDepuis(r.docs[0]) && (
+                                <p
+                                  className={`text-xs ${
+                                    attenteDepuis(r.docs[0])!.alerte
+                                      ? "font-medium text-orange-600 dark:text-orange-400"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {attenteDepuis(r.docs[0])!.texte}
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
                         {r.docs.length > 0 && <EtatDocument doc={r.docs[0]} kbisPerime={kbisPerime} />}
@@ -856,6 +907,17 @@ export function GarageVerificationPanel({
                               >
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Accepter
+                              </Button>
+                            )}
+                            {docChoisi.document_type === "kbis" && docChoisi.lu_le && !docChoisi.date_emission && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => relireDocument(docChoisi)}
+                                title="La lecture automatique n'a pas trouvé de date : lui redonner une chance"
+                              >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Relire
                               </Button>
                             )}
                             <RefuserDocumentBouton doc={docChoisi} onRefuse={refuserDoc} />

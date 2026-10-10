@@ -76,6 +76,45 @@ interface Stats {
 
 const JOUR = 86_400_000;
 
+// Chaque étape a sa couleur, la même partout : dans les onglets, dans la
+// colonne « État » et dans « Ce qui attend ». Onze lignes de texte gris
+// identique ne se distinguent pas ; onze pastilles de couleur, si.
+// Bleu = à nous de jouer, ambre = au garage, orange = anomalie, vert = acquis.
+const TEINTE_ETAPE: Record<string, { texte: string; classe: string }> = {
+  valides: { texte: "Validé", classe: "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300" },
+  a_verifier: { texte: "À vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
+  kbis_a_dater: { texte: "Date à saisir", classe: "bg-yellow-100 text-yellow-900 dark:bg-yellow-950 dark:text-yellow-300" },
+  kbis_perime: { texte: "Kbis périmé", classe: "bg-orange-100 text-orange-800 dark:bg-orange-950 dark:text-orange-300" },
+  en_attente: { texte: "À compléter", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
+  sans_demande: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
+};
+
+function Pastille({ texte, classe }: { texte: string; classe: string }) {
+  return (
+    <span className={`inline-block whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium ${classe}`}>
+      {texte}
+    </span>
+  );
+}
+
+// Une date brute ne dit pas si l'on est en retard. « 03/12/2025 » se lit sans
+// émotion ; « il y a 10 mois » se lit tout de suite.
+const anciennete = (valeur: string | null | undefined) => {
+  if (!valeur) return null;
+  const jours = Math.floor((Date.now() - new Date(valeur).getTime()) / JOUR);
+  const texte =
+    jours < 1 ? "aujourd'hui"
+      : jours < 31 ? `il y a ${jours} j`
+      : jours < 365 ? `il y a ${Math.round(jours / 30)} mois`
+      : `il y a ${Math.floor(jours / 365)} an${jours >= 730 ? "s" : ""}`;
+  return {
+    texte,
+    classe: jours >= 90 ? "font-medium text-destructive"
+      : jours >= 30 ? "font-medium text-orange-600 dark:text-orange-400"
+      : "text-foreground",
+  };
+};
+
 type Garage = Tables<"garages">;
 
 // Département déduit du code postal (Corse : 2A / 2B, outre-mer : 3 chiffres).
@@ -884,6 +923,7 @@ export default function ManageGarages() {
                       </>
                     ) : (
                       <>
+                        <TableHead>État</TableHead>
                         <TableHead>Inscrit le</TableHead>
                         <TableHead>Dernière démarche</TableHead>
                         <TableHead className="text-right">Dépensé</TableHead>
@@ -911,13 +951,35 @@ export default function ManageGarages() {
                         </TableCell>
                         {enTravail ? (
                           <>
-                            <TableCell className="whitespace-nowrap text-sm">{attenteDe(g).texte}</TableCell>
-                            <TableCell className="whitespace-nowrap text-sm tabular-nums">
-                              {jour(attenteDe(g).depuis)}
+                            <TableCell>
+                              <Pastille
+                                texte={attenteDe(g).texte}
+                                classe={TEINTE_ETAPE[etape(g)]?.classe ?? "bg-muted text-muted-foreground"}
+                              />
+                            </TableCell>
+                            <TableCell className="whitespace-nowrap text-sm">
+                              {anciennete(attenteDe(g).depuis) ? (
+                                <>
+                                  <p className={anciennete(attenteDe(g).depuis)!.classe}>
+                                    {anciennete(attenteDe(g).depuis)!.texte}
+                                  </p>
+                                  <p className="text-xs tabular-nums text-muted-foreground">
+                                    {jour(attenteDe(g).depuis)}
+                                  </p>
+                                </>
+                              ) : (
+                                "—"
+                              )}
                             </TableCell>
                           </>
                         ) : (
                           <>
+                            <TableCell>
+                              <Pastille
+                                texte={TEINTE_ETAPE[etape(g)]?.texte ?? etape(g)}
+                                classe={TEINTE_ETAPE[etape(g)]?.classe ?? "bg-muted text-muted-foreground"}
+                              />
+                            </TableCell>
                             <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(g.created_at)}</TableCell>
                             <TableCell className="whitespace-nowrap text-sm tabular-nums">{jour(st?.derniere_demarche)}</TableCell>
                             <TableCell className="text-right tabular-nums">{formatPrice(st?.total || 0)} €</TableCell>
@@ -928,7 +990,8 @@ export default function ManageGarages() {
                         <TableCell className="text-right">
                           <Button
                             size="sm"
-                            variant="outline"
+                            variant="ghost"
+                            className="text-muted-foreground"
                             onClick={(e) => { e.stopPropagation(); navigate(`/admin/garages/${g.id}`); }}
                           >
                             <Eye className="mr-1 h-4 w-4" />
