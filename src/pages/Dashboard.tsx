@@ -603,7 +603,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
             { cle: "all", libelle: "Total des démarches", valeur: stats.totalDemarches, icone: FileText, teinte: "text-primary", bord: "border-l-primary" },
-            { cle: "en_cours", libelle: "En attente", valeur: stats.enAttente, icone: Clock, teinte: "text-orange-500", bord: "border-l-orange-500" },
+            { cle: "en_cours", libelle: "En attente", valeur: stats.enAttente, icone: Clock, teinte: "text-yellow-600", bord: "border-l-yellow-500" },
             { cle: "finalise", libelle: "Validées", valeur: stats.validees, icone: CheckCircle, teinte: "text-green-500", bord: "border-l-green-500" },
             { cle: "brouillon", libelle: "Brouillons", valeur: stats.brouillons, icone: PenLine, teinte: "text-muted-foreground", bord: "border-l-muted-foreground" },
           ].map((carte) => (
