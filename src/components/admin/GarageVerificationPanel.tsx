@@ -74,6 +74,13 @@ interface GarageVerificationPanelProps {
    */
   donJetonsOuvert?: boolean;
   onDonJetonsOuvertChange?: (ouvert: boolean) => void;
+  /**
+   * Même principe pour l'écriture au garage : le bouton vit désormais dans le
+   * suivi de prospection, là où l'on consigne ce qu'on dit au garage, et le
+   * dialogue reste ici avec la logique d'envoi.
+   */
+  ecrireOuvert?: boolean;
+  onEcrireOuvertChange?: (ouvert: boolean) => void;
 }
 
 /**
@@ -99,6 +106,8 @@ export function GarageVerificationPanel({
   onGarageChanged,
   donJetonsOuvert,
   onDonJetonsOuvertChange,
+  ecrireOuvert,
+  onEcrireOuvertChange,
 }: GarageVerificationPanelProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -120,7 +129,9 @@ export function GarageVerificationPanel({
   const [rejectAccountReason, setRejectAccountReason] = useState("");
   const [processingGarage, setProcessingGarage] = useState(false);
 
-  const [showNotificationDialog, setShowNotificationDialog] = useState(false);
+  const [notifInterne, setNotifInterne] = useState(false);
+  const showNotificationDialog = ecrireOuvert ?? notifInterne;
+  const setShowNotificationDialog = onEcrireOuvertChange ?? setNotifInterne;
   const [notificationSubject, setNotificationSubject] = useState("");
   const [notificationMessage, setNotificationMessage] = useState("");
   const [sendingNotification, setSendingNotification] = useState(false);
@@ -1134,13 +1145,7 @@ export function GarageVerificationPanel({
                   endroits pour une même relation. Le bouton d'écriture est en tête,
                   là où l'on voit ce qu'on a déjà envoyé. */}
               <div className="mt-4 border-t pt-4">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="font-semibold">Historique</h3>
-                  <Button variant="outline" size="sm" onClick={() => setShowNotificationDialog(true)}>
-                    <Send className="mr-2 h-4 w-4" />
-                    Écrire au garage
-                  </Button>
-                </div>
+                <h3 className="mb-3 font-semibold">Historique</h3>
 
                 {fil.length === 0 ? (
                   <p className="text-sm text-muted-foreground">Aucun échange pour l'instant.</p>

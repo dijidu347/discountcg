@@ -15,6 +15,8 @@ import { StickyNote } from "lucide-react";
 export interface NoteProspection {
   id: string;
   auteur_email: string | null;
+  auteur_prenom: string | null;
+  date_note: string | null;
   contenu: string;
   rappel_le: string | null;
   created_at: string;
@@ -33,6 +35,15 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
   const [chargement, setChargement] = useState(true);
   const [nouvelleNote, setNouvelleNote] = useState("");
   const [rappel, setRappel] = useState("");
+  // Qui a fait l'échange, et quand. L'adresse de l'auteur était déjà
+  // enregistrée, mais contact@discountcartegrise.fr est partagée : toutes les
+  // notes portaient le même nom. Et l'on note souvent le lendemain un appel
+  // passé la veille, d'où une date distincte de celle de la saisie.
+  const [prenom, setPrenom] = useState(() => {
+    try { return localStorage.getItem("prospection.prenom") ?? ""; } catch { return ""; }
+  });
+  const aujourdhui = new Date().toISOString().slice(0, 10);
+  const [dateNote, setDateNote] = useState(aujourdhui);
   const [enregistrement, setEnregistrement] = useState(false);
 
   const charger = useCallback(async () => {
@@ -46,6 +57,7 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
     setNotes([]);
     setNouvelleNote("");
     setRappel("");
+    setDateNote(new Date().toISOString().slice(0, 10));
     charger();
   }, [charger]);
 
@@ -54,11 +66,24 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
       toast({ title: "Note vide", description: "Écrivez ce qui s'est dit avant d'enregistrer.", variant: "destructive" });
       return;
     }
+    if (!prenom.trim()) {
+      toast({ title: "Prénom manquant", description: "Indiquez qui a fait l'échange.", variant: "destructive" });
+      return;
+    }
+    if (!dateNote) {
+      toast({ title: "Date manquante", description: "Indiquez le jour de l'échange.", variant: "destructive" });
+      return;
+    }
     setEnregistrement(true);
+    // Le prénom est retenu pour les notes suivantes : il ne change pas d'un
+    // appel à l'autre, et le retaper à chaque fois finirait par être sauté.
+    try { localStorage.setItem("prospection.prenom", prenom.trim()); } catch { /* navigation privée */ }
     const { error } = await rpc("ajouter_note_prospection", {
       p_garage_id: garageId,
       p_contenu: nouvelleNote,
       p_rappel_le: rappel || null,
+      p_auteur_prenom: prenom.trim(),
+      p_date_note: dateNote,
     });
     setEnregistrement(false);
     if (error) {
@@ -84,6 +109,30 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
         />
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
+            <Label htmlFor={`prenom-${garageId}`} className="text-xs">
+              Prénom <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id={`prenom-${garageId}`}
+              value={prenom}
+              onChange={(e) => setPrenom(e.target.value)}
+              placeholder="Qui a appelé"
+              className="w-40"
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`date-note-${garageId}`} className="text-xs">
+              Date de l'échange <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id={`date-note-${garageId}`}
+              type="date"
+              value={dateNote}
+              onChange={(e) => setDateNote(e.target.value)}
+              className="w-44"
+            />
+          </div>
+          <div className="space-y-1">
             <Label htmlFor={`rappel-${garageId}`} className="text-xs">Date de rappel (facultatif)</Label>
             <Input id={`rappel-${garageId}`} type="date" value={rappel} onChange={(e) => setRappel(e.target.value)} className="w-44" />
           </div>
@@ -104,7 +153,9 @@ export function NotesProspection({ garageId, onNoteAjoutee }: { garageId: string
             <div key={n.id} className="rounded-md border p-3 text-sm">
               <p className="whitespace-pre-wrap">{n.contenu}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {formatDateTimeParis(n.created_at)} · {n.auteur_email || "—"}
+                {n.auteur_prenom || n.auteur_email || "—"}
+                {" · "}
+                {n.date_note ? jourCalendrier(n.date_note) : formatDateTimeParis(n.created_at)}
                 {n.rappel_le ? ` · rappel le ${jourCalendrier(n.rappel_le)}` : ""}
               </p>
             </div>

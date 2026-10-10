@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Pencil, ShieldCheck, Coins } from "lucide-react";
+import { ArrowLeft, Pencil, ShieldCheck, Coins, Send } from "lucide-react";
 import { StatusPill } from "@/components/StatusPill";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import {
@@ -129,6 +129,9 @@ export default function GarageDetail() {
   const [clientDepuis, setClientDepuis] = useState<string | null>(null);
   // Don de jetons : bouton dans la carte du haut, dialogue dans le panneau.
   const [donJetonsOuvert, setDonJetonsOuvert] = useState(false);
+  // Le bouton « Écrire au garage » vit dans la prospection, le dialogue reste
+  // dans le panneau de vérification avec sa logique d'envoi.
+  const [ecrireOuvert, setEcrireOuvert] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
@@ -378,6 +381,25 @@ export default function GarageDetail() {
           </Card>
         </div>
 
+        {/* Suivi de prospection, avant les pièces : ce qu'on s'est dit avec le
+            garage éclaire ce qu'on va faire de son dossier, et c'est ici qu'on
+            écrit au garage — à l'endroit où l'on consigne ce qu'on lui dit. */}
+        <Card className="p-6 mb-6">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold mb-1">Suivi de prospection</h2>
+              <p className="text-sm text-muted-foreground">
+                Notes visibles par les administrateurs et les prospecteurs.
+              </p>
+            </div>
+            <Button className="shrink-0" onClick={() => setEcrireOuvert(true)}>
+              <Send className="mr-2 h-4 w-4" />
+              Écrire au garage
+            </Button>
+          </div>
+          <NotesProspection garageId={garage.id} />
+        </Card>
+
         {/* Documents, vérification, notifications et jetons */}
         <div className="mb-6">
           <GarageVerificationPanel
@@ -385,17 +407,10 @@ export default function GarageDetail() {
             onGarageChanged={(patch) => setGarage((prev: any) => ({ ...prev, ...patch }))}
             donJetonsOuvert={donJetonsOuvert}
             onDonJetonsOuvertChange={setDonJetonsOuvert}
+            ecrireOuvert={ecrireOuvert}
+            onEcrireOuvertChange={setEcrireOuvert}
           />
         </div>
-
-        {/* Suivi de prospection : notes partagées avec les prospecteurs */}
-        <Card className="p-6 mb-6">
-          <h2 className="text-lg font-semibold mb-1">Suivi de prospection</h2>
-          <p className="text-sm text-muted-foreground mb-4">
-            Notes visibles par les administrateurs et les prospecteurs.
-          </p>
-          <NotesProspection garageId={garage.id} />
-        </Card>
 
         {/* Démarches récentes : en cours (payées) / brouillons (non payés) */}
         <Card className="p-6">
