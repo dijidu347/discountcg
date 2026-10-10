@@ -427,14 +427,24 @@ export default function Dashboard() {
                 <div className="min-w-0">
                   <p className="font-bold text-primary">
                     {ficheIncomplete
-                      ? "Complétez votre fiche entreprise"
+                      ? "Faites vérifier votre compte"
                       : aucunDocEnvoye
                       ? "Il reste une étape"
                       : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
                   </p>
                   <p className="mt-0.5 text-sm text-primary/90">
                     {ficheIncomplete
-                      ? "Renseignez votre raison sociale et votre SIRET : c'est le SIRET qui nous dit quelle pièce vous devez fournir."
+                      ? `Votre entreprise ici, puis ${
+                          requiredDocNames.length > 0
+                            ? `${
+                                requiredDocNames.length === 1
+                                  ? "sa pièce justificative"
+                                  : requiredDocNames.length === 2
+                                  ? "ses deux pièces"
+                                  : `ses ${requiredDocNames.length} pièces`
+                              } : ${requiredDocNames.join(" et ")}`
+                            : "ses pièces justificatives"
+                        }. Nous sommes habilités par la préfecture, et devons pouvoir justifier que chaque garage exerce bien une activité automobile.`
                       : aucunDocEnvoye
                       ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
                       : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
