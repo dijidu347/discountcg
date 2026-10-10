@@ -157,9 +157,9 @@ export default function GarageSettings() {
       }).eq('id', garage.id);
       if (error) { demandeRattrapee.current = false; return; }
       setGarage((g: any) => (g ? { ...g, verification_requested_at: maintenant } : g));
-      await supabase.functions.invoke('send-email', {
-        body: { type: 'admin_verification_request', to: 'contact@discountcartegrise.fr', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
-      });
+      // Pas d'email : la demande est marquée en base, et la page Garages la
+      // fait remonter dans « Complet, à vérifier ». C'est là qu'on la traite,
+      // pas dans une boîte de réception.
     })();
   }, [garage, requiredDocs, verificationDocs]);
 
@@ -480,11 +480,6 @@ export default function GarageSettings() {
           verification_requested_at: new Date().toISOString(),
           verification_admin_viewed: false
         }).eq('id', garage.id);
-        
-        // Send admin notification
-        await supabase.functions.invoke('send-email', {
-          body: { type: 'admin_verification_request', to: 'contact@discountcartegrise.fr', data: { garage_name: garage.raison_sociale, garage_email: garage.email } }
-        });
       }
       
       // Reload garage data

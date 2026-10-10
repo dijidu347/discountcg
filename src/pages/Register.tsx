@@ -113,25 +113,13 @@ export default function Register() {
         variant: "destructive"
       });
     } else {
-      // Envoyer notification admin
-      try {
-        await supabase.functions.invoke("send-email", {
-          body: {
-            type: "admin_new_registration",
-            to: "contact@discountcartegrise.fr",
-            data: {
-              garage_name: formData.raisonSociale,
-              garage_email: formData.email,
-              telephone: formData.telephone,
-              siret: formData.siret,
-              ville: formData.ville,
-              referral_source: referralSource || "Non renseigné"
-            }
-          }
-        });
-      } catch (e) {
-        console.error("Failed to send admin notification:", e);
-      }
+      // Aucun email à l'inscription d'un garage.
+      //
+      // Le tableau de bord compte les nouveaux comptes et la page Garages les
+      // range par étape : l'information est déjà là, consultable quand on
+      // décide de s'y mettre. Un email par inscription remplissait une boîte
+      // partagée de messages que personne n'ouvrait, et noyait ceux qui
+      // appellent une réponse.
 
       // Wait for auth session to be established, then create garage profile
       // This prevents the double-form issue (Dashboard → CompleteProfile)
