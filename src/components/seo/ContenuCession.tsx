@@ -97,6 +97,26 @@ export function ContenuCession() {
             ou laissez-nous le remplir : nous le générons à partir de la plaque.
           </span>
         </div>
+        <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
+          <a
+            href="/cerfas/cerfa_13751_02.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-primary hover:underline"
+          >
+            <Download className="w-4 h-4" />
+            Cerfa 13751*02 — Déclaration d'achat d'un véhicule d'occasion
+          </a>
+          <a
+            href="/cerfas/cerfa_13752_02.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-primary hover:underline"
+          >
+            <Download className="w-4 h-4" />
+            Cerfa 13752*02 — Demande de certificat W garage
+          </a>
+        </div>
       </section>
 
       <section>
