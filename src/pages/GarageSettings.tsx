@@ -863,6 +863,20 @@ export default function GarageSettings() {
                               return (
                                 (() => {
                                 const aRegler = status.status === "rejected" || status.status === "expire";
+                                // Deux fichiers portant le même nom dans la même pièce :
+                                // c'est presque toujours le même document déposé deux
+                                // fois, par un double clic ou un envoi qui semblait
+                                // avoir échoué. Personne ne s'en rend compte, et
+                                // l'écran affichait « Fichier 1 sur 2 » comme si le
+                                // dossier était complet alors qu'il manquait le verso.
+                                const vus = new Set<string>();
+                                const doublons = new Set<string>();
+                                recus.forEach((d) => {
+                                  const cle = String(d.nom_fichier ?? "").trim().toLowerCase();
+                                  if (!cle) return;
+                                  if (vus.has(cle)) doublons.add(d.id);
+                                  else vus.add(cle);
+                                });
                                 const ouvert = aRegler || detailsOuverts.has(reqDoc.code);
                                 const dernier = recus[recus.length - 1];
                                 return (
@@ -878,6 +892,13 @@ export default function GarageSettings() {
                                         ? `1 fichier reçu, le ${format(new Date(dernier.created_at), "dd/MM/yyyy", { locale: fr })}`
                                         : `${recus.length} fichiers reçus, le dernier le ${format(new Date(dernier.created_at), "dd/MM/yyyy", { locale: fr })}`}
                                     </span>
+                                    {doublons.size > 0 && (
+                                      <span className="rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                                        {doublons.size === 1
+                                          ? "un fichier semble être un doublon"
+                                          : `${doublons.size} fichiers semblent être des doublons`}
+                                      </span>
+                                    )}
                                     {!aRegler && (
                                       <button
                                         type="button"
@@ -901,6 +922,11 @@ export default function GarageSettings() {
                                       </span>
                                       <span className="min-w-0 flex-1 truncate">
                                         Déposé le {format(new Date(d.created_at), "dd/MM/yyyy 'à' HH:mm", { locale: fr })}
+                                        {doublons.has(d.id) && (
+                                          <span className="ml-2 rounded bg-orange-100 px-1.5 py-0.5 text-xs text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                                            même fichier que plus haut
+                                          </span>
+                                        )}
                                       </span>
                                       <button
                                         type="button"
