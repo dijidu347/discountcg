@@ -50,18 +50,11 @@
 
     <div id="root"></div>
 
-    <!-- Noscript fallback for crawlers and users without JavaScript -->
-    <noscript>
-      <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
-        <h1>Discount Carte Grise - Service de Carte Grise en Ligne</h1>
-        <p>Carte grise en ligne, déclaration de cession, changement d'adresse. Service agréé par l'État, traitement sous 24h.</p>
-        <p>Ce site nécessite JavaScript pour fonctionner. Veuillez activer JavaScript dans les paramètres de votre navigateur.</p>
-        <p>
-          <a href="https://discountcartegrise.fr/certificat-de-non-gage">Certificat de non-gage</a> |
-          <a href="https://discountcartegrise.fr/simulateur">Simulateur de prix</a>
-        </p>
-      </div>
-    </noscript>
+    <!-- Plus de repli « activez JavaScript » : depuis le prerendu, chaque page
+         est servie avec son contenu complet dans #root, lisible sans script.
+         Ce bloc affirmait le contraire, et surtout il portait un h1 generique
+         qui se dupliquait sur les vingt-huit pages du site — deux h1 par page,
+         dont un identique partout. -->
 
     <script type="module" src="/src/main.tsx"></script>
   </body>

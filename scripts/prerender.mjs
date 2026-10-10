@@ -87,13 +87,13 @@ function publicCroise(code) {
       ? "Cette demarche est reservee aux professionnels de l'automobile et se depose depuis un compte garage, sous notre habilitation."
       : "Demarche majoritairement professionnelle : garages, concessions et negociants la deposent depuis un compte professionnel, a un tarif different.";
     return (
-      `<h2>Vous etes un professionnel ?</h2><p>${echappe(intro)} ` +
+      `<h2>Vous êtes un professionnel ?</h2><p>${echappe(intro)} ` +
       `Voir <a href="${BASE}/carte-grise-professionnel">l'offre et les tarifs professionnels</a>, ` +
       `et <a href="${BASE}/habilitation-siv">faut-il demander son habilitation SIV</a>.</p>`
     );
   }
   return (
-    `<h2>Vous etes un professionnel ?</h2><p>Garages, concessions, negociants et loueurs ` +
+    `<h2>Vous êtes un professionnel ?</h2><p>Garages, concessions, négociants et loueurs ` +
     `deposent leurs demarches depuis un compte dedie, avec une grille tarifaire a part : ` +
     `la declaration d'achat et la declaration de cession y sont a 5 &euro;. ` +
     `Voir <a href="${BASE}/carte-grise-professionnel">l'offre professionnels</a>.</p>`
@@ -228,15 +228,26 @@ async function principal() {
       "cession"
     );
     reperesCession =
-      `<h2>Qui fait quoi, et dans quel delai</h2><table><thead><tr><th>Qui</th>` +
-      `<th>Ce qu'il doit faire</th><th>Quand</th><th>A defaut</th></tr></thead><tbody>` +
+      `<h2>Qui fait quoi, et dans quel délai</h2><table><thead><tr><th>Qui</th>` +
+      `<th>Ce qu'il doit faire</th><th>Quand</th><th>À défaut</th></tr></thead><tbody>` +
       QUI_FAIT_QUOI.map(
         (l) =>
           `<tr><td>${echappe(l.qui)}</td><td>${echappe(l.action)}</td>` +
           `<td>${echappe(l.quand)}</td><td>${echappe(l.sinon)}</td></tr>`
       ).join("") +
       `</tbody></table>` +
-      `<h2>Ce que contient le Cerfa 15776</h2>` +
+      // Le formulaire vierge existe dans public/cerfas depuis toujours, mais
+      // son telechargement vivait dans un bouton React : le HTML servi n'en
+      // portait aucun lien. La page promettait le Cerfa a quelqu'un qui tape
+      // « cerfa cession vehicule » — douze mille recherches par mois — et les
+      // robots n'y trouvaient rien a telecharger. Le numero exact de version,
+      // 15776*02, est lui aussi une requete a part entiere.
+      `<h2>Télécharger le Cerfa 15776*02 vierge</h2>` +
+      `<p>Le formulaire officiel de déclaration de cession, version 15776*02, ` +
+      `à imprimer en trois exemplaires : un pour le vendeur, un pour l'acheteur, ` +
+      `un pour l'administration. <a href="${BASE}/cerfas/cerfa_15776_02.pdf" download>` +
+      `Télécharger le Cerfa 15776*02 (PDF)</a>.</p>` +
+      `<h2>Ce que contient le Cerfa 15776*02, case par case</h2>` +
       CASES_CERFA.map(
         (c) => `<h3>${echappe(c.repere)}</h3><p>${echappe(c.contenu)}</p>`
       ).join("");
