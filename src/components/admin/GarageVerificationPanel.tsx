@@ -101,6 +101,13 @@ const TEINTE_PIECE: Record<string, string> = {
   attente: "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30",
 };
 
+const CONTOUR_CHOISI: Record<string, string> = {
+  approuve: "border-green-500 ring-1 ring-green-500",
+  expire: "border-orange-500 ring-1 ring-orange-500",
+  refuse: "border-red-500 ring-1 ring-red-500",
+  attente: "border-yellow-500 ring-1 ring-yellow-500",
+};
+
 export function GarageVerificationPanel({
   garage,
   onGarageChanged,
@@ -897,11 +904,15 @@ export function GarageVerificationPanel({
                     <div
                       key={r.code}
                       className={`rounded-lg border transition-colors ${
-                        ouverte ? "border-primary shadow-sm ring-1 ring-primary" : ""
-                      } ${
                         r.docs.length === 0
                           ? "border-dashed bg-muted/20"
                           : TEINTE_PIECE[etatPiece(r.docs[0], kbisPerime)]
+                      } ${
+                        ouverte
+                          ? `shadow-sm ${r.docs.length === 0
+                              ? "border-primary ring-1 ring-primary"
+                              : CONTOUR_CHOISI[etatPiece(r.docs[0], kbisPerime)]}`
+                          : ""
                       }`}
                     >
                       <button
