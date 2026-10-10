@@ -204,13 +204,28 @@ export default function GarageSettings() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Un SIRET à moitié saisi vaut moins que pas de SIRET du tout : il
+    // empêcherait de lire la forme juridique tout en paraissant renseigné.
+    if (!garage?.is_verified && formData.siret && formData.siret.length !== 14) {
+      toast({
+        title: "SIRET incomplet",
+        description: "Le SIRET comporte quatorze chiffres. Laissez le champ vide plutôt que d'en saisir une partie.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSaving(true);
     const { error } = await supabase.from('garages').update({ 
       email: formData.email, 
       telephone: formData.telephone, 
       adresse: formData.adresse, 
       code_postal: formData.code_postal, 
-      ville: formData.ville 
+      ville: formData.ville,
+      // Tant que le compte n'est pas vérifié, ces deux-là restent corrigeables.
+      ...(garage?.is_verified
+        ? {}
+        : { raison_sociale: formData.raison_sociale, siret: formData.siret }),
     }).eq('id', garage.id);
     toast({ 
       title: error ? "Erreur" : "Succès", 
@@ -507,13 +522,50 @@ export default function GarageSettings() {
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="grid md:grid-cols-2 gap-4">
+                    {/* Raison sociale et SIRET se verrouillent une fois le
+                        compte vérifié : à ce moment nous avons contrôlé les
+                        pièces, et ils ne doivent plus bouger. Avant, ils
+                        restent modifiables — sans quoi un garage inscrit avec
+                        un champ vide ou un SIRET fautif ne peut plus rien
+                        corriger. Quarante-six comptes n'ont ni raison sociale
+                        ni SIRET et étaient dans cette impasse. */}
                     <div>
-                      <Label>Raison sociale</Label>
-                      <Input value={formData.raison_sociale} disabled className="bg-muted" />
+                      <Label htmlFor="raison_sociale">Raison sociale</Label>
+                      <Input
+                        id="raison_sociale"
+                        value={formData.raison_sociale}
+                        onChange={(e) => setFormData({ ...formData, raison_sociale: e.target.value })}
+                        disabled={garage?.is_verified}
+                        className={garage?.is_verified ? "bg-muted" : ""}
+                        placeholder="Nom de votre entreprise"
+                      />
                     </div>
                     <div>
-                      <Label>SIRET</Label>
-                      <Input value={formData.siret} disabled className="bg-muted" />
+                      <Label htmlFor="siret">SIRET</Label>
+                      <Input
+                        id="siret"
+                        value={formData.siret}
+                        onChange={(e) =>
+                          setFormData({ ...formData, siret: e.target.value.replace(/\D/g, "").slice(0, 14) })
+                        }
+                        disabled={garage?.is_verified}
+                        className={garage?.is_verified ? "bg-muted" : ""}
+                        inputMode="numeric"
+                        maxLength={14}
+                        placeholder="14 chiffres"
+                      />
+                      {!garage?.is_verified && formData.siret.length > 0 && formData.siret.length < 14 && (
+                        <p className="mt-1 text-xs text-destructive">
+                          {14 - formData.siret.length} chiffre
+                          {14 - formData.siret.length > 1 ? "s" : ""} manquant
+                          {14 - formData.siret.length > 1 ? "s" : ""}.
+                        </p>
+                      )}
+                      {garage?.is_verified && (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Verrouillé depuis la vérification de votre compte.
+                        </p>
+                      )}
                     </div>
                     <div>
                       <Label>Email</Label>
