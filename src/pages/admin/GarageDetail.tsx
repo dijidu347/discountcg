@@ -375,10 +375,6 @@ export default function GarageDetail() {
                 </dd>
               </div>
             </dl>
-            <p className="text-xs text-muted-foreground mt-4 pt-3 border-t">
-              Lecture seule. La vérification et le solde de jetons se pilotent depuis le
-              bloc « Vérification » ci-dessous.
-            </p>
           </Card>
         </div>
 
