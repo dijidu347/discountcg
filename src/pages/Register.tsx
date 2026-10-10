@@ -158,11 +158,17 @@ export default function Register() {
         }
       }
 
+      // Le compte n'est pas utilisable tant que l'adresse n'est pas confirmée :
+      // Supabase envoie un lien à chaque inscription, et le garage ne peut pas
+      // se connecter avant de l'avoir ouvert. Annoncer « redirection vers votre
+      // espace » promettait donc un espace qui refusait l'entrée, et taisait
+      // l'unique geste qui restait à faire. Un compte de cette semaine n'a
+      // jamais été confirmé : son adresse se terminait par « .cim ».
       toast({
-        title: "Compte créé avec succès",
-        description: "Redirection vers votre espace..."
+        title: "Compte créé — confirmez votre adresse",
+        description: `Un lien vient d'être envoyé à ${formData.email}. Ouvrez-le pour activer votre compte, puis connectez-vous.`,
       });
-      navigate("/dashboard");
+      navigate("/confirmation-email", { state: { email: formData.email } });
     }
 
     setLoading(false);

@@ -93,12 +93,13 @@ export default function RegisterParticulier() {
         variant: "destructive",
       });
     } else {
-      toast({ title: "Compte créé !", description: "Bienvenue sur Discount Carte Grise" });
-      if (redirectTo) {
-        navigate(redirectTo);
-      } else {
-        navigate("/mon-espace");
-      }
+      // Même défaut que côté professionnel : le compte attend la confirmation
+      // de l'adresse, et on l'envoyait dans un espace qui refusait l'entrée.
+      toast({
+        title: "Compte créé — confirmez votre adresse",
+        description: `Un lien vient d'être envoyé à ${formData.email}. Ouvrez-le pour activer votre compte.`,
+      });
+      navigate("/confirmation-email", { state: { email: formData.email, redirectTo } });
     }
 
     setLoading(false);

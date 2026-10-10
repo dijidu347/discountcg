@@ -42,6 +42,7 @@ const ManageActions = React.lazy(() => import("./pages/admin/ManageActions"));
 const ManageGarages = React.lazy(() => import("./pages/admin/ManageGarages"));
 const GarageDetail = React.lazy(() => import("./pages/admin/GarageDetail"));
 const KbisADater = React.lazy(() => import("./pages/admin/KbisADater"));
+const ConfirmationEmail = React.lazy(() => import("./pages/ConfirmationEmail"));
 const ManageAccounts = React.lazy(() => import("./pages/admin/ManageAccounts"));
 const GuestOrders = React.lazy(() => import("./pages/admin/GuestOrders"));
 const GuestOrderDetail = React.lazy(() => import("./pages/admin/GuestOrderDetail"));
@@ -111,6 +112,7 @@ const App = () => (
             <Route path="/mes-demarches" element={<MesDemarches />} />
             <Route path="/mes-factures" element={<MesFactures />} />
             <Route path="/demarche/:id" element={<DemarcheDetail />} />
+            <Route path="/confirmation-email" element={<ConfirmationEmail />} />
             <Route path="/garage-settings" element={<GarageSettings />} />
             <Route path="/maji-concepts" element={<MajiConcepts />} />
             <Route path="/acheter-jetons" element={<AcheterJetons />} />
