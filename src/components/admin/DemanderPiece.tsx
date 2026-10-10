@@ -165,7 +165,7 @@ export function DemanderPiece({
 
           <Dialog open={ouvert} onOpenChange={setOuvert}>
             <DialogTrigger asChild>
-              <Button size="sm" variant="outline" className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" />
                 Demander une pièce
               </Button>

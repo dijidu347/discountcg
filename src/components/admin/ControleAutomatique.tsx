@@ -157,11 +157,8 @@ export function ControleAutomatique({ demarcheId, typeDemarche }: { demarcheId: 
           <div className="flex items-center gap-2">
             {!enAttente && <BadgeNiveau niveau={controle.niveau} nombre={anomalies.length} />}
             <Button
-              variant="outline"
-              size="sm"
               onClick={relancer}
               disabled={relance}
-              className="hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
             >
               {relance ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               Relancer

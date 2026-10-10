@@ -1172,8 +1172,6 @@ export default function DemarcheDetail() {
                     />
                     {demarche.facture_id && (
                       <Button
-                        variant="outline"
-                        size="sm"
                         onClick={async () => {
                           try {
                             toast({ title: "Régénération en cours..." });

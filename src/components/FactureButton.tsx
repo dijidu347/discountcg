@@ -61,8 +61,6 @@ export const FactureButton = ({
       <Button
         onClick={handleDownload}
         disabled={loading}
-        variant="outline"
-        size="sm"
       >
         {loading ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
