@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw, FileText, Image as ImageIcon } from "lucide-react";
+import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw, FileText, Image as ImageIcon, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
@@ -143,6 +143,12 @@ export function GarageVerificationPanel({
   // change presque jamais, l'API de l'État n'a pas à être rappelée.
 
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
+  // Écarter un garage : une décision sur le COMPTE, distincte du refus d'une
+  // pièce. Elle le sort des files de travail et demande un motif, parce
+  // qu'une décision sans motif se rediscute six mois plus tard sans que
+  // personne ne sache ce qui avait été constaté.
+  const [showEcarterDialog, setShowEcarterDialog] = useState(false);
+  const [motifEcart, setMotifEcart] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectAccountReason, setRejectAccountReason] = useState("");
   const [processingGarage, setProcessingGarage] = useState(false);
@@ -740,6 +746,47 @@ export function GarageVerificationPanel({
     }
   };
 
+  const ecarterGarage = async () => {
+    if (!garage || !motifEcart.trim()) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("garages").update({
+      non_eligible: true,
+      non_eligible_le: new Date().toISOString(),
+      non_eligible_motif: motifEcart.trim(),
+      non_eligible_par: user?.id ?? null,
+      is_verified: false,
+    }).eq("id", garage.id);
+
+    if (error) {
+      toast({ title: "Impossible d'écarter ce garage", description: error.message, variant: "destructive" });
+      return;
+    }
+    // Aucun email : écarter n'est pas une demande adressée au garage. S'il
+    // faut le lui dire, « Écrire au garage » est là pour ça, avec les mots
+    // qu'on aura choisis.
+    toast({ title: "Garage écarté", description: "Il ne figure plus dans les files de vérification." });
+    setShowEcarterDialog(false);
+    setMotifEcart("");
+    onGarageChanged?.({ non_eligible: true, is_verified: false });
+  };
+
+  const reintegrerGarage = async () => {
+    if (!garage) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error } = await (supabase as any).from("garages").update({
+      non_eligible: false,
+      non_eligible_le: null,
+      non_eligible_motif: null,
+      non_eligible_par: null,
+    }).eq("id", garage.id);
+    if (error) {
+      toast({ title: "Réintégration impossible", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Garage réintégré", description: "Son dossier repasse dans les files de vérification." });
+    onGarageChanged?.({ non_eligible: false });
+  };
+
   const handleVerifyGarage = async () => {
     if (!garage) return;
 
@@ -953,6 +1000,35 @@ export function GarageVerificationPanel({
             >
               <ShieldCheck className="mr-2 h-4 w-4" />
               Vérifier ce garage
+            </Button>
+          )}
+        </div>
+
+        {/* Écarter, ou réintégrer. En retrait sous le verdict : ce n'est pas le
+            geste courant, mais il doit exister — sans lui, un garage qui ne
+            sera jamais vérifié reste indéfiniment dans les files de travail,
+            et on rouvre son dossier tous les mois. */}
+        <div className="mt-2">
+          {garage.non_eligible ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-4 py-2.5">
+              <Ban className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <p className="min-w-0 flex-1 text-sm">
+                <span className="font-medium">Garage écarté</span>
+                {garage.non_eligible_motif ? ` — ${garage.non_eligible_motif}` : ""}
+              </p>
+              <Button variant="outline" size="sm" className="shrink-0" onClick={reintegrerGarage}>
+                Réintégrer
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-foreground"
+              onClick={() => setShowEcarterDialog(true)}
+            >
+              <Ban className="mr-2 h-4 w-4" />
+              Écarter ce garage
             </Button>
           )}
         </div>
@@ -1376,6 +1452,38 @@ export function GarageVerificationPanel({
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {processingGarage ? "Traitement..." : "Confirmer le refus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showEcarterDialog} onOpenChange={(v) => { setShowEcarterDialog(v); if (!v) setMotifEcart(""); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Écarter ce garage ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Il sortira des files de vérification et n'y reviendra pas. Ses démarches
+              continuent de fonctionner, et aucun email ne part : si vous voulez le lui
+              dire, « Écrire au garage » est là pour ça. La décision se défait à tout
+              moment.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="motif-ecart" className="text-sm">
+              Pourquoi <span className="text-destructive">*</span>
+            </Label>
+            <Textarea
+              id="motif-ecart"
+              value={motifEcart}
+              onChange={(e) => setMotifEcart(e.target.value)}
+              placeholder="Activité de réparation sans achat-vente — ne peut pas être vérifié selon le guide SIV."
+              rows={3}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction disabled={!motifEcart.trim()} onClick={ecarterGarage}>
+              Écarter
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

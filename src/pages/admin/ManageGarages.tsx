@@ -62,7 +62,7 @@ const jourInscription = (valeur: string | null | undefined) =>
 // « Date Kbis à saisir » et « Kbis périmé » ne sont plus des onglets — le
 // premier est un cas d'« à vérifier », le second d'« à compléter ; ils
 // s'affichent en badge sur la ligne.
-type Onglet = "tous" | "verifie" | "a_verifier" | "a_completer" | "aucun_document";
+type Onglet = "tous" | "verifie" | "a_verifier" | "a_completer" | "aucun_document" | "non_eligible";
 type Etape = Exclude<Onglet, "tous">;
 
 // Les vues qui appellent un geste de notre part, par opposition à celles qui
@@ -649,7 +649,7 @@ export default function ManageGarages() {
   }));
 
   const comptes = useMemo(() => {
-    const c: Record<Onglet, number> = { tous: filtres.length, verifie: 0, a_verifier: 0, a_completer: 0, aucun_document: 0 };
+    const c: Record<Onglet, number> = { tous: filtres.length, verifie: 0, a_verifier: 0, a_completer: 0, aucun_document: 0, non_eligible: 0 };
     filtres.forEach((g) => { c[etape(g)]++; });
     return c;
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -750,6 +750,10 @@ export default function ManageGarages() {
       fond: "bg-amber-100 dark:bg-amber-950/50", chiffre: "text-amber-900 dark:text-amber-300", label: "text-amber-800 dark:text-amber-400" },
     { cle: "aucun_document", texte: "Aucun document", aide: "Inscrits, n'ont jamais rien envoyé",
       fond: "bg-muted", chiffre: "text-muted-foreground", label: "text-muted-foreground" },
+    // En bout de rangée, et en gris sombre : ce n'est pas une étape du
+    // parcours mais sa sortie. On ne la regarde pas tous les jours.
+    { cle: "non_eligible", texte: "Non éligible", aide: "Écartés : ils ne remplissent pas les conditions pour être vérifiés",
+      fond: "bg-gray-200 dark:bg-gray-800", chiffre: "text-gray-900 dark:text-gray-100", label: "text-gray-600 dark:text-gray-400" },
   ];
 
   return (

@@ -15,7 +15,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type EtatDossier = "verifie" | "a_verifier" | "a_completer" | "aucun_document";
+export type EtatDossier = "verifie" | "a_verifier" | "a_completer" | "aucun_document" | "non_eligible";
 
 /**
  * Le nom et la couleur de chaque état, pour tous les écrans qui l'affichent.
@@ -29,6 +29,7 @@ export const LIBELLE_ETAT: Record<EtatDossier, { texte: string; classe: string }
   a_verifier: { texte: "Complet, à vérifier", classe: "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300" },
   a_completer: { texte: "Dossier incomplet", classe: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300" },
   aucun_document: { texte: "Aucun document", classe: "bg-muted text-muted-foreground" },
+  non_eligible: { texte: "Non éligible", classe: "bg-gray-800 text-white dark:bg-gray-200 dark:text-gray-900" },
 };
 
 export interface DossierGarage {
@@ -49,6 +50,16 @@ function kbisEncoreValable(date: string | null): boolean {
 }
 
 export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
+  // Les garages écartés ne traversent plus aucune file : leur dossier ne sera
+  // pas examiné, et le compter comme « à vérifier » ferait rouvrir une
+  // décision déjà prise.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: ecartes } = await (supabase as any)
+    .from("garages")
+    .select("id")
+    .eq("non_eligible", true);
+  const horsJeu = new Set<string>((ecartes ?? []).map((g: { id: string }) => g.id));
+
   const { data: requis } = await supabase
     .from("garage_verification_required_documents")
     .select("code, nom_document")
@@ -72,6 +83,10 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
   const dossiers = new Map<string, DossierGarage>();
 
   for (const [garageId, lignes] of parGarage) {
+    if (horsJeu.has(garageId)) {
+      dossiers.set(garageId, { etat: "non_eligible", motifs: [], enAttenteDepuis: null });
+      continue;
+    }
     const motifs: string[] = [];
     let toutEnRegle = true;
     // Une pièce qui manque appelle le garage ; une pièce déposée nous appelle,
@@ -148,6 +163,14 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
     dossiers.set(garageId, { etat, motifs, enAttenteDepuis });
   }
 
+  // Un garage écarté qui n'a jamais rien déposé n'apparaît pas dans la boucle
+  // ci-dessus, qui part des pièces : on le pose ici.
+  horsJeu.forEach((id) => {
+    if (!dossiers.has(id)) {
+      dossiers.set(id, { etat: "non_eligible", motifs: [], enAttenteDepuis: null });
+    }
+  });
+
   return dossiers;
 }
 
@@ -159,6 +182,16 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
  * — pour réclamer la pièce.
  */
 export async function chargerDossierGarage(garageId: string): Promise<DossierGarage> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: fiche } = await (supabase as any)
+    .from("garages")
+    .select("non_eligible")
+    .eq("id", garageId)
+    .maybeSingle();
+  if ((fiche as { non_eligible?: boolean } | null)?.non_eligible) {
+    return { etat: "non_eligible", motifs: [], enAttenteDepuis: null };
+  }
+
   const { data: requis } = await supabase
     .from("garage_verification_required_documents")
     .select("code, nom_document")
