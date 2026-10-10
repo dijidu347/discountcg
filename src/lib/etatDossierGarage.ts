@@ -86,21 +86,21 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
       const enExamen = duType.some((l) => l.status === "pending");
       const refuse = !enExamen && duType.some((l) => l.status === "rejected");
       // RÈGLE : le dossier est complet tant qu'il reste quelque chose à
-      // regarder. Refuser une pièce la SUPPRIME — elle part dans
-      // verification_documents_refuses et sa ligne est effacée — donc un refus
-      // d'aujourd'hui rend le dossier incomplet de lui-même.
+      // REGARDER — une pièce en attente, ou un refus dont le document subsiste
+      // et qu'on peut rouvrir.
       //
-      // Restent trente-cinq lignes « rejected » héritées d'un mécanisme qui ne
-      // supprimait pas : leur document est encore là, encore ouvrable, encore
-      // acceptable. Il y a donc encore à vérifier, et le dossier est complet.
-      const rienRecu = duType.length === 0;
+      // Un Kbis périmé n'est pas de ceux-là. Le document est bien là, mais il
+      // n'y a rien à y examiner : il a plus de six mois, c'est au garage d'en
+      // déposer un récent. Les compter comme « à vérifier » noyait seize vrais
+      // dossiers à contrôler sous cent six relances.
+      const rienARegarder = duType.length === 0 || Boolean(accepte);
 
       if (code === "kbis") {
         // Un Kbis accepté mais daté de plus de six mois ne vaut plus : c'est au
         // garage d'en déposer un récent, pas à nous de le contrôler.
         if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
         toutEnRegle = false;
-        if (rienRecu) auGarageDeJouer = true;
+        if (!enExamen && rienARegarder) auGarageDeJouer = true;
         motifs.push(
           accepte ? "Kbis périmé"
             : refuse ? "Kbis refusé, à redéposer"
@@ -112,7 +112,7 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
 
       if (accepte) continue;
       toutEnRegle = false;
-      if (rienRecu) auGarageDeJouer = true;
+      if (!enExamen && duType.length === 0) auGarageDeJouer = true;
       motifs.push(
         refuse ? `${nomDe.get(code)} refusé, à redéposer`
           : enExamen ? `${nomDe.get(code)} à contrôler`
@@ -183,12 +183,12 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
 
     const enExamen = duType.some((l) => l.status === "pending");
     const refuse = !enExamen && duType.some((l) => l.status === "rejected");
-    const rienRecu = duType.length === 0;
+    const rienARegarder = duType.length === 0 || Boolean(accepte);
 
     if (r.code === "kbis") {
       if (accepte && kbisEncoreValable(accepte.date_emission)) continue;
       toutEnRegle = false;
-      if (rienRecu) auGarageDeJouer = true;
+      if (!enExamen && rienARegarder) auGarageDeJouer = true;
       motifs.push(
         accepte
           ? `Kbis périmé — délivré le ${accepte.date_emission ? new Date(accepte.date_emission).toLocaleDateString("fr-FR") : "?"}`
@@ -203,7 +203,7 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
 
     if (accepte) continue;
     toutEnRegle = false;
-    if (rienRecu) auGarageDeJouer = true;
+    if (!enExamen && duType.length === 0) auGarageDeJouer = true;
     motifs.push(
       refuse ? `${r.nom_document} refusée, en attente d'une nouvelle`
         : enExamen ? `${r.nom_document} déposée, pas encore contrôlée`
