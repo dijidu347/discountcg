@@ -997,121 +997,149 @@ export default function DemarcheDetail() {
           {/* Main Column */}
           <div className="lg:col-span-2 space-y-6">
             {/* Vehicule Info */}
-            {vehicule && (
+            {(vehicule || demarche.immatriculation || demarche.marque) && (
               <Card>
                 <CardHeader>
                   <CardTitle>Informations du véhicule</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {vehicule.immatriculation && !vehicule.immatriculation.startsWith('VIN-') && (
+                    {/* La marque et le modèle vivent à deux endroits : sur la
+                        fiche véhicule, et sur la démarche elle-même, qui les
+                        reçoit de l'API plaque au moment de la saisie. Cet
+                        écran ne lisait que la fiche — 314 démarches payées des
+                        90 derniers jours affichaient donc un véhicule vide
+                        alors que leur marque était connue. */}
+                    {(vehicule?.immatriculation || demarche.immatriculation)
+                      && !String(vehicule?.immatriculation || demarche.immatriculation).startsWith('VIN-') && (
                       <div>
                         <p className="text-sm text-muted-foreground">Immatriculation</p>
-                        <p className="font-medium">{vehicule.immatriculation}</p>
+                        <p className="font-medium">{vehicule?.immatriculation || demarche.immatriculation}</p>
                       </div>
                     )}
-                    {vehicule.marque && (
+                    {(demarche.marque || vehicule?.marque) && (
                       <div>
                         <p className="text-sm text-muted-foreground">Marque</p>
-                        <p className="font-medium">{vehicule.marque}</p>
+                        <p className="font-medium">{demarche.marque || vehicule?.marque}</p>
                       </div>
                     )}
-                    {vehicule.modele && (
+                    {(demarche.modele || vehicule?.modele) && (
                       <div>
                         <p className="text-sm text-muted-foreground">Modèle</p>
-                        <p className="font-medium">{vehicule.modele}</p>
+                        <p className="font-medium">{demarche.modele || vehicule?.modele}</p>
                       </div>
                     )}
-                    {vehicule.version && (
+                    {vehicule?.version && (
                       <div>
                         <p className="text-sm text-muted-foreground">Version</p>
-                        <p className="font-medium">{vehicule.version}</p>
+                        <p className="font-medium">{vehicule?.version}</p>
                       </div>
                     )}
-                    {vehicule.couleur && (
+                    {vehicule?.couleur && (
                       <div>
                         <p className="text-sm text-muted-foreground">Couleur</p>
-                        <p className="font-medium">{vehicule.couleur}</p>
+                        <p className="font-medium">{vehicule?.couleur}</p>
                       </div>
                     )}
-                    {vehicule.vin && (
+                    {vehicule?.vin && (
                       <div>
                         <p className="text-sm text-muted-foreground">VIN</p>
-                        <p className="font-medium">{vehicule.vin}</p>
+                        <p className="font-medium">{vehicule?.vin}</p>
                       </div>
                     )}
-                    {vehicule.numero_formule && (
+                    {vehicule?.numero_formule && (
                       <div>
                         <p className="text-sm text-muted-foreground">N° de formule</p>
-                        <p className="font-medium">{vehicule.numero_formule}</p>
+                        <p className="font-medium">{vehicule?.numero_formule}</p>
                       </div>
                     )}
-                    {vehicule.carrosserie && (
+                    {vehicule?.carrosserie && (
                       <div>
                         <p className="text-sm text-muted-foreground">Carrosserie</p>
-                        <p className="font-medium">{vehicule.carrosserie}</p>
+                        <p className="font-medium">{vehicule?.carrosserie}</p>
                       </div>
                     )}
-                    {vehicule.genre && (
+                    {vehicule?.genre && (
                       <div>
                         <p className="text-sm text-muted-foreground">Genre</p>
-                        <p className="font-medium">{vehicule.genre}</p>
+                        <p className="font-medium">{vehicule?.genre}</p>
                       </div>
                     )}
-                    {vehicule.type && (
+                    {vehicule?.type && (
                       <div>
                         <p className="text-sm text-muted-foreground">Type</p>
-                        <p className="font-medium">{vehicule.type}</p>
+                        <p className="font-medium">{vehicule?.type}</p>
                       </div>
                     )}
-                    {vehicule.energie && (
+                    {vehicule?.energie && (
                       <div>
                         <p className="text-sm text-muted-foreground">Énergie</p>
-                        <p className="font-medium">{vehicule.energie}</p>
+                        <p className="font-medium">{vehicule?.energie}</p>
                       </div>
                     )}
-                    {vehicule.puiss_fisc && (
+                    {vehicule?.puiss_fisc && (
                       <div>
                         <p className="text-sm text-muted-foreground">Puissance fiscale</p>
-                        <p className="font-medium">{vehicule.puiss_fisc} CV</p>
+                        <p className="font-medium">{vehicule?.puiss_fisc} CV</p>
                       </div>
                     )}
-                    {vehicule.puiss_ch && (
+                    {vehicule?.puiss_ch && (
                       <div>
                         <p className="text-sm text-muted-foreground">Puissance DIN</p>
-                        <p className="font-medium">{vehicule.puiss_ch} ch</p>
+                        <p className="font-medium">{vehicule?.puiss_ch} ch</p>
                       </div>
                     )}
-                    {vehicule.cylindree && (
+                    {vehicule?.cylindree && (
                       <div>
                         <p className="text-sm text-muted-foreground">Cylindrée</p>
-                        <p className="font-medium">{vehicule.cylindree} cm³</p>
+                        <p className="font-medium">{vehicule?.cylindree} cm³</p>
                       </div>
                     )}
-                    {vehicule.co2 && (
+                    {vehicule?.co2 && (
                       <div>
                         <p className="text-sm text-muted-foreground">CO2</p>
-                        <p className="font-medium">{vehicule.co2} g/km</p>
+                        <p className="font-medium">{vehicule?.co2} g/km</p>
                       </div>
                     )}
-                    {vehicule.ptr && (
+                    {vehicule?.ptr && (
                       <div>
                         <p className="text-sm text-muted-foreground">PTAC</p>
-                        <p className="font-medium">{vehicule.ptr} kg</p>
+                        <p className="font-medium">{vehicule?.ptr} kg</p>
                       </div>
                     )}
-                    {vehicule.date_mec && (
+                    {vehicule?.date_mec && (
                       <div>
                         <p className="text-sm text-muted-foreground">Date de MEC</p>
-                        <p className="font-medium">{new Date(vehicule.date_mec).toLocaleDateString('fr-FR')}</p>
+                        <p className="font-medium">{new Date(vehicule?.date_mec).toLocaleDateString('fr-FR')}</p>
                       </div>
                     )}
-                    {vehicule.date_cg && (
+                    {vehicule?.date_cg && (
                       <div>
                         <p className="text-sm text-muted-foreground">Date CG</p>
-                        <p className="font-medium">{new Date(vehicule.date_cg).toLocaleDateString('fr-FR')}</p>
+                        <p className="font-medium">{new Date(vehicule?.date_cg).toLocaleDateString('fr-FR')}</p>
                       </div>
                     )}
+                    {/* L'âge, parce que c'est lui qu'on calcule de tête à
+                        chaque dossier : au-delà de quatre ans, le contrôle
+                        technique entre dans la discussion. */}
+                    {vehicule?.date_mec && (() => {
+                      const ans = (Date.now() - new Date(vehicule.date_mec).getTime())
+                        / (365.25 * 24 * 3600 * 1000);
+                      if (!Number.isFinite(ans) || ans < 0) return null;
+                      return (
+                        <div>
+                          <p className="text-sm text-muted-foreground">Âge</p>
+                          <p className="font-medium">
+                            {Math.floor(ans)} an{Math.floor(ans) > 1 ? "s" : ""}
+                            {ans >= 4 && (
+                              <span className="ml-1 text-xs font-normal text-orange-600">
+                                contrôle technique
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </CardContent>
               </Card>
