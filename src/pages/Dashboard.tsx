@@ -694,11 +694,7 @@ export default function Dashboard() {
                     <Settings className="h-5 w-5" />
                     Informations de l'entreprise
                   </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => navigate("/garage-settings")}
-                  >
+                  <Button onClick={() => navigate("/garage-settings")} variant="default">
                     <Settings className="h-4 w-4 mr-2" />
                     Modifier
                   </Button>
@@ -737,7 +733,7 @@ export default function Dashboard() {
                   <Clock className="h-5 w-5" />
                   Dernières démarches
                 </CardTitle>
-                <Button variant="outline" size="sm" onClick={() => navigate("/mes-demarches")}>
+                <Button variant="default" onClick={() => navigate("/mes-demarches")}>
                   Voir tout
                 </Button>
               </div>
