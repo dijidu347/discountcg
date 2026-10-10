@@ -1279,7 +1279,7 @@ export default function NouvelleDemarche() {
           const answerText = questionnaireAnswerTexts[questionId] || '';
           
           if (questionText && answerText) {
-            await supabase
+            const { error } = await supabase
               .from('demarche_questionnaire_responses')
               .upsert({
                 demarche_id: demarcheId,
@@ -1290,6 +1290,9 @@ export default function NouvelleDemarche() {
               }, {
                 onConflict: 'demarche_id,question_id'
               });
+            // Le client Supabase ne lève pas : sans cette lecture, un refus de
+            // politique ou une contrainte violée passait inaperçu.
+            if (error) console.error('Réponse non enregistrée', questionText, error);
           }
         }
       } catch (error) {
@@ -1297,6 +1300,25 @@ export default function NouvelleDemarche() {
       }
     }
   };
+
+  // Les réponses s'enregistrent dès qu'elles sont données, sur le brouillon.
+  //
+  // Elles ne l'étaient qu'au paiement, et depuis cette page seulement. Or tous
+  // les chemins n'y repassent pas : celui qui envoie un lien au client la
+  // quitte avant d'avoir rien écrit. Du 4 au 10 octobre, 5 réponses sur 161
+  // démarches sont arrivées en base. L'écran s'adaptait pourtant bien à la
+  // réponse — elle vivait dans la page, et mourait avec elle : ni l'admin ni
+  // les contrôles automatiques ne pouvaient la relire.
+  //
+  // Le brouillon existe dès que le type est choisi, bien avant le
+  // questionnaire : il y a donc toujours une ligne où écrire.
+  useEffect(() => {
+    if (!demarcheId || !actionDetails) return;
+    if (Object.keys(questionnaireAnswers).length === 0) return;
+    // Un court délai : changer d'avis entre deux options n'écrit qu'une fois.
+    const minuteur = setTimeout(() => { void enregistrerQuestionnaire(); }, 400);
+    return () => clearTimeout(minuteur);
+  }, [demarcheId, actionDetails, questionnaireAnswers, questionnaireAnswerTexts]);
 
   const handlePaymentSuccess = async () => {
     if (!demarcheId) return;
