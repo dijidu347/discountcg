@@ -1003,12 +1003,21 @@ export default function GarageSettings() {
                                         <Eye className="mr-1 h-3.5 w-3.5" />
                                         Ouvrir
                                       </Button>
-                                      {/* La corbeille sur toutes ses pièces, y compris
-                                          validées : le garage reste maître de ce qu'il a
-                                          envoyé. Le prix en est dit au moment du clic —
-                                          retirer une pièce validée rend le dossier
-                                          incomplet, et l'écran le rappelle. */}
-                                      {(
+                                      {/* La corbeille suit l'état de la PIÈCE, celui que
+                                          la pastille annonce — pas celui du fichier pris
+                                          isolément.
+                                          
+                                          Les deux divergent : un Kbis approuvé puis périmé,
+                                          ou une carte d'identité dont un nouveau dépôt
+                                          attend le contrôle, portent des fichiers
+                                          « approved » sous une pièce qui s'affiche
+                                          « Expiré » ou « En attente ». Lire le fichier
+                                          faisait disparaître des corbeilles sans que rien,
+                                          à l'écran, ne l'explique.
+                                          
+                                          Une pièce validée reste intouchable : c'est elle
+                                          qui porte la vérification du compte. */}
+                                      {status.status !== 'approved' && (
                                         <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                             <button
@@ -1027,9 +1036,7 @@ export default function GarageSettings() {
                                                 pourrez en déposer un autre à la place.
                                                 {doc.status === 'approved' && (
                                                   <span className="mt-2 block font-medium text-destructive">
-                                                    Cette pièce est validée : la retirer rendra votre
-                                                    dossier incomplet, et votre compte devra être
-                                                    vérifié à nouveau.
+                                                    Ce fichier a déjà été contrôlé par notre équipe.
                                                   </span>
                                                 )}
                                               </AlertDialogDescription>
