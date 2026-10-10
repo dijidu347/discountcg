@@ -975,24 +975,6 @@ export function GarageVerificationPanel({
                                 defaultValue={docActif.date_emission ?? ""}
                                 onChange={(e) => enregistrerDateKbis(docActif.id, e.target.value)}
                               />
-                              {/* L'activité d'un Kbis fait parfois dix lignes —
-                                  « vente, achat, importation, exportation,
-                                  courtage, négoce de tous véhicules… » — et
-                                  repoussait les boutons hors de l'écran. Ce qui
-                                  compte tient dans les premiers mots : on y
-                                  cherche « véhicule », « automobile »,
-                                  « négoce ». Le reste s'ouvre au clic. */}
-                              {docActif.activite && (
-                                <details className="text-xs text-muted-foreground">
-                                  <summary className="cursor-pointer list-none truncate">
-                                    Activité lue : « {String(docActif.activite).slice(0, 70)}
-                                    {String(docActif.activite).length > 70 ? "… »" : " »"}
-                                  </summary>
-                                  {String(docActif.activite).length > 70 && (
-                                    <p className="mt-1 whitespace-pre-wrap">« {docActif.activite} »</p>
-                                  )}
-                                </details>
-                              )}
 
                               {/* Le Kbis reste la règle pour une société ;
                                   l'attestation RNE n'est admise que pour qui ne
