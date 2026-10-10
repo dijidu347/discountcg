@@ -53,6 +53,22 @@ function formatRefuse(files: File[]): string | null {
   return `${mauvais.map((f) => f.name).join(", ")} : déposez un PDF ou une photo (JPG, PNG). Une archive ZIP ne peut pas être ouverte, ni par nous ni par l'administration.`;
 }
 
+// Combien de fichiers une pièce peut porter.
+//
+// Un Kbis est un document, pas une collection : en déposer un second à côté
+// du premier ne sert à rien, et laisse deux versions dont personne ne sait
+// laquelle fait foi. Une carte d'identité en vaut deux — recto et verso —
+// sauf quand la photocopie contient déjà les deux faces.
+//
+// Au-delà de la capacité, le plus ancien s'efface : le dépôt remplace, il
+// n'empile pas.
+const CAPACITE_PIECE: Record<string, number> = {
+  kbis: 1,
+  carte_identite: 2,
+  mandat: 1,
+};
+const capaciteDe = (code: string) => CAPACITE_PIECE[code] ?? 2;
+
 export default function GarageSettings() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -350,6 +366,34 @@ export default function GarageSettings() {
           description: file.name 
         });
       }
+      // Le dépôt remplace : au-delà de la capacité de la pièce, les plus
+      // anciens s'effacent. Sans cela un garage qui redépose son Kbis en
+      // laisse deux à l'écran, et l'administration ignore lequel est le bon.
+      const capacite = capaciteDe(documentType);
+      const { data: presents } = await supabase
+        .from('verification_documents')
+        .select('id, url, created_at')
+        .eq('garage_id', garage.id)
+        .eq('document_type', documentType)
+        .in('status', ['pending', 'approved'])
+        .order('created_at', { ascending: false });
+
+      const surnumeraires = (presents ?? []).slice(capacite);
+      for (const vieux of surnumeraires) {
+        try {
+          const parts = String(vieux.url ?? "").split('/demarche-documents/');
+          const chemin = parts.length > 1 ? parts[1].split('?')[0] : null;
+          if (chemin) await supabase.storage.from('demarche-documents').remove([chemin]);
+        } catch (e) {
+          console.error('Fichier remplacé non supprimé du stockage', e);
+        }
+        const { error } = await supabase
+          .from('verification_documents')
+          .delete()
+          .eq('id', vieux.id);
+        if (error) console.error('Ligne remplacée non supprimée', error);
+      }
+
       // Remettre le garage dans "À vérifier" (nouveau document envoyé)
       // Reset verification_admin_viewed pour qu'il apparaisse dans la section "À vérifier"
       await supabase.from('garages').update({ 
@@ -961,20 +1005,27 @@ export default function GarageSettings() {
                                     fallait trois fichiers. Il en accepte plusieurs d'un
                                     coup, pour un recto et un verso. */}
                                 <ChampFichiers
-                                  multiple
+                                  multiple={capaciteDe(reqDoc.code) > 1}
                                   disabled={uploadingDoc === reqDoc.code}
                                   libelle={
-                                    status.status === "approved" || status.status === "expire"
+                                    // Une pièce qui ne tient qu'en un fichier ne
+                                    // s'« ajoute » jamais : elle se remplace, et le
+                                    // bouton doit le dire avant le clic.
+                                    capaciteDe(reqDoc.code) === 1 && status.doc
+                                      ? "Remplacer"
+                                      : status.status === "approved" || status.status === "expire"
                                       ? "Remplacer"
                                       : status.doc ? "Ajouter un fichier" : undefined
                                   }
                                   vide={
                                     status.status === "expire"
                                       ? "Déposez un justificatif de moins de six mois"
+                                      : capaciteDe(reqDoc.code) === 1 && status.doc
+                                      ? "Le nouveau fichier remplacera celui déjà déposé"
                                       : status.doc
                                       ? (verificationDocs.filter((d) => d.document_type === reqDoc.code
-                                          && (d.status === 'pending' || d.status === 'approved')).length >= 2
-                                          ? "Vous pouvez en ajouter un autre si nécessaire"
+                                          && (d.status === 'pending' || d.status === 'approved')).length >= capaciteDe(reqDoc.code)
+                                          ? "Le nouveau fichier remplacera le plus ancien"
                                           : "Vous pouvez en ajouter un autre — le verso, par exemple")
                                       : reqDoc.code === "carte_identite"
                                       ? "Recto et verso : choisissez les deux fichiers à la fois, ou un seul s'il contient les deux faces"
