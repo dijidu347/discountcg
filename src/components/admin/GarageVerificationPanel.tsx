@@ -244,6 +244,7 @@ export function GarageVerificationPanel({
       toast({ title: "Refus impossible", description: message, variant: "destructive" });
       return;
     }
+    setVerificationDocs((docs) => docs.filter((d) => d.id !== doc.id));
     if (doc.id === idChoisi) setIdChoisi(null);
     toast({
       title: "Document refusé",
@@ -263,6 +264,7 @@ export function GarageVerificationPanel({
       toast({ title: "Suppression impossible", description: message, variant: "destructive" });
       return;
     }
+    setVerificationDocs((docs) => docs.filter((d) => d.id !== doc.id));
     if (doc.id === idChoisi) setIdChoisi(null);
     toast({
       title: "Document supprimé",
@@ -322,38 +324,69 @@ export function GarageVerificationPanel({
   // saisit au moment où l'administration regarde le document ; sans elle, la
   // validité repart du dépôt, comme avant.
   const enregistrerDateKbis = async (docId: string, valeur: string) => {
+    const avant = verificationDocs.find((d) => d.id === docId)?.date_emission ?? null;
+    // Immédiat : c'est cette date qui débloque le bouton « Accepter », et
+    // attendre le serveur le laissait grisé sous le doigt.
+    majLocale(docId, { date_emission: valeur || null });
+
     const { error } = await supabase
       .from("verification_documents")
       // types.ts est généré depuis la base et ne connaît pas encore la colonne.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update({ date_emission: valeur || null } as any)
       .eq("id", docId);
+
     if (error) {
+      majLocale(docId, { date_emission: avant });
       toast({ title: "Date non enregistrée", description: error.message, variant: "destructive" });
       return;
     }
-    await loadVerificationDocs(garage.id);
+    await rafraichirGarage();
+  };
+
+  // L'écran change avant le serveur, et revient en arrière si celui-ci refuse.
+  //
+  // Les écritures rechargeaient la liste entière depuis la base avant de
+  // rafraîchir l'affichage : le temps d'un aller-retour, la pièce qu'on venait
+  // d'accepter portait encore « En attente », et on cliquait deux fois ou on
+  // rechargeait la page. Le résultat est connu d'avance, autant l'afficher.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const majLocale = (docId: string, patch: Record<string, any>) =>
+    setVerificationDocs((docs) => docs.map((d) => (d.id === docId ? { ...d, ...patch } : d)));
+
+  // Accepter un Kbis recalcule la validité du garage par déclencheur : l'entête
+  // de la fiche doit suivre, sinon elle garde « Kbis expiré » sous les yeux.
+  const rafraichirGarage = async () => {
+    const { data } = await supabase
+      .from("garages")
+      .select("is_verified, kbis_valide_jusqu_au")
+      .eq("id", garage.id)
+      .maybeSingle();
+    if (data) onGarageChanged?.(data);
   };
 
   const handleSingleApprove = async (docId: string) => {
-    try {
-      const { error } = await supabase
-        .from("verification_documents")
-        .update({
-          status: "approved",
-          validated_by: user?.id,
-          validated_at: new Date().toISOString(),
-          rejection_reason: null,
-        })
-        .eq("id", docId);
+    const avant = verificationDocs.find((d) => d.id === docId);
+    majLocale(docId, { status: "approved", rejection_reason: null });
 
-      if (error) throw error;
+    const { error } = await supabase
+      .from("verification_documents")
+      .update({
+        status: "approved",
+        validated_by: user?.id,
+        validated_at: new Date().toISOString(),
+        rejection_reason: null,
+      })
+      .eq("id", docId);
 
-      toast({ title: "Document approuvé" });
-      await loadVerificationDocs(garage.id);
-    } catch (error) {
-      toast({ title: "Erreur", variant: "destructive" });
+    if (error) {
+      if (avant) majLocale(docId, { status: avant.status, rejection_reason: avant.rejection_reason });
+      toast({ title: "Approbation impossible", description: error.message, variant: "destructive" });
+      return;
     }
+
+    toast({ title: "Pièce acceptée" });
+    await Promise.all([loadVerificationDocs(garage.id), rafraichirGarage()]);
   };
 
 
