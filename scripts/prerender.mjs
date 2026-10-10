@@ -264,10 +264,50 @@ async function principal() {
 
   let ecrites = 0;
 
+  // Les formulaires officiels, liés depuis les pages qui les exigent.
+  //
+  // Les six Cerfa du dossier public/cerfas se téléchargent bien en production,
+  // mais aucun lien ne pointait dessus dans le HTML servi : ils vivaient dans
+  // des boutons React. Or « cerfa 13750 » et « cerfa 13757 » sont des requêtes
+  // à part entière, et la page qui promet le formulaire sans en offrir le
+  // téléchargement ne répond pas à ce qu'on y cherche.
+  //
+  // Seuls les deux dont l'intitulé officiel est établi figurent ici. Les Cerfa
+  // 13751 et 13752 du dossier n'ont pas été identifiés avec certitude : mieux
+  // vaut aucun lien qu'un libellé inventé sur une page publique.
+  const CERFA_PAR_PAGE = {
+    "carte-grise": {
+      numero: "13750*05",
+      fichier: "cerfa_13750_05.pdf",
+      intitule: "demande de certificat d'immatriculation",
+      note: "À remplir et signer par le nouveau titulaire. Nous le remplissons pour vous si vous passez par notre service.",
+    },
+    "carte-grise-professionnel": {
+      numero: "13757*03",
+      fichier: "cerfa_13757_03.pdf",
+      intitule: "mandat à un professionnel habilité",
+      note: "C'est la pièce qui nous autorise à déposer la démarche à votre place dans le SIV. Elle est exigée pour chaque dossier.",
+    },
+  };
+
+  const blocCerfa = (cle) => {
+    const c = CERFA_PAR_PAGE[cle];
+    if (!c) return "";
+    return (
+      `<h2>Télécharger le Cerfa ${echappe(c.numero)} vierge</h2>` +
+      `<p>Le formulaire officiel de ${echappe(c.intitule)}, version ${echappe(c.numero)}. ` +
+      `${echappe(c.note)} ` +
+      `<a href="${BASE}/cerfas/${c.fichier}" download>Télécharger le Cerfa ${echappe(c.numero)} (PDF)</a>.</p>`
+    );
+  };
+
   // Pages écrites à la main.
   for (const [route, seo] of Object.entries(ROUTES_SEO)) {
     const supplement = route === "/simulateur" ? tableauDepartements : "";
-    const html = corps({ h1: seo.h1, blocs: [paragraphes(seo.intro), supplement] });
+    const html = corps({
+      h1: seo.h1,
+      blocs: [paragraphes(seo.intro), supplement, blocCerfa(route.replace(/^\//, ""))],
+    });
     await ecrire(
       route,
       appliquer(gabarit, {
@@ -301,6 +341,7 @@ async function principal() {
       h1: d.h1,
       blocs: [
         d.slug === "declaration-cession" ? reperesCession : "",
+        blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
         liste("Comment ça se passe", d.steps),
