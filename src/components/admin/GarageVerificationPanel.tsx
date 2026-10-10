@@ -848,8 +848,10 @@ export function GarageVerificationPanel({
                     <div
                       key={r.code}
                       className={`rounded-lg border transition-colors ${
-                        ouverte ? "border-primary ring-1 ring-primary" : ""
-                      } ${r.docs.length === 0 ? "border-dashed bg-muted/30" : ""}`}
+                        ouverte
+                          ? "border-primary bg-background shadow-sm ring-1 ring-primary"
+                          : "bg-muted/40 hover:bg-muted/60"
+                      } ${r.docs.length === 0 ? "border-dashed bg-muted/20" : ""}`}
                     >
                       <button
                         type="button"
