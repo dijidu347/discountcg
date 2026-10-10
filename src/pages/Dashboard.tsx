@@ -347,26 +347,40 @@ export default function Dashboard() {
 
         {/* Verification Alert */}
         {garage && !garage.is_verified && missingDocsCount > 0 && (
-          <Alert className="mb-8 border-2 border-primary bg-primary/10">
-            <AlertCircle className="h-5 w-5 text-primary" />
-            <AlertTitle className="text-primary font-bold">
-              {aucunDocEnvoye ? "Bienvenue sur DiscountCarteGrise !" : `Il manque ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''}`}
-            </AlertTitle>
-            <AlertDescription className="text-primary">
-              {aucunDocEnvoye
-                ? `Pour valider votre compte et bénéficier de tous les avantages, veuillez envoyer vos documents de vérification (${requiredDocNames.join(", ")}).`
-                : `Il vous reste ${missingDocsCount} document${missingDocsCount > 1 ? 's' : ''} à envoyer pour compléter votre demande de vérification.`
-              }
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-2 ml-0 border-primary text-primary hover:bg-primary hover:text-white"
-                onClick={() => navigate("/garage-settings?tab=verification")}
-              >
-                {aucunDocEnvoye ? "Envoyer mes documents" : "Compléter mes documents"}
-              </Button>
-            </AlertDescription>
-          </Alert>
+          /* Le bouton était glissé à la suite du texte, à gauche, en contour
+             pâle : l'action tenait la place d'un mot dans une phrase. Il passe
+             à droite, plein, à la hauteur du titre — c'est la seule chose à
+             faire sur cet écran tant que le dossier n'est pas complet.
+
+             Le texte disait « pour bénéficier de tous les avantages », une
+             promesse qui n'engage rien : la vérification ne débloque aucune
+             fonction, un garage non vérifié dépose ses démarches comme les
+             autres. La vraie raison est meilleure, et elle se dit : nous
+             sommes habilités par la préfecture, et nous devons pouvoir
+             justifier que chaque garage exerce bien une activité automobile. */
+          <div className="mb-8 flex flex-wrap items-center justify-between gap-4 rounded-lg border-2 border-primary bg-primary/10 px-5 py-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0">
+                <p className="font-bold text-primary">
+                  {aucunDocEnvoye
+                    ? "Il reste une étape"
+                    : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
+                </p>
+                <p className="mt-0.5 text-sm text-primary/90">
+                  {aucunDocEnvoye
+                    ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
+                    : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
+                </p>
+              </div>
+            </div>
+            <Button
+              className="shrink-0"
+              onClick={() => navigate("/garage-settings?tab=verification")}
+            >
+              {aucunDocEnvoye ? "Déposer mes pièces" : "Compléter mon dossier"}
+            </Button>
+          </div>
         )}
 
         {/* Free Token Alert */}
