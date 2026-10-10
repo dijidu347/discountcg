@@ -442,8 +442,8 @@ export default function NouvelleDemarche() {
   const libelleAdapte = useCallback((nom: string | null | undefined): string => {
     const texte = nom ?? "";
     if (!nombreCoAcquereurs) return texte;
-    if (!/acqu[ée]reur/i.test(texte) || /kbis|dirigeant/i.test(texte)) return texte;
-    return `Pièce d'identité de chacun des ${nombreCoAcquereurs} co-acquéreurs (recto/verso)`;
+    if (!/acqu[ée]reur/i.test(texte) || /kbis|dirigeant|co-acqu/i.test(texte)) return texte;
+    return "Pièce d'identité du 1er co-acquéreur (recto/verso)";
   }, [nombreCoAcquereurs]);
 
   // Ce qui est dû d'abord, le facultatif en bas.
@@ -463,6 +463,13 @@ export default function NouvelleDemarche() {
       // Les pièces de l'acquéreur d'abord : leurs libellés contiennent
       // « Kbis » et « dirigeant » comme ceux du vendeur, et seule la mention
       // de l'acquéreur les distingue.
+      // Un emplacement par co-acquéreur. Une seule case acceptant plusieurs
+      // fichiers laissait croire qu'un seul suffisait, et ne montrait pas
+      // lequel manquait. Les lignes existent toutes en base et ne s'affichent
+      // qu'à partir du nombre déclaré.
+      const coAcquereur = nom.match(/du (\d)e co-acqu/i);
+      if (coAcquereur) return (nombreCoAcquereurs ?? 0) >= Number(coAcquereur[1]);
+
       // Les pièces propres à un cas d'« Autre », reconnues à leur libellé.
       if (/association/i.test(nom)) return precisionAcquereur === "association";
       if (/administration|collectivit/i.test(nom)) return precisionAcquereur === "administration";
@@ -488,7 +495,7 @@ export default function NouvelleDemarche() {
       if (/kbis/i.test(nom)) return quiVend === "societe";
     }
     return false;
-  }, [venduParUnPro, quiVend, quiAchete, precisionAcquereur, formData.type]);
+  }, [venduParUnPro, quiVend, quiAchete, precisionAcquereur, nombreCoAcquereurs, formData.type]);
 
   // Les pièces dont la réponse à la question décide. Celle que la réponse
   // écarte ne s'affiche pas du tout : une case « optionnel » qui ne correspond
@@ -500,7 +507,7 @@ export default function NouvelleDemarche() {
     if (/r[ée]c[ée]piss[ée]/i.test(nom)) return formData.type === "DA";
     if (formData.type === "DC") {
       return /identit[ée] du vendeur/i.test(nom) || /kbis/i.test(nom)
-        || /acqu[ée]reur/i.test(nom) || /association/i.test(nom)
+        || /acqu[ée]reur/i.test(nom) || /co-acqu/i.test(nom) || /association/i.test(nom)
         || /administration|collectivit/i.test(nom) || /vhu/i.test(nom);
     }
     return false;
