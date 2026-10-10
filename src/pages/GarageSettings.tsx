@@ -729,31 +729,46 @@ export default function GarageSettings() {
                               </div>
                             )}
                             
-                            {status.doc && (
-                              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                <p className="text-sm text-muted-foreground">
-                                  Dernier envoi: {status.doc.nom_fichier} ({format(new Date(status.doc.created_at), "dd/MM/yyyy HH:mm", { locale: fr })})
-                                </p>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => window.open(status.doc.url, '_blank')}
-                                >
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Voir le document
-                                </Button>
-                                {status.remplacable && !status.canUpload && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setRemplacements((d) => new Set(d).add(reqDoc.code))}
-                                  >
-                                    <Upload className="h-4 w-4 mr-1" />
-                                    Remplacer
-                                  </Button>
-                                )}
-                              </div>
-                            )}
+                            {/* Tous les fichiers reçus, pas seulement le dernier.
+                                Une carte d'identité tient souvent en deux photos :
+                                l'écran n'en montrait qu'une, et le garage croyait
+                                que son verso avait écrasé son recto. */}
+                            {status.doc && (() => {
+                              const recus = verificationDocs
+                                .filter((d) => d.document_type === reqDoc.code
+                                  && (d.status === 'pending' || d.status === 'approved'))
+                                .sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at));
+                              return (
+                                <div className="mb-2 space-y-1">
+                                  {recus.map((d, i) => (
+                                    <div key={d.id} className="flex flex-wrap items-center gap-2">
+                                      <p className="text-sm text-muted-foreground">
+                                        {recus.length > 1 ? `Fichier ${i + 1} sur ${recus.length} : ` : "Envoyé : "}
+                                        {d.nom_fichier} ({format(new Date(d.created_at), "dd/MM/yyyy HH:mm", { locale: fr })})
+                                      </p>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => window.open(d.url, '_blank')}
+                                      >
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        Voir
+                                      </Button>
+                                    </div>
+                                  ))}
+                                  {status.remplacable && !status.canUpload && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => setRemplacements((d) => new Set(d).add(reqDoc.code))}
+                                    >
+                                      <Upload className="h-4 w-4 mr-1" />
+                                      Remplacer
+                                    </Button>
+                                  )}
+                                </div>
+                              );
+                            })()}
                             
                             {status.canUpload && (
                               <div className="space-y-2">
@@ -763,8 +778,11 @@ export default function GarageSettings() {
                                 <ChampFichiers
                                   multiple
                                   disabled={uploadingDoc === reqDoc.code}
+                                  libelle={status.doc ? "Ajouter un fichier" : undefined}
                                   vide={
-                                    reqDoc.code === "carte_identite"
+                                    status.doc
+                                      ? "Vous pouvez en ajouter un autre — le verso, par exemple"
+                                      : reqDoc.code === "carte_identite"
                                       ? "Recto et verso : choisissez les deux fichiers à la fois, ou un seul s'il contient les deux faces"
                                       : "Aucun fichier choisi"
                                   }
