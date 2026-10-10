@@ -1003,143 +1003,45 @@ export default function DemarcheDetail() {
                   <CardTitle>Informations du véhicule</CardTitle>
                 </CardHeader>
                 <CardContent>
+                  {/* Six champs, deux lignes, et rien d'autre.
+                      La fiche en affichait jusqu'à dix-neuf — couleur,
+                      carrosserie, cylindrée, CO2, PTAC — qui descendaient
+                      l'écran sans servir à traiter un dossier. Restent
+                      l'identité du véhicule et ce qu'il faut pour déposer la
+                      démarche : le VIN, le numéro de formule, la mise en
+                      circulation.
+
+                      La marque et le modèle se lisent sur la démarche autant
+                      que sur la fiche véhicule : l'écran ne lisait que la
+                      fiche, et 314 démarches payées des 90 derniers jours
+                      s'affichaient vides alors que leur marque était connue. */}
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {/* La marque et le modèle vivent à deux endroits : sur la
-                        fiche véhicule, et sur la démarche elle-même, qui les
-                        reçoit de l'API plaque au moment de la saisie. Cet
-                        écran ne lisait que la fiche — 314 démarches payées des
-                        90 derniers jours affichaient donc un véhicule vide
-                        alors que leur marque était connue. */}
-                    {(vehicule?.immatriculation || demarche.immatriculation)
-                      && !String(vehicule?.immatriculation || demarche.immatriculation).startsWith('VIN-') && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Immatriculation</p>
-                        <p className="font-medium">{vehicule?.immatriculation || demarche.immatriculation}</p>
-                      </div>
-                    )}
-                    {(demarche.marque || vehicule?.marque) && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Marque</p>
-                        <p className="font-medium">{demarche.marque || vehicule?.marque}</p>
-                      </div>
-                    )}
-                    {(demarche.modele || vehicule?.modele) && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Modèle</p>
-                        <p className="font-medium">{demarche.modele || vehicule?.modele}</p>
-                      </div>
-                    )}
-                    {vehicule?.version && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Version</p>
-                        <p className="font-medium">{vehicule?.version}</p>
-                      </div>
-                    )}
-                    {vehicule?.couleur && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Couleur</p>
-                        <p className="font-medium">{vehicule?.couleur}</p>
-                      </div>
-                    )}
-                    {vehicule?.vin && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">VIN</p>
-                        <p className="font-medium">{vehicule?.vin}</p>
-                      </div>
-                    )}
-                    {vehicule?.numero_formule && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">N° de formule</p>
-                        <p className="font-medium">{vehicule?.numero_formule}</p>
-                      </div>
-                    )}
-                    {vehicule?.carrosserie && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Carrosserie</p>
-                        <p className="font-medium">{vehicule?.carrosserie}</p>
-                      </div>
-                    )}
-                    {vehicule?.genre && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Genre</p>
-                        <p className="font-medium">{vehicule?.genre}</p>
-                      </div>
-                    )}
-                    {vehicule?.type && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Type</p>
-                        <p className="font-medium">{vehicule?.type}</p>
-                      </div>
-                    )}
-                    {vehicule?.energie && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Énergie</p>
-                        <p className="font-medium">{vehicule?.energie}</p>
-                      </div>
-                    )}
-                    {vehicule?.puiss_fisc && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Puissance fiscale</p>
-                        <p className="font-medium">{vehicule?.puiss_fisc} CV</p>
-                      </div>
-                    )}
-                    {vehicule?.puiss_ch && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Puissance DIN</p>
-                        <p className="font-medium">{vehicule?.puiss_ch} ch</p>
-                      </div>
-                    )}
-                    {vehicule?.cylindree && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Cylindrée</p>
-                        <p className="font-medium">{vehicule?.cylindree} cm³</p>
-                      </div>
-                    )}
-                    {vehicule?.co2 && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">CO2</p>
-                        <p className="font-medium">{vehicule?.co2} g/km</p>
-                      </div>
-                    )}
-                    {vehicule?.ptr && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">PTAC</p>
-                        <p className="font-medium">{vehicule?.ptr} kg</p>
-                      </div>
-                    )}
-                    {vehicule?.date_mec && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Date de MEC</p>
-                        <p className="font-medium">{new Date(vehicule?.date_mec).toLocaleDateString('fr-FR')}</p>
-                      </div>
-                    )}
-                    {vehicule?.date_cg && (
-                      <div>
-                        <p className="text-sm text-muted-foreground">Date CG</p>
-                        <p className="font-medium">{new Date(vehicule?.date_cg).toLocaleDateString('fr-FR')}</p>
-                      </div>
-                    )}
-                    {/* L'âge, parce que c'est lui qu'on calcule de tête à
-                        chaque dossier : au-delà de quatre ans, le contrôle
-                        technique entre dans la discussion. */}
-                    {vehicule?.date_mec && (() => {
-                      const ans = (Date.now() - new Date(vehicule.date_mec).getTime())
-                        / (365.25 * 24 * 3600 * 1000);
-                      if (!Number.isFinite(ans) || ans < 0) return null;
-                      return (
-                        <div>
-                          <p className="text-sm text-muted-foreground">Âge</p>
-                          <p className="font-medium">
-                            {Math.floor(ans)} an{Math.floor(ans) > 1 ? "s" : ""}
-                            {ans >= 4 && (
-                              <span className="ml-1 text-xs font-normal text-orange-600">
-                                contrôle technique
-                              </span>
-                            )}
-                          </p>
+                    {[
+                      {
+                        libelle: "Immatriculation",
+                        valeur: (() => {
+                          const immat = vehicule?.immatriculation || demarche.immatriculation;
+                          return immat && !String(immat).startsWith("VIN-") ? immat : null;
+                        })(),
+                      },
+                      { libelle: "Marque", valeur: demarche.marque || vehicule?.marque },
+                      { libelle: "Modèle", valeur: demarche.modele || vehicule?.modele },
+                      { libelle: "VIN", valeur: vehicule?.vin },
+                      { libelle: "N° de formule", valeur: vehicule?.numero_formule },
+                      {
+                        libelle: "Date de MEC",
+                        valeur: vehicule?.date_mec
+                          ? new Date(vehicule.date_mec).toLocaleDateString("fr-FR")
+                          : null,
+                      },
+                    ]
+                      .filter((champ) => champ.valeur)
+                      .map((champ) => (
+                        <div key={champ.libelle}>
+                          <p className="text-sm text-muted-foreground">{champ.libelle}</p>
+                          <p className="font-medium">{champ.valeur}</p>
                         </div>
-                      );
-                    })()}
+                      ))}
                   </div>
                 </CardContent>
               </Card>
