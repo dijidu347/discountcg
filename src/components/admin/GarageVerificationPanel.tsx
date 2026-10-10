@@ -854,13 +854,23 @@ export function GarageVerificationPanel({
                         </p>
                       )}
 
-                      {/* Les dépôts plus anciens du même type, repliés derrière
-                          la pièce en cours : ils n'ont pas à occuper une ligne
-                          chacun tant qu'on ne les cherche pas. */}
-                      {ouverte && r.docs.length > 1 && (
+                      {/* Plusieurs fichiers pour une même pièce, repliés
+                          derrière celle qui est ouverte.
+                          Deux cas qu'il ne faut pas confondre : une carte
+                          d'identité tient souvent en deux photos déposées
+                          ensemble — ce sont deux faces, pas un historique —
+                          alors qu'un Kbis redéposé des semaines plus tard
+                          remplace le précédent. Le même jour les sépare. */}
+                      {ouverte && r.docs.length > 1 && (() => {
+                        const jour = (d: { created_at: string }) =>
+                          new Date(d.created_at).toISOString().slice(0, 10);
+                        const memeJour = r.docs.every((d) => jour(d) === jour(r.docs[0]));
+                        return (
                         <div className="border-t px-3 py-2">
                           <p className="mb-1 text-xs text-muted-foreground">
-                            Dépôts précédents ({r.docs.length - 1})
+                            {memeJour
+                              ? `${r.docs.length} fichiers pour cette pièce`
+                              : `Dépôts précédents (${r.docs.length - 1})`}
                           </p>
                           {r.docs.slice(1).map((d) => (
                             <button
@@ -878,7 +888,8 @@ export function GarageVerificationPanel({
                             </button>
                           ))}
                         </div>
-                      )}
+                        );
+                      })()}
 
                       {/* L'action dans la ligne, jamais ailleurs. */}
                       {ouverte && docChoisi && (
