@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ChampMotDePasse } from "@/components/ChampMotDePasse";
+import { lireFicheEntreprise, type FicheEntreprise } from "@/lib/formeJuridique";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -40,14 +41,43 @@ export default function Register() {
     }
   }, [user, navigate]);
 
+  // Ce que l'État dit de l'entreprise dès que le SIREN est complet. Une
+  // entreprise à plusieurs établissements a plusieurs SIRET : le siège n'est
+  // alors pas forcément l'atelier, et c'est au garage de dire lequel.
+  const [fiche, setFiche] = useState<FicheEntreprise | null>(null);
+
+  useEffect(() => {
+    if (formData.siret.length !== 9) {
+      setFiche(null);
+      return;
+    }
+    let vivant = true;
+    lireFicheEntreprise(formData.siret).then((f) => {
+      if (vivant) setFiche(f);
+    });
+    return () => { vivant = false; };
+  }, [formData.siret]);
+
+  const plusieursSites = (fiche?.etablissements ?? 0) > 1;
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Le navigateur vérifie les champs qu'il connaît ; ceux-ci lui échappent.
-    if (formData.siret.length !== 14) {
+    // Plusieurs établissements : le SIREN ne suffit plus à dire lequel.
+    if (formData.siret.length === 9 && plusieursSites) {
       toast({
-        title: "SIRET incomplet",
-        description: "Le SIRET comporte exactement quatorze chiffres : les neuf du SIREN, puis les cinq de l'établissement.",
+        title: "Précisez votre établissement",
+        description: `Cette entreprise compte ${fiche?.etablissements} établissements. Saisissez le SIRET complet, quatorze chiffres, de celui qui exploite le garage.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (formData.siret.length !== 9 && formData.siret.length !== 14) {
+      toast({
+        title: "Numéro d'entreprise incomplet",
+        description: "Saisissez votre SIREN (9 chiffres) ou votre SIRET (14 chiffres).",
         variant: "destructive",
       });
       return;
@@ -272,7 +302,7 @@ export default function Register() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="siret">SIRET <span className="text-destructive">*</span> (14 chiffres)</Label>
+                    <Label htmlFor="siret">SIREN ou SIRET <span className="text-destructive">*</span></Label>
                     <Input
                       id="siret"
                       placeholder="12345678900012"
@@ -280,20 +310,36 @@ export default function Register() {
                       onChange={(e) => handleChange("siret", e.target.value.replace(/\D/g, '').slice(0, 14))}
                       maxLength={14}
                       inputMode="numeric"
-                      // Le champ était « obligatoire » sans l'être vraiment :
-                      // il refusait le vide, pas les SIRET incomplets. Trente-
-                      // quatre comptes en portent un de deux à treize chiffres,
-                      // dont vingt et un arrêtés à neuf — le SIREN seul.
-                      pattern="\d{14}"
-                      title="Le SIRET comporte exactement 14 chiffres"
+                      // Neuf chiffres suffisent : la forme juridique, qui décide
+                      // de la pièce d'immatriculation demandée, appartient à
+                      // l'entreprise et non à l'établissement. Quand le SIREN
+                      // seul est donné, le SIRET du siège est récupéré ensuite
+                      // auprès de l'État, sans rien redemander.
+                      //
+                      // Le champ refusait jusqu'ici le vide, mais pas
+                      // l'incomplet : deux comptes portent un « SIRET » de deux
+                      // ou trois chiffres, qui ne désigne rien.
+                      pattern="\d{9}|\d{14}"
+                      title="Saisissez un SIREN (9 chiffres) ou un SIRET (14 chiffres)"
                       required
                     />
-                    {formData.siret.length > 0 && formData.siret.length < 14 && (
+                    {formData.siret.length > 0
+                      && formData.siret.length !== 9
+                      && formData.siret.length !== 14 && (
+                        <p className="text-xs text-destructive">
+                          {formData.siret.length} chiffre{formData.siret.length > 1 ? "s" : ""} :
+                          il en faut 9 pour un SIREN, ou 14 pour un SIRET.
+                        </p>
+                      )}
+                    {formData.siret.length === 9 && plusieursSites && (
                       <p className="text-xs text-destructive">
-                        {14 - formData.siret.length} chiffre
-                        {14 - formData.siret.length > 1 ? "s" : ""} manquant
-                        {14 - formData.siret.length > 1 ? "s" : ""} — le SIRET en compte quatorze,
-                        les neuf du SIREN plus les cinq de l'établissement.
+                        Cette entreprise compte {fiche?.etablissements} établissements, donc autant
+                        de SIRET. Saisissez les quatorze chiffres de celui qui exploite le garage.
+                      </p>
+                    )}
+                    {formData.siret.length === 9 && fiche && !plusieursSites && (
+                      <p className="text-xs text-muted-foreground">
+                        SIREN reconnu. Nous compléterons le SIRET de votre établissement.
                       </p>
                     )}
                   </div>
