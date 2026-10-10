@@ -1037,12 +1037,29 @@ export default function GarageSettings() {
                               );
 
                               if (reqDoc.code === "carte_identite") {
+                                const recto = pourFace("recto");
+                                const verso = pourFace("verso");
+                                // Deux fois le même fichier dans les deux
+                                // emplacements : c'est le recto déposé deux fois,
+                                // par un double envoi ou un verso oublié. Le
+                                // dossier a l'air complet et ne l'est pas.
+                                const memeFichier = Boolean(
+                                  recto && verso
+                                  && String(recto.nom_fichier ?? "").trim().toLowerCase()
+                                     === String(verso.nom_fichier ?? "").trim().toLowerCase(),
+                                );
                                 return (
                                   <div className="space-y-3">
                                     {emplacement("recto", "Ajouter le recto",
-                                      "La face avec la photo", pourFace("recto"))}
+                                      "La face avec la photo", recto)}
                                     {emplacement("verso", "Ajouter le verso",
-                                      "Inutile si le recto contient déjà les deux faces", pourFace("verso"))}
+                                      "Inutile si le recto contient déjà les deux faces", verso)}
+                                    {memeFichier && (
+                                      <p className="rounded-md bg-orange-50 px-3 py-2 text-sm text-orange-800 dark:bg-orange-950/30 dark:text-orange-300">
+                                        Le recto et le verso sont le même fichier. Vérifiez que
+                                        vous avez bien déposé les deux faces.
+                                      </p>
+                                    )}
                                   </div>
                                 );
                               }

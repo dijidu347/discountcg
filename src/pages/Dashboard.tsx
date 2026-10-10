@@ -730,7 +730,14 @@ export default function Dashboard() {
                     <Settings className="h-5 w-5" />
                     Informations de l'entreprise
                   </CardTitle>
-                  <Button onClick={() => navigate("/garage-settings")} variant="default">
+                  <Button
+                    onClick={() => navigate("/garage-settings")}
+                    variant="default"
+                    disabled={ficheIncomplete}
+                    title={ficheIncomplete
+                      ? "Renseignez d'abord votre raison sociale et votre SIRET, dans le bandeau en haut de page"
+                      : undefined}
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Modifier
                   </Button>
