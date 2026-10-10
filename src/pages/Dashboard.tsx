@@ -462,7 +462,7 @@ export default function Dashboard() {
                           ? "Faites vérifier votre compte"
                           : "Votre SIRET est incomplet")
                       : kbisPerime
-                      ? "Votre justificatif d'immatriculation a plus de six mois"
+                      ? "Votre Kbis a plus de six mois"
                       : aucunDocEnvoye
                       ? "Il reste une étape"
                       : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
