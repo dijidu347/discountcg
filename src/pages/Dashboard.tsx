@@ -460,9 +460,14 @@ export default function Dashboard() {
               return (
                 <Card
                   key={action.id}
-                  className={`relative overflow-hidden border-2 ${isFreeTokenEligible ? 'ring-2 ring-green-500' : ''}`}
+                  // Une démarche offerte portait un anneau vert PAR-DESSUS la
+                  // bordure aux couleurs de la démarche : deux traits
+                  // concentriques, dont un vert vif. La bordure prend
+                  // simplement la couleur verte — un seul trait, le même que
+                  // pour les autres cartes.
+                  className="relative overflow-hidden border-2"
                   style={{
-                    borderColor: `${actionColor}40`,
+                    borderColor: isFreeTokenEligible ? "#22c55e" : `${actionColor}40`,
                   }}
                 >
                   <CardHeader className="pb-2">
