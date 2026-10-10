@@ -24,9 +24,29 @@ type Doc = any;
 /**
  * L'état d'une pièce en un mot. Un Kbis approuvé il y a plus de six mois passe
  * en orange : le laisser en vert ferait croire le dossier complet.
+ *
+ * L'ancienneté se lit sur LE document, pas sur le garage. Elle venait de
+ * `garages.kbis_valide_jusqu_au`, qui vaut pour le compte entier : tous les
+ * Kbis d'un même dossier portaient donc le même badge. Un garage qui venait
+ * de déposer un extrait du 9 octobre le voyait marqué « Expiré » à côté de
+ * « valable encore 181 jours », parce qu'un extrait de mars traînait dans ses
+ * dépôts précédents — et l'inverse était pire : le vieux passait au vert dès
+ * que le nouveau arrivait.
+ *
+ * Même règle qu'en base (validite_kbis) : six mois à compter de la date portée
+ * sur le document, à défaut de sa date de dépôt.
  */
 export function EtatDocument({ doc, kbisPerime }: { doc: Doc; kbisPerime?: boolean }) {
-  const expire = doc.document_type === "kbis" && doc.status === "approved" && kbisPerime;
+  const perimeCeDocument = (() => {
+    if (doc.document_type !== "kbis") return false;
+    const base = doc.date_emission ?? doc.created_at;
+    if (!base) return Boolean(kbisPerime);
+    const fin = new Date(base);
+    fin.setMonth(fin.getMonth() + 6);
+    return fin < new Date();
+  })();
+
+  const expire = doc.document_type === "kbis" && doc.status === "approved" && perimeCeDocument;
   const sansDate = doc.document_type === "kbis" && doc.status === "pending" && !doc.date_emission;
 
   if (doc.status === "approved") {
