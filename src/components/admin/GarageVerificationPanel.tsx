@@ -526,6 +526,43 @@ export function GarageVerificationPanel({
     if (data) onGarageChanged?.(data);
   };
 
+  // Vérifier le garage dès que toutes ses pièces obligatoires sont acceptées.
+  //
+  // Le bouton « Vérifier ce garage » restait à cliquer après le dernier
+  // « Accepter », et rien ne le rappelait : un dossier complet pouvait
+  // attendre des semaines sans badge, pour un geste oublié.
+  //
+  // Deux garde-fous. Le Kbis ne doit pas être périmé — vérifier sur un
+  // extrait de plus de six mois est précisément ce qui a produit soixante-
+  // trois comptes vérifiés sans pièce valable. Et le garage ne doit pas déjà
+  // l'être, pour ne pas lui renvoyer l'email une seconde fois.
+  const verifierSiDossierComplet = async (apresAcceptation: { id: string; document_type: string }[]) => {
+    if (!garage || garage.is_verified) return false;
+
+    const approuves = new Set(apresAcceptation.map((d) => d.document_type));
+    const manquantes = requiredDocs
+      .filter((r) => r.actif && r.obligatoire)
+      .filter((r) => !approuves.has(r.code));
+    if (manquantes.length > 0) return false;
+    if (kbisPerime) return false;
+
+    const { error } = await supabase.from("garages").update({ is_verified: true }).eq("id", garage.id);
+    if (error) {
+      console.error("Vérification automatique impossible", error);
+      return false;
+    }
+
+    await supabase.functions.invoke("send-email", {
+      body: {
+        type: "account_verified",
+        to: garage.email,
+        data: { customerName: garage.raison_sociale },
+      },
+    });
+    onGarageChanged?.({ is_verified: true });
+    return true;
+  };
+
   const handleSingleApprove = async (docId: string) => {
     const avant = verificationDocs.find((d) => d.id === docId);
 
@@ -603,7 +640,22 @@ export function GarageVerificationPanel({
       }
     }
 
-    toast({ title: "Pièce acceptée" });
+    // L'état après cette acceptation, sans attendre le rechargement : les
+    // pièces déjà approuvées, plus celles que l'on vient de valider.
+    const apres = [
+      ...verificationDocs
+        .filter((d) => d.status === "approved" && !aValider.includes(d.id))
+        .map((d) => ({ id: d.id, document_type: d.document_type })),
+      ...aValider.map((id) => {
+        const d = verificationDocs.find((x) => x.id === id);
+        return { id, document_type: d?.document_type ?? "" };
+      }),
+    ];
+    const verifie = await verifierSiDossierComplet(apres);
+
+    toast(verifie
+      ? { title: "Garage vérifié", description: "Toutes les pièces sont acceptées : le garage a été vérifié et notifié." }
+      : { title: "Pièce acceptée" });
     await Promise.all([loadVerificationDocs(garage.id), rafraichirGarage()]);
   };
 
