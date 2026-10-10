@@ -147,11 +147,11 @@ export function SupprimerDocumentBouton({
 // fichier — c'est ce qui s'est passé avec les Kbis illisibles, cinq fois pour
 // un seul garage. Écrire la raison à chaque fois coûte, et ce qui coûte finit
 // par être abrégé en « non conforme ».
-const RAISONS_COURANTES = [
+const RAISONS_KBIS = [
   {
     titre: "Ce n'est pas un Kbis",
     texte:
-      "Le document déposé n'est pas un extrait Kbis. Nous avons besoin de l'extrait d'immatriculation au RCS délivré par le greffe du tribunal de commerce, de moins de six mois.",
+      "Le document déposé n'est pas un extrait Kbis. Nous avons besoin de l'extrait d'immatriculation au RCS délivré par le greffe du tribunal de commerce, de moins de six mois — ou, si vous n'êtes pas inscrit au registre du commerce, de votre attestation d'immatriculation au RNE.",
   },
   {
     titre: "Illisible",
@@ -170,6 +170,66 @@ const RAISONS_COURANTES = [
   },
 ];
 
+// Une pièce d'identité ne se refuse pas pour les mêmes raisons qu'un Kbis.
+// Les motifs du Kbis s'affichaient pourtant sur toutes les pièces : on
+// proposait « Trop ancien — ce Kbis a plus de six mois » pour refuser une
+// carte d'identité, et le garage recevait un message qui ne parlait pas de
+// son document.
+const RAISONS_CARTE_IDENTITE = [
+  {
+    titre: "Ce n'est pas une pièce d'identité",
+    texte:
+      "Le document déposé n'est pas une pièce d'identité. Nous avons besoin de la carte nationale d'identité, du passeport ou du titre de séjour du représentant légal de l'entreprise.",
+  },
+  {
+    titre: "Illisible",
+    texte:
+      "La pièce est illisible : le nom, la date de naissance ou la photo ne se distinguent pas. Photographiez-la à plat, bien éclairée et sans reflet, ou déposez un scan.",
+  },
+  {
+    titre: "Verso manquant",
+    texte:
+      "Il manque le verso de la pièce d'identité. Déposez les deux faces — vous pouvez envoyer les deux fichiers en une fois — ou une photocopie qui les contient toutes les deux.",
+  },
+  {
+    titre: "Périmée",
+    texte:
+      "Cette pièce d'identité est expirée. Merci d'en déposer une en cours de validité.",
+  },
+  {
+    titre: "Pas la bonne personne",
+    texte:
+      "Cette pièce n'est pas celle du représentant légal de l'entreprise. Nous avons besoin de la pièce d'identité de la personne qui figure comme dirigeant sur le Kbis.",
+  },
+];
+
+const RAISONS_MANDAT = [
+  {
+    titre: "Non signé",
+    texte:
+      "Le mandat n'est pas signé. Merci de le signer et de le tamponner en bas, puis de le redéposer.",
+  },
+  {
+    titre: "Illisible",
+    texte:
+      "Le mandat est illisible. Déposez-le en PDF, ou photographiez-le à plat, bien éclairé et sans reflet.",
+  },
+  {
+    titre: "Incomplet",
+    texte:
+      "Le mandat est incomplet : il manque la raison sociale, le SIRET ou l'adresse. Merci de remplir ces champs avant de le redéposer.",
+  },
+];
+
+/** Les motifs qui correspondent à la pièce qu'on refuse. */
+function raisonsPour(typeDocument: string | null | undefined) {
+  const code = String(typeDocument ?? "").toLowerCase();
+  if (code.includes("identite") || code.includes("identité")) return RAISONS_CARTE_IDENTITE;
+  if (code.includes("mandat")) return RAISONS_MANDAT;
+  if (code.includes("kbis")) return RAISONS_KBIS;
+  return RAISONS_KBIS;
+}
+
 /**
  * Refuser une pièce en écrivant au garage.
  *
@@ -181,7 +241,7 @@ export function RefuserDocumentBouton({
   doc,
   onRefuse,
   libelle = "Refuser",
-  suggestions = RAISONS_COURANTES,
+  suggestions,
 }: {
   doc: Doc;
   onRefuse: (doc: Doc, raison: string) => void | Promise<void>;
@@ -190,6 +250,7 @@ export function RefuserDocumentBouton({
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [raison, setRaison] = useState("");
+  const motifs = suggestions ?? raisonsPour(doc?.document_type);
 
   const fermer = (v: boolean) => {
     setOuvert(v);
@@ -215,7 +276,7 @@ export function RefuserDocumentBouton({
 
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
-            {suggestions.map((r) => (
+            {motifs.map((r) => (
               <Button
                 key={r.titre}
                 type="button"
