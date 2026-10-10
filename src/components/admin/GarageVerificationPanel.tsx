@@ -20,7 +20,7 @@ import { ApercuDocument } from "@/components/admin/ApercuDocument";
 import { EtatDocument, RefuserDocumentBouton, SupprimerDocumentBouton } from "@/components/admin/DocumentVerificationActions";
 import { supprimerDocumentVerification } from "@/lib/supprimerDocumentVerification";
 import { refuserDocumentVerification, historiqueDesRefus, type DocumentRefuse } from "@/lib/refuserDocumentVerification";
-import { formeJuridiqueDuGarage, pieceAttendue } from "@/lib/formeJuridique";
+import { formeJuridiqueDuGarage } from "@/lib/formeJuridique";
 import {
   Dialog,
   DialogContent,
@@ -105,7 +105,6 @@ export function GarageVerificationPanel({
   // Ce que ce professionnel peut fournir, déduit de son SIRET. Résolu à la
   // première consultation de la fiche et mémorisé : une forme juridique ne
   // change presque jamais, l'API de l'État n'a pas à être rappelée.
-  const [attendue, setAttendue] = useState<ReturnType<typeof pieceAttendue>>("indetermine");
 
   const [showVerifyDialog, setShowVerifyDialog] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
@@ -135,7 +134,10 @@ export function GarageVerificationPanel({
       loadVerificationDocs(garage.id);
       loadNotificationHistory(garage.id);
       historiqueDesRefus(garage.id).then(setRefus);
-      formeJuridiqueDuGarage(garage).then((code) => setAttendue(pieceAttendue(code)));
+      // Mémorise la forme juridique sur la fiche, et complète au passage un
+      // SIRET à neuf chiffres depuis le siège. Plus rien ne l'affiche ici,
+      // mais l'écran du garage s'en sert pour nommer la bonne pièce.
+      void formeJuridiqueDuGarage(garage);
     }
   }, [garage?.id]);
 
@@ -907,15 +909,6 @@ export function GarageVerificationPanel({
                           )}
                         </div>
                       </button>
-                      {/* Ce que ce professionnel peut produire, lu sur son
-                          SIRET. Dit avant même d'ouvrir le document, pour ne
-                          plus réclamer un Kbis à qui n'en aura jamais. */}
-                      {r.code === "kbis" && attendue === "kbis" && (
-                        <p className="border-t px-3 py-1.5 text-xs text-muted-foreground">
-                          Société au registre du commerce : un extrait Kbis existe, il est exigible.
-                        </p>
-                      )}
-
                       {/* Plusieurs fichiers pour une même pièce, repliés
                           derrière celle qui est ouverte.
                           Deux cas qu'il ne faut pas confondre : une carte
