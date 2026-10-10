@@ -59,6 +59,8 @@ interface NotificationRow {
   message: string;
   created_at: string;
   sent_by: string;
+  /** Vide pour les notifications antérieures au suivi des envois. */
+  email_envoye?: boolean | null;
 }
 
 interface GarageVerificationPanelProps {
