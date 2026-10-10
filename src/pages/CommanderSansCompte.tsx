@@ -5,6 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ChampFichiers } from "@/components/ChampFichiers";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
@@ -792,11 +793,10 @@ const CommanderSansCompte = () => {
                         <Badge variant="destructive">Manquant</Badge>
                       )}
                     </div>
-                    <Input
-                      type="file"
+                    <ChampFichiers
                       accept=".pdf,.jpg,.jpeg,.png,.heic,.heif,image/*"
                       disabled={compressingDoc === doc.nom_document}
-                      onChange={(e) => handleFileChange(doc.nom_document, e.target.files?.[0] || null)}
+                      onChoisis={(f) => handleFileChange(doc.nom_document, f[0] ?? null)}
                     />
                     {compressingDoc === doc.nom_document ? (
                       <p className="text-sm text-muted-foreground flex items-center gap-1">

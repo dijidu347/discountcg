@@ -15,6 +15,7 @@ import { passwordChangeSchema } from "@/lib/validations";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from "date-fns";
 import { formeJuridiqueDuGarage, pieceAttendue, libellePiece } from "@/lib/formeJuridique";
+import { ChampFichiers } from "@/components/ChampFichiers";
 import { fr } from "date-fns/locale";
 
 interface RequiredDocument {
@@ -759,21 +760,15 @@ export default function GarageSettings() {
                                 {/* Un seul champ : trois cases donnaient à croire qu'il
                                     fallait trois fichiers. Il en accepte plusieurs d'un
                                     coup, pour un recto et un verso. */}
-                                <Input
-                                  type="file"
+                                <ChampFichiers
                                   multiple
-                                  accept=".pdf,.jpg,.jpeg,.png"
-                                  onChange={(e) => {
-                                    const selected = e.target.files;
-                                    if (selected && selected.length > 0) {
-                                      // Important: copy files before clearing the input value
-                                      const filesArray = Array.from(selected);
-                                      handleFileUpload(reqDoc.code, filesArray);
-                                      e.target.value = '';
-                                    }
-                                  }}
                                   disabled={uploadingDoc === reqDoc.code}
-                                  className="cursor-pointer"
+                                  vide={
+                                    reqDoc.code === "carte_identite"
+                                      ? "Recto et verso : choisissez les deux fichiers à la fois, ou un seul s'il contient les deux faces"
+                                      : "Aucun fichier choisi"
+                                  }
+                                  onChoisis={(fichiers) => handleFileUpload(reqDoc.code, fichiers)}
                                 />
                                 {uploadingDoc === reqDoc.code && (
                                   <div className="flex items-center justify-center py-2">
