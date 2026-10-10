@@ -905,9 +905,9 @@ export default function GarageSettings() {
                                 <h3 className="font-medium flex items-center gap-2">
                                   {reqDoc.code === 'kbis' ? libellePiece(attendue).nom : reqDoc.nom_document}
                                   {reqDoc.obligatoire ? (
-                                    <Badge variant="outline" className="text-xs">Obligatoire</Badge>
+                                    <span className="text-destructive" aria-label="obligatoire">*</span>
                                   ) : (
-                                    <Badge variant="secondary" className="text-xs">Optionnel</Badge>
+                                    <span className="text-xs font-normal text-muted-foreground">(optionnel)</span>
                                   )}
                                 </h3>
                                 {reqDoc.code === 'kbis' ? (
