@@ -778,6 +778,12 @@ export default function GarageSettings() {
                       </div>
                     )}
                     
+                    {/* Les pièces ne s'affichent qu'une fois la fiche
+                        complète : c'est le SIRET qui décide laquelle demander.
+                        Sans lui on afficherait « Kbis ou attestation RNE » à
+                        tout le monde, en laissant le garage choisir — et un
+                        artisan choisirait le Kbis, qu'il ne peut pas obtenir. */}
+                    {!ficheIncomplete && (
                     <div className="space-y-4">
                       {requiredDocs.map(reqDoc => {
                         const status = getDocumentStatus(reqDoc.code);
@@ -904,6 +910,7 @@ export default function GarageSettings() {
                         );
                       })}
                     </div>
+                    )}
                     
                     {/* Historique des notifications */}
                     {notifications.length > 0 && (

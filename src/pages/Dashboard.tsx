@@ -27,6 +27,13 @@ export default function Dashboard() {
   } = useAuth();
   const navigate = useNavigate();
   const [garage, setGarage] = useState<any>(null);
+  // Même préalable que dans les paramètres : sans raison sociale ni SIRET, on
+  // ne sait pas quelle pièce réclamer, et le dépôt n'a pas de sens.
+  const ficheIncomplete = Boolean(
+    garage
+      && (!String(garage.raison_sociale ?? "").trim()
+        || String(garage.siret ?? "").replace(/\D/g, "").length !== 14),
+  );
   const [stats, setStats] = useState({
     totalDemarches: 0,
     enAttente: 0,
@@ -346,7 +353,7 @@ export default function Dashboard() {
         </div>
 
         {/* Verification Alert */}
-        {garage && !garage.is_verified && missingDocsCount > 0 && (
+        {garage && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete) && (
           /* Le bouton était glissé à la suite du texte, à gauche, en contour
              pâle : l'action tenait la place d'un mot dans une phrase. Il passe
              à droite, plein, à la hauteur du titre — c'est la seule chose à
@@ -363,12 +370,16 @@ export default function Dashboard() {
               <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
               <div className="min-w-0">
                 <p className="font-bold text-primary">
-                  {aucunDocEnvoye
+                  {ficheIncomplete
+                    ? "Complétez votre fiche entreprise"
+                    : aucunDocEnvoye
                     ? "Il reste une étape"
                     : `Il manque ${missingDocsCount} pièce${missingDocsCount > 1 ? 's' : ''}`}
                 </p>
                 <p className="mt-0.5 text-sm text-primary/90">
-                  {aucunDocEnvoye
+                  {ficheIncomplete
+                    ? "Renseignez d'abord votre raison sociale et votre SIRET : c'est le SIRET qui nous dit quelle pièce vous devez fournir."
+                    : aucunDocEnvoye
                     ? `Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Deux pièces suffisent : ${requiredDocNames.join(" et ")}.`
                     : `Déposez ${missingDocsCount > 1 ? 'les' : 'la'} dernière${missingDocsCount > 1 ? 's' : ''} pour que nous puissions contrôler votre dossier.`}
                 </p>
@@ -376,9 +387,19 @@ export default function Dashboard() {
             </div>
             <Button
               className="shrink-0"
-              onClick={() => navigate("/garage-settings?tab=verification")}
+              onClick={() =>
+                navigate(
+                  ficheIncomplete
+                    ? "/garage-settings#fiche-entreprise"
+                    : "/garage-settings?tab=verification",
+                )
+              }
             >
-              {aucunDocEnvoye ? "Déposer mes pièces" : "Compléter mon dossier"}
+              {ficheIncomplete
+                ? "Compléter ma fiche"
+                : aucunDocEnvoye
+                ? "Déposer mes pièces"
+                : "Compléter mon dossier"}
             </Button>
           </div>
         )}
