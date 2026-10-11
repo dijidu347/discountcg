@@ -441,7 +441,7 @@ export function GarageVerificationPanel({
   // Trois événements suffisent à savoir où l'on en est : l'historique est
   // remonté dans la colonne des pièces, et cinq entrées y repoussaient les
   // cartes hors de l'écran.
-  const EVENEMENTS_VISIBLES = 3;
+  const EVENEMENTS_VISIBLES = 2;
   const filVisible = filOuvert ? fil : fil.slice(0, EVENEMENTS_VISIBLES);
 
   // A l'ouverture, la page se place sur la premiere piece qui attend un geste :
@@ -1409,7 +1409,7 @@ export function GarageVerificationPanel({
               </div>
               </div>
 
-              <div className="xl:sticky xl:top-4 xl:self-start">
+              <div className="flex min-h-0 flex-col">
                 {docChoisi ? (
                   <>
                     <div className="mb-2 flex items-baseline justify-between gap-2">
@@ -1422,11 +1422,11 @@ export function GarageVerificationPanel({
                       key={docChoisi.id}
                       documentUrl={docChoisi.url}
                       nomFichier={docChoisi.nom_fichier}
-                      className="h-[46vh] min-h-[320px]"
+                      className="min-h-[320px] flex-1"
                     />
                   </>
                 ) : (
-                  <div className="flex h-[46vh] min-h-[320px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+                  <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
                     Choisissez une pièce à gauche pour l'afficher ici.
                   </div>
                 )}
