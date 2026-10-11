@@ -1126,24 +1126,30 @@ export type Database = {
       garage_verification_notifications: {
         Row: {
           created_at: string
+          email_envoye: boolean | null
           garage_id: string
           id: string
+          lu_le: string | null
           message: string
           sent_by: string | null
           subject: string
         }
         Insert: {
           created_at?: string
+          email_envoye?: boolean | null
           garage_id: string
           id?: string
+          lu_le?: string | null
           message: string
           sent_by?: string | null
           subject: string
         }
         Update: {
           created_at?: string
+          email_envoye?: boolean | null
           garage_id?: string
           id?: string
+          lu_le?: string | null
           message?: string
           sent_by?: string | null
           subject?: string
@@ -1208,6 +1214,10 @@ export type Database = {
           is_verified: boolean | null
           kbis_alerte_envoyee_le: string | null
           kbis_valide_jusqu_au: string | null
+          non_eligible: boolean
+          non_eligible_le: string | null
+          non_eligible_motif: string | null
+          non_eligible_par: string | null
           raison_sociale: string
           referral_source: string | null
           reseau: string | null
@@ -1238,6 +1248,10 @@ export type Database = {
           is_verified?: boolean | null
           kbis_alerte_envoyee_le?: string | null
           kbis_valide_jusqu_au?: string | null
+          non_eligible?: boolean
+          non_eligible_le?: string | null
+          non_eligible_motif?: string | null
+          non_eligible_par?: string | null
           raison_sociale: string
           referral_source?: string | null
           reseau?: string | null
@@ -1268,6 +1282,10 @@ export type Database = {
           is_verified?: boolean | null
           kbis_alerte_envoyee_le?: string | null
           kbis_valide_jusqu_au?: string | null
+          non_eligible?: boolean
+          non_eligible_le?: string | null
+          non_eligible_motif?: string | null
+          non_eligible_par?: string | null
           raison_sociale?: string
           referral_source?: string | null
           reseau?: string | null
@@ -2754,12 +2772,6 @@ export type Database = {
           type_mime: string
         }[]
       }
-      fichiers_orphelins_a_retirer: {
-        Args: never
-        Returns: {
-          chemin: string
-        }[]
-      }
       garages_prospection: {
         Args: never
         Returns: {
@@ -2826,6 +2838,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      marquer_notifications_lues: {
+        Args: { p_ids?: string[] }
+        Returns: undefined
+      }
       messages_en_attente: {
         Args: never
         Returns: {
@@ -2843,6 +2859,16 @@ export type Database = {
           reference: string
           source: string
         }[]
+      }
+      modifier_note_prospection: {
+        Args: {
+          p_auteur_prenom?: string
+          p_contenu: string
+          p_date_note?: string
+          p_note_id: string
+          p_rappel_le?: string
+        }
+        Returns: undefined
       }
       move_to_dlq: {
         Args: {
@@ -2911,6 +2937,10 @@ export type Database = {
           demarches_traitees: number
           revenu_net: number
         }[]
+      }
+      supprimer_note_prospection: {
+        Args: { p_note_id: string }
+        Returns: undefined
       }
       taxe_etat_pro: { Args: { p_type: string }; Returns: number }
       type_sous_controle: { Args: { p_type: string }; Returns: boolean }
