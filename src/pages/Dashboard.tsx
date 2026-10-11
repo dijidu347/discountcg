@@ -439,7 +439,7 @@ export default function Dashboard() {
         </div>
 
         {/* Verification Alert */}
-        {garage && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete || kbisPerime) && (
+        {garage && !garage.non_eligible && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete || kbisPerime) && (
           /* Le bouton était glissé à la suite du texte, à gauche, en contour
              pâle : l'action tenait la place d'un mot dans une phrase. Il passe
              à droite, plein, à la hauteur du titre — c'est la seule chose à

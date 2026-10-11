@@ -772,7 +772,9 @@ export default function GarageSettings() {
                   <div>
                     <CardTitle>Vérification du compte</CardTitle>
                     <CardDescription>
-                      {ficheIncomplete && !garage?.is_verified
+                      {garage?.non_eligible
+                        ? "Votre dossier n'est pas en cours d'examen"
+                        : ficheIncomplete && !garage?.is_verified
                         ? "Complétez d'abord votre fiche entreprise, puis déposez vos pièces"
                         : "Soumettez les documents requis pour obtenir le badge vérifié"}
                     </CardDescription>
@@ -786,10 +788,20 @@ export default function GarageSettings() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
+                {garage?.non_eligible && (
+                  <div className="rounded-lg border bg-muted/40 px-5 py-4">
+                    <p className="font-medium">La vérification de votre compte est suspendue</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Vos démarches continuent de fonctionner normalement. Écrivez-nous si
+                      vous pensez qu'il s'agit d'une erreur.
+                    </p>
+                  </div>
+                )}
+
                 {/* Le préalable, avant toute pièce : sans raison sociale ni
                     SIRET, un Kbis déposé ne se rattache à rien. Le dire ici
                     plutôt que de laisser déposer des documents inexploitables. */}
-                {ficheIncomplete && !garage?.is_verified && (
+                {!garage?.non_eligible && ficheIncomplete && !garage?.is_verified && (
                   <div className="rounded-lg border-2 border-primary bg-primary/10 px-5 py-4">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                       <div className="flex min-w-0 items-start gap-3">
@@ -880,7 +892,7 @@ export default function GarageSettings() {
                         liste : un écran vide, et aucun moyen de remplacer un
                         Kbis périmé. Leur fiche a déjà été acceptée ; le verrou
                         ne protège que le premier dépôt. */}
-                    {(!ficheIncomplete || garage?.is_verified) && (
+                    {!garage?.non_eligible && (!ficheIncomplete || garage?.is_verified) && (
                     <div className="space-y-4">
                       {requiredDocs.map(reqDoc => {
                         const status = getDocumentStatus(reqDoc.code);
