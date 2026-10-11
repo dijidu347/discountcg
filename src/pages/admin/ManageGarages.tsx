@@ -741,7 +741,7 @@ export default function ManageGarages() {
   // revient, ce qui revient au garage, et ceux qui n'ont jamais rien envoyé.
   const ONGLETS: { cle: Onglet; texte: string; aide: string; fond: string; chiffre: string; label: string }[] = [
     { cle: "tous", texte: "Tous", aide: "Tous les garages inscrits",
-      fond: "bg-muted", chiffre: "text-foreground", label: "text-muted-foreground" },
+      fond: "bg-slate-200 dark:bg-slate-800", chiffre: "text-slate-900 dark:text-slate-100", label: "text-slate-600 dark:text-slate-400" },
     { cle: "verifie", texte: "Vérifié", aide: "Pièce d'identité acceptée et Kbis accepté de moins de six mois",
       fond: "bg-green-100 dark:bg-green-950/50", chiffre: "text-green-800 dark:text-green-300", label: "text-green-700 dark:text-green-400" },
     { cle: "a_verifier", texte: "Complet, à vérifier", aide: "Des pièces sont arrivées et attendent notre contrôle",
@@ -749,11 +749,11 @@ export default function ManageGarages() {
     { cle: "a_completer", texte: "Dossier incomplet", aide: "Une pièce manque, a été refusée, ou le Kbis a plus de six mois : au garage d'agir",
       fond: "bg-amber-100 dark:bg-amber-950/50", chiffre: "text-amber-900 dark:text-amber-300", label: "text-amber-800 dark:text-amber-400" },
     { cle: "aucun_document", texte: "Aucun document", aide: "Inscrits, n'ont jamais rien envoyé",
-      fond: "bg-muted", chiffre: "text-muted-foreground", label: "text-muted-foreground" },
+      fond: "bg-stone-200 dark:bg-stone-800", chiffre: "text-stone-800 dark:text-stone-200", label: "text-stone-600 dark:text-stone-400" },
     // En bout de rangée, et en gris sombre : ce n'est pas une étape du
     // parcours mais sa sortie. On ne la regarde pas tous les jours.
     { cle: "non_eligible", texte: "Non éligible", aide: "Écartés : ils ne remplissent pas les conditions pour être vérifiés",
-      fond: "bg-gray-200 dark:bg-gray-800", chiffre: "text-gray-900 dark:text-gray-100", label: "text-gray-600 dark:text-gray-400" },
+      fond: "bg-rose-100 dark:bg-rose-950/50", chiffre: "text-rose-900 dark:text-rose-200", label: "text-rose-700 dark:text-rose-400" },
   ];
 
   return (
@@ -783,7 +783,7 @@ export default function ManageGarages() {
             mécanismes visuels contradictoires — une bordure par état, du texte
             coloré au repos, et un pavé gris pour l'actif, dont la couleur
             n'avait aucun rapport avec celle de l'onglet. */}
-        <div role="tablist" className="mb-5 grid gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div role="tablist" className="mb-5 grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {ONGLETS.map((o) => {
             const actif = onglet === o.cle;
             return (
