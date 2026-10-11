@@ -130,9 +130,14 @@ export function SupprimerDocumentBouton({
   return (
     <AlertDialog open={ouvert} onOpenChange={setOuvert}>
       <AlertDialogTrigger asChild>
-        <Button size="sm" variant="ghost" className="text-muted-foreground hover:text-destructive">
-          <Trash2 className="mr-2 h-4 w-4" />
-          {libelle}
+        <Button
+          size="icon"
+          variant="ghost"
+          aria-label={libelle}
+          title={libelle}
+          className="h-8 w-8 text-foreground hover:text-destructive"
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
