@@ -468,25 +468,40 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
+    // Ce message annonçait « votre compte a été vérifié et activé » et
+    // « vous pouvez maintenant accéder à toutes les fonctionnalités ». Les
+    // deux étaient faux : le compte n'a jamais eu besoin d'être vérifié pour
+    // servir, et la vérification ne débloque rien. Le garage déposait ses
+    // démarches depuis son inscription — il recevait donc, le jour de sa
+    // vérification, la promesse d'un accès qu'il utilisait déjà.
+    //
+    // Le bandeau du tableau de bord dit la vraie raison depuis octobre 2026,
+    // et c'est la bonne : nous sommes habilités par la préfecture et devons
+    // pouvoir justifier que chaque garage exerce bien une activité
+    // automobile. Le courrier tient désormais le même langage.
     case "account_verified":
       return {
-        subject: `✅ Compte vérifié - Bienvenue !`,
+        subject: "Votre compte est vérifié",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <h1 style="color: #22c55e;">Compte vérifié !</h1>
+            <h1 style="color: #22c55e;">Votre compte est vérifié</h1>
             <p>Bonjour ${data.customerName},</p>
-            <p>Félicitations ! Votre compte a été vérifié et activé avec succès.</p>
-            
+            <p>Nous avons contrôlé les pièces de votre dossier : votre espace porte désormais le badge <strong>Compte vérifié</strong>, et vous n'avez plus rien à déposer.</p>
+
             <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
-              <p style="margin: 8px 0;">Vous pouvez maintenant accéder à toutes les fonctionnalités de la plateforme.</p>
+              <p style="margin: 8px 0;">Nous sommes habilités par la préfecture, et devons pouvoir justifier que chaque garage exerce bien une activité automobile. C'est ce que cette vérification atteste — vos démarches, elles, fonctionnaient déjà et ne changent pas.</p>
             </div>
 
+            ${data.echeance
+              ? `<p>Votre extrait Kbis est valable jusqu'au <strong>${dateFr(data.echeance)}</strong>. Nous vous préviendrons quinze jours avant cette date : un extrait de moins de six mois suffit à garder le badge.</p>`
+              : ""}
+
             <a href="${baseUrl}/dashboard" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Accéder au tableau de bord
+              Accéder à mon espace
             </a>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            ${guestReplyBlock}
+            ${guestFooter}
           </div>
         `,
       };

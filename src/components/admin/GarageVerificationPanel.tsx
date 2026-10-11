@@ -581,6 +581,19 @@ export function GarageVerificationPanel({
   const majLocale = (docId: string, patch: Record<string, any>) =>
     setVerificationDocs((docs) => docs.map((d) => (d.id === docId ? { ...d, ...patch } : d)));
 
+  // L'échéance annoncée dans le courrier de vérification se relit en base, et
+  // non sur la fiche qu'on a sous la main : accepter le Kbis vient de la
+  // recalculer par déclencheur, et la copie locale date d'avant. Une date fausse
+  // dans ce courrier ferait attendre un rappel qui partirait ailleurs.
+  const echeanceKbis = async (): Promise<string | null> => {
+    const { data } = await supabase
+      .from("garages")
+      .select("kbis_valide_jusqu_au")
+      .eq("id", garage.id)
+      .maybeSingle();
+    return data?.kbis_valide_jusqu_au ?? null;
+  };
+
   // Accepter un Kbis recalcule la validité du garage par déclencheur : l'entête
   // de la fiche doit suivre, sinon elle garde « Kbis expiré » sous les yeux.
   const rafraichirGarage = async () => {
@@ -622,7 +635,7 @@ export function GarageVerificationPanel({
       body: {
         type: "account_verified",
         to: garage.email,
-        data: { customerName: garage.raison_sociale },
+        data: { customerName: garage.raison_sociale, echeance: await echeanceKbis() },
       },
     });
     onGarageChanged?.({ is_verified: true });
@@ -873,7 +886,7 @@ export function GarageVerificationPanel({
         body: {
           type: "account_verified",
           to: garage.email,
-          data: { customerName: garage.raison_sociale },
+          data: { customerName: garage.raison_sociale, echeance: await echeanceKbis() },
         },
       });
 
