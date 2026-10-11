@@ -70,6 +70,12 @@ export default function Dashboard() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [missingDocsCount, setMissingDocsCount] = useState(0);
   const [requiredDocNames, setRequiredDocNames] = useState<string[]>([]);
+  const [piecesEnExamen, setPiecesEnExamen] = useState(0);
+  // Rien ne manque, et quelque chose attend notre contrôle : le garage a fait
+  // sa part. Lui redemander un justificatif déjà déposé — c'est ce que
+  // faisait le bandeau quand un Kbis périmé côtoyait son remplaçant en
+  // attente — lui fait croire que son envoi s'est perdu.
+  const enExamen = piecesEnExamen > 0 && missingDocsCount === 0;
   const aucunDocEnvoye = requiredDocNames.length > 0 && missingDocsCount === requiredDocNames.length;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -233,7 +239,7 @@ export default function Dashboard() {
       if (!garageData.is_verified) {
         const { data: verificationDocs } = await supabase
           .from('verification_documents')
-          .select('document_type')
+          .select('document_type, status')
           .eq('garage_id', garageData.id)
           .in('status', ['pending', 'approved']);
         
@@ -249,6 +255,9 @@ export default function Dashboard() {
         const liste = requis || [];
         setRequiredDocNames(liste.map(r => r.nom_document));
         setMissingDocsCount(liste.filter(r => !uploadedTypes.has(r.code)).length);
+        // Une pièce déposée et pas encore contrôlée : le garage a fait sa
+        // part, et le bandeau ne doit plus rien lui réclamer.
+        setPiecesEnExamen((verificationDocs ?? []).filter(d => d.status === 'pending').length);
       }
     }
     setLoading(false);
@@ -439,7 +448,7 @@ export default function Dashboard() {
         </div>
 
         {/* Verification Alert */}
-        {garage && !garage.non_eligible && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete || kbisPerime) && (
+        {garage && !garage.non_eligible && !garage.is_verified && (missingDocsCount > 0 || ficheIncomplete || kbisPerime || enExamen) && (
           /* Le bouton était glissé à la suite du texte, à gauche, en contour
              pâle : l'action tenait la place d'un mot dans une phrase. Il passe
              à droite, plein, à la hauteur du titre — c'est la seule chose à
@@ -461,6 +470,8 @@ export default function Dashboard() {
                       ? (raisonSocialeManquante
                           ? "Faites vérifier votre compte"
                           : "Votre SIRET est incomplet")
+                      : enExamen
+                      ? "Vos documents sont en cours de vérification"
                       : kbisPerime
                       ? "Votre Kbis a plus de six mois"
                       : aucunDocEnvoye
@@ -480,6 +491,8 @@ export default function Dashboard() {
                             ? "deux pièces"
                             : `${requiredDocNames.length} pièces`
                         }${requiredDocNames.length > 0 ? ` : ${requiredDocNames.join(" et ")}` : " justificatives"}.`
+                      : enExamen
+                      ? "Nous les contrôlons et vous recevrez un email dès que votre compte sera vérifié. Vos démarches continuent de fonctionner normalement."
                       : kbisPerime
                       ? "Nous sommes habilités par la préfecture, et devons justifier que chaque garage exerce bien une activité automobile. Déposez un justificatif de moins de six mois pour retrouver votre badge vérifié. Vos démarches continuent de fonctionner normalement."
                       : aucunDocEnvoye
@@ -488,7 +501,7 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-              {!ficheIncomplete && (
+              {!ficheIncomplete && !enExamen && (
                 <Button
                   className="shrink-0"
                   onClick={() => navigate("/garage-settings?tab=verification")}
