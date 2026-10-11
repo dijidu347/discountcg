@@ -475,10 +475,12 @@ const getEmailTemplate = (type: string, data: any) => {
     // démarches depuis son inscription — il recevait donc, le jour de sa
     // vérification, la promesse d'un accès qu'il utilisait déjà.
     //
-    // Le bandeau du tableau de bord dit la vraie raison depuis octobre 2026,
-    // et c'est la bonne : nous sommes habilités par la préfecture et devons
-    // pouvoir justifier que chaque garage exerce bien une activité
-    // automobile. Le courrier tient désormais le même langage.
+    // Reste ce que ce courrier est seul à pouvoir dire : le badge est posé,
+    // il n'y a plus rien à déposer, et voilà jusqu'à quand le Kbis vaut.
+    //
+    // L'explication de l'habilitation préfectorale n'y figure pas : elle sert
+    // à justifier une demande, et il n'y a plus rien à demander ici. Elle
+    // reste sur le bandeau du tableau de bord, là où l'on réclame les pièces.
     case "account_verified":
       return {
         subject: "Votre compte est vérifié",
@@ -487,10 +489,6 @@ const getEmailTemplate = (type: string, data: any) => {
             <h1 style="color: #22c55e;">Votre compte est vérifié</h1>
             <p>Bonjour ${data.customerName},</p>
             <p>Nous avons contrôlé les pièces de votre dossier : votre espace porte désormais le badge <strong>Compte vérifié</strong>, et vous n'avez plus rien à déposer.</p>
-
-            <div style="background-color: #f0fdf4; border-left: 4px solid #22c55e; padding: 16px; margin: 20px 0;">
-              <p style="margin: 8px 0;">Nous sommes habilités par la préfecture, et devons pouvoir justifier que chaque garage exerce bien une activité automobile. C'est ce que cette vérification atteste — vos démarches, elles, fonctionnaient déjà et ne changent pas.</p>
-            </div>
 
             ${data.echeance
               ? `<p>Votre extrait Kbis est valable jusqu'au <strong>${dateFr(data.echeance)}</strong>. Nous vous préviendrons quinze jours avant cette date : un extrait de moins de six mois suffit à garder le badge.</p>`
