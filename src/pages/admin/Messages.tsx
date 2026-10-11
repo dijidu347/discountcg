@@ -401,7 +401,6 @@ export default function Messages() {
                     Marquer comme non lu
                   </Button>
                   <Button
-                    variant="outline"
                     size="sm"
                     disabled={classement}
                     onClick={() => void classer(choisie)}
