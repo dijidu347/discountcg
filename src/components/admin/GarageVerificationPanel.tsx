@@ -1022,13 +1022,13 @@ export function GarageVerificationPanel({
             </div>
           ) : (
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               className="text-muted-foreground hover:text-foreground"
               onClick={() => setShowEcarterDialog(true)}
             >
               <Ban className="mr-2 h-4 w-4" />
-              Écarter ce garage
+              Écarter ce garage — non éligible
             </Button>
           )}
         </div>
