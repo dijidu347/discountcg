@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw, FileText, Image as ImageIcon, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -111,6 +112,35 @@ interface GarageVerificationPanelProps {
  */
 // Le fond d'une pièce dit son état avant qu'on lise sa pastille.
 // Vert = acquis, rouge = refusé, jaune = en attente, orange = périmé.
+// Les raisons d'écarter un garage, telles qu'elles reviennent.
+//
+// Écrire le motif à chaque fois coûte, et ce qui coûte finit par être abrégé
+// en « non conforme » — six mois plus tard, personne ne sait plus ce qui
+// avait été constaté. Ces textes sont des points de départ : ils restent
+// modifiables, et ils sont rédigés pour pouvoir être lus par le garage.
+const MOTIFS_NON_ELIGIBLE = [
+  {
+    titre: "Pas d'activité d'achat-vente",
+    texte: "Votre extrait Kbis ne mentionne pas d'activité d'achat et de vente de véhicules. Le guide de l'habilitation SIV la réclame pour qu'un garage puisse être vérifié : nous ne pouvons donc pas vérifier votre compte en l'état.",
+  },
+  {
+    titre: "Entreprise radiée ou fermée",
+    texte: "Votre entreprise n'apparaît plus comme active au registre. Nous ne pouvons pas vérifier un compte rattaché à une entreprise radiée.",
+  },
+  {
+    titre: "Dossier abandonné",
+    texte: "Votre dossier de vérification est resté incomplet malgré nos relances. Nous le classons : écrivez-nous quand vous souhaiterez le reprendre, nous le rouvrirons.",
+  },
+  {
+    titre: "Documents non conformes",
+    texte: "Les documents déposés ne permettent pas de justifier votre activité automobile. Nous ne pouvons pas vérifier votre compte sur cette base.",
+  },
+  {
+    titre: "Doublon d'un autre compte",
+    texte: "Ce compte fait double emploi avec un autre compte déjà ouvert pour la même entreprise. Nous conservons l'autre.",
+  },
+];
+
 const TEINTE_PIECE: Record<string, string> = {
   approuve: "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30",
   expire: "border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30",
@@ -160,6 +190,7 @@ export function GarageVerificationPanel({
   const showEcarterDialog = ecarterOuvert ?? ecarterInterne;
   const setShowEcarterDialog = onEcarterOuvertChange ?? setEcarterInterne;
   const [motifEcart, setMotifEcart] = useState("");
+  const [previenirEcart, setPrevenirEcart] = useState(false);
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectAccountReason, setRejectAccountReason] = useState("");
   const [processingGarage, setProcessingGarage] = useState(false);
@@ -772,12 +803,40 @@ export function GarageVerificationPanel({
       toast({ title: "Impossible d'écarter ce garage", description: error.message, variant: "destructive" });
       return;
     }
-    // Aucun email : écarter n'est pas une demande adressée au garage. S'il
-    // faut le lui dire, « Écrire au garage » est là pour ça, avec les mots
-    // qu'on aura choisis.
-    toast({ title: "Garage écarté", description: "Il ne figure plus dans les files de vérification." });
+    // L'email ne part que si on l'a demandé. Écarter n'est pas toujours une
+    // nouvelle à annoncer : un doublon se retire en silence, un refus motivé
+    // se dit.
+    let envoye = false;
+    if (previenirEcart) {
+      const sujet = "Votre compte professionnel";
+      const corps = `${motifEcart.trim()}\n\nVos démarches en cours continuent de fonctionner normalement.`;
+      const { error: erreurEmail } = await supabase.functions.invoke("send-email", {
+        body: {
+          type: "custom_notification",
+          to: garage.email,
+          data: { customerName: garage.raison_sociale, subject: sujet, message: corps },
+        },
+      });
+      envoye = !erreurEmail;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any).from("garage_verification_notifications").insert({
+        garage_id: garage.id,
+        sent_by: user?.id ?? null,
+        subject: sujet,
+        message: corps,
+        email_envoye: envoye,
+      });
+    }
+
+    toast({
+      title: "Garage écarté",
+      description: previenirEcart
+        ? (envoye ? "Il a été prévenu par email." : "L'email n'est pas parti — la décision est enregistrée.")
+        : "Il ne figure plus dans les files de vérification.",
+    });
     setShowEcarterDialog(false);
     setMotifEcart("");
+    setPrevenirEcart(false);
     onGarageChanged?.({ non_eligible: true, is_verified: false });
   };
 
@@ -1458,22 +1517,57 @@ export function GarageVerificationPanel({
             <AlertDialogTitle>Écarter ce garage ?</AlertDialogTitle>
             <AlertDialogDescription>
               Il sortira des files de vérification et n'y reviendra pas. Ses démarches
-              continuent de fonctionner, et aucun email ne part : si vous voulez le lui
-              dire, « Écrire au garage » est là pour ça. La décision se défait à tout
-              moment.
+              continuent de fonctionner. La décision se défait à tout moment.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="motif-ecart" className="text-sm">
-              Pourquoi <span className="text-destructive">*</span>
-            </Label>
-            <Textarea
-              id="motif-ecart"
-              value={motifEcart}
-              onChange={(e) => setMotifEcart(e.target.value)}
-              placeholder="Activité de réparation sans achat-vente — ne peut pas être vérifié selon le guide SIV."
-              rows={3}
-            />
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <Label className="text-sm">Raison</Label>
+              {/* Le menu remplit le texte, qui reste modifiable : les cas
+                  reviennent, mais chaque garage a sa nuance. */}
+              <Select onValueChange={(v) => setMotifEcart(v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir une raison courante" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MOTIFS_NON_ELIGIBLE.map((m) => (
+                    <SelectItem key={m.titre} value={m.texte}>{m.titre}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="motif-ecart" className="text-sm">
+                Motif <span className="text-destructive">*</span>
+              </Label>
+              <Textarea
+                id="motif-ecart"
+                value={motifEcart}
+                onChange={(e) => setMotifEcart(e.target.value)}
+                placeholder="Choisissez une raison ci-dessus, ou écrivez la vôtre."
+                rows={4}
+              />
+            </div>
+
+            {/* Prévenir ou non. Un doublon se retire en silence ; un refus
+                motivé se dit. Le texte ci-dessus part tel quel, d'où sa
+                rédaction à la deuxième personne. */}
+            <label className="flex items-start gap-2.5 rounded-md border bg-muted/30 px-3 py-2.5 text-sm">
+              <input
+                type="checkbox"
+                checked={previenirEcart}
+                onChange={(e) => setPrevenirEcart(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              />
+              <span>
+                Prévenir le garage par email
+                <span className="mt-0.5 block text-xs text-muted-foreground">
+                  Le motif ci-dessus lui sera envoyé tel quel, suivi de « Vos démarches en
+                  cours continuent de fonctionner normalement ».
+                </span>
+              </span>
+            </label>
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel>Annuler</AlertDialogCancel>
