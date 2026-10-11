@@ -97,8 +97,11 @@ const marquerPremiersPaiements = (liste: RawPaiement[]): RawPaiement[] => {
 };
 
 interface RawDemarche {
+  id: string;
   type: string;
   created_at: string;
+  client_paid: boolean | null;
+  client_paid_at: string | null;
   paye: boolean | null;
   is_free_token: boolean | null;
   paid_with_tokens: boolean | null;
@@ -303,7 +306,7 @@ export default function AdminRevenus() {
         .order("created_at", { ascending: false })),
       fetchAll<RawDemarche>(() => supabase
         .from("demarches")
-        .select("type, created_at, paye, is_free_token, paid_with_tokens, frais_dossier, montant_ttc, garage_id, immatriculation")
+        .select("id, type, created_at, client_paid, client_paid_at, paye, is_free_token, paid_with_tokens, frais_dossier, montant_ttc, garage_id, immatriculation")
         .eq("is_draft", false)
         .order("created_at", { ascending: false })),
       supabase
@@ -418,12 +421,40 @@ export default function AdminRevenus() {
     [tokenPurchases, dateRange]
   );
 
+  // La date à laquelle une démarche est ARRIVÉE : son premier encaissement, à
+  // défaut le paiement du client, à défaut sa création. Même définition que la
+  // fonction `stats_revenu_net`, pour que les deux comptes s'accordent enfin.
+  const premierPaiementPar = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const p of paiements) {
+      const connu = m.get(p.demarche_id);
+      if (!connu || p.created_at < connu) m.set(p.demarche_id, p.created_at);
+    }
+    return m;
+  }, [paiements]);
+
+  const recueLe = (d: RawDemarche): string =>
+    premierPaiementPar.get(d.id) ?? d.client_paid_at ?? d.created_at;
+
+  // Les démarches datées à l'argent, et non à leur création.
+  //
+  // Sur une page de revenus, une démarche compte le jour où elle arrive, pas le
+  // jour où le garage a commencé à la saisir. Le 11/10/2026, cet écran annonçait
+  // « 3 démarches » en haut et « 4 reçues » en dessous : la quatrième — une
+  // carte grise commencée le 4 octobre — avait été payée ce jour-là. Les deux
+  // chiffres étaient justes, ils ne mesuraient pas la même chose, et portaient
+  // le même mot.
+  //
+  // Le bloc des jetons souffrait du même décalage, et se trompait vraiment : il
+  // annonçait 10 € dépensés quand 30 € l'avaient été, les 20 € de frais de
+  // cette carte grise ayant été débités du solde le 11 et non le 4.
   const filteredDemarches = useMemo(() =>
     demarches.filter(d => {
-      const date = new Date(d.created_at);
+      if (!(d.paye || d.paid_with_tokens || d.client_paid || d.is_free_token)) return false;
+      const date = new Date(recueLe(d));
       return date >= dateRange.start && date <= dateRange.end;
     }),
-    [demarches, dateRange]
+    [demarches, dateRange, premierPaiementPar]
   );
 
   // Commandes particulier, datees au paiement.
@@ -617,13 +648,14 @@ export default function AdminRevenus() {
     const tokenPaid = filteredDemarches.filter(d => d.paid_with_tokens).length;
     const freePaid = filteredDemarches.filter(d => d.is_free_token).length;
     const stripePaid = filteredDemarches.filter(d => d.paye && !d.paid_with_tokens && !d.is_free_token).length;
-    const unpaid = filteredDemarches.filter(d => !d.paye && !d.is_free_token && !d.paid_with_tokens).length;
 
+    // Plus de part « Non payé » : ces démarches ne sont plus dans l'ensemble,
+    // qui ne retient que celles qui sont arrivées. Une démarche non réglée n'a
+    // pas de moyen de paiement à répartir.
     return [
       { name: "Carte bancaire", value: stripePaid, color: "#3b82f6" },
       { name: "Solde jetons", value: tokenPaid, color: "#8b5cf6" },
       { name: "Jeton gratuit", value: freePaid, color: "#10b981" },
-      { name: "Non payé", value: unpaid, color: "#94a3b8" },
     ].filter(d => d.value > 0);
   }, [filteredDemarches]);
 
@@ -764,11 +796,9 @@ export default function AdminRevenus() {
 
           <Card>
             <CardContent className="pt-6">
-              {/* « Démarches » tout court, ici, et « Démarches reçues (payées) »
-                  plus bas : deux comptes différents sous le même mot. Celui-ci
-                  date à la création, l'autre au paiement — le 11/10/2026 l'un
-                  disait 3 et l'autre 4, sur le même écran. */}
-              <p className="text-sm text-muted-foreground font-medium">Démarches créées</p>
+              {/* Même compte que « Démarches reçues (payées) » plus bas : les
+                  deux datent à l'argent. Ils disaient 3 et 4 le 11/10/2026. */}
+              <p className="text-sm text-muted-foreground font-medium">Démarches reçues</p>
               <p className="text-3xl font-bold mt-1">{filteredDemarches.length + filteredGuestOrders.length}</p>
               <p className="text-xs text-muted-foreground mt-2">
                 {filteredDemarches.length} pros · {filteredGuestOrders.length} particuliers
