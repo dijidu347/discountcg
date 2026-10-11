@@ -23,7 +23,7 @@ import { format } from "date-fns";
 import { formeJuridiqueDuGarage, pieceAttendue, libellePiece } from "@/lib/formeJuridique";
 import { ChampFichiers } from "@/components/ChampFichiers";
 import { compressFile, isHeicFile } from "@/lib/file-compression";
-import { extractBucketFromUrl, extractPathFromUrl } from "@/lib/storage-utils";
+import { extractBucketFromUrl, extractPathFromUrl, getSignedUrl } from "@/lib/storage-utils";
 import { fr } from "date-fns/locale";
 
 interface RequiredDocument {
@@ -289,6 +289,34 @@ export default function GarageSettings() {
   // recevait deux fichiers sans savoir lequel compte. Tant que la pièce n'est
   // pas approuvée, elle n'appartient qu'au garage ; une fois acceptée, elle
   // fait partie du dossier et seule l'administration peut y toucher.
+  // Ouvrir une pièce.
+  //
+  // Le bouton faisait `window.open(doc.url)`. Or l'espace de stockage est
+  // privé, et l'adresse enregistrée n'est pas une adresse publique : selon
+  // sa forme, le navigateur demandait une page du site qui n'existe pas —
+  // d'où le 404 — ou un fichier qu'il n'a pas le droit de lire.
+  //
+  // Il faut un lien signé, comme le fait déjà l'administration. On l'ouvre
+  // dans l'onglet déjà créé pour que le navigateur ne le bloque pas : une
+  // fenêtre ouverte après un `await` passe pour une publicité.
+  const ouvrirDocument = async (doc: { url?: string | null; nom_fichier?: string | null }) => {
+    const onglet = window.open("", "_blank");
+    const bucket = extractBucketFromUrl(String(doc.url ?? "")) ?? "demarche-documents";
+    const chemin = extractPathFromUrl(String(doc.url ?? ""));
+    const lien = chemin ? await getSignedUrl(bucket, chemin) : null;
+    if (!lien) {
+      onglet?.close();
+      toast({
+        title: "Document illisible",
+        description: "Le fichier n'a pas pu être ouvert. Déposez-le à nouveau si le problème persiste.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (onglet) onglet.location.href = lien;
+    else window.open(lien, "_blank");
+  };
+
   const supprimerSonDocument = async (doc: any) => {
     try {
       const bucket = extractBucketFromUrl(String(doc.url ?? ""));
@@ -1006,7 +1034,7 @@ export default function GarageSettings() {
                                         type="button"
                                         size="sm"
                                         className="h-7 shrink-0 px-2 text-xs"
-                                        onClick={() => window.open(doc.url, '_blank')}
+                                        onClick={() => ouvrirDocument(doc)}
                                       >
                                         <Eye className="mr-1 h-3.5 w-3.5" />
                                         Ouvrir
