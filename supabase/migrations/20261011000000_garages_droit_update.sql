@@ -1,0 +1,21 @@
+-- Rendre la table garages modifiable par les utilisateurs connectés.
+--
+-- Deux politiques de modification existaient depuis toujours — « Admins can
+-- update all garages », « Garages can update their own data » — mais le droit
+-- UPDATE n'était accordé qu'à postgres et au service. Une politique autorise
+-- des LIGNES ; elle ne donne pas accès à la TABLE. Sans le droit, PostgreSQL
+-- refuse avant même de lire la politique : « permission denied for table
+-- garages ».
+--
+-- Conséquence, invisible jusqu'ici parce que chaque appel vérifiait l'erreur
+-- et affichait un message plutôt que de planter : AUCUNE écriture sur un
+-- garage ne fonctionnait depuis le site. Ni écarter un garage, ni le
+-- vérifier, ni lui retirer sa vérification, ni enregistrer la raison sociale
+-- et le SIRET depuis le bandeau du tableau de bord, ni mémoriser la forme
+-- juridique lue sur le SIRET.
+--
+-- Le droit accordé n'ouvre rien : les deux politiques continuent de décider
+-- qui modifie quoi. Un garage ne touche qu'à sa fiche, un administrateur à
+-- toutes, et personne d'autre n'écrit.
+
+grant update on table public.garages to authenticated;
