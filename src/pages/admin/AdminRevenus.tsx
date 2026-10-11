@@ -392,10 +392,20 @@ export default function AdminRevenus() {
   };
 
   // Filter data by period
+  // TOUS les encaissements de la période, y compris ceux dont le revenu est nul
+  // — une carte grise réglée au solde de jetons, par exemple : les frais de
+  // service ont déjà été encaissés à l'achat des jetons, mais la taxe régionale
+  // a bien transité par notre compte, et la banque a bien prélevé dessus.
+  //
+  // Ces encaissements étaient écartés ici, et seules les commissions bancaires
+  // les voyaient encore. D'où un écran incohérent le 11/10/2026 : « 0 paiement »
+  // affiché à côté de 1,61 € de frais bancaires, et 338 € de taxe reversée à
+  // l'État nulle part. La somme des revenus ne bouge pas — ces lignes valent
+  // zéro — mais les comptes, les taxes et les répartitions disent enfin vrai.
   const filteredPaiements = useMemo(() =>
     paiements.filter(p => {
       const d = new Date(p.created_at);
-      return d >= dateRange.start && d <= dateRange.end && getRevenueAmount(p) > 0;
+      return d >= dateRange.start && d <= dateRange.end;
     }),
     [paiements, dateRange]
   );
@@ -451,13 +461,11 @@ export default function AdminRevenus() {
   // centime, Sogecommerce selon la grille et la carte utilisee.
   // Tous les encaissements comptent, meme ceux qui ne rapportent rien (la taxe
   // payee par le client en paiement partage) : la banque preleve sur le tout.
-  const paiementsPeriode = paiements.filter(p => {
-    const d = new Date(p.created_at);
-    return d >= dateRange.start && d <= dateRange.end;
-  });
+  // C'est désormais le même ensemble que `filteredPaiements`, qui ne les écarte
+  // plus : il n'y a plus deux listes de paiements sur cette page.
   const fraisParticuliers = filteredGuestOrders.reduce((s, o) => s + Number(o.frais_bancaires || 0), 0);
   const fraisPros =
-    paiementsPeriode.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
+    filteredPaiements.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
     filteredTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0);
   const totalFraisBancaires = fraisPros + fraisParticuliers;
   const revenuPros = totalServiceFees + totalTokenRevenue;
@@ -480,7 +488,7 @@ export default function AdminRevenus() {
 
   const prevPaiements = paiements.filter(p => {
     const d = new Date(p.created_at);
-    return d >= prevRange.start && d < prevRange.end && getRevenueAmount(p) > 0;
+    return d >= prevRange.start && d < prevRange.end;
   });
   const prevTokens = tokenPurchases.filter(t => {
     const d = new Date(t.created_at);
@@ -495,7 +503,23 @@ export default function AdminRevenus() {
     })
     .reduce((s, o) => s + revenuParticulier(o), 0);
   const prevTotal = prevPaiements.reduce((s, p) => s + getRevenueAmount(p), 0) + prevTokens.reduce((s, t) => s + Number(t.amount), 0) + prevParticuliers;
-  const trendPct = prevTotal > 0 ? ((totalRevenue - prevTotal) / prevTotal) * 100 : 0;
+
+  // La flèche se pose sous le revenu NET : elle doit donc comparer des nets.
+  // Elle comparait des bruts, et annonçait « ↘ 100 % » sous un net de −1,61 €,
+  // deux nombres qui ne parlaient pas de la même chose.
+  const prevFraisBancaires =
+    prevPaiements.reduce((s, p) => s + Number(p.frais_bancaires || 0), 0) +
+    prevTokens.reduce((s, t) => s + Number(t.frais_bancaires || 0), 0) +
+    guestOrders
+      .filter(o => {
+        const d = new Date(o.paid_at || o.created_at);
+        return d >= prevRange.start && d < prevRange.end;
+      })
+      .reduce((s, o) => s + Number(o.frais_bancaires || 0), 0);
+  const prevNet = prevTotal - prevFraisBancaires;
+  // Une variation n'a de sens qu'au départ d'un net positif : sur une base nulle
+  // ou négative, le pourcentage dirait n'importe quoi.
+  const trendPct = prevNet > 0 ? ((revenuNet - prevNet) / prevNet) * 100 : 0;
 
   // Clé de regroupement (jour ou mois, heure locale). Les graphiques
   // regroupent chaque ligne une seule fois : refiltrer toutes les lignes pour
@@ -718,7 +742,12 @@ export default function AdminRevenus() {
           <Card>
             <CardContent className="pt-6">
               <p className="text-sm text-muted-foreground font-medium">Revenu net</p>
-              <p className="text-3xl font-bold text-emerald-600 mt-1">{eur(revenuNet)}</p>
+              {/* La couleur suit le signe. En vert quoi qu'il arrive, une perte
+                  se lisait comme un gain : le 11/10/2026, −1,61 € s'affichait
+                  en vert, et il fallait relire le chiffre pour voir le moins. */}
+              <p className={`text-3xl font-bold mt-1 ${revenuNet < 0 ? "text-red-600" : "text-emerald-600"}`}>
+                {eur(revenuNet)}
+              </p>
               <div className="mt-2">{renderTrend(trendPct)}</div>
             </CardContent>
           </Card>
@@ -735,7 +764,11 @@ export default function AdminRevenus() {
 
           <Card>
             <CardContent className="pt-6">
-              <p className="text-sm text-muted-foreground font-medium">Démarches</p>
+              {/* « Démarches » tout court, ici, et « Démarches reçues (payées) »
+                  plus bas : deux comptes différents sous le même mot. Celui-ci
+                  date à la création, l'autre au paiement — le 11/10/2026 l'un
+                  disait 3 et l'autre 4, sur le même écran. */}
+              <p className="text-sm text-muted-foreground font-medium">Démarches créées</p>
               <p className="text-3xl font-bold mt-1">{filteredDemarches.length + filteredGuestOrders.length}</p>
               <p className="text-xs text-muted-foreground mt-2">
                 {filteredDemarches.length} pros · {filteredGuestOrders.length} particuliers
