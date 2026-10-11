@@ -91,6 +91,13 @@ interface GarageVerificationPanelProps {
    * « Compte », plus haut, ne bouge.
    */
   onDossierChange?: () => void;
+  /**
+   * Même principe que le don de jetons : le bouton « Non éligible » vit en
+   * tête de la fiche garage, à côté de « Modifier », et le dialogue reste ici
+   * avec la décision qu'il écrit.
+   */
+  ecarterOuvert?: boolean;
+  onEcarterOuvertChange?: (ouvert: boolean) => void;
 }
 
 /**
@@ -126,6 +133,8 @@ export function GarageVerificationPanel({
   ecrireOuvert,
   onEcrireOuvertChange,
   onDossierChange,
+  ecarterOuvert,
+  onEcarterOuvertChange,
 }: GarageVerificationPanelProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -147,7 +156,9 @@ export function GarageVerificationPanel({
   // pièce. Elle le sort des files de travail et demande un motif, parce
   // qu'une décision sans motif se rediscute six mois plus tard sans que
   // personne ne sache ce qui avait été constaté.
-  const [showEcarterDialog, setShowEcarterDialog] = useState(false);
+  const [ecarterInterne, setEcarterInterne] = useState(false);
+  const showEcarterDialog = ecarterOuvert ?? ecarterInterne;
+  const setShowEcarterDialog = onEcarterOuvertChange ?? setEcarterInterne;
   const [motifEcart, setMotifEcart] = useState("");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectAccountReason, setRejectAccountReason] = useState("");
@@ -1004,34 +1015,18 @@ export function GarageVerificationPanel({
           )}
         </div>
 
-        {/* Écarter, ou réintégrer. En retrait sous le verdict : ce n'est pas le
-            geste courant, mais il doit exister — sans lui, un garage qui ne
-            sera jamais vérifié reste indéfiniment dans les files de travail,
-            et on rouvre son dossier tous les mois. */}
-        <div className="mt-2">
-          {garage.non_eligible ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-4 py-2.5">
-              <Ban className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <p className="min-w-0 flex-1 text-sm">
-                <span className="font-medium">Garage écarté</span>
-                {garage.non_eligible_motif ? ` — ${garage.non_eligible_motif}` : ""}
-              </p>
-              <Button variant="outline" size="sm" className="shrink-0" onClick={reintegrerGarage}>
-                Réintégrer
-              </Button>
-            </div>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => setShowEcarterDialog(true)}
-            >
-              <Ban className="mr-2 h-4 w-4" />
-              Écarter ce garage — non éligible
+        {garage.non_eligible && (
+          <div className="mt-2 flex flex-wrap items-center gap-3 rounded-lg border bg-muted/40 px-4 py-2.5">
+            <Ban className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <p className="min-w-0 flex-1 text-sm">
+              <span className="font-medium">Garage écarté</span>
+              {garage.non_eligible_motif ? ` — ${garage.non_eligible_motif}` : ""}
+            </p>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={reintegrerGarage}>
+              Réintégrer
             </Button>
-          )}
-        </div>
+          </div>
+        )}
             {/* Une seule liste, un grand lecteur.
                 Il y avait trois blocs empilés — les pièces classées, celles
                 attendues du garage, puis une carte d'action détachée qui

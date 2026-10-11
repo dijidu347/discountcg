@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, Pencil, ShieldCheck, Coins, Send } from "lucide-react";
+import { ArrowLeft, Pencil, ShieldCheck, Coins, Send, Ban } from "lucide-react";
 import { StatusPill } from "@/components/StatusPill";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import {
@@ -132,6 +132,7 @@ export default function GarageDetail() {
   // Le bouton « Écrire au garage » vit dans la prospection, le dialogue reste
   // dans le panneau de vérification avec sa logique d'envoi.
   const [ecrireOuvert, setEcrireOuvert] = useState(false);
+  const [ecarterOuvert, setEcarterOuvert] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
@@ -271,10 +272,18 @@ export default function GarageDetail() {
               </Badge>
             ) : null}
           </div>
-          <Button onClick={() => setShowEditDialog(true)}>
-            <Pencil className="h-4 w-4 mr-2" />
-            Modifier
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            {!garage.non_eligible && (
+              <Button variant="destructive" onClick={() => setEcarterOuvert(true)}>
+                <Ban className="h-4 w-4 mr-2" />
+                Non-éligible
+              </Button>
+            )}
+            <Button onClick={() => setShowEditDialog(true)}>
+              <Pencil className="h-4 w-4 mr-2" />
+              Modifier
+            </Button>
+          </div>
         </div>
 
         {/* Solde de jetons — mis en évidence */}
@@ -410,6 +419,8 @@ export default function GarageDetail() {
             ecrireOuvert={ecrireOuvert}
             onEcrireOuvertChange={setEcrireOuvert}
             onDossierChange={rechargerDossier}
+            ecarterOuvert={ecarterOuvert}
+            onEcarterOuvertChange={setEcarterOuvert}
           />
         </div>
 
