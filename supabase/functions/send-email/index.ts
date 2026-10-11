@@ -13,14 +13,28 @@ const INTERNAL_API_KEY = Deno.env.get("INTERNAL_API_KEY");
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// Validate either internal API key, service role key, anon key, OR any authenticated user
-const validateAuth = async (req: Request): Promise<boolean> => {
+// Qui appelle : une de nos machines, une personne connectée, ou un visiteur.
+//
+// La clé anonyme figure dans le code livré au navigateur : elle est publique
+// par construction. L'ancien commentaire disait « since verify_jwt is false,
+// this is safe » — c'était l'inverse. Qui la connaît pouvait appeler cette
+// fonction, choisir le destinataire, choisir l'expéditeur, et choisir le lien
+// du bouton « Payer maintenant » : un hameçonnage parfait, envoyé depuis notre
+// propre domaine.
+//
+// On ne peut pas simplement exiger une session : les parcours particulier
+// (commande sans compte, dépôt de pièces, messages de suivi) s'exécutent sans
+// être connecté. On distingue donc trois niveaux, et ce que chacun peut faire
+// est décidé plus bas.
+type Appelant = "machine" | "personne" | "visiteur" | null;
+
+const validateAuth = async (req: Request): Promise<Appelant> => {
   // Check internal API key first (for service-to-service calls)
   const providedKey = req.headers.get("x-internal-key");
   console.log("🔑 Internal key check:", providedKey ? "provided" : "not provided");
   if (providedKey && INTERNAL_API_KEY && providedKey === INTERNAL_API_KEY) {
     console.log("✅ Authenticated via internal API key");
-    return true;
+    return "machine";
   }
 
   // Check for service role key (for edge-to-edge calls)
@@ -28,43 +42,76 @@ const validateAuth = async (req: Request): Promise<boolean> => {
   const apiKey = req.headers.get("apikey");
   console.log("🔐 Auth header check:", authHeader ? "provided" : "not provided");
   console.log("🔑 API key check:", apiKey ? "provided" : "not provided");
-  
+
   // Accept service role key directly
   if (apiKey === supabaseServiceKey) {
     console.log("✅ Authenticated via service role key (apikey header)");
-    return true;
+    return "machine";
   }
-  
-  // Accept anon key (for frontend calls) - since verify_jwt is false, this is safe
-  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  if (apiKey && supabaseAnonKey && apiKey === supabaseAnonKey) {
-    console.log("✅ Authenticated via anon key (apikey header)");
-    return true;
-  }
-  
+
   if (authHeader) {
     const token = authHeader.replace("Bearer ", "");
-    
+
     // Check if token is the service role key itself
     if (token === supabaseServiceKey) {
       console.log("✅ Authenticated via service role key (bearer)");
-      return true;
+      return "machine";
     }
-    
+
     // Check any authenticated user JWT
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     console.log("👤 User check:", user ? `found (${user.id})` : "not found", userError ? `error: ${userError.message}` : "");
-    
+
     if (user && !userError) {
       console.log("✅ Authenticated via user JWT");
-      return true;
+      return "personne";
     }
   }
 
+  // La clé anonyme, en dernier : elle n'ouvre que les trois courriers des
+  // parcours particulier, qui partent avant toute connexion.
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const porteurAnon = authHeader?.replace("Bearer ", "") === supabaseAnonKey;
+  if (supabaseAnonKey && (apiKey === supabaseAnonKey || porteurAnon)) {
+    console.log("✅ Authenticated via anon key — visiteur");
+    return "visiteur";
+  }
+
   console.log("❌ Authentication failed");
-  return false;
+  return null;
 };
+
+// Les seuls courriers qu'un visiteur non connecté déclenche, et qui doivent
+// donc partir sans session : l'accusé de commande, le dépôt d'une pièce
+// redemandée, et le message écrit depuis la page de suivi.
+const COURRIERS_VISITEUR = new Set([
+  "guest_order_submitted",
+  "guest_new_message",
+  "admin_guest_document_reupload",
+]);
+
+// Les liens cliquables des courriers viennent des données de l'appel. Tous les
+// appelants légitimes pointent chez nous — ou, pour l'alerte de crédits plaques
+// qui ne part que vers notre boîte, chez le fournisseur. Un lien ailleurs est
+// un hameçonnage : on refuse l'envoi plutôt que de livrer un bouton piégé.
+const HOTES_DE_LIEN = new Set([
+  "discountcartegrise.fr",
+  "www.discountcartegrise.fr",
+  "auto-ways.net",
+  "www.auto-ways.net",
+]);
+
+function lienHorsDeChezNous(valeur: unknown): string | null {
+  if (valeur === undefined || valeur === null || valeur === "") return null;
+  let hote: string;
+  try {
+    hote = new URL(String(valeur)).hostname.toLowerCase();
+  } catch {
+    return String(valeur);
+  }
+  return HOTES_DE_LIEN.has(hote) ? null : String(valeur);
+}
 
 interface EmailAttachment {
   filename: string;
@@ -1234,8 +1281,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   // Validate authentication (internal key OR admin JWT)
-  const isAuthorized = await validateAuth(req);
-  if (!isAuthorized) {
+  const appelant = await validateAuth(req);
+  if (!appelant) {
     console.error("❌ Unauthorized: Invalid or missing authentication");
     return new Response(
       JSON.stringify({ error: "Unauthorized" }),
@@ -1246,7 +1293,46 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     const { type, to, data, attachments, from: customFrom, cc }: EmailRequest & { from?: string; cc?: string | string[] } = await req.json();
 
-    console.log(`📧 Envoi email type: ${type} à ${to}`);
+    console.log(`📧 Envoi email type: ${type} à ${to} (appelant: ${appelant})`);
+
+    // Un visiteur ne dispose que des trois courriers de son parcours, et ne
+    // choisit ni l'expéditeur, ni une copie, ni une pièce jointe.
+    if (appelant === "visiteur") {
+      if (!COURRIERS_VISITEUR.has(type)) {
+        console.error("⛔ Courrier refusé à un appelant non connecté:", type);
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+      if (customFrom || cc || attachments?.length) {
+        console.error("⛔ Expéditeur, copie ou pièce jointe refusés à un appelant non connecté");
+        return new Response(
+          JSON.stringify({ error: "Forbidden" }),
+          { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        );
+      }
+    }
+
+    // L'expéditeur ne se choisit que depuis nos machines : Resend accepte
+    // n'importe quelle adresse de notre domaine vérifié, y compris
+    // « contact@ » ou « direction@ ».
+    if (customFrom && appelant !== "machine") {
+      console.error("⛔ Expéditeur imposé refusé:", customFrom);
+      return new Response(
+        JSON.stringify({ error: "Forbidden" }),
+        { status: 403, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const lienSuspect = lienHorsDeChezNous(data?.payment_url) ?? lienHorsDeChezNous(data?.lien);
+    if (lienSuspect) {
+      console.error("⛔ Lien hors domaine refusé:", lienSuspect);
+      return new Response(
+        JSON.stringify({ error: "Lien non autorisé" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
 
     const { subject, html } = getEmailTemplate(type, data);
 
