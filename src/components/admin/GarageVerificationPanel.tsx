@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw, FileText, Image as ImageIcon, Ban } from "lucide-react";
+import { CheckCircle, XCircle, Eye, ShieldCheck, Send, Loader2, History, Upload, Coins, RefreshCw, Ban } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentViewer } from "@/components/DocumentViewer";
 import { ApercuDocument } from "@/components/admin/ApercuDocument";
@@ -1121,26 +1121,9 @@ export function GarageVerificationPanel({
                         onClick={() => setIdChoisi(r.docs[0]?.id ?? null)}
                         className="flex w-full items-start gap-3 p-3 text-left disabled:cursor-default"
                       >
-                        {/* Une vignette rappelle qu'on juge un document, pas une
-                            ligne de liste : enchaîner vingt pièces sans repère
-                            visuel fait perdre le fil. L'icône dit déjà
-                            l'essentiel — un PDF scanné n'appelle pas la même
-                            attention qu'une photo prise de travers. */}
-                        <div
-                          className={`flex h-[68px] w-[54px] shrink-0 items-center justify-center rounded-md border ${
-                            r.docs.length === 0 ? "border-dashed text-muted-foreground/60" : "bg-muted/40 text-muted-foreground"
-                          }`}
-                        >
-                          {r.docs.length === 0
-                            ? <FileText className="h-5 w-5" />
-                            : /\.(pdf)$/i.test(String(r.docs[0].nom_fichier ?? ""))
-                              ? <FileText className="h-5 w-5" />
-                              : <ImageIcon className="h-5 w-5" />}
-                        </div>
-
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
-                            <p className="truncate text-sm font-medium">{r.nom}</p>
+                            <p className="truncate text-base font-semibold">{r.nom}</p>
                             {r.docs.length > 0 && <EtatDocument doc={r.docs[0]} kbisPerime={kbisPerime} />}
                           </div>
                           {r.docs.length === 0 ? (
