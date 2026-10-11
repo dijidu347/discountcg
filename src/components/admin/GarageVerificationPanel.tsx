@@ -144,7 +144,7 @@ const MOTIFS_NON_ELIGIBLE = [
 const TEINTE_PIECE: Record<string, string> = {
   approuve: "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30",
   expire: "border-orange-200 bg-orange-50 dark:border-orange-900 dark:bg-orange-950/30",
-  refuse: "border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950/30",
+  refuse: "border-red-200 bg-red-50/40 dark:border-red-900 dark:bg-red-950/20",
   attente: "border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30",
 };
 

@@ -148,7 +148,8 @@ export default function AdminCompressionFichiers() {
   };
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
+      <div className="container mx-auto max-w-3xl px-4 py-8">
       <Helmet>
         <title>Compression des anciens fichiers</title>
       </Helmet>
@@ -215,6 +216,7 @@ export default function AdminCompressionFichiers() {
           )}
         </CardContent>
       </Card>
+    </div>
     </div>
   );
 }

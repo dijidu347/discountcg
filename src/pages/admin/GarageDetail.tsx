@@ -239,7 +239,7 @@ export default function GarageDetail() {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet>
         <title>{garage.raison_sociale} — Fiche garage</title>
         <meta name="robots" content="noindex, nofollow" />

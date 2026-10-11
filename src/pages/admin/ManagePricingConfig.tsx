@@ -401,7 +401,7 @@ const ManagePricingConfig = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-8">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background p-8">
         <div className="max-w-6xl mx-auto">
           <p className="text-center">Chargement...</p>
         </div>
@@ -410,7 +410,7 @@ const ManagePricingConfig = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background p-8">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Admin - Configuration tarifs | Discount Carte Grise</title>

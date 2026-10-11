@@ -72,7 +72,8 @@ export default function AdminBilanStripe() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
+      <div className="container mx-auto max-w-4xl px-4 py-8 space-y-6">
       <Helmet>
         <title>Bilan Stripe</title>
       </Helmet>
@@ -192,6 +193,7 @@ export default function AdminBilanStripe() {
           </CardContent>
         </Card>
       ))}
+    </div>
     </div>
   );
 }

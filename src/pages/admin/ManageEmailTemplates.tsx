@@ -125,7 +125,7 @@ const ManageEmailTemplates = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background p-6">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Admin - Templates email | Discount Carte Grise</title>

@@ -92,7 +92,7 @@ export default function HistoriquePaiements() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-muted/40">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-france-red/5 to-background">
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
         <title>Historique paiements | Discount Carte Grise</title>
