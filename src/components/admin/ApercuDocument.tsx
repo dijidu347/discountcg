@@ -25,7 +25,8 @@ interface ApercuDocumentProps {
   /** Sinon l'URL stockée, dont on déduit les deux. */
   documentUrl?: string;
   nomFichier?: string;
-  /** Hauteur du cadre ; la valeur par défaut tient dans un écran de portable. */
+  /** Hauteur de l'aperçu entier — cadre et barre d'outils comprise. La valeur
+   *  par défaut tient dans un écran de portable. */
   className?: string;
 }
 
@@ -76,9 +77,21 @@ export function ApercuDocument({
     charger();
   }, [charger]);
 
+  // La hauteur demandée se pose sur l'aperçu entier, et le cadre prend ce qui
+  // reste une fois la barre d'outils placée. Auparavant elle se posait sur le
+  // cadre seul, dans un conteneur de hauteur libre : deux conséquences.
+  //
+  // L'aperçu ne s'étirait pas à la hauteur de la colonne voisine — il
+  // s'arrêtait net et laissait un grand blanc sous lui.
+  //
+  // Et surtout, le document n'apparaissait qu'à moitié. Un `height: 100%` ne
+  // se résout que contre une hauteur définie ; `min-h-[320px]` n'en est pas
+  // une. Le cadre faisait bien ses 320 px, mais l'iframe retombait sur la
+  // hauteur par défaut d'un cadre HTML — 150 px — et le bas du Kbis
+  // disparaissait sous une bande blanche, sans moyen d'y descendre.
   return (
-    <div className="space-y-2">
-      <div className={`relative overflow-auto rounded-lg border bg-muted/30 ${className}`}>
+    <div className={`flex min-h-0 flex-col gap-2 ${className}`}>
+      <div className="relative min-h-0 flex-1 overflow-auto rounded-lg border bg-muted/30">
         {chargement && (
           <div className="flex h-full items-center justify-center gap-2 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -102,11 +115,17 @@ export function ApercuDocument({
             // sans quoi un A4 arrive à 100 % et il faut le recadrer à la main.
             <iframe
               // toolbar=0 et navpanes=0 retirent la barre d'outils et le rail
-              // de miniatures du navigateur ; FitH cadre la largeur de la page.
-              src={`${lien}#toolbar=0&navpanes=0&view=FitH&zoom=${zoom}`}
+              // de miniatures du navigateur. FitH cadre la largeur de la page ;
+              // on ne l'envoie qu'au repos, car donner les deux à la fois —
+              // « cadre la largeur » et « affiche à tel pourcentage » — laisse
+              // le lecteur choisir, et il ne choisit pas toujours le même.
+              src={`${lien}#toolbar=0&navpanes=0&${zoom === 100 ? "view=FitH" : `zoom=${zoom}`}`}
               key={zoom}
               title={nomFichier || "Document"}
-              className="h-full w-full border-0 bg-white"
+              // Positionné sur le cadre plutôt qu'en `h-full` : la hauteur est
+              // alors celle du cadre, quoi qu'il arrive, et le lecteur PDF
+              // défile à l'intérieur.
+              className="absolute inset-0 h-full w-full border-0 bg-white"
             />
           ) : (
             <img
@@ -121,7 +140,7 @@ export function ApercuDocument({
       </div>
 
       {lien && (
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
           <div className="mr-auto flex items-center gap-1">
             <Button
               variant="outline"

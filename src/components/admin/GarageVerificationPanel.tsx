@@ -1422,7 +1422,7 @@ export function GarageVerificationPanel({
                       key={docChoisi.id}
                       documentUrl={docChoisi.url}
                       nomFichier={docChoisi.nom_fichier}
-                      className="min-h-[320px] flex-1"
+                      className="min-h-[520px] flex-1"
                     />
                   </>
                 ) : (
