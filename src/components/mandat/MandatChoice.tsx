@@ -53,9 +53,6 @@ export const MandatChoice = ({
           <RadioGroupItem value="upload" id="mandat_upload" className="mt-0.5" />
           <Label htmlFor="mandat_upload" className="cursor-pointer font-normal">
             <span className="font-medium">J'ai déjà mon mandat</span>
-            <span className="block text-sm text-muted-foreground mt-1">
-              Vous le déposez tel quel, rempli et signé de votre main.
-            </span>
           </Label>
         </div>
         {value === "upload" && slotUpload && (
@@ -72,9 +69,6 @@ export const MandatChoice = ({
           <RadioGroupItem value="genere" id="mandat_genere" className="mt-0.5" />
           <Label htmlFor="mandat_genere" className="cursor-pointer font-normal">
             <span className="font-medium">Le remplir en ligne</span>
-            <span className="block text-sm text-muted-foreground mt-1">
-              Nous le pré-remplissons, vous vérifiez et signez à l'écran. Rien à imprimer.
-            </span>
           </Label>
         </div>
         {value === "genere" && slotGenere && (

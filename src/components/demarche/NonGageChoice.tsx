@@ -48,11 +48,6 @@ export const NonGageChoice = ({
           <span className="text-destructive text-base font-bold">&nbsp;*</span>
         </p>
       </div>
-      <p className="text-sm text-muted-foreground">
-        Ce certificat atteste qu'aucun gage ni opposition n'empêche le changement de
-        titulaire. Il est indispensable au traitement du dossier.
-      </p>
-
       <RadioGroup
         value={value ?? ""}
         onValueChange={(v) => onChange(v as NonGageMode)}
@@ -69,11 +64,11 @@ export const NonGageChoice = ({
           <div className="flex items-start space-x-3">
             <RadioGroupItem value="fourni" id="non_gage_fourni" className="mt-0.5" />
             <Label htmlFor="non_gage_fourni" className="cursor-pointer font-normal">
-              <span className="font-medium">Je fournis le certificat</span>
-              <span className="block text-sm text-muted-foreground mt-1">
-                {uploadSlot
-                  ? "Gratuit. Déposez-le ci-dessous pour continuer."
-                  : "Gratuit. Vous devrez le déposer avec les autres pièces du dossier."}
+              <span className="font-medium flex items-center gap-2">
+                Je fournis le certificat
+                {/* Le seul mot gardé de l'explication : c'est un prix, et il
+                    répond au « +2 € » de l'autre choix juste en dessous. */}
+                <span className="ml-auto text-muted-foreground font-semibold whitespace-nowrap">Gratuit</span>
               </span>
             </Label>
           </div>
@@ -97,9 +92,6 @@ export const NonGageChoice = ({
             <span className="font-medium flex items-center gap-2">
               Nous le commandons pour vous
               <span className="ml-auto text-primary font-semibold whitespace-nowrap">+{prix}&nbsp;€</span>
-            </span>
-            <span className="block text-sm text-muted-foreground mt-1">
-              Nous nous chargeons de l'obtenir, vous n'avez rien à déposer.
             </span>
           </Label>
         </div>
