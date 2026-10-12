@@ -40,9 +40,12 @@ export default function Simulateur() {
       <Navbar />
 
       {/* Hero + Simulateur */}
-      <section className="pt-24 pb-12 md:pt-28 md:pb-20 bg-gradient-to-b from-primary/5 to-background">
+      {/* Resserré : le titre, deux lignes d'explication, puis le champ de
+          saisie. Il y avait auparavant un écran et demi à faire défiler sur
+          téléphone avant d'atteindre la plaque. */}
+      <section className="pt-24 pb-2 md:pt-28 md:pb-6 bg-gradient-to-b from-primary/5 to-background">
         <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto text-center mb-10">
+          <div className="max-w-4xl mx-auto text-center mb-6">
             <h1 className="text-3xl md:text-5xl font-extrabold text-foreground mb-4">
               Simulateur prix carte grise 2026
             </h1>
@@ -51,7 +54,7 @@ export default function Simulateur() {
               Tarifs officiels à jour par département, résultat en 30 secondes.
             </p>
           </div>
-          <SimulateurSection initialType={typeParam} />
+          <SimulateurSection initialType={typeParam} sansEnTete />
         </div>
       </section>
 

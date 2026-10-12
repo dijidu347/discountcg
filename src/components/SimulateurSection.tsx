@@ -51,7 +51,21 @@ const getIconForCode = (code: string) => {
   }
 };
 
-export const SimulateurSection = ({ embedded = false, initialType = "" }: { embedded?: boolean; initialType?: string }) => {
+export const SimulateurSection = ({
+  embedded = false,
+  initialType = "",
+  sansEnTete = false,
+}: {
+  embedded?: boolean;
+  initialType?: string;
+  /**
+   * Masque le titre interne. Sur la page /simulateur, le H1 annonce déjà
+   * « Simulateur prix carte grise 2026 » : le H2 « Simulateur de prix » qui
+   * suivait disait la même chose une seconde fois, et repoussait le champ de
+   * saisie d'un écran et demi sur téléphone.
+   */
+  sansEnTete?: boolean;
+}) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [demarcheTypes, setDemarcheTypes] = useState<DemarcheType[]>([]);
@@ -433,14 +447,21 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
   }
 
   return (
-    <section className="py-20 bg-muted/30" id="simulateur">
+    // Sans en-tête, ce bloc est imbriqué dans la section d'accueil de la page
+    // /simulateur : il ne pose donc pas son propre fond, qui dessinerait un
+    // rectangle gris au milieu du dégradé.
+    <section className={sansEnTete ? "pb-12 pt-2" : "py-20 bg-muted/30"} id="simulateur">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-foreground">
-          Simulateur de prix
-        </h2>
-        <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
-          Calculez instantanément le prix de votre démarche
-        </p>
+        {!sansEnTete && (
+          <>
+            <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-foreground">
+              Simulateur de prix
+            </h2>
+            <p className="text-center text-muted-foreground mb-12 max-w-xl mx-auto">
+              Calculez instantanément le prix de votre démarche
+            </p>
+          </>
+        )}
         {simulatorContent}
       </div>
     </section>
