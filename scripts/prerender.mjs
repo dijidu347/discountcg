@@ -477,6 +477,57 @@ async function principal() {
     console.warn("[prerender] repères adresse ignorés :", e?.message ?? e);
   }
 
+  // Cotitulaire et modification : les deux dernières pages de gabarit parmi
+  // les dix sans aucune impression. Chacune portait son fait distinctif noyé
+  // dans de la prose — le lien de parenté qui décide du prix pour l'une, la
+  // preuve exigée et son délai pour l'autre.
+  let reperesCotitulaire = "";
+  try {
+    const { SELON_LE_LIEN, REPERES_COTITULAIRE } = await chargerTs(
+      "src/data/cotitulaireReperes.ts",
+      "cotitulaire"
+    );
+    reperesCotitulaire =
+      `<h2>Le prix dépend de qui vous ajoutez ou retirez</h2>` +
+      `<p>Montants sur un véhicule de 6 chevaux fiscaux, hors frais de dossier.</p>` +
+      `<table><thead><tr><th>La personne concernée</th><th>Taxe régionale</th>` +
+      `<th>Total des taxes</th></tr></thead><tbody>` +
+      SELON_LE_LIEN.map(
+        (l) =>
+          `<tr><th scope="row">${echappe(l.qui)}</th><td>${echappe(l.taxeRegionale)}</td>` +
+          `<td>${echappe(l.total6cv)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_COTITULAIRE.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères cotitulaire ignorés :", e?.message ?? e);
+  }
+
+  let reperesModification = "";
+  try {
+    const { SELON_LA_MODIFICATION, REPERES_MODIFICATION } = await chargerTs(
+      "src/data/modificationReperes.ts",
+      "modification"
+    );
+    reperesModification =
+      `<h2>Ce qu'on vous demandera, selon la modification</h2>` +
+      `<table><thead><tr><th>Votre modification</th><th>La preuve exigée</th>` +
+      `<th>Délivrée par</th><th>Délai</th></tr></thead><tbody>` +
+      SELON_LA_MODIFICATION.map(
+        (l) =>
+          `<tr><th scope="row">${echappe(l.modification)}</th><td>${echappe(l.preuve)}</td>` +
+          `<td>${echappe(l.delivrePar)}</td><td>${echappe(l.delai)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_MODIFICATION.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères modification ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -821,6 +872,8 @@ async function principal() {
         d.slug === "immatriculation-cyclomoteur" ? reperesCyclo : "",
         d.slug === "duplicata-carte-grise" ? reperesDuplicata : "",
         d.slug === "changement-adresse-carte-grise" ? reperesAdresse : "",
+        d.slug === "cotitulaire-carte-grise" ? reperesCotitulaire : "",
+        d.slug === "modification-carte-grise" ? reperesModification : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
