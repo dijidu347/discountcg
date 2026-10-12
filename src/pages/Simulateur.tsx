@@ -8,7 +8,7 @@ import { ROUTES_SEO } from "@/data/seoRoutes";
 const SEO = ROUTES_SEO["/simulateur"];
 import { breadcrumbSchema, serviceSchema, faqSchema } from "@/components/seo/schemas";
 import { SimulateurSection } from "@/components/SimulateurSection";
-import { TarifsCarteGrise, faqTarifs, faqService } from "@/components/seo/TarifsCarteGrise";
+import { TarifsCarteGrise, faqTarifs, faqMoinsCher, faqService } from "@/components/seo/TarifsCarteGrise";
 import { Shield, Clock, FileCheck, CheckCircle, ArrowRight } from "lucide-react";
 
 export default function Simulateur() {
@@ -33,7 +33,7 @@ export default function Simulateur() {
             "https://discountcartegrise.fr/simulateur"
           ),
           faqSchema([
-            ...faqTarifs, ...faqService,
+            ...faqTarifs, ...faqMoinsCher, ...faqService,
           ]),
         ]}
       />

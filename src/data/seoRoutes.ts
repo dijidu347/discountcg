@@ -40,7 +40,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   "/simulateur": {
     title: "Simulateur prix carte grise 2026",
     description:
-      "Calculez le prix de votre carte grise en 30 secondes, et consultez le tarif du cheval fiscal des 101 départements en 2026. Gratuit, sans inscription.",
+      "Calculez le prix de votre carte grise en 30 secondes, et voyez comment payer moins cher : abattement des plus de dix ans, exonérations, 101 départements.",
     canonical: `${BASE}/simulateur`,
     h1: "Simulateur prix carte grise 2026",
     intro: [

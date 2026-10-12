@@ -10,7 +10,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { departementsTarifs, departementsLabels } from "@/data/departementsTarifs";
-import { FAQ_SERVICE, FAQ_TARIFS } from "@/data/tarifsContenu";
+import { FAQ_SERVICE, FAQ_TARIFS, FAQ_MOINS_CHER, LEVIERS_REELS, FAUSSES_ECONOMIES, PART_COMPARABLE } from "@/data/tarifsContenu";
 import { DEPARTEMENTS, CHEMIN_DEPARTEMENT } from "@/data/departements";
 import { calculatePrice } from "@/utils/calculatePrice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +29,7 @@ const CHEMIN_PAR_CODE: Record<string, string> = Object.fromEntries(
 // Réexportés : Simulateur.tsx les passe au schéma FAQPage.
 export const faqService = FAQ_SERVICE;
 export const faqTarifs = FAQ_TARIFS;
+export const faqMoinsCher = FAQ_MOINS_CHER;
 
 // Les montants s'affichaient « 43.00 € », avec le point décimal anglais.
 const eur = (n: number) =>
@@ -654,6 +655,75 @@ export function TarifsCarteGrise() {
           </div>
         </section>
 
+        {/* Payer moins cher : la question la plus posée au moteur de recherche,
+            et celle à laquelle la page ne répondait pas. Deux tableaux plutôt
+            qu'un texte : le lecteur cherche son cas, il ne lit pas tout. */}
+        <section className="mb-16">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4 flex items-center gap-3">
+            <TrendingDown className="w-7 h-7 text-primary" />
+            Payer sa carte grise moins cher
+          </h2>
+          <p className="text-muted-foreground mb-6 max-w-3xl">
+            Aucune remise commerciale n'est possible sur une carte grise : l'essentiel du prix est
+            une taxe fixée par la loi et par votre région, identique chez tous les prestataires
+            habilités comme sur le site de l'État. Les seules réductions qui existent sont prévues
+            par les textes, et elles s'appliquent toutes seules.
+          </p>
+
+          <h3 className="text-lg font-semibold text-foreground mb-3">Les réductions prévues par la loi</h3>
+          <div className="overflow-x-auto mb-8">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">Votre cas</TableHead>
+                  <TableHead className="min-w-[180px]">Ce que vous payez en moins</TableHead>
+                  <TableHead>La règle</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {LEVIERS_REELS.map((l) => (
+                  <TableRow key={l.cas}>
+                    <TableCell className="font-medium align-top">{l.cas}</TableCell>
+                    <TableCell className="align-top text-primary font-medium">{l.effet}</TableCell>
+                    <TableCell className="align-top text-sm text-muted-foreground">{l.fondement}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <h3 className="text-lg font-semibold text-foreground mb-3">Ce qui ne réduit rien</h3>
+          <div className="overflow-x-auto mb-8">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">L'idée</TableHead>
+                  <TableHead className="min-w-[180px]">L'effet réel</TableHead>
+                  <TableHead>Pourquoi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {FAUSSES_ECONOMIES.map((l) => (
+                  <TableRow key={l.cas}>
+                    <TableCell className="font-medium align-top">{l.cas}</TableCell>
+                    <TableCell className="align-top text-muted-foreground font-medium">{l.effet}</TableCell>
+                    <TableCell className="align-top text-sm text-muted-foreground">{l.fondement}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">La seule part qui se compare</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">{PART_COMPARABLE.texte}</p>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* FAQ */}
         <section className="mb-16">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
@@ -661,7 +731,7 @@ export function TarifsCarteGrise() {
             Questions fréquentes sur le prix de la carte grise
           </h2>
           <Accordion type="single" collapsible className="w-full">
-            {[...faqTarifs, ...faqService].map((faq, index) => (
+            {[...faqTarifs, ...faqMoinsCher, ...faqService].map((faq, index) => (
               <AccordionItem key={index} value={`faq-${index}`}>
                 <AccordionTrigger className="text-left text-base font-medium">
                   {faq.question}

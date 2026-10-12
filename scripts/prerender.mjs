@@ -409,9 +409,46 @@ async function principal() {
   // impressions sur seize mois, en position 28, la première famille de requêtes
   // du site. La réponse existait, elle n'était simplement lue par personne.
   try {
-    const { FAQ_SERVICE, FAQ_TARIFS } = await chargerTs("src/data/tarifsContenu.ts", "tarifs");
-    const toutes = [...FAQ_TARIFS, ...FAQ_SERVICE];
-    supplementsPages["/simulateur"] = faqHtml(toutes);
+    const { FAQ_SERVICE, FAQ_TARIFS, FAQ_MOINS_CHER, LEVIERS_REELS, FAUSSES_ECONOMIES, PART_COMPARABLE } =
+      await chargerTs("src/data/tarifsContenu.ts", "tarifs");
+    const toutes = [...FAQ_TARIFS, ...FAQ_MOINS_CHER, ...FAQ_SERVICE];
+
+    // La section « moins cher » répond à la première famille de requêtes du
+    // site, qui n'avait jusqu'ici aucune réponse : les pages disaient combien
+    // coûte une carte grise et pourquoi le prix varie, jamais comment payer
+    // moins. Elle précède la FAQ pour que le robot — et le lecteur — la
+    // trouvent avant les questions.
+    const tableauLeviers = (titre, lignes, enTetes) =>
+      `<h3>${titre}</h3><table><thead><tr>` +
+      enTetes.map((t) => `<th>${t}</th>`).join("") +
+      `</tr></thead><tbody>` +
+      lignes
+        .map(
+          (l) =>
+            `<tr><td>${echappe(l.cas)}</td><td>${echappe(l.effet)}</td>` +
+            `<td>${echappe(l.fondement)}</td></tr>`
+        )
+        .join("") +
+      `</tbody></table>`;
+
+    supplementsPages["/simulateur"] =
+      `<h2>Payer sa carte grise moins cher : ce qui marche, ce qui ne marche pas</h2>` +
+      `<p>Aucune remise commerciale n'est possible sur une carte grise : l'essentiel du prix ` +
+      `est une taxe fixée par la loi et par votre région, identique chez tous les prestataires ` +
+      `habilités comme sur le site de l'État. Les seules réductions qui existent sont prévues ` +
+      `par les textes, et elles s'appliquent toutes seules.</p>` +
+      tableauLeviers("Les réductions prévues par la loi", LEVIERS_REELS, [
+        "Votre cas",
+        "Ce que vous payez en moins",
+        "La règle",
+      ]) +
+      tableauLeviers("Ce qui ne réduit rien", FAUSSES_ECONOMIES, [
+        "L'idée",
+        "L'effet réel",
+        "Pourquoi",
+      ]) +
+      `<h3>La seule part qui se compare</h3><p>${echappe(PART_COMPARABLE.texte)}</p>` +
+      faqHtml(toutes);
     faqsPages["/simulateur"] = toutes;
   } catch (e) {
     console.warn("[prerender] contenu tarifs ignoré :", e?.message ?? e);
