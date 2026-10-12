@@ -52,25 +52,12 @@ import { isExpressEligible, getExpressSurcharge, EXPRESS_LABEL } from "@/lib/exp
 import type { PriceCalculation } from "@/utils/calculatePrice";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { DEMARCHES_PILOTEES_PAR_LE_CODE } from "@/data/demarchesPiloteesParLeCode";
 
-// Types de démarches PRO qui nécessitent un traitement spécial
-const PRO_DEMARCHE_TYPES = [
-  "WW_PROVISOIRE_PRO",
-  "W_GARAGE_PRO",
-  "QUITUS_FISCAL_PRO",
-  "CHANGEMENT_ADRESSE_PRO",
-  "DUPLICATA_CG_PRO",
-  "FIV_PRO",
-  "CG_NEUF_PRO",
-  "MODIF_CG_PRO",
-  "ANNULATION_CPI_WW_PRO",
-  "CHANGEMENT_ADRESSE_LOCATAIRE_PRO",
-  "SUCCESSION_HERITAGE_PRO",
-  "COTITULAIRE_PRO",
-  "ANNULER_CORRIGER_DC_DA_PRO",
-  "CYCLO_ANCIEN_PRO",
-  "IMMAT_DEFINITIVE_PRO",
-];
+// Types de démarches PRO qui nécessitent un traitement spécial. La liste est
+// partagée avec l'écran d'administration, qui doit savoir quelles démarches il
+// ne pilote pas.
+const PRO_DEMARCHE_TYPES = DEMARCHES_PILOTEES_PAR_LE_CODE;
 // Types de démarches PRO qui nécessitent les infos véhicule manuelles (VIN, marque, modèle)
 const PRO_TYPES_WITH_VEHICLE = ["WW_PROVISOIRE_PRO", "QUITUS_FISCAL_PRO", "CG_NEUF_PRO"];
 // Types de démarches PRO qui utilisent la plaque d'immatriculation (lookup API)

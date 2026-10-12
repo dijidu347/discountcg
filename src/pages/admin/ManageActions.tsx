@@ -9,11 +9,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-import { ArrowLeft, Plus, Trash2, Edit, Save, X } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Edit, Save, X, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { piecesFixeesDansLeCode } from "@/data/demarchesPiloteesParLeCode";
+import { getDocumentsConfig } from "@/components/DocumentsNecessaires";
 
 type ActionRapide = {
   id: string;
@@ -33,12 +35,54 @@ type ActionDocument = {
   nom_document: string;
   ordre: number;
   obligatoire: boolean;
+  obligatoire_depuis: string | null;
+  /** Pièce retirée de la liste : sa ligne reste pour garder son rang aux
+   *  fichiers déjà déposés, mais elle n'est plus demandée ni comptée. */
+  masque: boolean;
 };
 
 type NewDocument = {
+  /** Présent quand la ligne existe déjà en base : elle sera modifiée sur
+   *  place, et gardera donc son rang. Absent pour une pièce ajoutée. */
+  id?: string;
   nom: string;
   obligatoire: boolean;
 };
+
+// Les pièces de quinze démarches ne se règlent pas sur cet écran.
+//
+// Elles sont écrites dans le site lui-même, et c'est cette liste-là que voit le
+// garage. Les lignes correspondantes existent encore en base — on ne les
+// supprime pas, leur rang nomme les fichiers déjà déposés — mais les modifier
+// ici ne change rien pour personne. Montrer un formulaire d'édition sans effet
+// faisait croire le contraire : on affiche donc la vraie liste, en lecture
+// seule, et on dit où elle se change.
+function PiecesFixeesParLeCode({ code }: { code: string }) {
+  const pieces = getDocumentsConfig(code, {}).documents;
+
+  return (
+    <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+      <p className="flex items-center gap-2 text-sm font-semibold text-amber-900">
+        <Lock className="h-4 w-4 shrink-0" />
+        Pièces non modifiables ici ({pieces.length})
+      </p>
+      <p className="mt-1 text-xs leading-relaxed text-amber-900/80">
+        Voici ce que le garage voit réellement. Cette liste est inscrite dans le
+        site : pour ajouter ou retirer une pièce, il faut la faire modifier par
+        le développeur du site. Une modification saisie sur cet écran n'aurait
+        aucun effet.
+      </p>
+      <ul className="mt-2 space-y-1 text-xs text-amber-900/90">
+        {pieces.map((piece) => (
+          <li key={piece.id}>
+            • {piece.nom}
+            {!piece.obligatoire && <span className="text-amber-900/60"> (optionnel)</span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function ManageActions() {
   const { user, loading: authLoading } = useAuth();
@@ -132,8 +176,14 @@ export default function ManageActions() {
 
   const handleEditAction = (action: ActionRapide) => {
     setEditingAction(action);
-    const docs = documents[action.id]?.map(d => ({ nom: d.nom_document, obligatoire: d.obligatoire })) || [{ nom: '', obligatoire: true }];
-    setNewDocuments(docs);
+    // Les pièces masquées ne s'éditent pas : elles ne sont plus demandées, et
+    // leur ligne n'est là que pour garder son rang aux fichiers déjà déposés.
+    // Les charger dans le formulaire les faisait réapparaître comme exigées
+    // au premier enregistrement.
+    const docs = (documents[action.id] ?? [])
+      .filter(d => !d.masque)
+      .map(d => ({ id: d.id, nom: d.nom_document, obligatoire: d.obligatoire }));
+    setNewDocuments(docs.length > 0 ? docs : [{ nom: '', obligatoire: true }]);
     setShowDialog(true);
   };
 
@@ -170,26 +220,64 @@ export default function ManageActions() {
 
         if (error) throw error;
 
-        // Delete old documents
-        await supabase
-          .from('action_documents')
-          .delete()
-          .eq('action_id', editingAction.id);
+        // Enregistrer ne doit JAMAIS supprimer de ligne.
+        //
+        // L'écran effaçait toutes les pièces de la démarche puis les
+        // réinsérait. Trois choses disparaissaient à chaque enregistrement,
+        // même sans rien changer : le drapeau « masquée » — les pièces
+        // retirées redevenaient exigées —, la date à partir de laquelle une
+        // pièce est obligatoire — les dossiers déposés avant étaient alors
+        // jugés sur une exigence postérieure —, et le rang des pièces, car une
+        // ligne retirée décalait toutes les suivantes. Or le rang est ce qui
+        // nomme les fichiers déjà déposés : « doc_3 » est la troisième ligne de
+        // la liste, pas un identifiant. Sur une DA ou une DC, le contrôle
+        // automatique est actif : les faux manques partaient aussitôt à
+        // l'écran.
+        //
+        // Donc : les lignes conservées sont modifiées sur place, les lignes
+        // retirées sont masquées, et seules les pièces réellement nouvelles
+        // sont insérées, après le dernier rang.
+        const gardees = newDocuments.filter(d => d.nom.trim());
+        const lignesExistantes = documents[editingAction.id] ?? [];
+        const idsGardes = new Set(gardees.map(d => d.id).filter(Boolean) as string[]);
 
-        // Insert new documents
-        const docsToInsert = newDocuments
-          .filter(d => d.nom.trim())
+        const aMasquer = lignesExistantes
+          .filter(d => !d.masque && !idsGardes.has(d.id))
+          .map(d => d.id);
+        if (aMasquer.length > 0) {
+          const { error: erreurMasque } = await supabase
+            .from('action_documents')
+            .update({ masque: true })
+            .in('id', aMasquer);
+          if (erreurMasque) throw erreurMasque;
+        }
+
+        for (const doc of gardees) {
+          if (!doc.id) continue;
+          const avant = lignesExistantes.find(d => d.id === doc.id);
+          if (avant && avant.nom_document === doc.nom && avant.obligatoire === doc.obligatoire) continue;
+          const { error: erreurMaj } = await supabase
+            .from('action_documents')
+            .update({ nom_document: doc.nom, obligatoire: doc.obligatoire })
+            .eq('id', doc.id);
+          if (erreurMaj) throw erreurMaj;
+        }
+
+        const dernierRang = lignesExistantes.reduce((max, d) => Math.max(max, d.ordre), 0);
+        const docsToInsert = gardees
+          .filter(d => !d.id)
           .map((doc, idx) => ({
             action_id: editingAction.id,
             nom_document: doc.nom,
-            ordre: idx + 1,
+            ordre: dernierRang + idx + 1,
             obligatoire: doc.obligatoire
           }));
 
         if (docsToInsert.length > 0) {
-          await supabase
+          const { error: erreurAjout } = await supabase
             .from('action_documents')
             .insert(docsToInsert);
+          if (erreurAjout) throw erreurAjout;
         }
 
         toast({
@@ -252,8 +340,34 @@ export default function ManageActions() {
     }
   };
 
+  // Supprimer une démarche efface aussi, en cascade, la liste de ses pièces.
+  // Or ce sont ces lignes qui nomment les fichiers déposés : « doc_3 » est la
+  // troisième pièce de la liste. Supprimer « DC » rendrait donc illisibles les
+  // pièces de tous les dossiers de cession déjà traités, et retirerait la
+  // démarche du site. Le bouton le faisait derrière un « Êtes-vous sûr ? » qui
+  // ne nommait rien.
+  //
+  // Une démarche déjà utilisée ne se supprime donc plus : elle se désactive,
+  // avec l'interrupteur « Action active ». Elle disparaît du site, et les
+  // dossiers passés restent lisibles.
   const handleDeleteAction = async (actionId: string) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer cette action ?")) return;
+    const action = actions.find(a => a.id === actionId);
+
+    const { count } = await supabase
+      .from('demarches')
+      .select('id', { count: 'exact', head: true })
+      .eq('type', (action?.code ?? '') as never);
+
+    if ((count ?? 0) > 0) {
+      toast({
+        title: "Suppression impossible",
+        description: `${count} dossier${(count ?? 0) > 1 ? 's utilisent' : ' utilise'} « ${action?.titre} ». Les supprimer rendrait leurs pièces illisibles. Pour retirer cette démarche du site, ouvre « Modifier » et décoche « Action active ».`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!confirm(`Supprimer définitivement « ${action?.titre} » (${action?.code}) et sa liste de pièces ? Aucun dossier ne l'utilise. Cette action est irréversible.`)) return;
 
     setLoading(true);
 
@@ -381,21 +495,27 @@ export default function ManageActions() {
                 )}
                 
                 <div className="mb-4">
-                  <p className="text-sm font-semibold mb-2">
-                    Documents requis ({documents[action.id]?.length || 0})
-                  </p>
-                  <ul className="text-xs space-y-1">
-                    {documents[action.id]?.slice(0, 3).map((doc) => (
-                      <li key={doc.id} className="text-muted-foreground">
-                        • {doc.nom_document}
-                      </li>
-                    ))}
-                    {(documents[action.id]?.length || 0) > 3 && (
-                      <li className="text-muted-foreground italic">
-                        ... et {documents[action.id].length - 3} autres
-                      </li>
-                    )}
-                  </ul>
+                  {piecesFixeesDansLeCode(action.code) ? (
+                    <PiecesFixeesParLeCode code={action.code} />
+                  ) : (
+                    <>
+                      <p className="text-sm font-semibold mb-2">
+                        Documents requis ({documents[action.id]?.filter((doc) => !doc.masque).length || 0})
+                      </p>
+                      <ul className="text-xs space-y-1">
+                        {documents[action.id]?.filter((doc) => !doc.masque).slice(0, 3).map((doc) => (
+                          <li key={doc.id} className="text-muted-foreground">
+                            • {doc.nom_document}
+                          </li>
+                        ))}
+                        {(documents[action.id]?.filter((doc) => !doc.masque).length || 0) > 3 && (
+                          <li className="text-muted-foreground italic">
+                            ... et {documents[action.id].filter((doc) => !doc.masque).length - 3} autres
+                          </li>
+                        )}
+                      </ul>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -550,6 +670,10 @@ export default function ManageActions() {
                 </div>
 
                 <div className="border-t pt-4">
+                  {piecesFixeesDansLeCode(editingAction.code) ? (
+                    <PiecesFixeesParLeCode code={editingAction.code} />
+                  ) : (
+                  <>
                   <div className="flex items-center justify-between mb-3">
                     <Label>Documents requis</Label>
                     <Button type="button" variant="outline" size="sm" onClick={addNewDocument}>
@@ -591,6 +715,8 @@ export default function ManageActions() {
                       </div>
                     ))}
                   </div>
+                  </>
+                  )}
                 </div>
               </div>
             )}
