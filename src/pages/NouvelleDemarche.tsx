@@ -2116,7 +2116,7 @@ export default function NouvelleDemarche() {
                                     >
                                       <div id={`piece-doc_${idx + 1}`} className="space-y-3 scroll-mt-24">
                                         <div className="space-y-1.5">
-                                          <Label className="text-xs text-muted-foreground">Recto</Label>
+                                          <Label className="text-xs text-muted-foreground">Recto ou Recto/Verso</Label>
                                           {depotRecto}
                                         </div>
                                         <div className="space-y-1.5">

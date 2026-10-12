@@ -394,7 +394,10 @@ export function GuestDocumentUpload({
         // Recto + Verso (affichage vertical/portrait)
         <div className="space-y-3">
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Recto</Label>
+            {/* Un fichier qui contient les deux faces suffit : c'est pour cela
+                que le verso est facultatif, et le dire ici évite un dépôt en
+                double. */}
+            <Label className="text-xs text-muted-foreground">Recto ou Recto/Verso</Label>
             <Input
               ref={rectoInputRef}
               type="file"
@@ -407,7 +410,9 @@ export function GuestDocumentUpload({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-muted-foreground">Verso</Label>
+            <Label className="text-xs text-muted-foreground">
+              Verso <span className="font-normal">(optionnel)</span>
+            </Label>
             <Input
               ref={versoInputRef}
               type="file"

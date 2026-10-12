@@ -3,9 +3,10 @@ import { LibelleFormulaire } from "@/components/LienFormulaireVierge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FileText, CheckCircle2, AlertTriangle, Download, Plus, X } from "lucide-react";
+import { FileText, CheckCircle2, AlertTriangle, Download, Plus, X, ChevronDown } from "lucide-react";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { isPdfOnlyProDemarche } from "@/lib/documentRestrictions";
 import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils";
@@ -528,6 +529,10 @@ export function DocumentsNecessaires({
   // Pour ces 9 démarches PRO: documents en PDF de moins de 1 Mo uniquement
   const pdfOnly = isPdfOnlyProDemarche(demarcheType);
 
+  // Replié par défaut. S'ouvre tout seul si le dossier contient déjà une pièce
+  // ajoutée à la main : on ne cache pas ce que quelqu'un a déposé.
+  const [piecesSupOuvertes, setPiecesSupOuvertes] = useState(false);
+
   // Pièces supplémentaires
   const [additionalDocs, setAdditionalDocs] = useState<{id: number; name: string}[]>([]);
   const [newDocName, setNewDocName] = useState("");
@@ -750,15 +755,34 @@ export function DocumentsNecessaires({
           </div>
         )}
 
-        {/* Pièces supplémentaires */}
+        {/* Pièces supplémentaires, repliées.
+
+            Le bloc tenait ouvert en permanence — un titre, un champ de saisie,
+            un bouton « Ajouter » — pour une fonction dont presque personne ne
+            se sert : la liste des pièces attendues est déjà complète. Il
+            occupait une place qu'on traversait à chaque dossier. Il s'ouvre
+            désormais au clic, et reste ouvert tant qu'une pièce y a été
+            ajoutée : ce qui est dedans ne doit pas se cacher. */}
+        <Collapsible open={piecesSupOuvertes} onOpenChange={setPiecesSupOuvertes}>
         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
-          <div className="flex items-center justify-between mb-3">
+          <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 text-left">
             <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
               <FileText className="h-4 w-4" />
               Pièces supplémentaires
               {MENTION_OPTIONNELLE}
+              {additionalDocs.length > 0 && (
+                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                  {additionalDocs.length}
+                </span>
+              )}
             </h3>
-          </div>
+            <ChevronDown
+              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                piecesSupOuvertes ? "rotate-180" : ""
+              }`}
+            />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="pt-3">
           
           {/* Champ pour ajouter un nouveau document */}
           <div className="flex gap-2 mb-3">
@@ -819,7 +843,9 @@ export function DocumentsNecessaires({
               ))}
             </div>
           )}
+          </CollapsibleContent>
         </div>
+        </Collapsible>
 
         {allRequiredUploaded && (
           <Alert className="border-green-500 bg-green-500/10">
