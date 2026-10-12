@@ -528,6 +528,44 @@ async function principal() {
     console.warn("[prerender] repères modification ignorés :", e?.message ?? e);
   }
 
+  // Le parcours d'import, servi aux deux pages qui en racontent les deux
+  // moitiés. Le fait qui manquait aux deux : la taxe régionale réglée au WW
+  // est déduite de celle de la définitive. On ne la paie pas deux fois, et
+  // c'est la première inquiétude de qui importe un véhicule.
+  let reperesImport = "";
+  let lienImportDepuis = {};
+  try {
+    const { ETAPES_IMPORTATION, REPERES_IMPORT } = await chargerTs(
+      "src/data/importReperes.ts",
+      "import"
+    );
+    reperesImport =
+      `<h2>Ce que vous payez à chaque étape</h2>` +
+      `<p>Importer un véhicule se fait en trois temps. Le montant total ne dépend pas du ` +
+      `nombre d'étapes : la taxe régionale n'est due qu'une fois.</p>` +
+      `<table><thead><tr><th>Étape</th><th>Ce que vous payez</th>` +
+      `<th>Ce que vous obtenez</th></tr></thead><tbody>` +
+      ETAPES_IMPORTATION.map(
+        (e) =>
+          `<tr><th scope="row">${echappe(e.etape)}</th><td>${echappe(e.paye)}</td>` +
+          `<td>${echappe(e.obtient)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_IMPORT.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+    lienImportDepuis = {
+      "immatriculation-ww-provisoire":
+        `<p><a href="${BASE}/immatriculation-definitive">L'étape suivante : passer du WW ` +
+        `à la carte grise définitive</a></p>`,
+      "immatriculation-definitive":
+        `<p><a href="${BASE}/immatriculation-ww-provisoire">L'étape précédente : obtenir ` +
+        `le certificat provisoire WW</a></p>`,
+    };
+  } catch (e) {
+    console.warn("[prerender] repères import ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -874,6 +912,7 @@ async function principal() {
         d.slug === "changement-adresse-carte-grise" ? reperesAdresse : "",
         d.slug === "cotitulaire-carte-grise" ? reperesCotitulaire : "",
         d.slug === "modification-carte-grise" ? reperesModification : "",
+        lienImportDepuis[d.slug] ? reperesImport + lienImportDepuis[d.slug] : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),

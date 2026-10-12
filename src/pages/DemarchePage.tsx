@@ -9,6 +9,7 @@ import { ContenuDuplicata } from "@/components/seo/ContenuDuplicata";
 import { ContenuAdresse } from "@/components/seo/ContenuAdresse";
 import { ContenuCotitulaire } from "@/components/seo/ContenuCotitulaire";
 import { ContenuModification } from "@/components/seo/ContenuModification";
+import { ContenuImport } from "@/components/seo/ContenuImport";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
 import { PublicCroise } from "@/components/demarche/PublicCroise";
 import { pushVueDemarche } from "@/lib/gtm";
@@ -312,6 +313,8 @@ const DemarchePage = () => {
       {demarche.slug === "changement-adresse-carte-grise" && <ContenuAdresse />}
       {demarche.slug === "cotitulaire-carte-grise" && <ContenuCotitulaire />}
       {demarche.slug === "modification-carte-grise" && <ContenuModification />}
+      {demarche.slug === "immatriculation-ww-provisoire" && <ContenuImport depuis="ww" />}
+      {demarche.slug === "immatriculation-definitive" && <ContenuImport depuis="definitive" />}
 
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">
