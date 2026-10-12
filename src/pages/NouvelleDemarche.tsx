@@ -383,6 +383,33 @@ export default function NouvelleDemarche() {
     return null;
   }, [questionnaireAnswerTexts, questionQuiVendId]);
 
+  // Sur une déclaration de cession, le mandant EST le vendeur.
+  //
+  // La démarche constate que le véhicule a été cédé, et c'est le cédant qui
+  // nous mandate pour la déposer. Répondre « Mon garage » à « Qui vend le
+  // véhicule ? » puis se voir redemander qui donne le mandat, c'est poser deux
+  // fois la même question — et laisser la possibilité d'y répondre deux fois
+  // différemment, ce qui produirait un mandat au nom de quelqu'un qui ne vend
+  // rien.
+  //
+  // La question n'existe que sur la DC : ailleurs, `quiVend` reste nul et le
+  // choix demeure ouvert.
+  type Mandant = "garage" | "client";
+  const mandantDeduit = useMemo<Mandant | null>(() => {
+    if (formData.type !== "DC" || !quiVend) return null;
+    return quiVend === "garage" ? "garage" : "client";
+  }, [formData.type, quiVend]);
+
+  // Cession : le mandant suit la réponse à « Qui vend le véhicule ? ». Changer
+  // d'avis sur le vendeur change donc le mandant, sans rien à recliquer.
+  useEffect(() => {
+    if (!mandantDeduit || mandantType === mandantDeduit) return;
+    setMandantType(mandantDeduit);
+    if (demarcheId) {
+      supabase.from('demarches').update({ mandant_type: mandantDeduit }).eq('id', demarcheId);
+    }
+  }, [mandantDeduit, mandantType, demarcheId]);
+
   // Qui achète décide des pièces de l'acquéreur, comme qui vend décide de
   // celles du vendeur. Un particulier fournit sa pièce d'identité ; une société
   // n'en a pas, elle fournit son Kbis et la pièce de son dirigeant.
@@ -1602,6 +1629,12 @@ export default function NouvelleDemarche() {
                                     <p className="text-sm text-muted-foreground">
                                       {raisonMandantGarage(formData.type)}
                                     </p>
+                                  ) : mandantDeduit ? (
+                                    <p className="text-sm text-muted-foreground">
+                                      {mandantDeduit === "garage"
+                                        ? "Votre garage. Vous avez indiqué plus haut que c'est vous qui vendez le véhicule : le mandat est établi à votre nom, avec votre signature et votre tampon enregistrés."
+                                        : "Votre client. Vous avez indiqué plus haut que c'est lui qui vend le véhicule : le mandat est établi à son nom, et c'est lui qui signe sur cet écran."}
+                                    </p>
                                   ) : (
                                   <RadioGroup
                                     value={mandantType}
@@ -2189,10 +2222,6 @@ export default function NouvelleDemarche() {
                               );
                             })}
                           </div>
-
-                          <p className="text-xs text-muted-foreground pt-1">
-                            <span className="text-destructive font-bold">*</span> = Document obligatoire
-                          </p>
                         </div>
 
                         {/* Autres pièces justificatives, repliées.

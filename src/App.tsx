@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
-import { AdminGuard } from "@/components/admin/AdminGuard";
+
 
 const Index = React.lazy(() => import("./pages/Index"));
 const Login = React.lazy(() => import("./pages/Login"));
@@ -83,6 +83,17 @@ const RetirerPrerendu = () => {
   }, []);
   return null;
 };
+
+// Chargé à la demande, comme les pages qu'il protège.
+//
+// Importé hâtivement, il voyageait dans le fichier d'entrée de TOUS les
+// visiteurs — y compris celui qui lit une page départementale et n'ira jamais
+// dans l'administration. Et il n'y voyageait pas seul : il tire le client
+// Supabase, les champs de formulaire et les cartes de son écran de connexion à
+// deux facteurs.
+const AdminGuard = React.lazy(() =>
+  import("@/components/admin/AdminGuard").then((m) => ({ default: m.AdminGuard })),
+);
 
 const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
 const DepartementPage = React.lazy(() => import("./pages/DepartementPage"));

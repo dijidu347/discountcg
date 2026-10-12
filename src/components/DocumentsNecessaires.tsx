@@ -570,9 +570,9 @@ export function DocumentsNecessaires({
     const renderBadges = () => (
       <>
         {doc.obligatoire ? (
-          // Asterisque plutot qu'un badge : la legende du bas annonce deja
-          // "* = Document obligatoire", et un badge rouge par ligne saturait
-          // visuellement les listes longues.
+          // Astérisque plutôt qu'un badge : un badge rouge par ligne saturait
+          // visuellement les listes longues. La légende qui l'expliquait en bas
+          // de page a été retirée — l'astérisque se lit sans mode d'emploi.
           <span className="text-destructive font-bold ml-0.5" aria-label="Document obligatoire">*</span>
         ) : doc.recommended ? (
           <Badge variant="outline" className="text-xs border-amber-500 text-amber-600 bg-amber-50 ml-2 align-middle">Recommandé</Badge>
@@ -856,10 +856,6 @@ export function DocumentsNecessaires({
             </AlertDescription>
           </Alert>
         )}
-
-        <p className="text-xs text-muted-foreground">
-          <span className="text-destructive font-bold">*</span> = Document obligatoire
-        </p>
       </CardContent>
     </Card>
   );

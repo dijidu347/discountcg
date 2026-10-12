@@ -526,9 +526,6 @@ export const MandatGenerator = ({
           </Alert>
         ) : (
           <>
-          <p className="text-xs text-muted-foreground">
-            <span className="text-destructive font-bold">*</span> = champ obligatoire
-          </p>
           <Button type="button" onClick={generer} disabled={generating} className="w-full">
             {generating ? (
               <>

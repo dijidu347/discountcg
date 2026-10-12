@@ -28,17 +28,22 @@ export default defineConfig(({ mode }) => ({
         //
         // Le découpage suit la durée de vie, pas la taille : chaque groupe
         // réunit ce qui bouge au même rythme.
+        // Ne sont regroupés que les modules dont TOUT le contenu sert dès le
+        // premier écran : React, le routeur, le client de données et Supabase.
+        //
+        // Première tentative, corrigée : Radix et les icônes y figuraient
+        // aussi. Mal lui en a pris — forcer un paquet entier dans un morceau
+        // empêche Rollup d'en retirer ce qui ne sert pas, et chaque route
+        // tirait alors les vingt-huit composants Radix du projet au lieu des
+        // trois qu'elle utilise. Le premier chargement passait de 524 à
+        // 692 Ko. Laissés libres, ils se répartissent par route et ne
+        // voyagent qu'avec ce qui les appelle.
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "socle-react";
-          if (id.includes("react-router")) return "socle-routeur";
+          if (id.includes("react-router")) return "socle-react";
+          if (id.includes("@tanstack")) return "socle-react";
           if (id.includes("@supabase")) return "socle-supabase";
-          if (id.includes("@stripe")) return "socle-stripe";
-          if (id.includes("@radix-ui") || id.includes("cmdk") || id.includes("vaul")) return "socle-ui";
-          if (id.includes("@tanstack")) return "socle-requetes";
-          if (id.includes("react-hook-form") || id.includes("@hookform") || id.includes("zod")) return "socle-formulaires";
-          if (id.includes("date-fns")) return "socle-dates";
-          if (id.includes("lucide-react")) return "socle-icones";
         },
       },
     },

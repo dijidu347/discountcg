@@ -1,6 +1,22 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from "@supabase/supabase-js";
+
+// Le client Supabase est chargé à la demande, et non au démarrage.
+//
+// Il pèse 167 Ko. Importé ici en tête, il voyageait dans le fichier d'entrée de
+// TOUS les visiteurs — soit un tiers du premier chargement pour quelqu'un qui
+// lit une page départementale et ne se connectera jamais.
+//
+// Les pages qui ont besoin de la base l'importent déjà directement : leur
+// morceau de code l'embarque, et il se télécharge en parallèle du leur, sans
+// aller-retour supplémentaire. Ne restait que ce fournisseur, monté sur toutes
+// les pages, à le réclamer d'emblée pour un simple « y a-t-il une session ? ».
+//
+// `import type` sur la ligne au-dessus compte autant : une importation de types
+// en valeur aurait suffi à faire revenir le paquet entier.
+let promesseClient: Promise<typeof import("@/integrations/supabase/client")["supabase"]> | null = null;
+const client = () =>
+  (promesseClient ??= import("@/integrations/supabase/client").then((m) => m.supabase));
 import { useNavigate } from "react-router-dom";
 
 interface AuthContextType {
@@ -22,31 +38,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
+    // `demonte` couvre le cas où le composant disparaît pendant que le client
+    // se télécharge : on se désabonne alors aussitôt l'écouteur posé.
+    let demonte = false;
+    let desabonner: (() => void) | null = null;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        // Clear invalid session (e.g. expired refresh token)
-        console.warn("Session recovery failed, clearing auth state:", error.message);
-        supabase.auth.signOut();
-        setSession(null);
-        setUser(null);
-      } else {
-        setSession(session);
-        setUser(session?.user ?? null);
-      }
-      setLoading(false);
+    client().then((supabase) => {
+      if (demonte) return;
+
+      // Set up auth state listener FIRST
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      );
+      desabonner = () => subscription.unsubscribe();
+      if (demonte) { desabonner(); return; }
+
+      // THEN check for existing session
+      supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (demonte) return;
+        if (error) {
+          // Clear invalid session (e.g. expired refresh token)
+          console.warn("Session recovery failed, clearing auth state:", error.message);
+          supabase.auth.signOut();
+          setSession(null);
+          setUser(null);
+        } else {
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        setLoading(false);
+      });
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      demonte = true;
+      desabonner?.();
+    };
   }, []);
 
   const signUp = async (email: string, password: string, userData: any) => {
@@ -59,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    const supabase = await client();
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -101,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    const supabase = await client();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -109,6 +142,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signInWithGoogle = async (redirectTo?: string) => {
+    const supabase = await client();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -120,6 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      const supabase = await client();
       await supabase.auth.signOut();
     } catch (e) {
       // Ignore errors (e.g. session_not_found) — clear state anyway
