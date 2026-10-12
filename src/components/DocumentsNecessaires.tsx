@@ -44,6 +44,24 @@ const MENTION_OPTIONNELLE = (
   <span className="ml-1 text-xs font-normal text-muted-foreground">(optionnel)</span>
 );
 
+// Le Kbis et la pièce d'identité du dirigeant ne se réclament plus au dossier.
+//
+// Le garage nous les a déjà donnés — c'est exactement ce que contient la
+// vérification de son compte depuis le 21/09/2026. Les redemander à chaque
+// démarche, c'était lui faire redéposer deux fichiers qu'on détient, sur seize
+// lignes réparties sur dix types de démarches.
+//
+// Trois exceptions, qui ne sont pas des doublons et restent demandées :
+//
+//   - l'« Extrait Kbis de moins de 6 mois MIS À JOUR » des changements
+//     d'adresse : c'est la preuve de la nouvelle adresse, l'objet même de la
+//     démarche ;
+//   - les pièces « des deux parties, acheteur et vendeur » d'une annulation ou
+//     d'une correction : elles concernent les parties à la vente, pas le garage
+//     qui dépose ;
+//   - les justificatifs de domicile, du siège ou du dirigeant : la vérification
+//     du compte ne prend que le Kbis et la carte d'identité.
+
 // Configuration des documents par type de démarche
 export const getDocumentsConfig = (
   demarcheType: string, 
@@ -142,8 +160,6 @@ export const getDocumentsConfig = (
           obligatoire: true,
           helpText: "Formulaire Cerfa 13752*02 complété et signé. (Sans ce document, le dossier ne peut pas être traité.)"
         },
-        { id: "w_kbis", nom: "Extrait Kbis < 6 mois", obligatoire: true },
-        { id: "w_id_dirigeant", nom: "Pièce d'identité du dirigeant", obligatoire: true },
         { id: "w_justif_domicile", nom: "Justificatif de domicile du dirigeant", obligatoire: true },
         { id: "w_mandat", nom: "Mandat d'immatriculation signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "w_assurance", nom: "Attestation d'assurance W Garage", obligatoire: true },
@@ -190,8 +206,6 @@ export const getDocumentsConfig = (
         { id: "qf_facture", nom: "Facture d'achat ou certificat de cession", obligatoire: true },
         { id: "qf_cg_etranger", nom: "Certificat d'immatriculation étranger", obligatoire: true },
         { id: "qf_mandat", nom: "Mandat d'immatriculation signé (Cerfa 13757)", obligatoire: true },
-        { id: "qf_id_representant", nom: "Pièce d'identité du représentant légal", obligatoire: true },
-        { id: "qf_kbis", nom: "Extrait Kbis < 6 mois", obligatoire: true },
         { id: "qf_justif_siege", nom: "Justificatif de domicile du siège social", obligatoire: true },
       ];
 
@@ -217,7 +231,6 @@ export const getDocumentsConfig = (
     case "CHANGEMENT_ADRESSE_PRO": {
       // Documents requis pour le changement d'adresse du titulaire (société)
       documents = [
-        { id: "ca_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "ca_certificat_immat", nom: "Certificat d'immatriculation", obligatoire: true },
         { id: "ca_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "ca_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)", obligatoire: true },
@@ -229,8 +242,6 @@ export const getDocumentsConfig = (
     case "DUPLICATA_CG_PRO": {
       // Documents requis pour la demande de duplicata de carte grise (société)
       documents = [
-        { id: "dup_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
-        { id: "dup_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "dup_assurance", nom: "Attestation d'assurance du véhicule", obligatoire: true },
         { id: "dup_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "dup_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)", obligatoire: true },
@@ -263,8 +274,6 @@ export const getDocumentsConfig = (
     case "FIV_PRO": {
       // Documents requis pour la Fiche d'Identification de Véhicule (sociétés)
       documents = [
-        { id: "fiv_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
-        { id: "fiv_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "fiv_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "fiv_cerfa_13753", nom: "Déclaration de perte ou de vol signée et tamponnée (Cerfa 13753)", obligatoire: true, helpText: "S'il s'agit d'un vol, le document doit être signé et tamponné par la police." },
       ];
@@ -286,8 +295,6 @@ export const getDocumentsConfig = (
     case "CG_NEUF_PRO": {
       // Documents requis pour l'immatriculation d'un véhicule neuf (sociétés)
       documents = [
-        { id: "cgn_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
-        { id: "cgn_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "cgn_assurance", nom: "Attestation d'assurance", obligatoire: true },
         { id: "cgn_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "cgn_cerfa_13749", nom: "Cerfa 13749 remis par le constructeur – Demande de certificat d'immatriculation d'un véhicule neuf", obligatoire: true },
@@ -316,8 +323,6 @@ export const getDocumentsConfig = (
     case "MODIF_CG_PRO": {
       // Documents requis pour modification/correction de CG (sociétés)
       documents = [
-        { id: "modif_kbis", nom: "Extrait Kbis de moins de 6 mois", obligatoire: true },
-        { id: "modif_id_dirigeant", nom: "Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "modif_assurance", nom: "Attestation d'assurance", obligatoire: true },
         { id: "modif_ci", nom: "Certificat d'immatriculation", obligatoire: true },
         { id: "modif_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
@@ -345,7 +350,6 @@ export const getDocumentsConfig = (
     case "CHANGEMENT_ADRESSE_LOCATAIRE_PRO": {
       // Documents requis pour changement d'adresse du locataire (sociétés)
       documents = [
-        { id: "cal_kbis_id", nom: "Extrait Kbis de moins de 6 mois + Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "cal_ci", nom: "Certificat d'immatriculation", obligatoire: true },
         { id: "cal_mandat_locataire", nom: "Mandat signé et tamponné par le locataire (Cerfa 13757)", obligatoire: true, helpText: "Mandat vous autorisant à faire la démarche" },
         { id: "cal_mandat_bailleur", nom: "Mandat signé et tamponné par le bailleur autorisant le locataire à effectuer des modifications", obligatoire: true },
@@ -481,7 +485,6 @@ export const getDocumentsConfig = (
 
     case "CYCLO_ANCIEN_PRO": {
       documents = [
-        { id: "cyc_kbis_id", nom: "Extrait Kbis de moins de 6 mois + Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "cyc_facture_cession", nom: "Facture d'achat ou certificat de cession signé et tamponné", obligatoire: true },
         { id: "cyc_mandat", nom: "Mandat signé et tamponné (Cerfa 13757)", obligatoire: true },
         { id: "cyc_cerfa_13750", nom: "Demande d'immatriculation signée et tamponnée (Cerfa 13750)", obligatoire: true },
@@ -494,7 +497,6 @@ export const getDocumentsConfig = (
 
     case "IMMAT_DEFINITIVE_PRO": {
       documents = [
-        { id: "imd_kbis_id", nom: "Extrait Kbis de moins de 6 mois + Pièce d'identité du dirigeant (recto/verso)", obligatoire: true },
         { id: "imd_assurance", nom: "Attestation d'assurance", obligatoire: true },
         { id: "imd_mandat", nom: "Mandat signé (Cerfa 13757)", obligatoire: true },
         { id: "imd_cerfa_13750", nom: "Demande d'immatriculation signée (Cerfa 13750)", obligatoire: true },
