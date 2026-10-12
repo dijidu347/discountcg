@@ -448,6 +448,35 @@ async function principal() {
     console.warn("[prerender] repères duplicata ignorés :", e?.message ?? e);
   }
 
+  // Le changement d'adresse : une des dix pages sans aucune impression. Ce
+  // qu'on reçoit et ce qu'on paie dépendent du numéro déjà porté par le
+  // véhicule, pas du déménagement — et l'ancienne plaque départementale force
+  // un changement de numéro que la page ne mentionnait nulle part.
+  let reperesAdresse = "";
+  try {
+    const { CAS_ADRESSE, REPERES_ADRESSE } = await chargerTs(
+      "src/data/adresseReperes.ts",
+      "adresse"
+    );
+    reperesAdresse =
+      `<h2>Ce que vous recevez dépend de votre numéro, pas de votre déménagement</h2>` +
+      `<table><thead><tr><th>Votre situation</th><th>Ce que vous recevez</th>` +
+      `<th>Taxes</th><th>À prévoir</th></tr></thead><tbody>` +
+      CAS_ADRESSE.map(
+        (c) =>
+          `<tr><th scope="row">${echappe(c.situation)}</th><td>${echappe(c.recoit)}</td>` +
+          `<td>${echappe(c.taxes)}</td><td>${echappe(c.aPrevoir)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_ADRESSE.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("") +
+      `<p><a href="${BASE}/changement-adresse-locataire-carte-grise">Véhicule en LOA, LLD ` +
+      `ou crédit-bail : la démarche du locataire</a></p>`;
+  } catch (e) {
+    console.warn("[prerender] repères adresse ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -791,6 +820,7 @@ async function principal() {
         d.slug === "quitus-fiscal" ? reperesQuitus : "",
         d.slug === "immatriculation-cyclomoteur" ? reperesCyclo : "",
         d.slug === "duplicata-carte-grise" ? reperesDuplicata : "",
+        d.slug === "changement-adresse-carte-grise" ? reperesAdresse : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),

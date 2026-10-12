@@ -294,7 +294,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Le changement d'adresse modifie-t-il le numéro d'immatriculation ?",
-        answer: "Non, avec le système SIV (AA-123-BB), le numéro d'immatriculation est attribué à vie au véhicule et ne change jamais, quel que soit le nombre de déménagements ou de changements de propriétaire.",
+        answer: "Pas si votre véhicule porte déjà un numéro SIV, du type AA-123-BB : celui-là est attribué à vie et ne bouge jamais, quel que soit le nombre de déménagements ou de changements de propriétaire. En revanche, si le véhicule porte encore un ancien numéro départemental — 123 ABC 75 —, le changement d'adresse déclenche sa conversion d'office dans le SIV : vous recevez un numéro entièrement nouveau et il faut faire refaire les deux plaques à vos frais. Cela n'arrive qu'une fois.",
       },
     ],
     prixDescription: "Le changement d'adresse est gratuit pour les trois premières déclarations : vous recevez une étiquette autocollante à coller sur la carte grise. Au quatrième changement, une nouvelle carte grise est éditée et coûte 2,76 euros, la seule redevance d'acheminement — la taxe fixe de 11 euros n'est pas due pour cette démarche. Nos frais de dossier s'ajoutent pour un traitement simplifié et rapide. Comparé aux tracas de la plateforme ANTS souvent en maintenance, notre service vous fait gagner un temps précieux pour quelques euros seulement.",

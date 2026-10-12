@@ -6,6 +6,7 @@ import { ContenuSuccession } from "@/components/seo/ContenuSuccession";
 import { ContenuQuitus } from "@/components/seo/ContenuQuitus";
 import { ContenuCyclo } from "@/components/seo/ContenuCyclo";
 import { ContenuDuplicata } from "@/components/seo/ContenuDuplicata";
+import { ContenuAdresse } from "@/components/seo/ContenuAdresse";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
 import { PublicCroise } from "@/components/demarche/PublicCroise";
 import { pushVueDemarche } from "@/lib/gtm";
@@ -306,6 +307,7 @@ const DemarchePage = () => {
       {demarche.slug === "quitus-fiscal" && <ContenuQuitus />}
       {demarche.slug === "immatriculation-cyclomoteur" && <ContenuCyclo />}
       {demarche.slug === "duplicata-carte-grise" && <ContenuDuplicata />}
+      {demarche.slug === "changement-adresse-carte-grise" && <ContenuAdresse />}
 
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">
