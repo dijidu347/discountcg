@@ -100,6 +100,11 @@ export default function NouvelleDemarche() {
   const [actionsRapides, setActionsRapides] = useState<any[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [selectedImmatriculation, setSelectedImmatriculation] = useState<string>("");
+  // Replié par défaut : le bloc des pièces supplémentaires servait rarement et
+  // occupait la place à chaque dossier. Le bouton « Ajouter » l'ouvre de
+  // lui-même, sans quoi on ajouterait une ligne qu'on ne verrait pas.
+  const [piecesSupOuvertes, setPiecesSupOuvertes] = useState(false);
+
   const [additionalDocs, setAdditionalDocs] = useState<{id: number; name: string}[]>([
     { id: 1, name: "" },
     { id: 2, name: "" },
@@ -2190,25 +2195,48 @@ export default function NouvelleDemarche() {
                           </p>
                         </div>
 
-                        {/* Autres pièces justificatives */}
+                        {/* Autres pièces justificatives, repliées.
+
+                            Le même bloc existe en double dans le site : ici
+                            pour les démarches classiques, et dans
+                            DocumentsNecessaires pour les démarches pro. Le
+                            replier d'un seul côté ne se voyait donc pas depuis
+                            l'autre. */}
+                        <Collapsible open={piecesSupOuvertes} onOpenChange={setPiecesSupOuvertes}>
                         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-                              <FileText className="h-4 w-4" />
-                              Pièces supplémentaires
-                              {mentionOptionnelle}
-                            </h3>
+                          <div className="flex items-center justify-between gap-2">
+                            <CollapsibleTrigger className="flex flex-1 items-center justify-between gap-2 text-left">
+                              <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
+                                <FileText className="h-4 w-4" />
+                                Pièces supplémentaires
+                                {mentionOptionnelle}
+                                {additionalDocs.length > 0 && (
+                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                    {additionalDocs.length}
+                                  </span>
+                                )}
+                              </h3>
+                              <ChevronDown
+                                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                  piecesSupOuvertes ? "rotate-180" : ""
+                                }`}
+                              />
+                            </CollapsibleTrigger>
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => setAdditionalDocs([...additionalDocs, { id: Date.now(), name: "" }])}
-                              className="h-8 text-xs"
+                              onClick={() => {
+                                setPiecesSupOuvertes(true);
+                                setAdditionalDocs([...additionalDocs, { id: Date.now(), name: "" }]);
+                              }}
+                              className="h-8 shrink-0 text-xs"
                             >
                               <Plus className="mr-1 h-3 w-3" />
                               Ajouter
                             </Button>
                           </div>
+                          <CollapsibleContent className="pt-3">
                           
                           {additionalDocs.length === 0 ? (
                             <p className="text-xs text-muted-foreground text-center py-2">
@@ -2250,7 +2278,9 @@ export default function NouvelleDemarche() {
                               ))}
                             </div>
                           )}
+                          </CollapsibleContent>
                         </div>
+                        </Collapsible>
                       </div>
                     )
                   )}

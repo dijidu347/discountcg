@@ -217,14 +217,18 @@ export const SignaturePad = ({
         <span className="text-sm font-medium">{label}</span>
         <div className="flex gap-1 self-start sm:self-auto">
           {!uploaded && !uploadSeul && (
+            // « Annuler » et « Effacer » : sur une signature faite d'un seul
+            // trait — le cas courant — les deux donnaient le même résultat, et
+            // rien ne disait en quoi ils différaient. Les libellés nomment
+            // maintenant ce qu'ils retirent.
             <Button type="button" variant="ghost" size="sm" onClick={undo} disabled={isEmpty} className="h-8">
               <Undo2 className="h-4 w-4 mr-1" />
-              Annuler
+              Dernier trait
             </Button>
           )}
           <Button type="button" variant="ghost" size="sm" onClick={clear} disabled={isEmpty} className="h-8">
             <Trash2 className="h-4 w-4 mr-1" />
-            Effacer
+            Tout effacer
           </Button>
         </div>
       </div>
