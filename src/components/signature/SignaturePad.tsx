@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Undo2, Trash2, Loader2, FileText } from "lucide-react";
+import { Upload, Trash2, Loader2, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { compressFile, isAcceptedFileType, isFileTooLarge, isHeicFile } from "@/lib/file-compression";
 
@@ -146,14 +146,6 @@ export const SignaturePad = ({
     onChange(null);
   };
 
-  const undo = () => {
-    strokesRef.current.pop();
-    redraw();
-    const png = exportPng();
-    setIsEmpty(!png);
-    onChange(png);
-  };
-
   const handleFile = async (file: File) => {
     if (!isAcceptedFileType(file)) {
       toast({
@@ -257,25 +249,18 @@ export const SignaturePad = ({
         )}
       </div>
 
-      {/* Les deux boutons sous le cadre, et non au-dessus : ils agissent sur
-          ce qui vient d'être tracé, et on ne les cherche qu'une fois la
-          signature faite. Au-dessus, ils occupaient la ligne du libellé et
-          se lisaient avant même d'avoir quoi que ce soit à effacer.
+      {/* Un seul bouton, sous le cadre.
 
-          « Dernier trait » et « Tout effacer » plutôt qu'« Annuler » et
-          « Effacer » : sur une signature d'un seul trait — le cas courant —
-          les deux donnaient le même résultat sans que rien ne le dise. */}
+          Il y en avait deux, « Annuler » et « Effacer ». Le premier retirait
+          le dernier trait, le second effaçait tout — mais une signature se
+          fait le plus souvent d'un seul geste, et les deux donnaient alors
+          rigoureusement le même résultat. Deux boutons pour une action, dont
+          un qu'il fallait expliquer. */}
       {!uploadSeul && (
-        <div className="flex justify-end gap-1">
-          {!uploaded && (
-            <Button type="button" variant="ghost" size="sm" onClick={undo} disabled={isEmpty} className="h-8">
-              <Undo2 className="h-4 w-4 mr-1" />
-              Dernier trait
-            </Button>
-          )}
+        <div className="flex justify-end">
           <Button type="button" variant="ghost" size="sm" onClick={clear} disabled={isEmpty} className="h-8">
             <Trash2 className="h-4 w-4 mr-1" />
-            Tout effacer
+            Effacer
           </Button>
         </div>
       )}
