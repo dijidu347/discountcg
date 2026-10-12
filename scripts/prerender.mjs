@@ -41,6 +41,10 @@ const echappe = (s) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
+const euros = (n) =>
+  Number(n).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+  " &euro;";
+
 // Un </script> dans une chaîne JSON refermerait la balise qui la contient.
 const jsonLd = (obj) => JSON.stringify(obj).replace(/</g, "\\u003c");
 
@@ -194,6 +198,19 @@ async function principal() {
   // c'est la donnee publique reutilisee, et c'est ce qui distingue la page des
   // simulateurs concurrents. Il etait rendu par React, donc absent du HTML
   // servi — invisible pour les robots des assistants.
+  // Les cent une pages départementales. Leur texte vient du même module que le
+  // composant React, pour que le robot et le visiteur lisent la même chose.
+  let contenusDepartements = [];
+  try {
+    const { CONTENUS_DEPARTEMENTS } = await chargerTs(
+      "src/data/departementContenu.ts",
+      "departementContenu"
+    );
+    contenusDepartements = CONTENUS_DEPARTEMENTS();
+  } catch (e) {
+    console.warn("[prerender] pages départementales ignorées :", e?.message ?? e);
+  }
+
   let tableauDepartements = "";
   try {
     const { departementsTarifs, departementsLabels } = await chargerTs(
@@ -201,10 +218,18 @@ async function principal() {
       "departements"
     );
     const codes = Object.keys(departementsTarifs).sort();
+    // Chaque ligne porte le lien vers la page du département : c'est par ce
+    // tableau que les cent une pages reçoivent leur maillage. L'ancienne page
+    // /prix-carte-grise n'avait que deux liens entrants et aucun trafic.
+    const cheminsDep = Object.fromEntries(
+      contenusDepartements.map((c) => [c.departement.code, c.canonical.replace(BASE, "")])
+    );
     const lignes = codes
       .map((c) => {
         const t = Number(departementsTarifs[c]);
-        return `<tr><td>${echappe(departementsLabels[c] ?? c)}</td><td>${echappe(c)}</td>` +
+        const nom = echappe(departementsLabels[c] ?? c);
+        const cellule = cheminsDep[c] ? `<a href="${BASE}${cheminsDep[c]}">${nom}</a>` : nom;
+        return `<tr><td>${cellule}</td><td>${echappe(c)}</td>` +
           `<td>${t.toFixed(2)} &euro;</td><td>${(t * 5).toFixed(2)} &euro;</td>` +
           `<td>${(t * 7).toFixed(2)} &euro;</td></tr>`;
       })
@@ -515,24 +540,134 @@ async function principal() {
     ecrites++;
   }
 
+  // Les cent une pages départementales.
+  const tableauBareme = (lignes) =>
+    `<table><thead><tr><th>Puissance fiscale</th><th>Taxe régionale</th>` +
+    `<th>Total des taxes</th><th>Plus de dix ans</th></tr></thead><tbody>` +
+    lignes
+      .map(
+        (l) =>
+          `<tr><td>${l.cv} CV</td><td>${euros(l.taxe)}</td>` +
+          `<td>${euros(l.total)}</td><td>${euros(l.totalAncien)}</td></tr>`
+      )
+      .join("") +
+    `</tbody></table>`;
+
+  const tableauVoisins = (voisins) =>
+    voisins.length === 0
+      ? ""
+      : `<h2>Les départements limitrophes</h2><table><thead><tr>` +
+        `<th>Département</th><th>Cheval fiscal</th><th>Écart sur un 6 CV</th>` +
+        `</tr></thead><tbody>` +
+        voisins
+          .map(
+            (v) =>
+              `<tr><td><a href="${BASE}${v.chemin}">${echappe(v.nom)} (${echappe(v.code)})</a></td>` +
+              `<td>${euros(v.tarif)}</td>` +
+              `<td>${v.ecart6cv === 0 ? "aucun" : (v.ecart6cv > 0 ? "+" : "−") + euros(Math.abs(v.ecart6cv))}</td></tr>`
+          )
+          .join("") +
+        `</tbody></table>`;
+
+  for (const c of contenusDepartements) {
+    const d = c.departement;
+    const html = corps({
+      h1: c.h1,
+      blocs: [
+        paragraphes(c.intro),
+        `<h2>Prix d'une carte grise ${echappe(d.dans)} selon la puissance fiscale</h2>` +
+          `<p>Taxe régionale de ${euros(c.tarif)} par cheval fiscal, taxe fixe de 11 € et ` +
+          `redevance d'acheminement de 2,76 €. La colonne « plus de dix ans » applique ` +
+          `l'abattement de moitié sur la taxe régionale.</p>` +
+          tableauBareme(c.bareme),
+        `<h2>${echappe(d.chefLieu)} ou ailleurs : le même prix</h2>` +
+          paragraphes([c.communesTexte, c.memeTarifTexte]),
+        tableauVoisins(c.voisins) + paragraphes(c.voisinsTexte),
+        `<h2>Véhicule électrique</h2>` + paragraphes([c.electriqueTexte]),
+        paragraphes([
+          `${c.rangTexte} Le détail des cinq taxes, l'abattement des véhicules de plus de ` +
+            `dix ans et le tableau des cent un départements sont réunis sur la page du simulateur.`,
+        ]),
+        faqHtml(c.faqs),
+      ],
+      pied: piedDeLiens(null),
+    });
+    await ecrire(
+      c.canonical.replace(BASE, ""),
+      appliquer(gabarit, {
+        titre: c.title,
+        description: c.description,
+        canonical: c.canonical,
+        schemas: [
+          organisation,
+          {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: c.faqs.map((f) => ({
+              "@type": "Question",
+              name: f.question,
+              acceptedAnswer: { "@type": "Answer", text: f.answer },
+            })),
+          },
+          {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Accueil", item: BASE },
+              { "@type": "ListItem", position: 2, name: "Prix de la carte grise", item: `${BASE}/simulateur` },
+              { "@type": "ListItem", position: 3, name: `${d.nom} (${d.code})`, item: c.canonical },
+            ],
+          },
+        ],
+        html,
+      })
+    );
+    ecrites++;
+  }
+
   console.log(`[prerender] ${ecrites} pages écrites.`);
 
-  // Contrôle : une URL du sitemap qui n'est pas pré-rendue retombe sur la
-  // coquille, et on ne s'en apercevrait pas autrement.
+  // Le sitemap est RÉÉCRIT à partir de ce qui vient d'être pré-rendu.
+  //
+  // Il était tenu à la main dans public/sitemap.xml, et ce script se contentait
+  // de signaler les écarts dans la console du build — que personne ne lit. Une
+  // URL listée mais non pré-rendue retombe sur la coquille vide ; une page
+  // pré-rendue mais absente du sitemap n'est jamais soumise. Les deux
+  // existaient. Les engendrer ensemble supprime la question.
   try {
-    const sitemap = await readFile(path.join(DIST, "sitemap.xml"), "utf8");
-    const connues = new Set([
-      ...Object.keys(ROUTES_SEO),
-      ...demarchesConfig.map((d) => `/${d.slug}`),
-    ]);
-    const manquantes = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
-      .map((m) => new URL(m[1]).pathname)
-      .filter((p) => !connues.has(p));
-    if (manquantes.length) {
-      console.warn(`[prerender] dans le sitemap mais pas pré-rendues : ${manquantes.join(", ")}`);
-    }
-  } catch {
-    /* pas de sitemap : rien à contrôler */
+    const aujourdhui = new Date().toISOString().slice(0, 10);
+    const entrees = [
+      ...Object.entries(ROUTES_SEO)
+        .filter(([, seo]) => !seo.noindex)
+        .map(([route]) => ({ loc: route, priorite: route === "/" ? "1.0" : "0.9", frequence: "monthly" })),
+      ...demarchesConfig.map((d) => ({ loc: `/${d.slug}`, priorite: "0.9", frequence: "monthly" })),
+      // Les départementales sont nombreuses et bougent une fois l'an, quand les
+      // régions votent leur tarif : priorité plus basse, fréquence annuelle.
+      ...contenusDepartements.map((c) => ({
+        loc: c.canonical.replace(BASE, ""),
+        priorite: "0.6",
+        frequence: "yearly",
+      })),
+    ];
+    const vues = new Set();
+    const urls = entrees
+      .filter((e) => (vues.has(e.loc) ? false : (vues.add(e.loc), true)))
+      .map(
+        (e) =>
+          `  <url>\n    <loc>${BASE}${e.loc === "/" ? "/" : e.loc}</loc>\n` +
+          `    <lastmod>${aujourdhui}</lastmod>\n` +
+          `    <changefreq>${e.frequence}</changefreq>\n` +
+          `    <priority>${e.priorite}</priority>\n  </url>`
+      )
+      .join("\n");
+    await writeFile(
+      path.join(DIST, "sitemap.xml"),
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`,
+      "utf8"
+    );
+    console.log(`[prerender] sitemap réécrit : ${vues.size} URL.`);
+  } catch (e) {
+    console.warn("[prerender] sitemap non réécrit :", e?.message ?? e);
   }
 }
 

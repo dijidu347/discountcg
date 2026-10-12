@@ -62,6 +62,7 @@ const PaiementRechargeSucces = React.lazy(() => import("./pages/PaiementRecharge
 const PaiementSoldeSucces = React.lazy(() => import("./pages/PaiementSoldeSucces"));
 const PaiementClient = React.lazy(() => import("./pages/PaiementClient"));
 const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
+const DepartementPage = React.lazy(() => import("./pages/DepartementPage"));
 const PrixCarteGrise = React.lazy(() => import("./pages/PrixCarteGrise"));
 const CertificatNonGage = React.lazy(() => import("./pages/CertificatNonGage"));
 const CarteGriseProfessionnel = React.lazy(() => import("./pages/CarteGriseProfessionnel"));
@@ -158,6 +159,9 @@ const App = () => (
             <Route path="/cgv" element={<CGV />} />
             <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
             <Route path="/cookies" element={<Cookies />} />
+            {/* Les cent une pages départementales. Deux segments : elles ne
+                croisent donc jamais la route démarche « /:slug » en dessous. */}
+            <Route path="/carte-grise/:chemin" element={<DepartementPage />} />
             <Route path="/:slug" element={<DemarchePage />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

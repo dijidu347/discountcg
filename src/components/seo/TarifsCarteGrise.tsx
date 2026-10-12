@@ -10,6 +10,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { departementsTarifs, departementsLabels } from "@/data/departementsTarifs";
+import { DEPARTEMENTS, CHEMIN_DEPARTEMENT } from "@/data/departements";
 import { calculatePrice } from "@/utils/calculatePrice";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -17,6 +18,11 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calculator, Euro, MapPin, Car, TrendingDown, Info, HelpCircle, ArrowUpDown, ChevronRight, FileText, ShieldCheck } from "lucide-react";
+
+/** Code INSEE → chemin de la page départementale. */
+const CHEMIN_PAR_CODE: Record<string, string> = Object.fromEntries(
+  DEPARTEMENTS.map((d) => [d.code, CHEMIN_DEPARTEMENT(d)]),
+);
 
 const regions: Record<string, { name: string; depts: string[] }> = {
   idf: { name: "Île-de-France", depts: ["75", "77", "78", "91", "92", "93", "94", "95"] },
@@ -320,7 +326,19 @@ export function TarifsCarteGrise() {
                 <TableBody>
                   {filteredAndSorted.map((dept) => (
                     <TableRow key={dept.code}>
-                      <TableCell className="font-medium">{dept.name}</TableCell>
+                      {/* Chaque ligne mène à la page du département. C'est le
+                          maillage qui manquait à l'ancienne page
+                          /prix-carte-grise : deux liens entrants, aucun trafic.
+                          Ce tableau en donne cent un d'un coup. */}
+                      <TableCell className="font-medium">
+                        {CHEMIN_PAR_CODE[dept.code] ? (
+                          <Link to={CHEMIN_PAR_CODE[dept.code]} className="text-primary hover:underline">
+                            {dept.name}
+                          </Link>
+                        ) : (
+                          dept.name
+                        )}
+                      </TableCell>
                       <TableCell>{dept.code}</TableCell>
                       <TableCell className="text-right font-semibold">{dept.tarif.toFixed(2)} &euro;</TableCell>
                       <TableCell className="text-right">{(dept.tarif * 5).toFixed(2)} &euro;</TableCell>
