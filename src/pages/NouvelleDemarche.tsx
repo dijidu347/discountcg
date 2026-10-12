@@ -638,6 +638,22 @@ export default function NouvelleDemarche() {
   }, [formData.type, nbQuestions, questionnaireCompleted, vehicleInfoProValid, vehiculeIdentifie, selectedImmatriculation,
       carteGrisePrice, mandatRequis, mandatDocumentType, uploadedDocuments, mandatMode, questionnaireAnswerTexts,
       documentsRequis, nonGageMode]);
+  // Le signalement en rouge s'éteint dès que la liste de ce qui manque change.
+  //
+  // Il ne s'éteignait jamais. Oublier une question préalable et cliquer sur
+  // « Payer » signalait la question — c'est juste, le calcul s'arrête là, les
+  // pièces n'étant pas encore affichées. Mais le signalement restait armé :
+  // une fois la question répondue, la liste devenait celle des pièces, et
+  // celles-ci APPARAISSAIENT déjà en rouge, avant même d'avoir pu être
+  // déposées. Le garage se faisait reprocher ce qu'on venait de lui montrer.
+  //
+  // La règle est maintenant : on signale au clic, et on se tait dès que la
+  // personne agit. Un nouveau clic sur « Payer » signale ce qui reste.
+  const signatureManquants = manquants.map((m) => m.cle).join("|");
+  useEffect(() => {
+    setAfficherManquants(false);
+  }, [signatureManquants]);
+
   const enErreur = (cle: string) => afficherManquants && manquants.some((m) => m.cle === cle);
   const cadreErreur = (cle: string) =>
     enErreur(cle) ? "[&>*]:border-2 [&>*]:border-destructive [&>*]:bg-red-50" : "";
