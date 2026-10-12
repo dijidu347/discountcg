@@ -18,7 +18,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line
+  AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line, LabelList
 } from "recharts";
 import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -621,9 +621,13 @@ export default function AdminRevenus() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredDemarches, intervalles, demarcheTypeFilter]);
 
-  // La même répartition, mais sur la période entière : c'est ce que montre le
-  // camembert. Sur un seul jour, un histogramme empilé n'a qu'une barre et se
-  // lit mal — c'est justement là qu'on regarde le plus souvent.
+  // La même répartition, mais sur la période entière.
+  //
+  // Elle se lisait d'abord en camembert, parce qu'un histogramme EMPILÉ par
+  // jour n'a qu'une seule barre quand on regarde une journée — et c'est la vue
+  // la plus consultée. Des bâtons horizontaux, un par mode de paiement,
+  // gardent cette lisibilité : la longueur se compare d'un coup d'œil, sur un
+  // jour comme sur un an, et le chiffre s'écrit au bout de la barre.
   const demarcheRepartition = useMemo(() => {
     const total = demarcheChartData.reduce(
       (acc, d) => ({
@@ -1162,9 +1166,9 @@ export default function AdminRevenus() {
                 </Select>
               </CardHeader>
               <CardContent>
-                {/* Un camembert plutôt qu'un histogramme empilé : sur une seule
-                    journée — la vue la plus consultée — l'histogramme n'avait
-                    qu'une barre, et la proportion ne se lisait pas. */}
+                {/* Des bâtons horizontaux, un par mode de paiement. Pas un
+                    histogramme empilé par jour : sur une seule journée — la vue
+                    la plus consultée — il n'aurait qu'une barre. */}
                 <div className="h-[400px]">
                   {demarcheRepartition.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -1172,23 +1176,17 @@ export default function AdminRevenus() {
                     </div>
                   ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={demarcheRepartition}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={70}
-                        outerRadius={130}
-                        dataKey="value"
-                        nameKey="name"
-                        label={({ name, value, percent }) => `${name} · ${value} (${(percent * 100).toFixed(0)} %)`}
-                        labelLine={true}
-                      >
-                        {demarcheRepartition.map((part, i) => (
-                          <Cell key={i} fill={part.color} />
-                        ))}
-                      </Pie>
+                    <BarChart
+                      data={demarcheRepartition}
+                      layout="vertical"
+                      margin={{ top: 16, right: 64, left: 16, bottom: 8 }}
+                      barCategoryGap="25%"
+                    >
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis type="category" dataKey="name" width={120} tickLine={false} axisLine={false} />
                       <Tooltip
+                        cursor={{ fill: "hsl(var(--muted))", fillOpacity: 0.4 }}
                         content={({ active, payload }) => {
                           if (!active || !payload?.length) return null;
                           const part = payload[0]?.payload as { name: string; value: number; euros: number };
@@ -1201,8 +1199,23 @@ export default function AdminRevenus() {
                           );
                         }}
                       />
-                      <Legend />
-                    </PieChart>
+                      <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                        {demarcheRepartition.map((part, i) => (
+                          <Cell key={i} fill={part.color} />
+                        ))}
+                        {/* Le nombre au bout de la barre : la longueur donne la
+                            proportion, le chiffre évite d'aller le lire sur l'axe. */}
+                        <LabelList
+                          dataKey="value"
+                          position="right"
+                          className="fill-foreground text-sm font-semibold"
+                          formatter={(v: number) => {
+                            const t = demarcheRepartition.reduce((s, p) => s + p.value, 0);
+                            return t > 0 ? `${v} (${Math.round((v / t) * 100)} %)` : `${v}`;
+                          }}
+                        />
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                   )}
                 </div>
