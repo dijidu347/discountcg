@@ -625,6 +625,75 @@ async function principal() {
     ecrites++;
   }
 
+  // ── Les routes publiques qui n'ont rien à faire dans l'index ──────────────
+  //
+  // Seize URL publiques n'étaient connues ni de ROUTES_SEO ni du catalogue des
+  // démarches : /login, /register, /mon-espace, les étapes du tunnel… Faute de
+  // fichier à leur nom, l'hébergeur leur servait la coquille — c'est-à-dire le
+  // TITRE DE L'ACCUEIL et un canonique pointant vers l'accueil. Seize adresses
+  // différentes se déclaraient donc être la page d'accueil, en « index, follow ».
+  //
+  // Mesuré dans Search Console le 12/10/2026 : quatorze pages indexées
+  // seulement, et quatre « explorées, actuellement non indexées ». Un site qui
+  // présente seize sosies de son accueil donne à Google une bonne raison de ne
+  // pas indexer le reste.
+  //
+  // Elles reçoivent désormais un vrai fichier, en noindex, avec leur propre
+  // canonique. Rien à gagner en référencement sur une page de connexion : tout
+  // à gagner à ce qu'elle cesse de se faire passer pour l'accueil.
+  const SANS_INDEX = [
+    "/login", "/login-particulier", "/register", "/register-particulier",
+    "/forgot-password", "/reset-password", "/confirmation-email", "/complete-profile",
+    "/mon-espace", "/recherche-suivi", "/demarche-simple", "/resultat-carte-grise",
+    "/coffre-fort", "/coffre-fort-sales", "/maji-concepts", "/prospection",
+  ];
+  for (const route of SANS_INDEX) {
+    await ecrire(
+      route,
+      appliquer(gabarit, {
+        titre: "Discount Carte Grise",
+        description: "Service d'immatriculation habilité par l'État.",
+        canonical: `${BASE}${route}`,
+        noindex: true,
+        schemas: [],
+        html: "",
+      })
+    );
+    ecrites++;
+  }
+
+  // ── /prix-carte-grise : une redirection que les robots voient ─────────────
+  //
+  // Cette page a été fusionnée avec /simulateur, et l'application la redirige
+  // — mais côté navigateur seulement, par <Navigate>. Le HTML servi, lui,
+  // restait la coquille : titre de l'accueil, canonique vers l'accueil.
+  //
+  // Or c'est la DEUXIÈME page du site en impressions : 3 348 sur seize mois,
+  // juste derrière l'accueil, pour 2 clics et une position moyenne de 22,5.
+  // Google la montrait sur « prix carte grise » avec le titre de l'accueil,
+  // qui ne répond pas à la requête — d'où le taux de clic de 0,06 %.
+  //
+  // Le canonique désigne désormais /simulateur et un rafraîchissement immédiat
+  // y conduit : c'est la redirection que l'on peut faire sans accès au serveur,
+  // et Google la traite comme une 301. Les signaux accumulés par cette URL
+  // rejoignent la page qui porte vraiment le sujet.
+  const versSimulateur = appliquer(gabarit, {
+    titre: "Prix de la carte grise 2026 | Discount Carte Grise",
+    description:
+      "Le prix de la carte grise, le tarif du cheval fiscal des 101 départements et le simulateur sont réunis sur une seule page.",
+    canonical: `${BASE}/simulateur`,
+    schemas: [],
+    html:
+      `<h1>Prix de la carte grise</h1>` +
+      `<p>Cette page a rejoint le <a href="${BASE}/simulateur">simulateur de prix de la carte grise</a>, ` +
+      `qui réunit le calcul, le détail des cinq taxes et le tarif du cheval fiscal des 101 départements.</p>`,
+  }).replace(
+    "</head>",
+    `  <meta http-equiv="refresh" content="0; url=/simulateur" />\n  </head>`
+  );
+  await ecrire("/prix-carte-grise", versSimulateur);
+  ecrites++;
+
   console.log(`[prerender] ${ecrites} pages écrites.`);
 
   // Le sitemap est RÉÉCRIT à partir de ce qui vient d'être pré-rendu.
