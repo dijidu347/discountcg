@@ -720,6 +720,19 @@ async function principal() {
     console.warn("[prerender] contenu non-gage ignoré :", e?.message ?? e);
   }
 
+  // L'accueil : ses huit questions-réponses vivaient dans le composant React,
+  // donc hors du HTML servi. C'est la page la plus vue du site — 6 333
+  // impressions, la première devant toutes les autres — et elle ne donnait que
+  // 345 mots aux robots, sans aucun balisage FAQPage, là où les dix-huit pages
+  // de démarches en ont un.
+  try {
+    const { FAQ_ACCUEIL } = await chargerTs("src/data/accueilContenu.ts", "accueil");
+    supplementsPages["/"] = faqHtml(FAQ_ACCUEIL);
+    faqsPages["/"] = FAQ_ACCUEIL;
+  } catch (e) {
+    console.warn("[prerender] FAQ d'accueil ignorée :", e?.message ?? e);
+  }
+
   // Le simulateur : ses quatorze questions-réponses sur le prix et sur nos
   // frais de dossier vivaient dans le composant React, donc hors du HTML servi.
   // Le robot ne recevait que l'introduction et le tableau des départements.

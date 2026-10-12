@@ -1,5 +1,6 @@
 import { SEOHead } from "@/components/seo/SEOHead";
 import { ROUTES_SEO } from "@/data/seoRoutes";
+import { FAQ_ACCUEIL } from "@/data/accueilContenu";
 
 const SEO = ROUTES_SEO["/"];
 import { organizationSchema, webSiteSchema, breadcrumbSchema, faqSchema, webPageSchema } from "@/components/seo/schemas";
@@ -21,7 +22,7 @@ const Index = () => {
         title={SEO.title}
         description={SEO.description}
         canonical={SEO.canonical}
-        schema={[organizationSchema(), webSiteSchema(), breadcrumbSchema([{ name: "Accueil", url: "https://discountcartegrise.fr/" }]), webPageSchema("Carte Grise Pas Chère en Ligne", "Service de carte grise en ligne agréé par l'État. Traitement sous 24h.", "https://discountcartegrise.fr/", "2025-11-01", "2026-03-18"), faqSchema([{question:"Quels documents faut-il pour une carte grise professionnelle ?",answer:"Pour une carte grise professionnelle, vous devez fournir : un Kbis de moins de 6 mois, une pièce d'identité du gérant, le certificat de cession du véhicule, le contrôle technique valide, et un mandat de représentation."},{question:"Quel est le délai de traitement d'un dossier ?",answer:"Nous traitons votre dossier en moins de 24 heures ouvrées dès réception de l'ensemble des pièces justificatives."},{question:"Le paiement en ligne est-il sécurisé ?",answer:"Oui, tous nos paiements sont sécurisés par cryptage SSL et conformes aux normes PCI DSS. Nous acceptons les cartes bancaires et PayPal."},{question:"Puis-je suivre l'avancement de mon dossier ?",answer:"Oui, vous recevez des notifications automatiques par email à chaque étape du traitement de votre dossier."},{question:"Que faire si je n'ai pas tous les documents ?",answer:"Contactez-nous ! Notre équipe d'experts vous guidera pour obtenir les documents manquants."},{question:"Travaillez-vous avec les professionnels ?",answer:"Oui, nous proposons des tarifs et services spécifiques pour les professionnels de l'automobile."},{question:"Puis-je annuler ma demande ?",answer:"Oui, vous pouvez annuler votre demande avant le début du traitement de votre dossier."},{question:"Quelles régions couvrez-vous ?",answer:"Nous intervenons sur toute la France métropolitaine et les DOM-TOM. Nos services sont 100% en ligne."}])]}
+        schema={[organizationSchema(), webSiteSchema(), breadcrumbSchema([{ name: "Accueil", url: "https://discountcartegrise.fr/" }]), webPageSchema("Carte Grise Pas Chère en Ligne", "Service de carte grise en ligne agréé par l'État. Traitement sous 24h.", "https://discountcartegrise.fr/", "2025-11-01", "2026-03-18"), faqSchema(FAQ_ACCUEIL)]}
       />
       <Navbar />
       <Hero />
