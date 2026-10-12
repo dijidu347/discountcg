@@ -80,6 +80,7 @@ const Attente = () => (
 const RetirerPrerendu = () => {
   React.useLayoutEffect(() => {
     document.getElementById("prerendu")?.remove();
+    document.getElementById("ebauche")?.remove();
   }, []);
   return null;
 };

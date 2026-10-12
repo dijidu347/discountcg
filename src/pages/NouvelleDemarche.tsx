@@ -120,7 +120,18 @@ export default function NouvelleDemarche() {
   const [nonGageMode, setNonGageMode] = useState<NonGageMode | null>(null);
   // Mandat 13757 : qui est le mandant. Par defaut le client final, cas le plus
   // frequent ; le garage ne se designe mandant que pour ses propres vehicules.
-  const [mandantType, setMandantType] = useState<'garage' | 'client'>('client');
+  // Nul tant que la question n'a pas été posée.
+  //
+  // « Mon client » était présélectionné, et le formulaire du mandat s'ouvrait
+  // donc d'emblée à ce nom-là. Celui qui remplit pour son garage découvrait le
+  // formulaire déjà commencé pour quelqu'un d'autre, et devait revenir en
+  // arrière. La question se pose maintenant d'abord, et la suite n'apparaît
+  // qu'une fois répondu.
+  //
+  // Les cas où la réponse est connue d'avance ne demandent rien : la
+  // déclaration d'achat et le W garage l'imposent, la cession la déduit de son
+  // vendeur. Seules les autres démarches voient la question.
+  const [mandantType, setMandantType] = useState<'garage' | 'client' | null>(null);
   const [mandatSauvegarde, setMandatSauvegarde] = useState<MandatData | null>(null);
   // Depot de son propre mandat, ou remplissage en ligne. Par defaut le depot :
   // c'est le comportement historique, et l'imposer a tous avait bloque un client
@@ -223,7 +234,7 @@ export default function NouvelleDemarche() {
         setCarteGrisePrice(draft.prix_carte_grise || 0);
         setExpressSelected(draft.express || false);
         setNonGageMode((draft.non_gage_mode as NonGageMode) || null);
-        setMandantType((draft.mandant_type as 'garage' | 'client') || 'client');
+        setMandantType((draft.mandant_type as 'garage' | 'client' | null) ?? null);
         setMandatSauvegarde((draft.mandat_data as unknown as MandatData) || null);
         setMandatMode(((draft as { mandat_mode?: MandatMode }).mandat_mode) || null);
         setDraftLoaded(true);
@@ -1637,7 +1648,10 @@ export default function NouvelleDemarche() {
                                     </p>
                                   ) : (
                                   <RadioGroup
-                                    value={mandantType}
+                                    // `?? ""` : Radix attend une chaîne, et une
+                                    // valeur nulle le ferait basculer de
+                                    // contrôlé à non contrôlé.
+                                    value={mandantType ?? ""}
                                     onValueChange={async (v) => {
                                       const mode = v as 'garage' | 'client';
                                       setMandantType(mode);
@@ -1668,6 +1682,7 @@ export default function NouvelleDemarche() {
                                   )}
                                 </div>
 
+                                {mandantType && (
                                 <MandatGenerator
                                   // Changer de mandant remonte le formulaire : sans cela
                                   // les champs garderaient les valeurs de l'autre mandant,
@@ -1721,6 +1736,7 @@ export default function NouvelleDemarche() {
                                     mandatDocumentType && handleDocumentUploadComplete(mandatDocumentType)
                                   }
                                 />
+                                )}
                                   </div>
                                 }
                               />

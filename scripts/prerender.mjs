@@ -175,22 +175,42 @@ function appliquer(gabarit, { titre, description, canonical, noindex, schemas, h
   // disparaît au moment précis où la vraie page s'affiche. Une seule
   // transition. S'il n'y a pas de JavaScript du tout, il reste : c'est le
   // filet, pas une page blanche.
-  // Le texte de secours est masqué dès que le JavaScript s'exécute.
+  // Trois états au chargement, et un seul visible à la fois.
   //
-  // Il reste dans le HTML servi — c'est tout son objet : les robots des
-  // assistants n'exécutent pas de JavaScript et repartiraient sinon avec une
-  // coquille. Mais le visiteur, lui, n'a aucune raison de le lire : son
-  // navigateur va afficher la vraie page. Et il la lisait longtemps. L'HTML
-  // arrive en 73 ms, l'application pèse 524 Ko : sur un téléphone en 4G, cela
-  // faisait une à trois secondes de texte brut avant que la page n'apparaisse.
+  // 1. `#prerendu` porte le texte complet. C'est lui que lisent les robots des
+  //    assistants, qui n'exécutent pas de JavaScript — et c'est aussi ce que
+  //    voit un visiteur sans JavaScript. Visible par défaut, donc.
   //
-  // Le script ci-dessous ne s'exécute que si le JavaScript fonctionne — c'est-
-  // à-dire exactement dans le cas où le texte de secours ne sert à rien. Quand
-  // il ne s'exécute pas, le texte reste, et c'est ce qu'on voulait.
+  // 2. `#ebauche` est une ébauche habillée : la barre du site et le titre de la
+  //    page, à la bonne police. Masquée par défaut.
+  //
+  // 3. Le script bascule les deux dès qu'il s'exécute, c'est-à-dire quand le
+  //    JavaScript fonctionne et que la vraie page va arriver.
+  //
+  // Pourquoi ce détour. Le texte brut restait affiché une à trois secondes sur
+  // un téléphone, et ressemblait à une panne. Le masquer tout court a réglé
+  // cela — mais plus rien ne s'affichait avant que React ne démarre : le
+  // premier affichage est passé de 0,2 à 1,7 seconde, mesuré en production.
+  // C'est un critère de classement, et ces pages sont faites pour être
+  // classées. L'ébauche rend la vitesse sans rendre la laideur.
+  const titreEbauche = (html.match(/<h1>([\s\S]*?)<\/h1>/) ?? [])[1] ?? "";
+  const ebauche =
+    `<div id="ebauche" hidden style="font-family:system-ui,-apple-system,'Segoe UI',sans-serif">` +
+    `<div style="height:65px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 1rem;font-weight:800;font-size:1.25rem;letter-spacing:-.02em">` +
+    `<span style="color:#0047AB">Discount</span><span style="color:#1f2937">Carte</span><span style="color:#C0392B">Grise</span>` +
+    `</div>` +
+    (titreEbauche
+      ? `<div style="max-width:52rem;margin:0 auto;padding:2.5rem 1rem">` +
+        `<h1 style="font-size:clamp(1.6rem,5vw,2.4rem);font-weight:800;line-height:1.15;letter-spacing:-.02em;color:#111827;margin:0">${titreEbauche}</h1>` +
+        `</div>`
+      : "") +
+    `</div>`;
+
   out = out.replace(
     '<div id="root"></div>',
     `<div id="prerendu">${html}</div>\n` +
-      `    <script>document.getElementById("prerendu").hidden=true;</script>\n` +
+      `    ${ebauche}\n` +
+      `    <script>document.getElementById("prerendu").hidden=true;document.getElementById("ebauche").hidden=false;</script>\n` +
       `    <div id="root"></div>`
   );
   return out;
