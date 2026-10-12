@@ -295,6 +295,36 @@ async function principal() {
   // Meme raison pour la cession : « qui fait quoi dans quel delai » et le
   // contenu du Cerfa case par case sont ce que cherche quelqu'un qui tape
   // « certificat de cession », et c'etait rendu par React.
+  // Les repères de la déclaration d'achat, même raison : 1 804 impressions pour
+  // trois clics, en positions 23 à 66, sur des requêtes presque toutes
+  // professionnelles. La page disait l'essentiel en six écrans courts et ne
+  // répondait ni à « en ligne », ni à « gratuit », ni à la confusion
+  // permanente entre achat, cession et changement de titulaire.
+  let reperesAchat = "";
+  try {
+    const { COMPARATIF, REPERES_ACHAT } = await chargerTs(
+      "src/data/achatReperes.ts",
+      "achat"
+    );
+    reperesAchat =
+      `<h2>Déclaration d'achat, déclaration de cession, changement de titulaire</h2>` +
+      `<p>Les trois se confondent et ne font pas la même chose.</p>` +
+      `<table><thead><tr><th></th><th>Déclaration d'achat</th>` +
+      `<th>Déclaration de cession</th><th>Changement de titulaire</th>` +
+      `</tr></thead><tbody>` +
+      COMPARATIF.map(
+        (l) =>
+          `<tr><th scope="row">${echappe(l.critere)}</th><td>${echappe(l.achat)}</td>` +
+          `<td>${echappe(l.cession)}</td><td>${echappe(l.titulaire)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_ACHAT.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères d'achat ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -585,6 +615,7 @@ async function principal() {
       h1: d.h1,
       blocs: [
         d.slug === "declaration-cession" ? reperesCession : "",
+        d.slug === "declaration-achat" ? reperesAchat : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),

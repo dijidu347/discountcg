@@ -178,9 +178,9 @@ export const demarchesConfig: DemarcheConfig[] = [
     slug: "declaration-achat",
     title: "Déclaration d'Achat",
     shortTitle: "déclaration d'achat",
-    h1: "Déclaration d'achat de véhicule d'occasion",
-    metaTitle: "Déclaration d'achat de véhicule",
-    metaDescription: "Déclarez l'achat d'un véhicule d'occasion en ligne. Réservé aux professionnels de l'automobile : garages, concessions, négociants. 5 € par déclaration, la première offerte.",
+    h1: "Déclaration d'achat en ligne, pour les professionnels de l'automobile",
+    metaTitle: "Déclaration d'achat professionnelle en ligne",
+    metaDescription: "Déclaration d'achat en ligne pour les professionnels de l'automobile : garage, concession, négociant. Traitée immédiatement, 5 €, la première offerte.",
     icon: "ShoppingCart",
     description: "Déclarez l'achat d'un véhicule d'occasion",
     longDescription: "La déclaration d'achat est une démarche obligatoire pour les professionnels de l'automobile qui achètent un véhicule d'occasion auprès d'un particulier ou d'un autre professionnel. Elle permet de notifier l'administration du changement de détention du véhicule et de le placer sous le régime de la détention professionnelle.\n\nContrairement au changement de titulaire classique, la déclaration d'achat n'entraîne pas l'édition d'une nouvelle carte grise immédiate. Le véhicule reste sous l'identité administrative de l'ancien propriétaire jusqu'à sa revente, moment où le nouveau titulaire effectuera le changement de carte grise à son nom.\n\nCette démarche doit être effectuée dans les 15 jours suivant l'acquisition du véhicule. Elle est principalement utilisée par les garagistes, les concessionnaires, les marchands automobiles et les sociétés de négoce de véhicules. Le professionnel doit justifier de son activité via un extrait Kbis ou une carte professionnelle.\n\nAvec Discount Carte Grise, la déclaration d'achat est traitée immédiatement. Vous recevez votre accusé de réception par email, vous permettant de justifier la détention légale du véhicule en cas de contrôle.",
@@ -221,13 +221,29 @@ export const demarchesConfig: DemarcheConfig[] = [
         answer: "Un véhicule sous déclaration d'achat peut circuler dans le cadre de l'activité professionnelle (essai, convoyage, réparation) à condition que le professionnel dispose de plaques W garage. Pour un usage sur la voie publique au-delà de ces situations, une immatriculation est nécessaire.",
       },
       {
+        question: "Comment faire une déclaration d'achat en ligne ?",
+        answer: "Depuis votre compte professionnel, en trois étapes : vous saisissez l'immatriculation du véhicule, vous déposez le certificat de cession, la carte grise barrée et le mandat, et vous validez. Le dossier part aussitôt et vous recevez l'accusé de réception par email. Votre Kbis et votre pièce d'identité ont été vérifiés à l'ouverture du compte : ils ne vous sont pas redemandés à chaque déclaration.",
+      },
+      {
+        question: "La première déclaration d'achat est-elle gratuite ?",
+        answer: "Oui. La première déclaration d'achat ou de cession d'un compte professionnel est offerte, sans engagement ni abonnement. Les suivantes sont à 5 €. Aucune taxe régionale n'est due sur cette démarche, puisqu'elle n'édite pas de nouvelle carte grise.",
+      },
+      {
+        question: "Quels documents faut-il pour une déclaration d'achat ?",
+        answer: "Le certificat de cession rempli par les deux parties (Cerfa 15776), la déclaration d'achat (Cerfa 13751), la carte grise barrée avec la mention « vendu le » datée et signée du vendeur — recto et verso —, et le mandat qui nous autorise à déposer (Cerfa 13757). Si vous avez acheté le véhicule à un autre professionnel, ajoutez son récépissé de déclaration d'achat, un par intermédiaire s'il y en a eu plusieurs.",
+      },
+      {
+        question: "Faut-il être inscrit au registre du commerce pour faire une déclaration d'achat ?",
+        answer: "Il faut exercer une activité professionnelle de négoce ou de réparation automobile, et pouvoir le prouver : c'est l'extrait Kbis qui l'atteste pour une société, l'attestation d'immatriculation au RNE pour un artisan ou un entrepreneur individuel qui n'a pas de Kbis. L'activité doit figurer sur la pièce.",
+      },
+      {
         question: "Combien de temps un véhicule peut-il rester sous déclaration d'achat ?",
         answer: "Il n'y a pas de durée maximale légale pour la détention professionnelle. Toutefois, un véhicule qui reste trop longtemps sans être revendu peut attirer l'attention de l'administration. En pratique, la plupart des professionnels revendent le véhicule dans les quelques mois suivant l'achat.",
       },
     ],
     prixDescription: "La déclaration d'achat est réservée aux professionnels de l'automobile et proposée à un tarif forfaitaire, indiqué ci-dessus. Ce prix inclut la gestion complète de la déclaration auprès de l'administration et l'envoi de l'accusé de réception par email. Contrairement au changement de titulaire, aucune taxe régionale n'est due car il n'y a pas d'édition de nouvelle carte grise. Pas de frais supplémentaires ni de mauvaise surprise.",
     seoContent: "La déclaration d'achat par un professionnel de l'automobile est une étape clé dans le circuit de revente de véhicules d'occasion. Elle permet aux garagistes, concessionnaires et négociants de détenir légalement un véhicule sans avoir à l'immatriculer à leur nom, ce qui évite des frais de carte grise inutiles.\n\nEn France, des milliers de transactions professionnelles nécessitent chaque jour cette déclaration. Le professionnel doit impérativement disposer d'un numéro SIREN valide et exercer une activité dans le secteur automobile pour pouvoir effectuer cette démarche.\n\nDiscount Carte Grise accompagne les professionnels de l'automobile dans toutes leurs démarches administratives. Notre service en ligne permet de gagner un temps précieux et d'éviter les erreurs qui pourraient retarder la revente du véhicule. Simplifiez votre gestion administrative avec notre plateforme dédiée aux professionnels.",
-    keywords: ["déclaration achat véhicule", "achat voiture occasion professionnel", "déclaration achat pas cher"],
+    keywords: ["déclaration d'achat en ligne", "déclaration d'achat professionnel automobile en ligne", "déclaration d'achat véhicule professionnel", "déclaration achat pas cher"],
   },
   {
     code: "CHGT_ADRESSE",
