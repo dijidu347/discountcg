@@ -175,9 +175,23 @@ function appliquer(gabarit, { titre, description, canonical, noindex, schemas, h
   // disparaît au moment précis où la vraie page s'affiche. Une seule
   // transition. S'il n'y a pas de JavaScript du tout, il reste : c'est le
   // filet, pas une page blanche.
+  // Le texte de secours est masqué dès que le JavaScript s'exécute.
+  //
+  // Il reste dans le HTML servi — c'est tout son objet : les robots des
+  // assistants n'exécutent pas de JavaScript et repartiraient sinon avec une
+  // coquille. Mais le visiteur, lui, n'a aucune raison de le lire : son
+  // navigateur va afficher la vraie page. Et il la lisait longtemps. L'HTML
+  // arrive en 73 ms, l'application pèse 524 Ko : sur un téléphone en 4G, cela
+  // faisait une à trois secondes de texte brut avant que la page n'apparaisse.
+  //
+  // Le script ci-dessous ne s'exécute que si le JavaScript fonctionne — c'est-
+  // à-dire exactement dans le cas où le texte de secours ne sert à rien. Quand
+  // il ne s'exécute pas, le texte reste, et c'est ce qu'on voulait.
   out = out.replace(
     '<div id="root"></div>',
-    `<div id="prerendu">${html}</div>\n    <div id="root"></div>`
+    `<div id="prerendu">${html}</div>\n` +
+      `    <script>document.getElementById("prerendu").hidden=true;</script>\n` +
+      `    <div id="root"></div>`
   );
   return out;
 }

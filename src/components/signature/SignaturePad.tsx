@@ -210,9 +210,12 @@ export const SignaturePad = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between">
+      {/* Le libellé au-dessus, les deux boutons en dessous sur téléphone.
+          Côte à côte, « Annuler » et « Effacer » poussaient « Signez
+          ci-dessous » sur trois lignes dans une colonne de cent pixels. */}
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-sm font-medium">{label}</span>
-        <div className="flex gap-1">
+        <div className="flex gap-1 self-start sm:self-auto">
           {!uploaded && !uploadSeul && (
             <Button type="button" variant="ghost" size="sm" onClick={undo} disabled={isEmpty} className="h-8">
               <Undo2 className="h-4 w-4 mr-1" />

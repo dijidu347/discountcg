@@ -1540,10 +1540,9 @@ export default function NouvelleDemarche() {
     );
   }
 
-  // Une carte par pièce, au format du mandat et du non-gage. Mis en service sur
-  // la déclaration de cession d'abord : c'est la démarche la plus courte, donc
-  // celle où l'on juge le mieux la nouvelle présentation avant de l'étendre.
-  const cartesParPiece = formData.type === "DC";
+  // Une carte par pièce, au format du mandat et du non-gage. Éprouvée sur la
+  // déclaration de cession, puis étendue à toutes les démarches classiques.
+  const cartesParPiece = true;
 
   const requiredDocsCount = documentsRequis.filter(pieceDue).length;
   const allDocsUploaded = uploadedDocuments.size >= requiredDocsCount;
@@ -1563,7 +1562,7 @@ export default function NouvelleDemarche() {
                                 }}
                                 slotUpload={
                                   <div className="space-y-2">
-                                    <Label className="text-sm font-medium">
+                                    <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
                                       Mandat rempli et signé
                                       <span className="text-destructive text-base font-bold">&nbsp;*</span>
                                     </Label>
@@ -1996,7 +1995,7 @@ export default function NouvelleDemarche() {
                               enErreur={enErreur("non_gage")}
                               uploadSlot={
                                 <div className="space-y-2">
-                                  <Label className="text-sm font-medium">
+                                  <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
                                     {NON_GAGE_DOCUMENT_LABEL}
                                     <span className="text-destructive text-base font-bold">&nbsp;*</span>
                                   </Label>
@@ -2045,7 +2044,7 @@ export default function NouvelleDemarche() {
                               const renderDocLabel = (labelText: string, isObligatoire: boolean) => {
                                 if (!hasCerfa || !cerfaNumber) {
                                   return (
-                                    <Label className="text-sm font-medium">
+                                    <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
                                       <LibelleFormulaire texte={labelText} />
                                       {isObligatoire ? (
                                         <span className="text-destructive text-base font-bold">&nbsp;*</span>
@@ -2058,7 +2057,7 @@ export default function NouvelleDemarche() {
                                 const parts = labelText.split(cerfaRegex);
                                 
                                 return (
-                                  <Label className="text-sm font-medium">
+                                  <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
                                     {parts.map((part, index) => {
                                       if (cerfaRegex.test(part)) {
                                         return (
@@ -2141,7 +2140,7 @@ export default function NouvelleDemarche() {
                                     </div>
                                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
                                       <div className="flex-1">
-                                        <Label className="text-sm font-medium">
+                                        <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
                                           <LibelleFormulaire texte={versoName} />
                                           {mentionOptionnelle}
                                         </Label>

@@ -61,22 +61,12 @@ const PaiementRecharge = React.lazy(() => import("./pages/PaiementRecharge"));
 const PaiementRechargeSucces = React.lazy(() => import("./pages/PaiementRechargeSucces"));
 const PaiementSoldeSucces = React.lazy(() => import("./pages/PaiementSoldeSucces"));
 const PaiementClient = React.lazy(() => import("./pages/PaiementClient"));
-/**
- * Ce qu'on montre pendant qu'un morceau de l'application se télécharge.
- *
- * Au tout premier chargement, le HTML pré-rendu est encore à l'écran : poser
- * une roue par-dessus ferait passer la page par un état de panne apparente —
- * texte, puis roue, puis page. On ne la montre donc que pour les navigations
- * suivantes, où il n'y a plus rien d'autre à regarder.
- */
-const Attente = () => {
-  if (typeof document !== "undefined" && document.getElementById("prerendu")) return null;
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin" />
-    </div>
-  );
-};
+/** Ce qu'on montre pendant qu'un morceau de l'application se télécharge. */
+const Attente = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <Loader2 className="w-8 h-8 animate-spin" />
+  </div>
+);
 
 /**
  * Retire le texte pré-rendu au moment où la vraie page s'affiche.
