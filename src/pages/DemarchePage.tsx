@@ -11,6 +11,7 @@ import { ContenuCotitulaire } from "@/components/seo/ContenuCotitulaire";
 import { ContenuModification } from "@/components/seo/ContenuModification";
 import { ContenuImport } from "@/components/seo/ContenuImport";
 import { ContenuFiv } from "@/components/seo/ContenuFiv";
+import { ContenuCarteGrise } from "@/components/seo/ContenuCarteGrise";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
 import { PublicCroise } from "@/components/demarche/PublicCroise";
 import { pushVueDemarche } from "@/lib/gtm";
@@ -317,6 +318,7 @@ const DemarchePage = () => {
       {demarche.slug === "immatriculation-ww-provisoire" && <ContenuImport depuis="ww" />}
       {demarche.slug === "immatriculation-definitive" && <ContenuImport depuis="definitive" />}
       {demarche.slug === "fiche-identification-vehicule" && <ContenuFiv />}
+      {demarche.slug === "carte-grise" && <ContenuCarteGrise />}
 
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">

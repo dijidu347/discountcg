@@ -602,6 +602,35 @@ async function principal() {
     console.warn("[prerender] repères FIV ignorés :", e?.message ?? e);
   }
 
+  // Le changement de titulaire, démarche principale du site : 2 006
+  // impressions pour six clics. Ce qui manquait n'était pas du contenu mais
+  // la pièce que personne ne donne — ce que l'acheteur doit réclamer au
+  // vendeur le jour de la vente, et ce qui se passe s'il ne l'a pas fait.
+  let reperesCarteGrise = "";
+  try {
+    const { A_RECLAMER_AU_VENDEUR, REPERES_CARTE_GRISE } = await chargerTs(
+      "src/data/carteGriseReperes.ts",
+      "carteGrise"
+    );
+    reperesCarteGrise =
+      `<h2>Ce qu'il faut réclamer au vendeur, le jour de la vente</h2>` +
+      `<p>Une demande de carte grise bloque rarement sur le formulaire. Elle bloque sur une ` +
+      `pièce que personne n'a demandée au moment de la remise des clés.</p>` +
+      `<table><thead><tr><th>La pièce</th><th>Ce qu'elle doit porter</th>` +
+      `<th>Si elle manque</th></tr></thead><tbody>` +
+      A_RECLAMER_AU_VENDEUR.map(
+        (p) =>
+          `<tr><th scope="row">${echappe(p.piece)}</th><td>${echappe(p.precision)}</td>` +
+          `<td>${echappe(p.siElleManque)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_CARTE_GRISE.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères carte grise ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -963,6 +992,7 @@ async function principal() {
         d.slug === "modification-carte-grise" ? reperesModification : "",
         lienImportDepuis[d.slug] ? reperesImport + lienImportDepuis[d.slug] : "",
         d.slug === "fiche-identification-vehicule" ? reperesFiv : "",
+        d.slug === "carte-grise" ? reperesCarteGrise : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
