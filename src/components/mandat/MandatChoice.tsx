@@ -45,7 +45,17 @@ export const MandatChoice = ({
       className="space-y-2 pt-1"
     >
       <div
-        className={`rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
+        /* Toute la carte choisit, pas seulement le texte.
+
+           Le libellé était seul cliquable : à droite de « J'ai déjà mon
+           mandat » il restait une large bande morte, et l'on cliquait dans le
+           vide. Le choix se fait désormais d'un clic n'importe où sur la carte.
+
+           Le garde-fou compte : sans lui, un clic dans la zone dépliée —
+           l'emplacement de dépôt, le formulaire — rappellerait le changement,
+           et côté non-gage ce changement écrit en base à chaque appel. */
+        onClick={() => { if (!disabled && value !== "upload") onChange("upload"); }}
+        className={`cursor-pointer rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
           value === "upload" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
         }`}
       >
@@ -61,7 +71,8 @@ export const MandatChoice = ({
       </div>
 
       <div
-        className={`rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
+        onClick={() => { if (!disabled && value !== "genere") onChange("genere"); }}
+        className={`cursor-pointer rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
           value === "genere" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
         }`}
       >

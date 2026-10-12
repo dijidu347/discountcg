@@ -55,7 +55,12 @@ export const NonGageChoice = ({
         className="space-y-2 pt-1"
       >
         <div
-          className={`rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
+          /* Toute la carte choisit, pas seulement le texte. Le garde-fou
+             compte doublement ici : `onChange` écrit en base — il pose ou
+             retire la ligne de service du non-gage — et sans lui, chaque clic
+             dans la zone dépliée déclencherait une écriture. */
+          onClick={() => { if (!disabled && value !== "fourni") onChange("fourni"); }}
+          className={`cursor-pointer rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
             value === "fourni"
               ? "border-primary bg-primary/5"
               : "border-border hover:bg-muted/50"
@@ -83,7 +88,8 @@ export const NonGageChoice = ({
         </div>
 
         <div
-          className={`flex items-start space-x-3 rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
+          onClick={() => { if (!disabled && value !== "facture") onChange("facture"); }}
+          className={`flex cursor-pointer items-start space-x-3 rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
             value === "facture"
               ? "border-primary bg-primary/5"
               : "border-border hover:bg-muted/50"

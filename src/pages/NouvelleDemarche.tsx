@@ -1562,7 +1562,7 @@ export default function NouvelleDemarche() {
                                 }}
                                 slotUpload={
                                   <div className="space-y-2">
-                                    <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
+                                    <Label className={cartesParPiece ? "text-base font-medium" : "text-sm font-medium"}>
                                       Mandat rempli et signé
                                       <span className="text-destructive text-base font-bold">&nbsp;*</span>
                                     </Label>
@@ -1995,7 +1995,7 @@ export default function NouvelleDemarche() {
                               enErreur={enErreur("non_gage")}
                               uploadSlot={
                                 <div className="space-y-2">
-                                  <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
+                                  <Label className={cartesParPiece ? "text-base font-medium" : "text-sm font-medium"}>
                                     {NON_GAGE_DOCUMENT_LABEL}
                                     <span className="text-destructive text-base font-bold">&nbsp;*</span>
                                   </Label>
@@ -2044,7 +2044,7 @@ export default function NouvelleDemarche() {
                               const renderDocLabel = (labelText: string, isObligatoire: boolean) => {
                                 if (!hasCerfa || !cerfaNumber) {
                                   return (
-                                    <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
+                                    <Label className={cartesParPiece ? "text-base font-medium" : "text-sm font-medium"}>
                                       <LibelleFormulaire texte={labelText} />
                                       {isObligatoire ? (
                                         <span className="text-destructive text-base font-bold">&nbsp;*</span>
@@ -2057,7 +2057,7 @@ export default function NouvelleDemarche() {
                                 const parts = labelText.split(cerfaRegex);
                                 
                                 return (
-                                  <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
+                                  <Label className={cartesParPiece ? "text-base font-medium" : "text-sm font-medium"}>
                                     {parts.map((part, index) => {
                                       if (cerfaRegex.test(part)) {
                                         return (
@@ -2140,7 +2140,7 @@ export default function NouvelleDemarche() {
                                     </div>
                                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
                                       <div className="flex-1">
-                                        <Label className={cartesParPiece ? "font-medium" : "text-sm font-medium"}>
+                                        <Label className={cartesParPiece ? "text-base font-medium" : "text-sm font-medium"}>
                                           <LibelleFormulaire texte={versoName} />
                                           {mentionOptionnelle}
                                         </Label>
