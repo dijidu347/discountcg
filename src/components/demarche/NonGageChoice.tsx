@@ -63,12 +63,14 @@ export const NonGageChoice = ({
         >
           <div className="flex items-start space-x-3">
             <RadioGroupItem value="fourni" id="non_gage_fourni" className="mt-0.5" />
-            <Label htmlFor="non_gage_fourni" className="cursor-pointer font-normal">
-              <span className="font-medium flex items-center gap-2">
+            {/* `w-full` est ce qui manquait : sans largeur à remplir, le
+                conteneur se résumait à son contenu et le `ml-auto` du prix
+                n'avait rien à repousser. « Gratuit » collait donc au libellé,
+                quand « +2 € » juste en dessous, lui, était bien à droite. */}
+            <Label htmlFor="non_gage_fourni" className="w-full cursor-pointer font-normal">
+              <span className="flex items-center gap-2 font-medium">
                 Je fournis le certificat
-                {/* Le seul mot gardé de l'explication : c'est un prix, et il
-                    répond au « +2 € » de l'autre choix juste en dessous. */}
-                <span className="ml-auto text-muted-foreground font-semibold whitespace-nowrap">Gratuit</span>
+                <span className="ml-auto whitespace-nowrap font-semibold text-primary">Gratuit</span>
               </span>
             </Label>
           </div>
