@@ -210,28 +210,7 @@ export const SignaturePad = ({
 
   return (
     <div className="space-y-2">
-      {/* Le libellé au-dessus, les deux boutons en dessous sur téléphone.
-          Côte à côte, « Annuler » et « Effacer » poussaient « Signez
-          ci-dessous » sur trois lignes dans une colonne de cent pixels. */}
-      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-        <span className="text-sm font-medium">{label}</span>
-        <div className="flex gap-1 self-start sm:self-auto">
-          {!uploaded && !uploadSeul && (
-            // « Annuler » et « Effacer » : sur une signature faite d'un seul
-            // trait — le cas courant — les deux donnaient le même résultat, et
-            // rien ne disait en quoi ils différaient. Les libellés nomment
-            // maintenant ce qu'ils retirent.
-            <Button type="button" variant="ghost" size="sm" onClick={undo} disabled={isEmpty} className="h-8">
-              <Undo2 className="h-4 w-4 mr-1" />
-              Dernier trait
-            </Button>
-          )}
-          <Button type="button" variant="ghost" size="sm" onClick={clear} disabled={isEmpty} className="h-8">
-            <Trash2 className="h-4 w-4 mr-1" />
-            Tout effacer
-          </Button>
-        </div>
-      </div>
+      <span className="block text-sm font-medium">{label}</span>
 
       <div className={`relative rounded-lg border-2 border-dashed bg-background ${heightClass}`}>
         {uploaded && nomFichier ? (
@@ -277,6 +256,29 @@ export const SignaturePad = ({
           </>
         )}
       </div>
+
+      {/* Les deux boutons sous le cadre, et non au-dessus : ils agissent sur
+          ce qui vient d'être tracé, et on ne les cherche qu'une fois la
+          signature faite. Au-dessus, ils occupaient la ligne du libellé et
+          se lisaient avant même d'avoir quoi que ce soit à effacer.
+
+          « Dernier trait » et « Tout effacer » plutôt qu'« Annuler » et
+          « Effacer » : sur une signature d'un seul trait — le cas courant —
+          les deux donnaient le même résultat sans que rien ne le dise. */}
+      {!uploadSeul && (
+        <div className="flex justify-end gap-1">
+          {!uploaded && (
+            <Button type="button" variant="ghost" size="sm" onClick={undo} disabled={isEmpty} className="h-8">
+              <Undo2 className="h-4 w-4 mr-1" />
+              Dernier trait
+            </Button>
+          )}
+          <Button type="button" variant="ghost" size="sm" onClick={clear} disabled={isEmpty} className="h-8">
+            <Trash2 className="h-4 w-4 mr-1" />
+            Tout effacer
+          </Button>
+        </div>
+      )}
 
       {(allowUpload || uploadSeul) && (
         <>
