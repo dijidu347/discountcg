@@ -20,7 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area, PieChart, Pie, Cell, Legend, LineChart, Line, LabelList
 } from "recharts";
-import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, eachDayOfInterval, eachMonthOfInterval, parseISO, isSameDay } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, subDays, startOfDay, endOfDay, eachDayOfInterval, eachMonthOfInterval, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -376,19 +376,6 @@ export default function AdminRevenus() {
     }, null);
     return { start: premiere ?? new Date("2024-01-01"), end: now };
   }, [period, customDateRange, paiements]);
-
-  // La période telle qu'elle est, écrite en toutes lettres.
-  //
-  // Le titre du graphique des démarches annonçait « (jour) » ou « (mois) »,
-  // repris de `viewMode` — qui règle la granularité des séries temporelles.
-  // Or ce graphique n'est plus une série : c'est la répartition sur toute la
-  // période choisie. « Jour » y était donc faux dès qu'on sélectionnait autre
-  // chose qu'une journée, c'est-à-dire presque toujours.
-  const libellePeriode = useMemo(() => {
-    const j = (d: Date) => format(d, "d MMMM yyyy", { locale: fr });
-    if (isSameDay(dateRange.start, dateRange.end)) return `le ${j(dateRange.start)}`;
-    return `du ${j(dateRange.start)} au ${j(dateRange.end)}`;
-  }, [dateRange]);
 
   const getRevenueAmount = (p: RawPaiement): number => {
     if (p.demarches?.paid_with_tokens || p.demarches?.is_free_token) return 0;
@@ -1165,10 +1152,7 @@ export default function AdminRevenus() {
           <TabsContent value="demarches">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <div>
-                  <CardTitle className="text-lg">Démarches par mode de paiement</CardTitle>
-                  <CardDescription className="mt-1">{libellePeriode}</CardDescription>
-                </div>
+                <CardTitle className="text-lg">Démarches par mode de paiement</CardTitle>
                 <Select value={demarcheTypeFilter} onValueChange={setDemarcheTypeFilter}>
                   <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Filtrer par type" />
