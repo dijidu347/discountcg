@@ -573,8 +573,10 @@ export default function AdminRevenus() {
     const case_ = (k: string) => { let c = somme.get(k); if (!c) { c = { p: 0, t: 0, u: 0 }; somme.set(k, c); } return c; };
     filteredPaiements.forEach(p => { case_(cleDe(p.created_at)).p += getRevenueAmount(p); });
     filteredTokens.forEach(t => { case_(cleDe(t.created_at)).t += Number(t.amount); });
+    // Au jour du débit, pas au jour de la saisie : le solde est prélevé quand la
+    // démarche est réglée.
     filteredDemarches.forEach(d => {
-      if (d.paid_with_tokens || d.is_free_token) case_(cleDe(d.created_at)).u += Number(d.frais_dossier || d.montant_ttc || 0);
+      if (d.paid_with_tokens || d.is_free_token) case_(cleDe(recueLe(d))).u += Number(d.frais_dossier || d.montant_ttc || 0);
     });
     const arrondi = (n: number) => Math.round(n * 100) / 100;
     return intervalles.map(({ key, label }) => {
@@ -593,7 +595,12 @@ export default function AdminRevenus() {
     const vide = () => ({ cb: 0, cbEuros: 0, jetons: 0, jetonEuros: 0, gratuit: 0, nonPaye: 0 });
     const parCle = new Map<string, ReturnType<typeof vide>>();
     filtered.forEach(d => {
-      const k = cleDe(d.created_at);
+      // Au jour de l'encaissement, comme le filtre qui a retenu cette démarche.
+      // Ranger ici au jour de la CRÉATION faisait disparaître du graphique
+      // toutes celles arrivées dans la période mais commencées avant : leur case
+      // tombait hors de l'axe, et rien ne le disait. Le 11/10/2026, neuf
+      // démarches reçues s'affichaient comme cinq.
+      const k = cleDe(recueLe(d));
       let c = parCle.get(k);
       if (!c) { c = vide(); parCle.set(k, c); }
       if (d.paye && !d.paid_with_tokens && !d.is_free_token) {
@@ -613,6 +620,27 @@ export default function AdminRevenus() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredDemarches, intervalles, demarcheTypeFilter]);
+
+  // La même répartition, mais sur la période entière : c'est ce que montre le
+  // camembert. Sur un seul jour, un histogramme empilé n'a qu'une barre et se
+  // lit mal — c'est justement là qu'on regarde le plus souvent.
+  const demarcheRepartition = useMemo(() => {
+    const total = demarcheChartData.reduce(
+      (acc, d) => ({
+        cb: acc.cb + d.cb,
+        cbEuros: acc.cbEuros + d.cbEuros,
+        jetons: acc.jetons + d.jetons,
+        jetonEuros: acc.jetonEuros + d.jetonEuros,
+        gratuit: acc.gratuit + d.gratuit,
+      }),
+      { cb: 0, cbEuros: 0, jetons: 0, jetonEuros: 0, gratuit: 0 },
+    );
+    return [
+      { name: "Paiement €", value: total.cb, euros: Math.round(total.cbEuros * 100) / 100, color: "#3b82f6" },
+      { name: "Jetons", value: total.jetons, euros: Math.round(total.jetonEuros * 100) / 100, color: "#8b5cf6" },
+      { name: "Jetons gratuits", value: total.gratuit, euros: 0, color: "#10b981" },
+    ].filter(part => part.value > 0);
+  }, [demarcheChartData]);
 
   // Available demarche types for filter
   const availableDemarcheTypes = useMemo(() => {
@@ -876,16 +904,14 @@ export default function AdminRevenus() {
                   <tr className="border-t text-muted-foreground">
                     <td className="py-2.5">Taxes reversées à l'État</td>
                     <td className="text-right">{eur(totalTaxesEtat)}</td>
-                    <td colSpan={3} className="text-right text-xs">
-                      encaissées puis reversées, jamais comptées en revenu
-                    </td>
+                    <td colSpan={3} />
                   </tr>
                 )}
                 <tr className="border-t-2">
                   <td className="py-2.5 font-semibold">Total</td>
                   <td className="text-right font-semibold">{eur(totalRevenue)}</td>
                   <td className="text-right font-semibold">−{eur(totalFraisBancaires)}</td>
-                  <td className="text-right font-semibold text-emerald-600">{eur(revenuNet)}</td>
+                  <td className={`text-right font-semibold ${revenuNet < 0 ? "text-red-600" : "text-emerald-600"}`}>{eur(revenuNet)}</td>
                   <td className="text-right text-muted-foreground">{filteredDemarches.length + filteredGuestOrders.length}</td>
                 </tr>
               </tbody>
@@ -1136,33 +1162,49 @@ export default function AdminRevenus() {
                 </Select>
               </CardHeader>
               <CardContent>
+                {/* Un camembert plutôt qu'un histogramme empilé : sur une seule
+                    journée — la vue la plus consultée — l'histogramme n'avait
+                    qu'une barre, et la proportion ne se lisait pas. */}
                 <div className="h-[400px]">
+                  {demarcheRepartition.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                      Aucune démarche sur cette période.
+                    </div>
+                  ) : (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={demarcheChartData}>
-                      <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                      <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
-                      <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                    <PieChart>
+                      <Pie
+                        data={demarcheRepartition}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={130}
+                        dataKey="value"
+                        nameKey="name"
+                        label={({ name, value, percent }) => `${name} · ${value} (${(percent * 100).toFixed(0)} %)`}
+                        labelLine={true}
+                      >
+                        {demarcheRepartition.map((part, i) => (
+                          <Cell key={i} fill={part.color} />
+                        ))}
+                      </Pie>
                       <Tooltip
-                        content={({ active, payload, label }) => {
+                        content={({ active, payload }) => {
                           if (!active || !payload?.length) return null;
-                          const data = payload[0]?.payload;
+                          const part = payload[0]?.payload as { name: string; value: number; euros: number };
                           return (
                             <div className="bg-background border rounded-lg p-3 shadow-lg text-sm">
-                              <p className="font-semibold mb-1">{label}</p>
-                              {data?.cb > 0 && <p className="text-blue-600">Paiement € : {data.cb} ({data.cbEuros.toFixed(2)} €)</p>}
-                              {data?.jetons > 0 && <p className="text-violet-600">Jetons : {data.jetons} ({data.jetonEuros.toFixed(2)} €)</p>}
-                              {data?.gratuit > 0 && <p className="text-emerald-600">Gratuits : {data.gratuit}</p>}
-                              <p className="text-muted-foreground mt-1 border-t pt-1">Total : {data?.count}</p>
+                              <p className="font-semibold">{part.name}</p>
+                              <p>{part.value} démarche{part.value > 1 ? "s" : ""}</p>
+                              {part.euros > 0 && <p className="text-muted-foreground">{part.euros.toFixed(2)} €</p>}
                             </div>
                           );
                         }}
                       />
                       <Legend />
-                      <Bar dataKey="cb" name="Paiement €" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="jetons" name="Jetons" fill="#8b5cf6" stackId="a" radius={[0, 0, 0, 0]} />
-                      <Bar dataKey="gratuit" name="Jetons gratuits" fill="#10b981" stackId="a" radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                    </PieChart>
                   </ResponsiveContainer>
+                  )}
                 </div>
                 <p className="text-sm text-muted-foreground mt-3 text-center">
                   Total : {demarcheChartData.reduce((s, d) => s + d.count, 0)} démarche{demarcheChartData.reduce((s, d) => s + d.count, 0) > 1 ? 's' : ''}
