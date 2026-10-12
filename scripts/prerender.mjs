@@ -367,6 +367,22 @@ async function principal() {
     console.warn("[prerender] contenu non-gage ignoré :", e?.message ?? e);
   }
 
+  // Le simulateur : ses quatorze questions-réponses sur le prix et sur nos
+  // frais de dossier vivaient dans le composant React, donc hors du HTML servi.
+  // Le robot ne recevait que l'introduction et le tableau des départements.
+  //
+  // C'est pourtant là que le site répond à « carte grise pas cher » — 4 504
+  // impressions sur seize mois, en position 28, la première famille de requêtes
+  // du site. La réponse existait, elle n'était simplement lue par personne.
+  try {
+    const { FAQ_SERVICE, FAQ_TARIFS } = await chargerTs("src/data/tarifsContenu.ts", "tarifs");
+    const toutes = [...FAQ_TARIFS, ...FAQ_SERVICE];
+    supplementsPages["/simulateur"] = faqHtml(toutes);
+    faqsPages["/simulateur"] = toutes;
+  } catch (e) {
+    console.warn("[prerender] contenu tarifs ignoré :", e?.message ?? e);
+  }
+
   try {
     const { PREUVES, ETAPES, FAQ } = await chargerTs(
       "src/data/professionnelContenu.ts",

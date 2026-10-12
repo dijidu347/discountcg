@@ -25,7 +25,13 @@ export const demarchesConfig: DemarcheConfig[] = [
     title: "Carte Grise",
     shortTitle: "Carte grise",
     h1: "Carte grise en ligne : changement de titulaire",
-    metaTitle: "Carte grise en ligne pas chère",
+    // Le titre promettait « pas chère » quand la page parle de changement de
+    // titulaire — et l'accueil, dont le H1 dit déjà « rapide, sécurisée et pas
+    // chère », visait la même requête. Deux pages pour une requête, dont l'une
+    // annonçait dans Google autre chose que son contenu. L'accueil garde
+    // « pas chère » ; celle-ci reprend son vrai sujet, qui est aussi ce qu'on
+    // tape le plus souvent après : « changement de titulaire ».
+    metaTitle: "Changement de titulaire carte grise en ligne",
     metaDescription: "Commandez votre carte grise en ligne au meilleur prix. Traitement sous 24h, service agréé par l'État. Simulez le coût et lancez votre démarche.",
     icon: "CreditCard",
     description: "Changement de titulaire suite à l'achat d'un véhicule d'occasion",
