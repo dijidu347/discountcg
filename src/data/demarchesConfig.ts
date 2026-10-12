@@ -759,7 +759,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Comment obtenir le certificat de conformité d'un scooter 50cc ?",
-        answer: "Auprès du constructeur ou de son représentant en France, qui le délivre à partir du numéro de série. Pour un modèle récent c'est une formalité. Pour une mobylette des années 1970 ou 1980, c'est souvent impossible : le constructeur a disparu ou changé de mains, et les archives avec. La fiche d'identification du véhicule prend alors le relais — elle est établie à partir des caractéristiques relevées sur l'engin et permet de monter le dossier sans certificat de conformité.",
+        answer: "Auprès du constructeur ou de son représentant en France, qui le délivre à partir du numéro de série. Pour un modèle récent c'est une formalité. Pour une mobylette des années 1970 ou 1980, c'est souvent impossible : le constructeur a disparu ou changé de mains, et les archives avec. Au-delà de trente ans, la Fédération française des véhicules d'époque délivre alors une attestation de datation et de caractéristiques qui tient lieu de certificat de conformité et ouvre l'immatriculation en « véhicule de collection ». À défaut, un duplicata du certificat, la facture d'origine ou une attestation d'assurance peuvent convenir s'ils portent la marque, le type et le numéro d'identification.",
       },
       {
         question: "Comment immatriculer un cyclomoteur sans carte grise ?",

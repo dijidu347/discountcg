@@ -399,9 +399,8 @@ async function principal() {
   }
 
   // Le cyclomoteur : 744 impressions pour ZÉRO clic, en positions 38 à 56.
-  // Deux faits manquaient — le prix unique de 11 € partout, et la fiche
-  // d'identification comme sortie quand le certificat de conformité est
-  // introuvable.
+  // Deux faits manquaient — le prix unique de 11 € partout, et l'attestation
+  // de la FFVE comme sortie quand le certificat de conformité est introuvable.
   let reperesCyclo = "";
   try {
     const { CAS_CYCLO, REPERES_CYCLO } = await chargerTs("src/data/cycloReperes.ts", "cyclo");
@@ -417,9 +416,7 @@ async function principal() {
       `</tbody></table>` +
       REPERES_CYCLO.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
-      ).join("") +
-      `<p><a href="${BASE}/fiche-identification-vehicule">Pas de certificat de conformité ? ` +
-      `La fiche d'identification du véhicule</a></p>`;
+      ).join("");
   } catch (e) {
     console.warn("[prerender] repères cyclo ignorés :", e?.message ?? e);
   }

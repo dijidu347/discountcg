@@ -3,12 +3,15 @@
 // 744 impressions pour zéro clic, en positions 38 à 56 : le pire rendement du
 // site. La page disait l'essentiel mais pas les deux faits qu'on cherche — le
 // prix unique de 11 € partout en France, et la sortie quand le certificat de
-// conformité est introuvable.
+// conformité est introuvable, qui est l'attestation de la FFVE.
+//
+// Pas la fiche d'identification du véhicule : elle relève ce qui figure au
+// fichier national pour un véhicule DÉJÀ immatriculé. Un cyclomoteur qui n'a
+// jamais été immatriculé n'y figure pas.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Link } from "react-router-dom";
-import { Bike, Info, ChevronRight } from "lucide-react";
+import { Bike, Info } from "lucide-react";
 import { CAS_CYCLO, REPERES_CYCLO } from "@/data/cycloReperes";
 
 export function ContenuCyclo() {
@@ -59,21 +62,6 @@ export function ContenuCyclo() {
         ))}
       </section>
 
-      {/* Le lien que la page ne portait pas, et qui est la sortie du seul cas
-          vraiment bloquant. */}
-      <section>
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="py-5">
-            <Link
-              to="/fiche-identification-vehicule"
-              className="flex items-center gap-3 text-primary hover:underline font-medium"
-            >
-              Pas de certificat de conformité ? La fiche d'identification du véhicule
-              <ChevronRight className="w-4 h-4 ml-auto shrink-0" />
-            </Link>
-          </CardContent>
-        </Card>
-      </section>
     </div>
   );
 }
