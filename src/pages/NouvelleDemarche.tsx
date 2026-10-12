@@ -2203,7 +2203,10 @@ export default function NouvelleDemarche() {
                             replier d'un seul côté ne se voyait donc pas depuis
                             l'autre. */}
                         <Collapsible open={piecesSupOuvertes} onOpenChange={setPiecesSupOuvertes}>
-                        <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
+                        {/* La marge passe du cadre au déclencheur : c'est lui
+                            qui doit occuper toute la carte, sinon le clic
+                            tombe dans le vide dès qu'on vise à côté du titre. */}
+                        <div className="bg-muted/30 rounded-lg border border-dashed border-muted-foreground/30">
                           {/* Le titre s'écrit comme les noms de pièces au-dessus :
                               même taille, même noir, icône bleue. Le bouton
                               « Ajouter » disparaît — cinq lignes vides attendent
@@ -2213,7 +2216,7 @@ export default function NouvelleDemarche() {
                               Elle affichait « 5 » sur un dossier neuf, les cinq
                               lignes vides étant créées d'office : un compteur qui
                               annonçait cinq pièces là où il n'y en avait aucune. */}
-                          <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 text-left">
+                          <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 p-4 text-left">
                             <h3 className="flex items-center gap-2 text-base font-medium">
                               <FileText className="h-4 w-4 shrink-0 text-primary" />
                               Pièces supplémentaires
@@ -2230,7 +2233,7 @@ export default function NouvelleDemarche() {
                               }`}
                             />
                           </CollapsibleTrigger>
-                          <CollapsibleContent className="pt-3">
+                          <CollapsibleContent className="px-4 pb-4">
                           
                           {additionalDocs.length === 0 ? (
                             <p className="text-xs text-muted-foreground text-center py-2">
