@@ -421,6 +421,33 @@ async function principal() {
     console.warn("[prerender] repères cyclo ignorés :", e?.message ?? e);
   }
 
+  // Le duplicata : une des dix pages sans aucune impression en seize mois.
+  // Bien maillée, contenu juste, mais page de gabarit comme les six autres
+  // démarches invisibles. Ce qui lui est propre : le premier geste diffère
+  // selon qu'on a perdu, qu'on s'est fait voler, ou qu'on a abîmé le titre.
+  let reperesDuplicata = "";
+  try {
+    const { CAS_DUPLICATA, REPERES_DUPLICATA } = await chargerTs(
+      "src/data/duplicataReperes.ts",
+      "duplicata"
+    );
+    reperesDuplicata =
+      `<h2>Perdue, volée ou abîmée : le premier geste n'est pas le même</h2>` +
+      `<table><thead><tr><th>Votre situation</th><th>Ce qu'il faut faire d'abord</th>` +
+      `<th>La pièce à joindre</th><th>Où l'obtenir</th></tr></thead><tbody>` +
+      CAS_DUPLICATA.map(
+        (c) =>
+          `<tr><th scope="row">${echappe(c.cas)}</th><td>${echappe(c.premierGeste)}</td>` +
+          `<td>${echappe(c.piece)}</td><td>${echappe(c.ou)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_DUPLICATA.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères duplicata ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -481,6 +508,18 @@ async function principal() {
       fichier: "cerfa_13750_05.pdf",
       intitule: "demande de certificat d'immatriculation",
       note: "À remplir et signer par le nouveau titulaire. Nous le remplissons pour vous si vous passez par notre service.",
+    },
+    "declaration-achat": {
+      numero: "13751*02",
+      fichier: "cerfa_13751_02.pdf",
+      intitule: "déclaration d'achat d'un véhicule d'occasion",
+      note: "Réservée aux professionnels de l'automobile, à joindre au dossier. Nous le pré-remplissons si vous passez par notre service.",
+    },
+    "premiere-demande-w-garage": {
+      numero: "13752*02",
+      fichier: "cerfa_13752_02.pdf",
+      intitule: "demande de délivrance de certificat W garage",
+      note: "C'est la pièce sans laquelle le dossier ne peut pas être déposé. Le W garage est attribué à l'entreprise, pour un an, et non à un véhicule.",
     },
     "carte-grise-professionnel": {
       numero: "13757*03",
@@ -751,6 +790,7 @@ async function principal() {
         d.slug === "succession-carte-grise" ? reperesSuccession : "",
         d.slug === "quitus-fiscal" ? reperesQuitus : "",
         d.slug === "immatriculation-cyclomoteur" ? reperesCyclo : "",
+        d.slug === "duplicata-carte-grise" ? reperesDuplicata : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
