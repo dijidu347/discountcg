@@ -61,6 +61,39 @@ const PaiementRecharge = React.lazy(() => import("./pages/PaiementRecharge"));
 const PaiementRechargeSucces = React.lazy(() => import("./pages/PaiementRechargeSucces"));
 const PaiementSoldeSucces = React.lazy(() => import("./pages/PaiementSoldeSucces"));
 const PaiementClient = React.lazy(() => import("./pages/PaiementClient"));
+/**
+ * Ce qu'on montre pendant qu'un morceau de l'application se télécharge.
+ *
+ * Au tout premier chargement, le HTML pré-rendu est encore à l'écran : poser
+ * une roue par-dessus ferait passer la page par un état de panne apparente —
+ * texte, puis roue, puis page. On ne la montre donc que pour les navigations
+ * suivantes, où il n'y a plus rien d'autre à regarder.
+ */
+const Attente = () => {
+  if (typeof document !== "undefined" && document.getElementById("prerendu")) return null;
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="w-8 h-8 animate-spin" />
+    </div>
+  );
+};
+
+/**
+ * Retire le texte pré-rendu au moment où la vraie page s'affiche.
+ *
+ * Ce composant vit DANS la frontière Suspense : il ne se monte donc qu'une fois
+ * le morceau de code de la route téléchargé, c'est-à-dire exactement quand il y
+ * a enfin quelque chose à mettre à la place. `useLayoutEffect` fait le retrait
+ * avant que le navigateur ne peigne, pour qu'on ne voie jamais les deux à la
+ * fois.
+ */
+const RetirerPrerendu = () => {
+  React.useLayoutEffect(() => {
+    document.getElementById("prerendu")?.remove();
+  }, []);
+  return null;
+};
+
 const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
 const DepartementPage = React.lazy(() => import("./pages/DepartementPage"));
 const PrixCarteGrise = React.lazy(() => import("./pages/PrixCarteGrise"));
@@ -88,7 +121,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+          <Suspense fallback={<Attente />}>
+          <RetirerPrerendu />
           <Routes>
         <Route path="/" element={<Index />} />
         <Route path="/login" element={<Login />} />

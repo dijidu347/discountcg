@@ -669,7 +669,7 @@ const PaiementDemarche = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8 md:py-12 max-w-2xl">
+        <div className="container mx-auto px-4 pt-24 pb-8 md:py-12 max-w-2xl">
           <Button variant="ghost" onClick={() => navigate("/mes-demarches")} className="mb-6">
             <ArrowLeft className="w-4 h-4 mr-2" /> Retour
           </Button>

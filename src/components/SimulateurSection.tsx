@@ -325,7 +325,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
                 
                 {/* Texte de la plaque */}
                 <div className="absolute inset-y-0 left-12 md:left-14 right-0 flex items-center justify-center bg-[#F4C430]">
-                  <span className="text-2xl md:text-4xl font-black tracking-wider text-black" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <span className="whitespace-nowrap text-lg sm:text-2xl md:text-4xl font-black tracking-wide sm:tracking-wider text-black" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                     {displayPlate}
                   </span>
                 </div>
@@ -360,7 +360,7 @@ export const SimulateurSection = ({ embedded = false, initialType = "" }: { embe
                 </div>
                 
                 <div className="absolute inset-y-0 left-12 md:left-14 right-12 md:right-14 flex items-center justify-center bg-background">
-                  <span className="text-2xl md:text-4xl font-black tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+                  <span className="whitespace-nowrap text-lg sm:text-2xl md:text-4xl font-black tracking-wide sm:tracking-wider text-foreground" style={{ fontFamily: 'system-ui, -apple-system, sans-serif' }}>
                     {displayPlate}
                   </span>
                 </div>

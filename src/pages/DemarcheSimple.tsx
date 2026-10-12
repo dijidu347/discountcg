@@ -230,7 +230,7 @@ export default function DemarcheSimple() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 pt-24 pb-8">
           <div className="flex justify-center items-center min-h-[400px]">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>

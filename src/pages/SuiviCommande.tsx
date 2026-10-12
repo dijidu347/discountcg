@@ -296,7 +296,7 @@ const SuiviCommande = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navbar />
-        <div className="container mx-auto px-4 py-16 text-center">
+        <div className="container mx-auto px-4 pt-24 pb-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Commande introuvable</h1>
           <p className="text-muted-foreground">
             Vérifiez votre numéro de suivi et réessayez

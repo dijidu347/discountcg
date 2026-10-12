@@ -963,7 +963,7 @@ const CommanderSansCompte = () => {
       </Helmet>
       <Navbar />
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 pt-24 pb-16">
         <div className="max-w-3xl mx-auto space-y-6">
           {/* Header */}
           <div className="text-center space-y-4">

@@ -164,7 +164,21 @@ function appliquer(gabarit, { titre, description, canonical, noindex, schemas, h
     .join("\n    ");
   if (blocsSchema) out = out.replace("</head>", `    ${blocsSchema}\n</head>`);
 
-  out = out.replace('<div id="root"></div>', `<div id="root">${html}</div>`);
+  // Le texte pré-rendu est posé À CÔTÉ du conteneur de React, et non dedans.
+  //
+  // Il y était, et React vide ce conteneur pour s'installer : le visiteur voyait
+  // donc le texte, puis une roue de chargement, puis la page — trois états à
+  // chaque chargement, dont deux qui ressemblent à une panne. Sarah l'a vu
+  // elle-même en rechargeant le site.
+  //
+  // Dehors, il reste à l'écran tant que l'application n'est pas prête, et
+  // disparaît au moment précis où la vraie page s'affiche. Une seule
+  // transition. S'il n'y a pas de JavaScript du tout, il reste : c'est le
+  // filet, pas une page blanche.
+  out = out.replace(
+    '<div id="root"></div>',
+    `<div id="prerendu">${html}</div>\n    <div id="root"></div>`
+  );
   return out;
 }
 

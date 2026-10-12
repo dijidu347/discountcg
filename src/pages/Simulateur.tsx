@@ -40,7 +40,7 @@ export default function Simulateur() {
       <Navbar />
 
       {/* Hero + Simulateur */}
-      <section className="py-12 md:py-20 bg-gradient-to-b from-primary/5 to-background">
+      <section className="pt-24 pb-12 md:pt-28 md:pb-20 bg-gradient-to-b from-primary/5 to-background">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center mb-10">
             <h1 className="text-3xl md:text-5xl font-extrabold text-foreground mb-4">

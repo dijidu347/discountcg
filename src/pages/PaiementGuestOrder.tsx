@@ -395,7 +395,7 @@ const PaiementGuestOrder = () => {
       </Helmet>
       <Navbar />
 
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 pt-24 pb-16">
         <div className="max-w-2xl mx-auto space-y-8">
           <Button
             variant="ghost"
