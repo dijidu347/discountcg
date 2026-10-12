@@ -2,6 +2,7 @@ import { Menu, X, LogIn, Star, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { AVIS_GROUPE, noteEnFrancais } from "@/data/avisGroupe";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -26,12 +27,27 @@ const Navbar = () => {
 
           {/* Stats centrées - Desktop */}
           <div className="hidden lg:flex items-center gap-8">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-0.5 text-yellow-500">
-                {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
-              </div>
-              <div className="text-[11px] text-muted-foreground">5.0 / 5 avis clients</div>
-            </div>
+            {/* La note est celle de l'atelier du groupe, pas de ce service : elle
+                est donc nommée, chiffrée et cliquable. Sans source vérifiable,
+                on n'affiche rien — voir src/data/avisGroupe.ts. */}
+            {AVIS_GROUPE && (
+              <a
+                href={AVIS_GROUPE.url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="text-center group"
+              >
+                <div className="flex items-center justify-center gap-0.5 text-yellow-500">
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
+                </div>
+                <div className="text-[11px] text-muted-foreground group-hover:text-primary transition-colors">
+                  {noteEnFrancais(AVIS_GROUPE.note)} / 5 · {AVIS_GROUPE.societe}
+                </div>
+                <div className="text-[10px] text-muted-foreground/70">
+                  {AVIS_GROUPE.lien} · {AVIS_GROUPE.nombre} avis Google
+                </div>
+              </a>
+            )}
           </div>
 
           {/* Navigation - Desktop */}
@@ -67,14 +83,26 @@ const Navbar = () => {
         {/* Mobile Navigation */}
         {isOpen && <div className="md:hidden py-4 space-y-4 border-t border-border">
             {/* Stats mobile */}
-            <div className="flex items-center justify-around py-3 border-b border-border">
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-0.5 text-yellow-500">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
-                </div>
-                <div className="text-[10px] text-muted-foreground">5.0 / 5</div>
+            {AVIS_GROUPE && (
+              <div className="flex items-center justify-around py-3 border-b border-border">
+                <a
+                  href={AVIS_GROUPE.url}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="text-center"
+                >
+                  <div className="flex items-center justify-center gap-0.5 text-yellow-500">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground">
+                    {noteEnFrancais(AVIS_GROUPE.note)} / 5 · {AVIS_GROUPE.societe}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground/70">
+                    {AVIS_GROUPE.lien} · {AVIS_GROUPE.nombre} avis Google
+                  </div>
+                </a>
               </div>
-            </div>
+            )}
             
             <button onClick={() => {
           setIsOpen(false);
