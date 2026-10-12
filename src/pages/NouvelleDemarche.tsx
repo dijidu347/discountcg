@@ -2204,38 +2204,32 @@ export default function NouvelleDemarche() {
                             l'autre. */}
                         <Collapsible open={piecesSupOuvertes} onOpenChange={setPiecesSupOuvertes}>
                         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
-                          <div className="flex items-center justify-between gap-2">
-                            <CollapsibleTrigger className="flex flex-1 items-center justify-between gap-2 text-left">
-                              <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-                                <FileText className="h-4 w-4" />
-                                Pièces supplémentaires
-                                {mentionOptionnelle}
-                                {additionalDocs.length > 0 && (
-                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                                    {additionalDocs.length}
-                                  </span>
-                                )}
-                              </h3>
-                              <ChevronDown
-                                className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
-                                  piecesSupOuvertes ? "rotate-180" : ""
-                                }`}
-                              />
-                            </CollapsibleTrigger>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setPiecesSupOuvertes(true);
-                                setAdditionalDocs([...additionalDocs, { id: Date.now(), name: "" }]);
-                              }}
-                              className="h-8 shrink-0 text-xs"
-                            >
-                              <Plus className="mr-1 h-3 w-3" />
-                              Ajouter
-                            </Button>
-                          </div>
+                          {/* Le titre s'écrit comme les noms de pièces au-dessus :
+                              même taille, même noir, icône bleue. Le bouton
+                              « Ajouter » disparaît — cinq lignes vides attendent
+                              déjà à l'intérieur, il n'y avait rien à ajouter.
+
+                              La pastille ne compte plus que les lignes NOMMÉES.
+                              Elle affichait « 5 » sur un dossier neuf, les cinq
+                              lignes vides étant créées d'office : un compteur qui
+                              annonçait cinq pièces là où il n'y en avait aucune. */}
+                          <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 text-left">
+                            <h3 className="flex items-center gap-2 text-base font-medium">
+                              <FileText className="h-4 w-4 shrink-0 text-primary" />
+                              Pièces supplémentaires
+                              {mentionOptionnelle}
+                              {additionalDocs.filter((d) => d.name.trim()).length > 0 && (
+                                <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
+                                  {additionalDocs.filter((d) => d.name.trim()).length}
+                                </span>
+                              )}
+                            </h3>
+                            <ChevronDown
+                              className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${
+                                piecesSupOuvertes ? "rotate-180" : ""
+                              }`}
+                            />
+                          </CollapsibleTrigger>
                           <CollapsibleContent className="pt-3">
                           
                           {additionalDocs.length === 0 ? (

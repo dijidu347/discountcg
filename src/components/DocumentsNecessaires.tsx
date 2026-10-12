@@ -766,8 +766,8 @@ export function DocumentsNecessaires({
         <Collapsible open={piecesSupOuvertes} onOpenChange={setPiecesSupOuvertes}>
         <div className="bg-muted/30 p-4 rounded-lg border border-dashed border-muted-foreground/30">
           <CollapsibleTrigger className="flex w-full items-center justify-between gap-2 text-left">
-            <h3 className="font-medium text-sm text-muted-foreground flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+            <h3 className="flex items-center gap-2 text-base font-medium">
+              <FileText className="h-4 w-4 shrink-0 text-primary" />
               Pièces supplémentaires
               {MENTION_OPTIONNELLE}
               {additionalDocs.length > 0 && (
