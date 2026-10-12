@@ -28,13 +28,13 @@ export const CartePiece = ({
   children: ReactNode;
 }) => (
   <div
-    className={`space-y-3 p-4 rounded-lg border-2 ${
+    className={`space-y-3 overflow-hidden rounded-lg border-2 p-3 sm:p-4 ${
       enErreur ? "border-destructive bg-red-50" : "border-border bg-card"
     }`}
   >
     <div className="flex items-start gap-2">
       <FileText className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-      <div className="min-w-0 flex-1">{titre}</div>
+      <div className="min-w-0 flex-1 break-words">{titre}</div>
       {mention && (
         <span className="ml-auto shrink-0 text-xs text-muted-foreground">{mention}</span>
       )}

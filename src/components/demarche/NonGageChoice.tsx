@@ -40,10 +40,10 @@ export const NonGageChoice = ({
   const prix = getNonGagePrice(audience);
 
   return (
-    <div id="bloc-non-gage" className={`space-y-3 p-4 rounded-lg border-2 scroll-mt-24 ${enErreur ? "border-destructive bg-red-50" : "border-border bg-card"}`}>
-      <div className="flex items-center gap-2">
+    <div id="bloc-non-gage" className={`space-y-3 rounded-lg border-2 p-3 sm:p-4 scroll-mt-24 ${enErreur ? "border-destructive bg-red-50" : "border-border bg-card"}`}>
+      <div className="flex flex-wrap items-center gap-2">
         <FileSearch className="w-4 h-4 text-primary" />
-        <p className="font-medium">
+        <p className="min-w-0 break-words font-medium">
           {NON_GAGE_LABEL}
           <span className="text-destructive text-base font-bold">&nbsp;*</span>
         </p>
@@ -55,7 +55,7 @@ export const NonGageChoice = ({
         className="space-y-2 pt-1"
       >
         <div
-          className={`p-3 rounded-lg border-2 transition-colors ${
+          className={`rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
             value === "fourni"
               ? "border-primary bg-primary/5"
               : "border-border hover:bg-muted/50"
@@ -81,7 +81,7 @@ export const NonGageChoice = ({
         </div>
 
         <div
-          className={`flex items-start space-x-3 p-3 rounded-lg border-2 transition-colors ${
+          className={`flex items-start space-x-3 rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
             value === "facture"
               ? "border-primary bg-primary/5"
               : "border-border hover:bg-muted/50"

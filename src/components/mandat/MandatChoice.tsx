@@ -28,10 +28,10 @@ export const MandatChoice = ({
   disabled = false,
   enErreur = false,
 }: MandatChoiceProps) => (
-  <div className={`space-y-3 p-4 rounded-lg border-2 ${enErreur ? "border-destructive bg-red-50" : "border-border bg-card"}`}>
-    <div className="flex items-center gap-2">
+  <div className={`space-y-3 rounded-lg border-2 p-3 sm:p-4 ${enErreur ? "border-destructive bg-red-50" : "border-border bg-card"}`}>
+    <div className="flex flex-wrap items-center gap-2">
       <FileSignature className="w-4 h-4 text-primary" />
-      <p className="font-medium">
+      <p className="min-w-0 break-words font-medium">
         Mandat d'immatriculation
         <span className="text-destructive text-base font-bold">&nbsp;*</span>
       </p>
@@ -45,7 +45,7 @@ export const MandatChoice = ({
       className="space-y-2 pt-1"
     >
       <div
-        className={`p-3 rounded-lg border-2 transition-colors ${
+        className={`rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
           value === "upload" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
         }`}
       >
@@ -61,7 +61,7 @@ export const MandatChoice = ({
       </div>
 
       <div
-        className={`p-3 rounded-lg border-2 transition-colors ${
+        className={`rounded-lg border-2 p-2.5 sm:p-3 transition-colors ${
           value === "genere" ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
         }`}
       >

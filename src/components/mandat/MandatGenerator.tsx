@@ -337,12 +337,17 @@ export const MandatGenerator = ({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <FileSignature className="h-5 w-5 text-primary" />
-          Mandat d'immatriculation
-          <Badge variant="secondary" className="ml-auto">Cerfa 13757</Badge>
+    // Cette carte vit à trois niveaux d'emboîtement : la carte de la pièce, la
+    // carte du choix « Le remplir en ligne », puis celle-ci. Chaque niveau
+    // ajoutait ses marges, et le cumul dépassait la largeur d'un téléphone —
+    // la page partait en défilement horizontal. Marges allégées en dessous de
+    // la tablette, et un titre qui accepte de rétrécir.
+    <Card className="overflow-hidden">
+      <CardHeader className="p-4 sm:p-6">
+        <CardTitle className="flex flex-wrap items-center gap-2 text-base">
+          <FileSignature className="h-5 w-5 shrink-0 text-primary" />
+          <span className="min-w-0 break-words">Mandat d'immatriculation</span>
+          <Badge variant="secondary" className="ml-auto shrink-0">Cerfa 13757</Badge>
         </CardTitle>
         <CardDescription>
           Pré-rempli avec vos informations. Vérifiez-les, corrigez si besoin, et le mandat est joint

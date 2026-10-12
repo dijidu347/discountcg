@@ -320,7 +320,22 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
       )}
 
       {!selectedVehicleId && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3">
+          {/* Rien ne disait qu'il fallait choisir un véhicule : deux cartes
+              côte à côte, « Historique » et « Nouveau », et aucune consigne.
+              On nomme l'étape et on marque l'astérisque, comme partout
+              ailleurs dans le formulaire. */}
+          <div>
+            <h3 className="font-semibold">
+              Le véhicule
+              <span className="text-destructive text-base font-bold">&nbsp;*</span>
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Choisissez une plaque déjà enregistrée, ou ajoutez un nouveau véhicule.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Bloc Historique des véhicules */}
           <Card>
             <CardHeader className="pb-3">
@@ -574,6 +589,7 @@ export function VehicleFormSimple({ garageId, onVehicleSelect, selectedVehicleId
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </div>
