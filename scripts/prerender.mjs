@@ -566,6 +566,42 @@ async function principal() {
     console.warn("[prerender] repères import ignorés :", e?.message ?? e);
   }
 
+  // La fiche d'identification : 532 impressions pour deux clics. La page était
+  // juste et honnête, mais tout en prose. Il lui manquait quand elle sert, et
+  // avec quoi on la confond.
+  let reperesFiv = "";
+  try {
+    const { CAS_FIV, NE_PAS_CONFONDRE, REPERES_FIV } = await chargerTs(
+      "src/data/fivReperes.ts",
+      "fiv"
+    );
+    reperesFiv =
+      `<h2>Les quatre cas où elle sert vraiment</h2>` +
+      `<table><thead><tr><th>Votre situation</th><th>Ce qu'elle apporte</th>` +
+      `</tr></thead><tbody>` +
+      CAS_FIV.map(
+        (c) => `<tr><th scope="row">${echappe(c.situation)}</th><td>${echappe(c.pourquoi)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      `<h2>Trois documents qu'on confond</h2>` +
+      `<table><thead><tr><th>Document</th><th>Ce qu'il dit</th>` +
+      `<th>Ce qu'il ne dit pas</th></tr></thead><tbody>` +
+      NE_PAS_CONFONDRE.map(
+        (c) =>
+          `<tr><th scope="row">${echappe(c.document)}</th><td>${echappe(c.dit)}</td>` +
+          `<td>${echappe(c.neDitPas)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_FIV.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("") +
+      `<p><a href="${BASE}/duplicata-carte-grise">Carte grise perdue ? C'est un duplicata ` +
+      `qu'il vous faut</a> · <a href="${BASE}/certificat-de-non-gage">Savoir si le véhicule ` +
+      `est gagé : le certificat de non-gage</a></p>`;
+  } catch (e) {
+    console.warn("[prerender] repères FIV ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -913,6 +949,7 @@ async function principal() {
         d.slug === "cotitulaire-carte-grise" ? reperesCotitulaire : "",
         d.slug === "modification-carte-grise" ? reperesModification : "",
         lienImportDepuis[d.slug] ? reperesImport + lienImportDepuis[d.slug] : "",
+        d.slug === "fiche-identification-vehicule" ? reperesFiv : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
