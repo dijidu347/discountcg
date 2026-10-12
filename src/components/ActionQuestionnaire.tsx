@@ -290,19 +290,19 @@ export function ActionQuestionnaire({ actionId, onAnswersChange, reponsesInitial
                       </Label>
                     </div>
                     
-                    {isSelected && hasConditionalDocs && (
-                      <div className="ml-6 mt-2 p-2 bg-muted rounded-md text-xs">
-                        <p className="font-medium text-muted-foreground mb-1">Documents additionnels requis :</p>
-                        <ul className="list-disc list-inside space-y-0.5">
-                          {conditionalDocs[option.id]?.map(doc => (
-                            <li key={doc.id} className={doc.obligatoire ? "text-foreground" : "text-muted-foreground"}>
-                              {doc.nom_document}
-                              {doc.obligatoire && <span className="text-destructive font-bold ml-1">*</span>}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {/* La liste des « documents additionnels requis » n'est plus
+                        affichée sous la réponse. Elle annonçait des pièces que
+                        la liste du dessous fait apparaître d'elle-même : on
+                        lisait deux fois la même chose, la seconde avec un
+                        emplacement pour déposer, la première sans.
+
+                        À savoir : les deux ne viennent PAS de la même source.
+                        Cette liste-ci sort de la table
+                        `action_conditional_documents` ; les emplacements du
+                        dessous sont engendrés par `getDocumentsConfig`, en
+                        code. Les deux concordent aujourd'hui, mais rien ne les
+                        y oblige — modifier la table ne changera pas les
+                        emplacements, et inversement. */}
                   </div>
                 );
               })}
