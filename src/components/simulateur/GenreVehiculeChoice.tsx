@@ -36,7 +36,7 @@ export const GenreVehiculeChoice = ({ genre, modele, onChange, disabled }: Genre
         <div className="flex items-center space-x-3">
           <RadioGroupItem value="CTTE" id="genre-ctte" />
           <Label htmlFor="genre-ctte" className="cursor-pointer font-normal">
-            Utilitaire (CTTE) : taxe utilitaire de 34 € ajoutée
+            Utilitaire (CTTE)
           </Label>
         </div>
       </RadioGroup>
