@@ -210,7 +210,7 @@ export function contenuDepartement(dep: Departement): ContenuDepartement {
 
   const communesTexte = `Le tarif dépend du département de domiciliation, jamais de la commune : ${liste(
     dep.communes.slice(0, 5),
-  )} paient exactement le même cheval fiscal. C'est l'adresse figurant sur votre justificatif de domicile qui détermine le département retenu — et donc le prix.`;
+  )} paient exactement le même cheval fiscal.`;
 
   const voisinsPlusCher = voisins.filter((v) => v.ecart6cv > 0);
   const voisinsMoinsCher = voisins.filter((v) => v.ecart6cv < 0);
@@ -314,7 +314,7 @@ export function contenuDepartement(dep: Departement): ContenuDepartement {
       },
       {
         question: `Le prix change-t-il entre ${dep.chefLieu} et le reste du département ?`,
-        answer: `Non. Le tarif est régional : il est le même à ${dep.chefLieu} et dans toutes les communes ${dep.de}. Seule l'adresse de votre justificatif de domicile compte, parce que c'est elle qui détermine le département retenu.`,
+        answer: `Non. Le tarif est régional : ${eur(tarif)} le cheval fiscal à ${dep.chefLieu} comme dans toutes les communes ${dep.de}. Seule l'adresse de votre justificatif de domicile compte, parce que c'est elle qui détermine le département retenu — pas le lieu d'achat, ni celui du garage qui dépose le dossier.`,
       },
       {
         question: `Une voiture électrique est-elle exonérée ${dep.dans} ?`,
