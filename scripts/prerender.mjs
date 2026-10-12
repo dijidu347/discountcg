@@ -398,6 +398,32 @@ async function principal() {
     console.warn("[prerender] repères du quitus ignorés :", e?.message ?? e);
   }
 
+  // Le cyclomoteur : 744 impressions pour ZÉRO clic, en positions 38 à 56.
+  // Deux faits manquaient — le prix unique de 11 € partout, et la fiche
+  // d'identification comme sortie quand le certificat de conformité est
+  // introuvable.
+  let reperesCyclo = "";
+  try {
+    const { CAS_CYCLO, REPERES_CYCLO } = await chargerTs("src/data/cycloReperes.ts", "cyclo");
+    reperesCyclo =
+      `<h2>Trois situations, et une seule qui bloque</h2>` +
+      `<table><thead><tr><th>Votre cyclomoteur</th><th>La pièce qui compte</th>` +
+      `<th>La difficulté</th></tr></thead><tbody>` +
+      CAS_CYCLO.map(
+        (c) =>
+          `<tr><th scope="row">${echappe(c.situation)}</th><td>${echappe(c.piecePrincipale)}</td>` +
+          `<td>${echappe(c.difficulte)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_CYCLO.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("") +
+      `<p><a href="${BASE}/fiche-identification-vehicule">Pas de certificat de conformité ? ` +
+      `La fiche d'identification du véhicule</a></p>`;
+  } catch (e) {
+    console.warn("[prerender] repères cyclo ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -691,6 +717,7 @@ async function principal() {
         d.slug === "declaration-achat" ? reperesAchat : "",
         d.slug === "succession-carte-grise" ? reperesSuccession : "",
         d.slug === "quitus-fiscal" ? reperesQuitus : "",
+        d.slug === "immatriculation-cyclomoteur" ? reperesCyclo : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),

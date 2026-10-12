@@ -722,8 +722,8 @@ export const demarchesConfig: DemarcheConfig[] = [
     slug: "immatriculation-cyclomoteur",
     title: "Immatriculation Cyclomoteur",
     shortTitle: "carte grise cyclomoteur",
-    h1: "Immatriculation de cyclomoteur et scooter 50cc",
-    metaTitle: "Carte grise de cyclomoteur 50cc",
+    h1: "Carte grise de scooter 50cc, cyclomoteur et mobylette",
+    metaTitle: "Carte grise de scooter 50cc et cyclomoteur",
     metaDescription: "Immatriculez votre cyclomoteur ou scooter 50cc en ligne. Obligatoire depuis 2011, service agréé, traitement sous 24h. Faites votre demande maintenant.",
     icon: "Bike",
     description: "Immatriculation des cyclomoteurs et scooters de moins de 50cc",
@@ -755,7 +755,11 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Combien coûte l'immatriculation d'un cyclomoteur ?",
-        answer: "Le coût comprend la taxe fixe de 11 euros et la redevance d'acheminement de 2,76 euros. Les cyclomoteurs sont exonérés de taxe régionale. À cela s'ajoutent nos frais de dossier pour un traitement rapide de votre demande.",
+        answer: "11 euros de taxes, et le même montant partout en France. Le cyclomoteur est exonéré de taxe régionale et de redevance d'acheminement — il est le seul véhicule à l'être des deux. Il ne reste que la taxe fixe de gestion de 11 euros, due depuis 2021. Le tarif du cheval fiscal de votre département n'entre pas en jeu. S'y ajoutent nos frais de dossier.",
+      },
+      {
+        question: "Comment obtenir le certificat de conformité d'un scooter 50cc ?",
+        answer: "Auprès du constructeur ou de son représentant en France, qui le délivre à partir du numéro de série. Pour un modèle récent c'est une formalité. Pour une mobylette des années 1970 ou 1980, c'est souvent impossible : le constructeur a disparu ou changé de mains, et les archives avec. La fiche d'identification du véhicule prend alors le relais — elle est établie à partir des caractéristiques relevées sur l'engin et permet de monter le dossier sans certificat de conformité.",
       },
       {
         question: "Comment immatriculer un cyclomoteur sans carte grise ?",
