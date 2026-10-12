@@ -33,9 +33,22 @@ export interface AvisGroupe {
   url: string;
 }
 
-// Tant que ce champ vaut `null`, la barre n'affiche aucune note : mieux vaut
-// ne rien montrer qu'un chiffre que personne ne peut vérifier.
-export const AVIS_GROUPE: AvisGroupe | null = null;
+// Relevé sur la fiche Google le 12 octobre 2026. Deux écarts avec ce qu'on
+// croyait : l'établissement s'appelle « Garage Jimmy2x Discount Auto
+// Mécanique » et non « Discount Auto Pare-Brise » — c'est la même société,
+// SIRET 830 888 277 00027, mais c'est sous ce nom-là que Google le connaît et
+// donc sous celui-là qu'il est vérifiable. Et la note est de 4,8, pas de 5,0.
+//
+// Google le classe en vendeur de véhicules et réparation : les avis portent
+// sur la vente et la mécanique. D'où « notre garage », et non « notre
+// atelier » ni « avis clients ».
+export const AVIS_GROUPE: AvisGroupe | null = {
+  societe: "Garage Jimmy2x Discount Auto",
+  lien: "notre garage",
+  note: 4.8,
+  nombre: 101,
+  url: "https://www.google.com/maps/search/Garage+Jimmy2x+Discount+Auto+M%C3%A9canique+Vestric-et-Candiac",
+};
 
 /** « 4,8 » et non « 4.8 ». */
 export const noteEnFrancais = (n: number) =>
