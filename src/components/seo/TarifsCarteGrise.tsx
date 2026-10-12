@@ -80,11 +80,11 @@ export const faqTarifs = [
   },
   {
     question: "Quelles régions ont les tarifs les plus bas ?",
-    answer: "En 2026, les Hauts-de-France et l'Auvergne-Rhône-Alpes restent les moins chères, à 43 € le cheval fiscal dans la plupart de leurs départements. La Corse se situe à 53 €/CV. À l'inverse, l'Île-de-France est la plus chère, à 68,95 €. Le tarif le plus bas de France est celui de Mayotte, à 30 €/CV.",
+    answer: "En 2026, les Hauts-de-France et l'Auvergne-Rhône-Alpes restent les moins chères, à 43 € le cheval fiscal. Le tarif est voté par la région : il est donc le même dans tous ses départements. La Corse se situe à 53 €/CV, les Pays de la Loire à 51 €. À l'inverse, l'Île-de-France est la plus chère, à 68,95 € depuis le 1er mars 2026 — 54,95 € de taxe régionale et 14 € de surtaxe Île-de-France Mobilités. Le tarif le plus bas de France est celui de Mayotte, à 30 €/CV.",
   },
   {
     question: "Les véhicules électriques sont-ils exonérés ?",
-    answer: "Oui. Un véhicule qui roule exclusivement à l'électricité ou à l'hydrogène est exonéré de la totalité de la taxe régionale (Y.1), dans toutes les régions, voiture particulière comme utilitaire léger. Ne restent dues que les taxes fixes Y.4 et Y.5, soit 13,76 € en tout.",
+    answer: "Plus depuis le 1er mai 2025. L'exonération nationale des véhicules électriques et à hydrogène a été supprimée par l'article 119 de la loi de finances pour 2025, qui a réécrit l'article L. 421-49 du code des impositions sur les biens et services : chaque région décide désormais entre le plein tarif, le demi-tarif et l'exonération totale. En 2026, seuls les Hauts-de-France maintiennent un avantage — exonération totale jusqu'au 31 mars, puis abattement de 50 % depuis le 1er avril. Partout ailleurs, un véhicule électrique paie la taxe régionale au même tarif qu'un thermique. Notre simulateur applique la règle en vigueur : le prix qu'il affiche est celui que vous paierez.",
   },
   {
     question: "Qu'est-ce que le malus écologique ?",
@@ -200,7 +200,7 @@ export function TarifsCarteGrise() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="text-sm text-muted-foreground">
-                <p>C'est elle qui fait le prix. On multiplie le <strong>nombre de chevaux fiscaux</strong> du véhicule par le <strong>tarif du cheval fiscal</strong> voté par la région. Pour 6 CV en Île-de-France : 6 × 68,95 = 413,70 €. Les véhicules électriques en sont totalement exonérés, partout.</p>
+                <p>C'est elle qui fait le prix. On multiplie le <strong>nombre de chevaux fiscaux</strong> du véhicule par le <strong>tarif du cheval fiscal</strong> voté par la région. Pour 6 CV en Île-de-France : 6 × 68,95 = 413,70 €. Les véhicules électriques la paient comme les autres depuis le 1er mai 2025, sauf dans les Hauts-de-France, seule région à maintenir un abattement.</p>
               </CardContent>
             </Card>
 
@@ -421,7 +421,7 @@ export function TarifsCarteGrise() {
                 <strong>Un exemple.</strong> Un 7 CV immatriculé en Île-de-France, à 68,95 €/CV : la taxe régionale serait de 482,65 €. Le véhicule a plus de dix ans, elle tombe à <strong>241,33 €</strong>. Plus de 240 € d'économie sur une seule ligne.
               </p>
               <p className="text-muted-foreground">
-                L'abattement vaut aussi pour les véhicules de collection et pour un véhicule importé dont la première immatriculation remonte à plus de dix ans. Il se cumule avec les exonérations régionales accordées à certaines énergies.
+                L'abattement vaut aussi pour les véhicules de collection et pour un véhicule importé dont la première immatriculation remonte à plus de dix ans. Il se cumule avec l'abattement que sa région accorde, le cas échéant, à certaines énergies.
               </p>
             </CardContent>
           </Card>

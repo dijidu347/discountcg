@@ -359,7 +359,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Envoyez les documents requis",
       "Recevez votre carte grise et vos plaques",
     ],
-    prixDescription: "Le prix de la carte grise d'un véhicule neuf dépend de la puissance fiscale, du tarif du cheval fiscal dans votre département et du taux d'émission de CO2. La taxe sur les émissions de CO2 s'applique à partir de 108 g/km depuis le 1er janvier 2026, et s'y ajoute un malus au poids dont le seuil est descendu à 1,5 tonne. Les véhicules électriques et hybrides rechargeables bénéficient d'exonérations de taxe régionale dans la plupart des départements. Nos frais de dossier sont de 39 euros, souvent moins chers que ceux facturés par les concessionnaires.",
+    prixDescription: "Le prix de la carte grise d'un véhicule neuf dépend de la puissance fiscale, du tarif du cheval fiscal dans votre département et du taux d'émission de CO2. La taxe sur les émissions de CO2 s'applique à partir de 108 g/km depuis le 1er janvier 2026, et s'y ajoute un malus au poids dont le seuil est descendu à 1,5 tonne. Depuis le 1er mai 2025, les véhicules électriques ne sont plus exonérés de taxe régionale de plein droit : la loi de finances pour 2025 a rendu la décision régionale, et seuls les Hauts-de-France maintiennent un abattement en 2026. Les hybrides, eux, paient le plein tarif. Nos frais de dossier sont de 39 euros, souvent moins chers que ceux facturés par les concessionnaires.",
     faqs: [
       {
         question: "Peut-on immatriculer un véhicule neuf en ligne ?",
@@ -390,7 +390,7 @@ export const demarchesConfig: DemarcheConfig[] = [
         answer: "Non, les véhicules neufs sont dispensés de contrôle technique pendant les 4 premières années suivant leur première immatriculation. Le premier contrôle technique doit être effectué dans les 6 mois précédant le 4e anniversaire de la mise en circulation.",
       },
     ],
-    seoContent: "L'achat d'un véhicule neuf est un moment important qui s'accompagne de formalités administratives incontournables. La première immatriculation est l'acte officiel qui donne au véhicule son identité administrative et lui permet de circuler légalement sur les routes françaises.\n\nLe coût de la carte grise pour un véhicule neuf peut varier considérablement selon la puissance fiscale, le type de motorisation et votre département de résidence. Les véhicules électriques bénéficient d'une exonération totale de taxe régionale dans la majorité des départements, ce qui réduit significativement le prix de la carte grise.\n\nDiscount Carte Grise propose un service d'immatriculation pour véhicules neufs au meilleur tarif. Que vous ayez acheté votre véhicule chez un concessionnaire français ou en import, notre équipe d'experts s'occupe de toutes les formalités. Utilisez notre simulateur en ligne pour connaître le prix exact de votre carte grise véhicule neuf.",
+    seoContent: "L'achat d'un véhicule neuf est un moment important qui s'accompagne de formalités administratives incontournables. La première immatriculation est l'acte officiel qui donne au véhicule son identité administrative et lui permet de circuler légalement sur les routes françaises.\n\nLe coût de la carte grise pour un véhicule neuf peut varier considérablement selon la puissance fiscale, le type de motorisation et votre département de résidence. Les véhicules électriques étaient exonérés de taxe régionale partout en France jusqu'au 30 avril 2025 ; depuis, la décision appartient à chaque région, et seuls les Hauts-de-France accordent encore un abattement. Mieux vaut donc vérifier le prix réel pour votre région plutôt que de compter sur une exonération qui n'existe plus.\n\nDiscount Carte Grise propose un service d'immatriculation pour véhicules neufs au meilleur tarif. Que vous ayez acheté votre véhicule chez un concessionnaire français ou en import, notre équipe d'experts s'occupe de toutes les formalités. Utilisez notre simulateur en ligne pour connaître le prix exact de votre carte grise véhicule neuf.",
     keywords: ["carte grise véhicule neuf", "première immatriculation", "immatriculer voiture neuve", "carte grise neuf pas cher"],
   },
   {
@@ -665,7 +665,7 @@ export const demarchesConfig: DemarcheConfig[] = [
       },
       {
         question: "Peut-on passer sa voiture à l'éthanol E85 et modifier la carte grise ?",
-        answer: "Oui, après l'installation d'un boîtier E85 homologué par un installateur agréé, vous recevez un certificat de conformité. Ce document permet de mettre à jour la carte grise avec le nouveau type de carburant. Cette modification peut ouvrir droit à une exonération de taxe régionale dans certains départements.",
+        answer: "Oui, après l'installation d'un boîtier E85 homologué par un installateur agréé, vous recevez un certificat de conformité. Ce document permet de mettre à jour la carte grise avec le nouveau type de carburant. Depuis la loi de finances pour 2025, un éventuel abattement de taxe régionale sur ces motorisations dépend d'une délibération de votre région : vérifiez le prix affiché par le simulateur, qui applique le tarif réellement en vigueur.",
       },
       {
         question: "Comment faire passer un véhicule en carte grise collection ?",
