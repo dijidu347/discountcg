@@ -699,7 +699,13 @@ export function DocumentsNecessaires({
               return (
                 <div key={doc.id} id={`piece-${doc.id}`} className="space-y-2 scroll-mt-24">
                   <div 
-                    className={`flex items-center gap-4 p-3 rounded-lg ${
+                    /* Le nom de la pièce au-dessus, le bouton en dessous sur
+                       téléphone. Côte à côte, le bouton prenait 350 px fixes
+                       sur un écran qui en fait 375 : il ne restait rien pour le
+                       libellé, qui se cassait à chaque mot — « Certificat de /
+                       cession / signé / (cerfa / 15776*02) ». À partir de la
+                       tablette, les deux colonnes retrouvent leur place. */
+                    className={`flex flex-col gap-2 p-3 rounded-lg md:flex-row md:items-center md:gap-4 ${
                       idsEnErreur.includes(doc.id)
                         ? 'bg-red-50 border-2 border-destructive'
                         : showRecommendedWarning 
@@ -708,7 +714,7 @@ export function DocumentsNecessaires({
                     }`}
                   >
                     {renderDocLabel(doc)}
-                    <div className="w-[350px]">
+                    <div className="w-full md:w-[350px]">
                       <DocumentUpload
                         demarcheId={demarcheId}
                         documentType={doc.id}
@@ -720,14 +726,14 @@ export function DocumentsNecessaires({
                   </div>
                   {/* Verso optionnel pour les documents recto/verso */}
                   {hasRectoVerso && (
-                    <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/20 ml-6">
+                    <div className="flex flex-col gap-2 p-3 rounded-lg bg-muted/20 ml-3 md:ml-6 md:flex-row md:items-center md:gap-4">
                       <div className="flex-1">
                         <div className="text-sm font-medium">
                           {doc.nom.replace(/\(recto\/verso\)/i, '').replace(/recto\/verso/i, '').trim()} (verso)
                           {MENTION_OPTIONNELLE}
                         </div>
                       </div>
-                      <div className="w-[350px]">
+                      <div className="w-full md:w-[350px]">
                         <DocumentUpload
                           demarcheId={demarcheId}
                           documentType={`${doc.id}_verso`}
