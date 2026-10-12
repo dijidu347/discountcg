@@ -643,13 +643,39 @@ async function principal() {
       .join("") +
     `</ul>`;
 
-  const piedDeLiens = (slugCourant) =>
-    `<h2>Toutes les démarches</h2><p>` +
-    demarchesConfig
-      .filter((d) => d.slug !== slugCourant)
-      .map((d) => `<a href="${BASE}/${d.slug}">${echappe(d.shortTitle ?? d.title)}</a>`)
-      .join(" · ") +
-    `</p>`;
+  // Les pages de référence n'étaient liées de nulle part.
+  //
+  // Le pied de page ne listait que `demarchesConfig`. Les pages écrites à la
+  // main — le simulateur, le non-gage, la page professionnels, l'habilitation
+  // — n'y figuraient donc pas, et le HTML servi ne portait AUCUN lien vers
+  // elles : `/certificat-de-non-gage` en avait zéro, `/habilitation-siv`
+  // quatre. Or ce sont dix pages du site sur vingt-quatre qui n'ont jamais eu
+  // une seule impression, et celles-là en font partie.
+  //
+  // Les mentions légales et consorts restent dehors : elles sont en noindex.
+  const PAGES_REFERENCE = [
+    ["/simulateur", "simulateur de prix"],
+    ["/certificat-de-non-gage", "certificat de non-gage"],
+    ["/carte-grise-professionnel", "carte grise pour les professionnels"],
+    ["/habilitation-siv", "habilitation SIV"],
+  ];
+
+  const piedDeLiens = (slugCourant) => {
+    const ici = slugCourant ? `/${slugCourant}` : null;
+    return (
+      `<h2>Toutes les démarches</h2><p>` +
+      demarchesConfig
+        .filter((d) => d.slug !== slugCourant)
+        .map((d) => `<a href="${BASE}/${d.slug}">${echappe(d.shortTitle ?? d.title)}</a>`)
+        .join(" · ") +
+      `</p>` +
+      `<h2>Pages de référence</h2><p>` +
+      PAGES_REFERENCE.filter(([route]) => route !== ici)
+        .map(([route, libelle]) => `<a href="${BASE}${route}">${echappe(libelle)}</a>`)
+        .join(" · ") +
+      `</p>`
+    );
+  };
 
   // Pages écrites à la main.
   for (const [route, seo] of Object.entries(ROUTES_SEO)) {
@@ -662,8 +688,18 @@ async function principal() {
         supplementsPages[route] ?? "",
         blocCerfa(route.replace(/^\//, "")),
         route === "/" ? sommaireDemarches : "",
+        // L'accueil est la page la plus forte du site et ne portait aucun lien
+        // vers les pages de référence : il n'avait que le sommaire des
+        // démarches. Elles y entrent, sans le pied de page complet.
+        route === "/"
+          ? `<h2>Pages de référence</h2><ul>` +
+            PAGES_REFERENCE.map(
+              ([r, libelle]) => `<li><a href="${BASE}${r}">${echappe(libelle)}</a></li>`
+            ).join("") +
+            `</ul>`
+          : "",
       ],
-      pied: route === "/" ? "" : piedDeLiens(null),
+      pied: route === "/" ? "" : piedDeLiens(route.replace(/^\//, "")),
     });
     await ecrire(
       route,
