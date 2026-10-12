@@ -171,7 +171,7 @@ export default function DepartementPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Scale className="h-5 w-5 text-primary" />
-                Et de l'autre côté de la limite ?
+                {c.voisinsTitre}
               </CardTitle>
             </CardHeader>
             <CardContent>

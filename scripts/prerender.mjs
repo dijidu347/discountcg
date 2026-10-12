@@ -1032,10 +1032,10 @@ async function principal() {
       .join("") +
     `</tbody></table>`;
 
-  const tableauVoisins = (voisins) =>
+  const tableauVoisins = (voisins, titre = "Les départements limitrophes") =>
     voisins.length === 0
       ? ""
-      : `<h2>Les départements limitrophes</h2><table><thead><tr>` +
+      : `<h2>${echappe(titre)}</h2><table><thead><tr>` +
         `<th>Département</th><th>Cheval fiscal</th><th>Écart sur un 6 CV</th>` +
         `</tr></thead><tbody>` +
         voisins
@@ -1061,7 +1061,7 @@ async function principal() {
           tableauBareme(c.bareme),
         `<h2>${echappe(d.chefLieu)} ou ailleurs : le même prix</h2>` +
           paragraphes([c.communesTexte, c.memeTarifTexte]),
-        tableauVoisins(c.voisins) + paragraphes(c.voisinsTexte),
+        tableauVoisins(c.voisins, c.voisinsTitre) + paragraphes(c.voisinsTexte),
         `<h2>Véhicule électrique</h2>` + paragraphes([c.electriqueTexte]),
         paragraphes([
           `${c.rangTexte} Le détail des cinq taxes, l'abattement des véhicules de plus de ` +

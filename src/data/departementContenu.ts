@@ -96,6 +96,8 @@ export interface ContenuDepartement {
   communesTexte: string;
   voisins: Voisin[];
   voisinsTexte: string[];
+  /** Le titre de la section de comparaison : les voisins n'en sont pas pour les DOM. */
+  voisinsTitre: string;
   /** Les autres départements de la région, qui partagent le tarif. */
   memeTarif: { code: string; nom: string; chemin: string }[];
   memeTarifTexte: string;
@@ -120,16 +122,16 @@ const majuscule = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
  * face à ses voisins. C'est la seule comparaison qui change d'une page à
  * l'autre au sein d'une même région.
  */
-function c_voisinsResume(voisins: Voisin[], tarif: number): string {
+function c_voisinsResume(voisins: Voisin[], tarif: number, mot = "limitrophes"): string {
   if (voisins.length === 0) return "Le territoire n'a pas de département limitrophe.";
   const moins = voisins.filter((v) => v.tarif < tarif);
   const plus = voisins.filter((v) => v.tarif > tarif);
   if (moins.length === 0 && plus.length === 0)
-    return `Les ${voisins.length} départements limitrophes appliquent le même tarif.`;
+    return `Les ${voisins.length} départements ${mot} appliquent le même tarif.`;
   const bouts: string[] = [];
   if (moins.length > 0)
     bouts.push(
-      `${moins.length} des ${voisins.length} départements limitrophes sont moins chers (${moins
+      `${moins.length} des ${voisins.length} départements ${mot} sont moins chers (${moins
         .map((v) => v.le)
         .join(", ")})`,
     );
@@ -168,7 +170,25 @@ export function contenuDepartement(dep: Departement): ContenuDepartement {
   const six = bareme.find((l) => l.cv === 6)!;
 
   // Les voisins, et ce que coûterait la même carte grise de l'autre côté.
-  const voisins: Voisin[] = dep.limitrophes
+  // Les cinq départements d'outre-mer n'ont aucun limitrophe : leur page
+  // perdait donc toute la section de comparaison que les quatre-vingt-seize
+  // autres possèdent, et ne recevait que trois liens entrants contre huit en
+  // moyenne. Or la comparaison qui les intéresse existe, elle n'est simplement
+  // pas géographique : entre eux. Le tarif va de 30 € à Mayotte à 60 € à La
+  // Réunion, du simple au double — l'écart le plus large de France.
+  const DOM = ["971", "972", "973", "974", "976"];
+  const aComparer = dep.limitrophes.length > 0
+    ? dep.limitrophes
+    : DOM.includes(dep.code)
+      ? DOM.filter((c) => c !== dep.code)
+      : [];
+
+  const motComparaison = dep.limitrophes.length > 0 ? "limitrophes" : "d'outre-mer";
+  const voisinsTitre = dep.limitrophes.length > 0
+    ? "Les départements limitrophes"
+    : "Les autres départements d'outre-mer";
+
+  const voisins: Voisin[] = aComparer
     .map((code) => {
       const v = DEPARTEMENT_PAR_CODE[code];
       const t = departementsTarifs[code];
@@ -294,6 +314,7 @@ export function contenuDepartement(dep: Departement): ContenuDepartement {
     bareme,
     communesTexte,
     voisins,
+    voisinsTitre,
     voisinsTexte,
     memeTarif,
     memeTarifTexte,
@@ -302,7 +323,7 @@ export function contenuDepartement(dep: Departement): ContenuDepartement {
     faqs: [
       {
         question: `Quel est le prix du cheval fiscal ${dep.dans} en ${new Date().getFullYear()} ?`,
-        answer: `${eur(tarif)}, multiplié par la puissance fiscale lue en case P.6. ${c_voisinsResume(voisins, tarif)}`,
+        answer: `${eur(tarif)}, multiplié par la puissance fiscale lue en case P.6. ${c_voisinsResume(voisins, tarif, motComparaison)}`,
       },
       {
         question: `Combien coûte une carte grise ${dep.dans} pour une voiture de 6 CV ?`,

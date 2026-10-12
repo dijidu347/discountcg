@@ -188,6 +188,16 @@ const RAISONS_KBIS = [
       "Le document déposé n'est pas un extrait Kbis. Nous avons besoin de l'extrait d'immatriculation au RCS délivré par le greffe du tribunal de commerce, de moins de six mois — ou, si vous n'êtes pas inscrit au registre du commerce, de votre attestation d'immatriculation au RNE.",
   },
   {
+    // Le cas inverse du précédent, et le plus fréquent : le garage dépose son
+    // attestation INPI en croyant que c'est un Kbis. Lui répondre « ce n'est
+    // pas un Kbis » sans plus ne suffit pas — il redépose le même fichier,
+    // puisque c'est tout ce que l'INPI lui a donné. Ce qui coupe l'aller-retour,
+    // c'est de lui dire que sa société EN A un, et où le prendre.
+    titre: "Attestation RNE",
+    texte:
+      "Ce document est une attestation d'immatriculation au RNE, délivrée par l'INPI — ce n'est pas un extrait Kbis. Votre société étant immatriculée au registre du commerce, elle en a bien un : vous le téléchargez gratuitement sur monidenum.fr, en tant que représentant légal. Nous avons besoin d'un extrait de moins de six mois.",
+  },
+  {
     titre: "Illisible",
     texte:
       "Le document est illisible : nous n'y distinguons pas la date de délivrance. Merci de le déposer en PDF, ou de le photographier à plat, bien éclairé et sans reflet.",
