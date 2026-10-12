@@ -363,6 +363,41 @@ async function principal() {
     console.warn("[prerender] repères de succession ignorés :", e?.message ?? e);
   }
 
+  // Le quitus et le 846 A : 2 374 impressions pour huit clics, mais en
+  // positions 9 à 13 — la seule famille où la visibilité est déjà acquise.
+  // 2 032 de ces impressions portent sur le 846 A, 342 sur le quitus, alors
+  // que le titre commençait par « Quitus fiscal ».
+  let reperesQuitus = "";
+  try {
+    const { SELON_L_ORIGINE, PARCOURS_IMPORT, REPERES_QUITUS } = await chargerTs(
+      "src/data/quitusReperes.ts",
+      "quitus"
+    );
+    reperesQuitus =
+      `<h2>Quitus ou 846 A : d'où vient le véhicule décide</h2>` +
+      `<p>C'est la confusion la plus répandue, et elle fait perdre des semaines : ` +
+      `les deux documents n'ont ni le même objet, ni le même guichet.</p>` +
+      `<table><thead><tr><th>Le véhicule vient de</th><th>Le justificatif</th>` +
+      `<th>Délivré par</th><th>La TVA</th></tr></thead><tbody>` +
+      SELON_L_ORIGINE.map(
+        (c) =>
+          `<tr><th scope="row">${echappe(c.origine)}</th><td>${echappe(c.justificatif)}</td>` +
+          `<td>${echappe(c.delivrePar)}</td><td>${echappe(c.tva)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      `<h2>Importer un véhicule, du justificatif à la carte grise</h2><ol>` +
+      PARCOURS_IMPORT.map(
+        (e) =>
+          `<li><strong>${echappe(e.etape)}</strong> — ${echappe(e.quand)}. ${echappe(e.chezQui)}.</li>`
+      ).join("") +
+      `</ol>` +
+      REPERES_QUITUS.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères du quitus ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -655,6 +690,7 @@ async function principal() {
         d.slug === "declaration-cession" ? reperesCession : "",
         d.slug === "declaration-achat" ? reperesAchat : "",
         d.slug === "succession-carte-grise" ? reperesSuccession : "",
+        d.slug === "quitus-fiscal" ? reperesQuitus : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),
