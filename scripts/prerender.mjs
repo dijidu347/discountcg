@@ -325,6 +325,44 @@ async function principal() {
     console.warn("[prerender] repères d'achat ignorés :", e?.message ?? e);
   }
 
+  // La succession : 903 impressions pour un clic, en positions 15 à 30. Le
+  // vocabulaire était bon ; ce qui manquait était le prix, que deux requêtes
+  // demandent explicitement. L'exonération du conjoint survivant — 13,76 € au
+  // lieu de 427,46 € — n'apparaissait nulle part en évidence.
+  let reperesSuccession = "";
+  try {
+    const { SELON_L_HERITIER, PREUVES_QUALITE, REPERES_SUCCESSION } = await chargerTs(
+      "src/data/successionReperes.ts",
+      "succession"
+    );
+    reperesSuccession =
+      `<h2>Ce que vous paierez, selon qui hérite</h2>` +
+      `<p>L'écart ne dépend ni du véhicule ni du département, mais du lien avec le défunt. ` +
+      `Montants calculés sur un véhicule de 6 chevaux fiscaux, hors frais de dossier.</p>` +
+      `<table><thead><tr><th>Qui hérite du véhicule</th><th>Taxe régionale</th>` +
+      `<th>Dans le Rhône</th><th>En Île-de-France</th></tr></thead><tbody>` +
+      SELON_L_HERITIER.map(
+        (l) =>
+          `<tr><th scope="row">${echappe(l.qui)}</th><td>${echappe(l.taxeRegionale)}</td>` +
+          `<td>${echappe(l.rhone)}</td><td>${echappe(l.idf)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      `<h2>Comment prouver que vous êtes héritier</h2>` +
+      `<table><thead><tr><th>Votre situation</th><th>La pièce qui l'atteste</th>` +
+      `<th>Où l'obtenir</th></tr></thead><tbody>` +
+      PREUVES_QUALITE.map(
+        (p) =>
+          `<tr><th scope="row">${echappe(p.situation)}</th><td>${echappe(p.piece)}</td>` +
+          `<td>${echappe(p.ou)}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      REPERES_SUCCESSION.map(
+        (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] repères de succession ignorés :", e?.message ?? e);
+  }
+
   let reperesCession = "";
   try {
     const { QUI_FAIT_QUOI, CASES_CERFA } = await chargerTs(
@@ -616,6 +654,7 @@ async function principal() {
       blocs: [
         d.slug === "declaration-cession" ? reperesCession : "",
         d.slug === "declaration-achat" ? reperesAchat : "",
+        d.slug === "succession-carte-grise" ? reperesSuccession : "",
         blocCerfa(d.slug),
         paragraphes([d.description, d.longDescription]),
         liste("Pièces à fournir", d.documents),

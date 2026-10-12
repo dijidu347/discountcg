@@ -422,7 +422,7 @@ export const demarchesConfig: DemarcheConfig[] = [
     shortTitle: "carte grise succession",
     h1: "Changement de carte grise suite à un décès",
     metaTitle: "Carte grise après un décès",
-    metaDescription: "Transférez la carte grise d'un véhicule hérité après un décès. Démarche simplifiée pour les héritiers, service agréé. Faites votre demande en ligne.",
+    metaDescription: "Carte grise après un décès : 13,76 € pour le conjoint survivant, qui est exonéré de taxe régionale. Pièces, délais et prix selon qui hérite.",
     icon: "Users",
     description: "Transfert de carte grise suite à un décès",
     longDescription: "Lorsqu'un propriétaire de véhicule décède, les héritiers doivent effectuer le changement de titulaire de la carte grise pour pouvoir utiliser ou vendre le véhicule légalement. Cette démarche nécessite des documents spécifiques liés à la succession et peut s'avérer complexe sur le plan administratif.\n\nL'héritier désigné dans l'acte de succession doit fournir une attestation notariale ou un certificat d'hérédité prouvant ses droits sur le véhicule. Si plusieurs héritiers sont concernés, ils doivent se mettre d'accord sur l'attribution du véhicule et éventuellement désigner un bénéficiaire unique.\n\nIl n'existe pas de délai légal strict pour effectuer cette démarche, mais il est recommandé de la réaliser rapidement. Un véhicule dont la carte grise est au nom d'une personne décédée ne peut pas être vendu, assuré correctement, ni soumis au contrôle technique.\n\nDiscount Carte Grise vous accompagne dans cette démarche délicate en vérifiant la conformité de vos documents et en gérant l'intégralité des formalités administratives. Notre équipe traite les dossiers de succession avec discrétion et rapidité.",
@@ -440,6 +440,14 @@ export const demarchesConfig: DemarcheConfig[] = [
       "Recevez la nouvelle carte grise au nom de l'héritier",
     ],
     faqs: [
+      {
+        question: "Combien coûte une carte grise après un décès pour le conjoint survivant ?",
+        answer: "13,76 €, quel que soit le département et quelle que soit la puissance du véhicule : 11 € de taxe fixe et 2,76 € de redevance d'acheminement, auxquels s'ajoutent nos frais de dossier. L'époux ou le partenaire de PACS survivant est exonéré de taxe régionale par l'article L. 421-52 du code des impositions sur les biens et services. À titre de comparaison, un enfant qui hérite du même véhicule de 6 CV paie 271,76 € dans le Rhône et 427,46 € en Île-de-France.",
+      },
+      {
+        question: "Quel est le prix du changement de nom sur une carte grise suite à un décès ?",
+        answer: "Il dépend entièrement de qui hérite. Pour l'époux ou le partenaire de PACS survivant, la taxe régionale n'est pas due : 13,76 € de taxes. Pour tout autre héritier — enfant, frère, parent —, elle est due au tarif normal du département, réduite de moitié si le véhicule a plus de dix ans. Notre simulateur donne le montant exact à partir de la plaque.",
+      },
       {
         question: "Quels documents pour une carte grise suite à un décès ?",
         answer: "L'acte de décès, la carte grise du véhicule, une pièce justifiant de votre qualité d'héritier, votre pièce d'identité, un justificatif de domicile, l'assurance du véhicule et votre permis de conduire. Pour la qualité d'héritier, une attestation signée par l'ensemble des héritiers suffit sur les petites successions ; au-delà de 5 965 €, il faut un acte de notoriété établi par un notaire.",

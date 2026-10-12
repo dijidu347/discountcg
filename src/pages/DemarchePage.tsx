@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { audienceDeLaDemarche } from "@/lib/audienceDemarche";
 import { ContenuCession } from "@/components/seo/ContenuCession";
 import { ContenuAchat } from "@/components/seo/ContenuAchat";
+import { ContenuSuccession } from "@/components/seo/ContenuSuccession";
 import { TarifDemarche } from "@/components/demarche/TarifDemarche";
 import { PublicCroise } from "@/components/demarche/PublicCroise";
 import { pushVueDemarche } from "@/lib/gtm";
@@ -298,6 +299,7 @@ const DemarchePage = () => {
 
       {demarche.slug === "declaration-cession" && <ContenuCession />}
       {demarche.slug === "declaration-achat" && <ContenuAchat />}
+      {demarche.slug === "succession-carte-grise" && <ContenuSuccession />}
 
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">
