@@ -399,9 +399,9 @@ export default function Dashboard() {
                       Paramètres
                     </Button>
                     <div className="border-t my-2" />
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start text-destructive" 
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start border-0 bg-red-50 text-red-700 hover:bg-red-100 hover:text-red-800 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
                       onClick={() => { setMobileMenuOpen(false); handleLogout(); }}
                     >
                       <LogOut className="mr-2 h-4 w-4" />
@@ -645,7 +645,7 @@ export default function Dashboard() {
             Chaque carte est un lien vers « Mes démarches » déjà filtré : le
             nombre affiché cessait d'être une information morte au moment où
             l'on pouvait cliquer dessus pour voir lesquelles. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
           {[
             { cle: "all", libelle: "Total des démarches", valeur: stats.totalDemarches, icone: FileText, teinte: "text-primary", bord: "border-l-primary" },
             { cle: "en_cours", libelle: "En attente", valeur: stats.enAttente, icone: Clock, teinte: "text-yellow-500", bord: "border-l-yellow-400" },
@@ -658,15 +658,19 @@ export default function Dashboard() {
               onClick={() => navigate(`/mes-demarches?statut=${carte.cle}`)}
               className="text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-lg"
             >
+              {/* Deux cartes par ligne sur téléphone : quatre nombres sur quatre
+                  lignes, c'était presque tout l'écran pour quatre chiffres. Les
+                  marges se resserrent d'autant, sinon deux colonnes ne tiennent
+                  pas sur 375 px. */}
               <Card className={`h-full border-l-4 ${carte.bord} transition-shadow hover:shadow-md`}>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <carte.icone className={`h-4 w-4 ${carte.teinte}`} />
+                <CardHeader className="p-4 pb-2 sm:pb-3">
+                  <CardTitle className="flex items-start gap-1.5 text-xs font-medium leading-snug sm:items-center sm:gap-2 sm:text-sm">
+                    <carte.icone className={`mt-0.5 h-4 w-4 shrink-0 sm:mt-0 ${carte.teinte}`} />
                     {carte.libelle}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className={`text-3xl font-bold ${carte.cle === "all" ? "" : carte.teinte}`}>
+                <CardContent className="p-4 pt-0">
+                  <div className={`text-2xl font-bold sm:text-3xl ${carte.cle === "all" ? "" : carte.teinte}`}>
                     {carte.valeur}
                   </div>
                 </CardContent>

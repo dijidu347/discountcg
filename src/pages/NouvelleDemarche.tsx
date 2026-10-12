@@ -37,6 +37,7 @@ import { extractCerfaNumber, getCerfaUrl, cerfaExists } from "@/lib/cerfa-utils"
 import { getVehicleByPlate } from "@/lib/vehicle-api";
 import { ExpressOptionCard } from "@/components/ExpressOptionCard";
 import { NonGageChoice } from "@/components/demarche/NonGageChoice";
+import { CartePiece } from "@/components/demarche/CartePiece";
 import { MandatGenerator } from "@/components/mandat/MandatGenerator";
 import { MandatChoice } from "@/components/mandat/MandatChoice";
 import { natureOperation, formatSignataire, mandantImposeGarage, raisonMandantGarage, plaqueReelle, MANDAT_PREREMPLI_ACTIF, type MandatData, type MandatMode } from "@/lib/mandat";
@@ -1539,6 +1540,11 @@ export default function NouvelleDemarche() {
     );
   }
 
+  // Une carte par pièce, au format du mandat et du non-gage. Mis en service sur
+  // la déclaration de cession d'abord : c'est la démarche la plus courte, donc
+  // celle où l'on juge le mieux la nouvelle présentation avant de l'étendre.
+  const cartesParPiece = formData.type === "DC";
+
   const requiredDocsCount = documentsRequis.filter(pieceDue).length;
   const allDocsUploaded = uploadedDocuments.size >= requiredDocsCount;
 
@@ -1969,7 +1975,7 @@ export default function NouvelleDemarche() {
                     && (nbQuestions === 0 || questionnaireCompleted) && (
                       <div className="space-y-6">
                         {/* Pièces justificatives */}
-                        <div className="bg-muted/50 p-6 rounded-lg space-y-4 border-2">
+                        <div className={cartesParPiece ? "space-y-4" : "bg-muted/50 p-6 rounded-lg space-y-4 border-2"}>
                           <div className="flex items-center justify-between">
                             <h3 className="font-semibold text-lg">Pièces justificatives</h3>
                             {allDocsUploaded && (
@@ -2083,54 +2089,98 @@ export default function NouvelleDemarche() {
                                   .replace(/recto\/verso/gi, 'verso')
                                   .replace(/recto verso/gi, 'verso');
                                 
+                                const depotRecto = (
+                                  <DocumentUpload
+                                    demarcheId={demarcheId}
+                                    documentType={`doc_${idx + 1}`}
+                                    label=""
+                                    onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
+                                  />
+                                );
+                                const depotVerso = (
+                                  <DocumentUpload
+                                    demarcheId={demarcheId}
+                                    documentType={`doc_${idx + 1}_verso`}
+                                    label=""
+                                    onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}_verso`)}
+                                  />
+                                );
+
+                                if (cartesParPiece) {
+                                  // Recto et verso tiennent dans la même carte : c'est une
+                                  // seule pièce, en deux fichiers.
+                                  return (
+                                    <CartePiece
+                                      key={doc.id}
+                                      titre={renderDocLabel(libelleAdapte(doc.nom_document), pieceDue(doc))}
+                                      enErreur={enErreur(`piece-doc_${idx + 1}`)}
+                                    >
+                                      <div id={`piece-doc_${idx + 1}`} className="space-y-3 scroll-mt-24">
+                                        <div className="space-y-1.5">
+                                          <Label className="text-xs text-muted-foreground">Recto</Label>
+                                          {depotRecto}
+                                        </div>
+                                        <div className="space-y-1.5">
+                                          <Label className="text-xs text-muted-foreground">
+                                            Verso{mentionOptionnelle}
+                                          </Label>
+                                          {depotVerso}
+                                        </div>
+                                      </div>
+                                    </CartePiece>
+                                  );
+                                }
+
                                 return (
                                   <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`space-y-3 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
                                       <div className="flex-1">
                                         {renderDocLabel(libelleAdapte(doc.nom_document), pieceDue(doc))}
                                       </div>
-                                      <div className="w-[400px]">
-                                        <DocumentUpload
-                                          demarcheId={demarcheId}
-                                          documentType={`doc_${idx + 1}`}
-                                          label=""
-                                          onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
-                                        />
-                                      </div>
+                                      <div className="w-full md:w-[400px]">{depotRecto}</div>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
                                       <div className="flex-1">
                                         <Label className="text-sm font-medium">
                                           <LibelleFormulaire texte={versoName} />
                                           {mentionOptionnelle}
                                         </Label>
                                       </div>
-                                      <div className="w-[400px]">
-                                        <DocumentUpload
-                                          demarcheId={demarcheId}
-                                          documentType={`doc_${idx + 1}_verso`}
-                                          label=""
-                                          onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}_verso`)}
-                                        />
-                                      </div>
+                                      <div className="w-full md:w-[400px]">{depotVerso}</div>
                                     </div>
                                   </div>
                                 );
                               }
                               
+                              const depot = (
+                                <DocumentUpload
+                                  demarcheId={demarcheId}
+                                  documentType={`doc_${idx + 1}`}
+                                  label=""
+                                  onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
+                                />
+                              );
+
+                              if (cartesParPiece) {
+                                return (
+                                  <CartePiece
+                                    key={doc.id}
+                                    titre={renderDocLabel(doc.nom_document, pieceDue(doc))}
+                                    enErreur={enErreur(`piece-doc_${idx + 1}`)}
+                                  >
+                                    <div id={`piece-doc_${idx + 1}`} className="scroll-mt-24">
+                                      {depot}
+                                    </div>
+                                  </CartePiece>
+                                );
+                              }
+
                               return (
-                                <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`flex items-center gap-4 scroll-mt-24 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
+                                <div key={doc.id} id={`piece-doc_${idx + 1}`} className={`flex flex-col gap-2 scroll-mt-24 md:flex-row md:items-center md:gap-4 ${enErreur(`piece-doc_${idx + 1}`) ? "p-2 bg-red-50 border-2 border-destructive rounded-lg" : ""}`}>
                                   <div className="flex-1">
                                     {renderDocLabel(doc.nom_document, pieceDue(doc))}
                                   </div>
-                                  <div className="w-[400px]">
-                                    <DocumentUpload
-                                      demarcheId={demarcheId}
-                                      documentType={`doc_${idx + 1}`}
-                                      label=""
-                                      onUploadComplete={() => handleDocumentUploadComplete(`doc_${idx + 1}`)}
-                                    />
-                                  </div>
+                                  <div className="w-full md:w-[400px]">{depot}</div>
                                 </div>
                               );
                             })}
