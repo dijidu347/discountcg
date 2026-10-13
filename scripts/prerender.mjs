@@ -893,6 +893,7 @@ async function principal() {
     ["/certificat-de-non-gage", "certificat de non-gage"],
     ["/carte-grise-professionnel", "carte grise pour les professionnels"],
     ["/habilitation-siv", "habilitation SIV"],
+    ["/carte-grise-par-departement", "carte grise par département"],
   ];
 
   const piedDeLiens = (slugCourant) => {
@@ -911,6 +912,40 @@ async function principal() {
       `</p>`
     );
   };
+
+  // L'index des départements : la carte est décorative pour un robot, c'est la
+  // liste qui compte. Elle est donc écrite en dur dans le HTML servi, région
+  // par région, avec le tarif de chacune.
+  try {
+    const { REGIONS_TARIFS, TARIF_MIN, TARIF_MAX, TARIF_MOYEN, euroCourt } =
+      await chargerTs("src/data/carteTarifs.ts", "carteTarifs");
+    supplementsPages["/carte-grise-par-departement"] =
+      `<h2>Le tarif du cheval fiscal, région par région</h2>` +
+      `<table><thead><tr><th>Région</th><th>Cheval fiscal</th>` +
+      `<th>Départements</th></tr></thead><tbody>` +
+      REGIONS_TARIFS.map(
+        (r) =>
+          `<tr><th scope="row">${echappe(r.nom)}</th><td>${echappe(euroCourt(r.tarif))}</td>` +
+          `<td>${r.departements.length}</td></tr>`
+      ).join("") +
+      `</tbody></table>` +
+      `<p>Le moins cher est ${echappe(REGIONS_TARIFS[0].nom)} à ` +
+      `${echappe(euroCourt(TARIF_MIN))}, le plus cher ` +
+      `${echappe(REGIONS_TARIFS[REGIONS_TARIFS.length - 1].nom)} à ` +
+      `${echappe(euroCourt(TARIF_MAX))}. La moyenne des cent un départements s'établit à ` +
+      `${TARIF_MOYEN.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €.</p>` +
+      `<h2>Les 101 départements, par région</h2>` +
+      REGIONS_TARIFS.map(
+        (r) =>
+          `<h3>${echappe(r.nom)} — ${echappe(euroCourt(r.tarif))} par cheval fiscal</h3><p>` +
+          r.departements
+            .map((d) => `<a href="${BASE}${d.chemin}">${echappe(d.code)} ${echappe(d.nom)}</a>`)
+            .join(" · ") +
+          `</p>`
+      ).join("");
+  } catch (e) {
+    console.warn("[prerender] index des départements ignoré :", e?.message ?? e);
+  }
 
   // Pages écrites à la main.
   for (const [route, seo] of Object.entries(ROUTES_SEO)) {

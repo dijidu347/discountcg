@@ -752,6 +752,15 @@ export function TarifsCarteGrise() {
               <CardContent className="py-4">
                 {/* Celui qui calcule le prix d'une carte grise vient souvent
                     d'acheter : le vendeur, lui, a une cession à déclarer. */}
+                <Link to="/carte-grise-par-departement" className="flex items-center gap-3 text-primary hover:underline font-medium">
+                  <MapPin className="w-5 h-5" />
+                  Carte de France des tarifs
+                  <ChevronRight className="w-4 h-4 ml-auto" />
+                </Link>
+              </CardContent>
+            </Card>
+            <Card className="hover:shadow-md transition-shadow">
+              <CardContent className="py-4">
                 <Link to="/declaration-cession" className="flex items-center gap-3 text-primary hover:underline font-medium">
                   <FileText className="w-5 h-5" />
                   Certificat de cession

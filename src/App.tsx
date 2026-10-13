@@ -99,6 +99,7 @@ const AdminGuard = React.lazy(() =>
 const DemarchePage = React.lazy(() => import("./pages/DemarchePage"));
 const DepartementPage = React.lazy(() => import("./pages/DepartementPage"));
 const PrixCarteGrise = React.lazy(() => import("./pages/PrixCarteGrise"));
+const CarteGriseParDepartement = React.lazy(() => import("./pages/CarteGriseParDepartement"));
 const CertificatNonGage = React.lazy(() => import("./pages/CertificatNonGage"));
 const CarteGriseProfessionnel = React.lazy(() => import("./pages/CarteGriseProfessionnel"));
 const HabilitationSiv = React.lazy(() => import("./pages/HabilitationSiv"));
@@ -187,6 +188,7 @@ const App = () => (
            <Route path="/admin/guest-order/:id" element={<AdminGuard><GuestOrderDetail /></AdminGuard>} />
            <Route path="/admin/guest-actions" element={<AdminGuard><ManageGuestActions /></AdminGuard>} />
             <Route path="/prix-carte-grise" element={<PrixCarteGrise />} />
+            <Route path="/carte-grise-par-departement" element={<CarteGriseParDepartement />} />
             <Route path="/certificat-de-non-gage" element={<CertificatNonGage />} />
             <Route path="/carte-grise-professionnel" element={<CarteGriseProfessionnel />} />
             <Route path="/habilitation-siv" element={<HabilitationSiv />} />

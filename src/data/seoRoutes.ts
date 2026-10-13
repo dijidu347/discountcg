@@ -37,6 +37,18 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
     ],
   },
 
+  "/carte-grise-par-departement": {
+    title: "Carte grise par département : le prix du cheval fiscal en 2026",
+    description:
+      "Le tarif du cheval fiscal région par région sur une carte, et les 101 départements avec le prix d'une carte grise dans chacun.",
+    canonical: `${BASE}/carte-grise-par-departement`,
+    h1: "Carte grise par département : le prix du cheval fiscal en 2026",
+    intro: [
+      "Le prix d'une carte grise dépend d'abord du tarif du cheval fiscal, voté par chaque conseil régional. Tous les départements d'une même région paient donc le même tarif — et l'écart va du simple au double entre le moins cher et le plus cher.",
+      "C'est l'adresse figurant sur votre justificatif de domicile qui détermine le département retenu, jamais le lieu d'achat du véhicule ni celui du professionnel qui dépose le dossier.",
+    ],
+  },
+
   "/simulateur": {
     title: "Simulateur prix carte grise 2026",
     description:

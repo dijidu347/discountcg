@@ -37,6 +37,10 @@ const Footer = () => {
               <li><Link to="/declaration-cession" className="hover:opacity-100 transition-opacity">Déclaration de cession</Link></li>
               <li><Link to="/changement-adresse-carte-grise" className="hover:opacity-100 transition-opacity">Changement d'adresse</Link></li>
               <li><Link to="/simulateur" className="hover:opacity-100 transition-opacity">Prix carte grise 2026</Link></li>
+              {/* Les cent une pages départementales n'étaient atteignables que
+                  par Google, ou en déroulant un tableau au fond du simulateur.
+                  Ce lien est leur seule entrée visible. */}
+              <li><Link to="/carte-grise-par-departement" className="hover:opacity-100 transition-opacity">Carte grise par département</Link></li>
             </ul>
           </div>
 
