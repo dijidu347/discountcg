@@ -62,10 +62,12 @@ export function MenuDemarchesBureau() {
                       <Link
                         to={e.chemin}
                         onClick={() => setOuvert(false)}
-                        className="block rounded-md px-2 py-1.5 hover:bg-primary/5"
+                        className={`block rounded-md px-2 py-1.5 hover:bg-primary/5 ${
+                          e.phare ? "mb-1 bg-primary/5 ring-1 ring-primary/20" : ""
+                        }`}
                         role="menuitem"
                       >
-                        <span className="block text-sm font-medium text-foreground">{e.libelle}</span>
+                        <span className={`block text-sm font-medium ${e.phare ? "text-primary" : "text-foreground"}`}>{e.libelle}</span>
                         {e.note && (
                           <span className="block text-xs leading-snug text-muted-foreground">{e.note}</span>
                         )}

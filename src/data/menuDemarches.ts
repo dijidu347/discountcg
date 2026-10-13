@@ -14,6 +14,9 @@ export interface EntreeMenu {
   chemin: string;
   /** Une ligne de contexte, montrée sur grand écran seulement. */
   note?: string;
+  /** L'entrée de tête d'une colonne, mise en évidence : elle remplace un
+   *  onglet retiré de la barre et ne doit pas se perdre dans la liste. */
+  phare?: boolean;
 }
 
 export interface ColonneMenu {
@@ -39,9 +42,9 @@ export const MENU_DEMARCHES: ColonneMenu[] = [
   {
     titre: "Professionnels",
     entrees: [
+      { libelle: "Nos services aux garages", chemin: "/carte-grise-professionnel", note: "Compte pro, tarifs, première démarche offerte", phare: true },
       { libelle: "Déclaration d'achat", chemin: "/declaration-achat", note: "La première est offerte" },
       { libelle: "Plaque W Garage", chemin: "/premiere-demande-w-garage", note: "Attribuée à l'entreprise" },
-      { libelle: "Nos services aux garages", chemin: "/carte-grise-professionnel", note: "Compte pro et tarifs" },
       { libelle: "Annuler une cession ou un achat", chemin: "/annuler-declaration-cession", note: "Corriger une erreur" },
       { libelle: "Annuler un CPI WW", chemin: "/annulation-cpi-ww" },
       { libelle: "Habilitation SIV", chemin: "/habilitation-siv", note: "Les conditions pour l'obtenir" },

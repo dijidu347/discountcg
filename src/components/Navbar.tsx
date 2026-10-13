@@ -55,12 +55,9 @@ const Navbar = () => {
 
           {/* Navigation - Desktop */}
           <div className="hidden md:flex items-center gap-4">
-            <button onClick={() => navigate("/")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
-              Accueil
-            </button>
             <MenuDemarchesBureau />
-            <button onClick={() => navigate("/carte-grise-professionnel")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
-              Professionnels
+            <button onClick={() => navigate("/simulateur")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
+              Prix
             </button>
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
@@ -105,18 +102,12 @@ const Navbar = () => {
               </div>
             )}
             
-            <button onClick={() => {
-          setIsOpen(false);
-          navigate("/");
-        }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Accueil
-            </button>
             <MenuDemarchesMobile onNaviguer={() => setIsOpen(false)} />
             <button onClick={() => {
           setIsOpen(false);
-          navigate("/carte-grise-professionnel");
+          navigate("/simulateur");
         }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Professionnels
+              Prix
             </button>
             <button onClick={() => {
           setIsOpen(false);
