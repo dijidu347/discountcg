@@ -14,6 +14,7 @@ import Footer from "@/components/Footer";
 import Services from "@/components/Services";
 import { GoogleReviewsCarousel } from "@/components/GoogleReviewsCarousel";
 import { TrustSection } from "@/components/TrustSection";
+import { AperçuCarteTarifs } from "@/components/AperçuCarteTarifs";
 
 const Index = () => {
   return (
@@ -29,6 +30,7 @@ const Index = () => {
       <Services />
       <TrustSection />
       <GoogleReviewsCarousel />
+      <AperçuCarteTarifs />
       <Process />
       <WhyUs />
       <FAQ />
