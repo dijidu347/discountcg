@@ -78,57 +78,65 @@ const Navbar = () => {
           </button>
         </div>
 
-        {/* Mobile Navigation */}
-        {isOpen && <div className="md:hidden py-4 space-y-4 border-t border-border">
-            {/* Stats mobile */}
-            {AVIS_GROUPE && (
-              <div className="flex items-center justify-around py-3 border-b border-border">
-                <a
-                  href={AVIS_GROUPE.url}
-                  target="_blank"
-                  rel="noopener noreferrer nofollow"
-                  className="text-center"
-                >
-                  <div className="flex items-center justify-center gap-0.5 text-yellow-500">
-                    {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
-                  </div>
-                  <div className="text-[11px] font-medium text-foreground">
-                    {noteEnFrancais(AVIS_GROUPE.note)} / 5 · {AVIS_GROUPE.nombre} avis Google
-                  </div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {AVIS_GROUPE.societe}, {AVIS_GROUPE.lien}
-                  </div>
-                </a>
-              </div>
-            )}
-            
-            <MenuDemarchesMobile onNaviguer={() => setIsOpen(false)} />
-            <button onClick={() => {
-          setIsOpen(false);
-          navigate("/simulateur");
-        }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Prix
-            </button>
-            <button onClick={() => {
-          setIsOpen(false);
-          navigate("/recherche-suivi");
-        }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Suivi
-            </button>
-            <Button onClick={() => {
+        {/* Mobile Navigation
+            La barre est en `fixed` : le tiroir doit donc porter lui-même sa
+            hauteur maximale et son défilement, sinon les vingt-et-une
+            démarches poussent les boutons de connexion hors de l'écran, sans
+            aucun moyen de les atteindre. Et ces boutons passent AVANT la
+            liste : ce sont eux qu'on vient chercher le plus souvent. */}
+        {isOpen && <div className="md:hidden max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain py-4 space-y-4 border-t border-border">
+            <div className="grid grid-cols-2 gap-2">
+              <Button onClick={() => {
           setIsOpen(false);
           navigate("/login-particulier");
-        }} variant="outline" size="lg" className="w-full flex items-center justify-center gap-2">
-              <User className="h-4 w-4" />
-              Espace Particulier
-            </Button>
-            <Button onClick={() => {
+        }} variant="outline" className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold">
+                <User className="h-4 w-4 shrink-0" />
+                Particulier
+              </Button>
+              <Button onClick={() => {
           setIsOpen(false);
           navigate("/login");
-        }} variant="default" size="lg" className="w-full flex items-center justify-center gap-2">
-              <LogIn className="h-4 w-4" />
-              Espace Pro
-            </Button>
+        }} variant="default" className="w-full flex items-center justify-center gap-1.5 text-xs font-semibold">
+                <LogIn className="h-4 w-4 shrink-0" />
+                Espace Pro
+              </Button>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => {
+          setIsOpen(false);
+          navigate("/simulateur");
+        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
+                Prix
+              </button>
+              <button onClick={() => {
+          setIsOpen(false);
+          navigate("/recherche-suivi");
+        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
+                Suivi
+              </button>
+            </div>
+
+            <MenuDemarchesMobile onNaviguer={() => setIsOpen(false)} />
+
+            {AVIS_GROUPE && (
+              <a
+                href={AVIS_GROUPE.url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="block text-center"
+              >
+                <div className="flex items-center justify-center gap-0.5 text-yellow-500">
+                  {[...Array(5)].map((_, i) => <Star key={i} className="w-3 h-3 fill-current" />)}
+                </div>
+                <div className="text-[11px] font-medium text-foreground">
+                  {noteEnFrancais(AVIS_GROUPE.note)} / 5 · {AVIS_GROUPE.nombre} avis Google
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {AVIS_GROUPE.societe}, {AVIS_GROUPE.lien}
+                </div>
+              </a>
+            )}
           </div>}
       </div>
     </nav>;

@@ -50,30 +50,29 @@ export function MenuDemarchesBureau() {
           className="fixed left-1/2 top-16 z-50 mt-1 max-h-[calc(100vh-5.5rem)] w-[min(94vw,980px)] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-background p-6 shadow-xl"
           role="menu"
         >
-          <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             {MENU_DEMARCHES.map((col) => (
               <div key={col.titre}>
                 <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {col.titre}
+                  {col.titre} <span className="font-normal">({col.entrees.length})</span>
                 </p>
                 <ul className="space-y-0.5">
-                  {col.entrees.map((e) => (
-                    <li key={e.chemin}>
-                      <Link
-                        to={e.chemin}
-                        onClick={() => setOuvert(false)}
-                        className={`block rounded-md px-2 py-1.5 hover:bg-primary/5 ${
-                          e.phare ? "mb-1 bg-primary/5 ring-1 ring-primary/20" : ""
-                        }`}
-                        role="menuitem"
-                      >
-                        <span className={`block text-sm font-medium ${e.phare ? "text-primary" : "text-foreground"}`}>{e.libelle}</span>
-                        {e.note && (
-                          <span className="block text-xs leading-snug text-muted-foreground">{e.note}</span>
-                        )}
-                      </Link>
-                    </li>
-                  ))}
+                  {col.entrees.map((e) => {
+                    const Icone = e.icone;
+                    return (
+                      <li key={e.chemin}>
+                        <Link
+                          to={e.chemin}
+                          onClick={() => setOuvert(false)}
+                          className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-primary/5 hover:text-primary"
+                          role="menuitem"
+                        >
+                          <Icone className="h-4 w-4 shrink-0 text-primary" />
+                          {e.libelle}
+                        </Link>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ))}
@@ -93,17 +92,21 @@ export function MenuDemarchesMobile({ onNaviguer }: { onNaviguer: () => void }) 
             {col.titre}
           </p>
           <ul>
-            {col.entrees.map((e) => (
-              <li key={e.chemin}>
-                <Link
-                  to={e.chemin}
-                  onClick={onNaviguer}
-                  className="block py-1.5 text-sm text-foreground transition-colors hover:text-primary"
-                >
-                  {e.libelle}
-                </Link>
-              </li>
-            ))}
+            {col.entrees.map((e) => {
+              const Icone = e.icone;
+              return (
+                <li key={e.chemin}>
+                  <Link
+                    to={e.chemin}
+                    onClick={onNaviguer}
+                    className="flex items-center gap-2.5 py-1.5 text-sm text-foreground transition-colors hover:text-primary"
+                  >
+                    <Icone className="h-4 w-4 shrink-0 text-primary" />
+                    {e.libelle}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}

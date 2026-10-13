@@ -1,71 +1,86 @@
-// Le contenu du menu « Démarches », en un seul endroit.
+// Le contenu du menu « Démarches ».
 //
-// L'onglet menait à /carte-grise, une seule page : il promettait une liste et
-// livrait une démarche. Les vingt pages du site n'étaient donc atteignables
-// que depuis la section « Nos démarches » de l'accueil, et les cent une pages
-// départementales depuis nulle part.
+// Première version : vingt-trois entrées rangées par PUBLIC — particuliers,
+// professionnels, véhicule importé, outils — chacune avec une ligne de
+// description. Le menu se lisait comme un article, et le visiteur ne savait
+// plus où regarder.
 //
-// Les libellés sont ceux que le visiteur emploie, pas les titres des pages :
-// on dit « Carte grise perdue » et non « Duplicata de carte grise », parce que
-// c'est ainsi qu'on cherche quand on l'a perdue. Le chemin, lui, ne change pas.
+// On range désormais par FRÉQUENCE, et les chiffres l'imposent. Sur les 90
+// derniers jours :
+//
+//     déclaration d'achat    1 222
+//     déclaration de cession   854
+//     carte grise              567
+//     WW provisoire             58
+//     W garage                  37
+//     tout le reste       moins de 30 chacune
+//
+// Trois démarches font 94 % du volume. Les mettre sur le même plan que
+// l'annulation d'un CPI WW, faite quatorze fois en trois mois, c'était rendre
+// le menu illisible pour servir une symétrie qui n'existe pas.
+//
+// Et plus de descriptions : le libellé seul, avec une icône. Celui qui cherche
+// son duplicata reconnaît « Carte grise perdue ou volée » sans qu'on lui
+// explique que c'est un duplicata du certificat.
+
+import type { LucideIcon } from "lucide-react";
+import {
+  FileText, Repeat, ShoppingCart, Car, KeyRound, Home, HeartCrack, Users,
+  Bike, Sparkles, Wrench, Globe, Truck, ClipboardList, Building2, Undo2, XCircle, Award,
+} from "lucide-react";
 
 export interface EntreeMenu {
   libelle: string;
   chemin: string;
-  /** Une ligne de contexte, montrée sur grand écran seulement. */
-  note?: string;
-  /** L'entrée de tête d'une colonne, mise en évidence : elle remplace un
-   *  onglet retiré de la barre et ne doit pas se perdre dans la liste. */
-  phare?: boolean;
+  icone: LucideIcon;
 }
 
-export interface ColonneMenu {
+export interface GroupeMenu {
   titre: string;
   entrees: EntreeMenu[];
 }
 
-export const MENU_DEMARCHES: ColonneMenu[] = [
+export const MENU_DEMARCHES: GroupeMenu[] = [
   {
-    titre: "Particuliers",
+    titre: "Les plus demandées",
     entrees: [
-      { libelle: "Carte grise", chemin: "/carte-grise", note: "Changement de titulaire après un achat" },
-      { libelle: "Déclaration de cession", chemin: "/declaration-cession", note: "Déclarer la vente de son véhicule" },
-      { libelle: "Carte grise perdue ou volée", chemin: "/duplicata-carte-grise", note: "Duplicata du certificat" },
-      { libelle: "Déménagement", chemin: "/changement-adresse-carte-grise", note: "Changement d'adresse" },
-      { libelle: "Après un décès", chemin: "/succession-carte-grise", note: "Succession et héritage" },
-      { libelle: "Ajouter ou retirer un nom", chemin: "/cotitulaire-carte-grise", note: "Cotitulaire" },
-      { libelle: "Scooter, cyclomoteur", chemin: "/immatriculation-cyclomoteur", note: "50 cm³ et mobylettes" },
-      { libelle: "Véhicule neuf", chemin: "/carte-grise-vehicule-neuf", note: "Première immatriculation" },
-      { libelle: "Modifier le véhicule", chemin: "/modification-carte-grise", note: "E85, attelage, changement de genre" },
+      { libelle: "Carte grise", chemin: "/carte-grise", icone: FileText },
+      { libelle: "Déclaration de cession", chemin: "/declaration-cession", icone: Repeat },
+      { libelle: "Déclaration d'achat", chemin: "/declaration-achat", icone: ShoppingCart },
     ],
   },
   {
-    titre: "Professionnels",
+    titre: "Pour les pros de l'auto",
     entrees: [
-      { libelle: "Nos services aux garages", chemin: "/carte-grise-professionnel", note: "Compte pro, tarifs, première démarche offerte", phare: true },
-      { libelle: "Déclaration d'achat", chemin: "/declaration-achat", note: "La première est offerte" },
-      { libelle: "Plaque W Garage", chemin: "/premiere-demande-w-garage", note: "Attribuée à l'entreprise" },
-      { libelle: "Annuler une cession ou un achat", chemin: "/annuler-declaration-cession", note: "Corriger une erreur" },
-      { libelle: "Annuler un CPI WW", chemin: "/annulation-cpi-ww" },
-      { libelle: "Habilitation SIV", chemin: "/habilitation-siv", note: "Les conditions pour l'obtenir" },
+      { libelle: "Nos services aux garages", chemin: "/carte-grise-professionnel", icone: Building2 },
+      { libelle: "Plaque W Garage", chemin: "/premiere-demande-w-garage", icone: Truck },
+      { libelle: "Plaque WW provisoire", chemin: "/immatriculation-ww-provisoire", icone: Globe },
+      { libelle: "Annuler une cession ou un achat", chemin: "/annuler-declaration-cession", icone: Undo2 },
+      { libelle: "Annuler un CPI WW", chemin: "/annulation-cpi-ww", icone: XCircle },
+      { libelle: "Habilitation SIV", chemin: "/habilitation-siv", icone: Award },
     ],
   },
   {
-    titre: "Véhicule importé",
+    titre: "Autres démarches",
     entrees: [
-      { libelle: "Certificat 846 A, quitus fiscal", chemin: "/quitus-fiscal", note: "Lequel vous concerne" },
-      { libelle: "Plaque WW provisoire", chemin: "/immatriculation-ww-provisoire", note: "Rouler quatre mois" },
-      { libelle: "Immatriculation définitive", chemin: "/immatriculation-definitive", note: "Après le WW" },
-      { libelle: "Adresse d'un véhicule en LOA", chemin: "/changement-adresse-locataire-carte-grise", note: "Locataire longue durée" },
+      { libelle: "Carte grise perdue ou volée", chemin: "/duplicata-carte-grise", icone: KeyRound },
+      { libelle: "Déménagement", chemin: "/changement-adresse-carte-grise", icone: Home },
+      { libelle: "Après un décès", chemin: "/succession-carte-grise", icone: HeartCrack },
+      { libelle: "Ajouter ou retirer un nom", chemin: "/cotitulaire-carte-grise", icone: Users },
+      { libelle: "Scooter, cyclomoteur", chemin: "/immatriculation-cyclomoteur", icone: Bike },
+      { libelle: "Véhicule neuf", chemin: "/carte-grise-vehicule-neuf", icone: Sparkles },
+      { libelle: "Modifier le véhicule", chemin: "/modification-carte-grise", icone: Wrench },
+      { libelle: "Certificat 846 A, quitus fiscal", chemin: "/quitus-fiscal", icone: Globe },
+      { libelle: "Immatriculation définitive", chemin: "/immatriculation-definitive", icone: Car },
+      { libelle: "Véhicule en LOA ou LLD", chemin: "/changement-adresse-locataire-carte-grise", icone: Home },
+      { libelle: "Fiche d'identification", chemin: "/fiche-identification-vehicule", icone: ClipboardList },
+      { libelle: "Certificat de non-gage", chemin: "/certificat-de-non-gage", icone: ClipboardList },
     ],
   },
-  {
-    titre: "Outils et références",
-    entrees: [
-      { libelle: "Simulateur de prix", chemin: "/simulateur", note: "À partir de la plaque" },
-      { libelle: "Carte grise par département", chemin: "/carte-grise-par-departement", note: "Les 101 départements" },
-      { libelle: "Certificat de non-gage", chemin: "/certificat-de-non-gage", note: "Gratuit, à exiger avant d'acheter" },
-      { libelle: "Fiche d'identification", chemin: "/fiche-identification-vehicule", note: "Quand la carte grise manque" },
-    ],
-  },
+];
+
+/** Les deux pages de prix, pour l'onglet « Prix » de la barre. */
+export const MENU_PRIX: EntreeMenu[] = [
+  { libelle: "Simulateur de prix", chemin: "/simulateur", icone: ClipboardList },
+  { libelle: "Prix par département", chemin: "/carte-grise-par-departement", icone: Globe },
 ];
