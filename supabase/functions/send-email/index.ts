@@ -1023,9 +1023,14 @@ const getEmailTemplate = (type: string, data: any) => {
               <div style="background-color: #f0f9ff; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0;">
                 <p style="margin: 0; white-space: pre-wrap;">${data.message_preview}</p>
               </div>
-              <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px;">
-                Voir la conversation
+              <a href="${baseUrl}/demarche/${data.demarche_id}" style="display: inline-block; background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+                Répondre dans votre espace
               </a>
+              <p style="margin: 16px 0 0; color: #b45309; font-size: 14px;">
+                <strong>Ne répondez pas à cet e-mail</strong> : il part d'une adresse qui ne reçoit pas.
+                Votre réponse n'arriverait pas. Utilisez le bouton ci-dessus — elle sera lue au même
+                endroit que votre dossier.
+              </p>
               <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
               <p style="color: #6b7280; font-size: 12px; text-align: center;">
                 Service agréé et conforme ANTS • <a href="https://discountcartegrise.fr" style="color: #2563eb;">discountcartegrise.fr</a>
@@ -1347,6 +1352,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Les notifications de message ne portent pas de « répondre à ».
+    //
+    // L'expéditeur était déjà « noreply@ », mais chaque envoi ajoutait
+    // reply_to: contact@discountcartegrise.fr — et c'est le reply_to que suit
+    // la messagerie du destinataire. Résultat : le garage cliquait
+    // « Répondre » dans sa boîte au lieu de répondre dans son espace, sa
+    // réponse arrivait par courriel, et la conversation du site restait vide.
+    //
+    // Sans reply_to, la réponse part vers « noreply@ ». Il faut donc que cette
+    // adresse REJETTE le courrier plutôt que de l'avaler : un garage qui
+    // répond quand même reçoit alors un avis de non-remise et sait que son
+    // message n'est pas passé. Une boîte qui accepte en silence perdrait sa
+    // réponse sans que personne le sache.
+    // « guest_new_message » n'y est PAS, et ne doit pas y entrer : ce courrier
+    // promet noir sur blanc « Répondez directement à ce mail, notre équipe
+    // vous répond sous 24h », et le particulier n'a pas d'espace où se
+    // connecter. Lui couper la réponse romprait la promesse et perdrait son
+    // message sans que personne le sache. Le garage, lui, a un compte.
+    const SANS_REPONSE = new Set([
+      "new_message_notification",
+    ]);
+
     const { subject, html } = getEmailTemplate(type, data);
 
     // Préparer les pièces jointes si présentes
@@ -1357,7 +1384,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: customFrom || "DiscountCarteGrise <noreply@discountcartegrise.fr>",
-      reply_to: customFrom ? undefined : "contact@discountcartegrise.fr",
+      reply_to: customFrom || SANS_REPONSE.has(type) ? undefined : "contact@discountcartegrise.fr",
       to: to,
       cc: cc || undefined,
       subject: subject,
