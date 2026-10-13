@@ -145,6 +145,16 @@ const blocSansReponse = `
   </p>
 `;
 
+// La même coupure, pour un courrier qui ne réclame aucun document : parler de
+// pièce jointe n'y aurait pas de sens. Le garage a une messagerie dans son
+// espace, c'est là qu'on l'envoie.
+const blocSansReponseCourt = `
+  <p style="margin: 16px 0 0; color: #6b7280; font-size: 13px;">
+    <strong>Ne répondez pas à cet e-mail</strong> : il part d'une adresse qui ne reçoit pas.
+    Pour nous écrire, utilisez la messagerie de votre espace professionnel.
+  </p>
+`;
+
 const guestFooter = `
   <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
   <p style="color: #6b7280; font-size: 14px;">L'équipe DiscountCarteGrise</p>
@@ -313,6 +323,8 @@ const getEmailTemplate = (type: string, data: any) => {
             <p style="color: #6b7280; font-size: 13px;">
               Ce message ne part qu'une fois par seuil franchi. Un rechargement le réarme.
             </p>
+
+            ${blocSansReponseCourt}
           </div>
         `,
       };
@@ -1421,6 +1433,10 @@ const handler = async (req: Request): Promise<Response> => {
       "kbis_a_renouveler",
       "kbis_demande_demarche",
       "account_rejected",
+      // Celui-ci ne réclame pas de document mais une recharge : le risque
+      // n'est pas qu'une pièce se perde, c'est qu'un garage réponde par
+      // courriel au lieu de passer par l'onglet Messages.
+      "solde_plaques_bas",
     ]);
 
     // « document_rejected » sert les deux publics : on tranche sur la donnée.
