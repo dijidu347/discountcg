@@ -256,48 +256,59 @@ export function TarifsCarteGrise() {
 
           {/* Le filtre par région.
 
-              Quatorze boutons alignés, c'est lisible sur un écran large et
-              c'est six rangées sur un téléphone : près de six cents pixels
-              avant d'atteindre le tableau qu'on vient consulter. Un menu
-              déroulant tient en une ligne et ouvre la liste par-dessus, sans
-              pousser le contenu.
+              C'étaient quatorze boutons bordés de bleu, de largeurs inégales,
+              qui se cassaient en deux rangées en dents de scie — et en six
+              rangées sur un téléphone, soit six cents pixels avant d'atteindre
+              le tableau qu'on vient consulter. Quatorze bordures de la couleur
+              d'accent se disputaient l'attention avec le tableau lui-même.
 
-              Les deux rendent la même chose : des boutons à partir de la
-              tablette, un menu en dessous. */}
-          <div className="mb-6 md:hidden">
-            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-              <SelectTrigger aria-label="Filtrer par région">
-                <SelectValue placeholder="Tous les départements" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les départements</SelectItem>
-                {Object.entries(regions).map(([key, region]) => (
-                  <SelectItem key={key} value={key}>
-                    {region.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="mb-6 hidden flex-wrap gap-2 md:flex">
-            <Button
-              variant={selectedRegion === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedRegion("all")}
+              Une seule ligne, qui défile horizontalement quand elle ne tient
+              pas : c'est le même geste sur un écran large et sur un téléphone,
+              et le tableau remonte. Les pastilles sont grises ; seule celle
+              qui est active prend la couleur. Chacune porte le tarif de sa
+              région, ce qui transforme un filtre en information — on compare
+              sans avoir à cliquer. */}
+          <div className="mb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div
+              className="flex gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]"
+              role="group"
+              aria-label="Filtrer par région"
             >
-              Tous les départements
-            </Button>
-            {Object.entries(regions).map(([key, region]) => (
-              <Button
-                key={key}
-                variant={selectedRegion === key ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedRegion(key)}
+              <button
+                onClick={() => setSelectedRegion("all")}
+                aria-pressed={selectedRegion === "all"}
+                className={`shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                  selectedRegion === "all"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                }`}
               >
-                {region.name}
-              </Button>
-            ))}
+                Toutes
+              </button>
+              {Object.entries(regions).map(([key, region]) => {
+                const tarif = departementsTarifs[region.depts[0]];
+                const actif = selectedRegion === key;
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedRegion(key)}
+                    aria-pressed={actif}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
+                      actif
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted text-muted-foreground hover:bg-muted/70 hover:text-foreground"
+                    }`}
+                  >
+                    {region.name}
+                    {tarif ? (
+                      <span className={actif ? "ml-1.5 opacity-80" : "ml-1.5 opacity-70"}>
+                        {eur(tarif)}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="border rounded-lg overflow-hidden">
