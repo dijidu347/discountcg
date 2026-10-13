@@ -133,19 +133,24 @@ const DemarchePage = () => {
       />
       <Navbar />
 
-      {/* Breadcrumb */}
-      <nav className="container mx-auto px-4 pt-24 pb-2" aria-label="Breadcrumb">
-        <ol className="flex items-center gap-1 text-sm text-muted-foreground">
-          <li>
-            <Link to="/" className="hover:text-primary transition-colors">
-              Accueil
-            </Link>
-          </li>
-          <li>
-            <ChevronRight className="h-3 w-3" />
-          </li>
-          <li className="text-foreground font-medium">{demarche.title}</li>
-        </ol>
+      {/* Le fil d'Ariane et l'en-tête reprennent le bandeau des pages Guides et
+          Blog : une bande grise qui situe, puis un dégradé pleine largeur. Le
+          dégradé est porté par la section et non par le conteneur, sinon il
+          s'arrête aux marges et laisse deux bandes blanches sur les côtés. */}
+      <nav className="border-b border-border bg-muted/30 pt-20" aria-label="Breadcrumb">
+        <div className="container mx-auto px-4 py-3">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+            <li>
+              <Link to="/" className="hover:text-primary transition-colors">
+                Accueil
+              </Link>
+            </li>
+            <li>
+              <ChevronRight className="h-3 w-3" />
+            </li>
+            <li className="font-medium text-foreground">{demarche.title}</li>
+          </ol>
+        </div>
       </nav>
 
       {/* L'en-tête.
@@ -160,7 +165,8 @@ const DemarchePage = () => {
           résumé : le délai, le nombre de pièces, ce qu'on reçoit. Ce sont les
           trois questions qu'on se pose avant de cliquer, et elles étaient
           jusqu'ici dispersées plus bas dans la page. */}
-      <section className="container mx-auto px-4 py-12 md:py-16">
+      <section className="bg-gradient-to-b from-primary/5 to-background py-12 md:py-16">
+        <div className="container mx-auto px-4">
         <div className="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-14">
           <div>
             <div className="flex flex-wrap gap-2 mb-6">
@@ -219,6 +225,7 @@ const DemarchePage = () => {
               Habilitation préfecture n° 285046 · agrément Trésor public n° 63198
             </p>
           </aside>
+        </div>
         </div>
       </section>
 
