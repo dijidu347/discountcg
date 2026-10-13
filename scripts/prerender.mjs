@@ -1200,6 +1200,123 @@ async function principal() {
     ecrites++;
   }
 
+  // ── Le blog ───────────────────────────────────────────────────────────────
+  //
+  // L'index et un fichier par article. Le texte vient de src/data/articles.ts,
+  // comme pour le reste du site : un article que seul React afficherait serait
+  // invisible pour les robots qui n'executent pas le JavaScript — c'est-a-dire
+  // ceux des assistants, et Google avant que sa file de rendu l'atteigne.
+  let articlesBlog = [];
+  try {
+    const { ARTICLES_TRIES, dateEnFrancais } = await chargerTs(
+      "src/data/articles.ts",
+      "articles"
+    );
+    const { GUIDES } = await chargerTs("src/data/guides.ts", "guides");
+    articlesBlog = ARTICLES_TRIES;
+
+    const corpsArticle = (blocs) =>
+      blocs
+        .map((b) => {
+          if (b.type === "h2") return `<h2>${echappe(b.texte)}</h2>`;
+          if (b.type === "liste")
+            return `<ul>${b.items.map((i) => `<li>${echappe(i)}</li>`).join("")}</ul>`;
+          return `<p>${echappe(b.texte)}</p>`;
+        })
+        .join("\n");
+
+    for (const a of ARTICLES_TRIES) {
+      const route = `/blog/${a.slug}`;
+      await ecrire(
+        route,
+        appliquer(gabarit, {
+          titre: a.titre,
+          description: a.chapo,
+          canonical: `${BASE}${route}`,
+          schemas: [
+            {
+              "@context": "https://schema.org",
+              "@type": "NewsArticle",
+              headline: a.titre,
+              description: a.chapo,
+              datePublished: a.date,
+              image: `${BASE}${a.image}`,
+              mainEntityOfPage: `${BASE}${route}`,
+              publisher: { "@type": "Organization", name: "Discount Carte Grise" },
+            },
+          ],
+          html: corps({
+            h1: a.titre,
+            blocs: [
+              `<p><em>${echappe(dateEnFrancais(a.date))} &middot; ${echappe(a.categorie)}</em></p>`,
+              `<p>${echappe(a.chapo)}</p>`,
+              corpsArticle(a.corps),
+              `<h2>Sources</h2><ul>${a.sources
+                .map((src) => `<li><a href="${echappe(src.url)}">${echappe(src.libelle)}</a></li>`)
+                .join("")}</ul>`,
+              `<p><a href="${BASE}/blog">Tous les articles</a></p>`,
+            ],
+          }),
+        })
+      );
+      ecrites++;
+    }
+
+    const listeArticles = ARTICLES_TRIES.map(
+      (a) =>
+        `<li><a href="${BASE}/blog/${a.slug}">${echappe(a.titre)}</a> ` +
+        `&mdash; ${echappe(dateEnFrancais(a.date))}. ${echappe(a.chapo)}</li>`
+    ).join("");
+
+    const listeGuides = GUIDES.map(
+      (g) =>
+        `<h3>${echappe(g.titre)}</h3><p>${echappe(g.intro)}</p><ul>` +
+        g.guides
+          .map(
+            (x) =>
+              `<li><a href="${BASE}${x.chemin}">${echappe(x.libelle)}</a> &mdash; ${echappe(x.resume)}</li>`
+          )
+          .join("") +
+        `</ul>`
+    ).join("");
+
+    await ecrire(
+      "/blog",
+      appliquer(gabarit, {
+        titre: "Le blog : l'actualité de la carte grise",
+        description:
+          "Ce qui change vraiment pour la carte grise : réglementation, tarifs, obligations des professionnels. Chaque article cite le texte officiel sur lequel il s'appuie.",
+        canonical: `${BASE}/blog`,
+        schemas: [
+          {
+            "@context": "https://schema.org",
+            "@type": "Blog",
+            name: "Le blog Discount Carte Grise",
+            url: `${BASE}/blog`,
+            blogPost: ARTICLES_TRIES.map((a) => ({
+              "@type": "BlogPosting",
+              headline: a.titre,
+              datePublished: a.date,
+              url: `${BASE}/blog/${a.slug}`,
+            })),
+          },
+        ],
+        html: corps({
+          h1: "Le blog Discount Carte Grise",
+          blocs: [
+            `<p>Ce qui change vraiment pour votre carte grise. Chaque article cite le texte officiel sur lequel il s'appuie.</p>`,
+            `<h2>Les articles</h2><ul>${listeArticles}</ul>`,
+            `<h2>Nos guides pratiques</h2>`,
+            listeGuides,
+          ],
+        }),
+      })
+    );
+    ecrites++;
+  } catch (e) {
+    console.warn("[prerender] blog ignoré :", e?.message ?? e);
+  }
+
   // ── /prix-carte-grise : une redirection que les robots voient ─────────────
   //
   // Cette page a été fusionnée avec /simulateur, et l'application la redirige
@@ -1253,6 +1370,13 @@ async function principal() {
       ...contenusDepartements.map((c) => ({
         loc: c.canonical.replace(BASE, ""),
         priorite: "0.6",
+        frequence: "yearly",
+      })),
+      // Le blog : l'index bouge à chaque parution, les articles plus jamais.
+      { loc: "/blog", priorite: "0.8", frequence: "weekly" },
+      ...articlesBlog.map((a) => ({
+        loc: `/blog/${a.slug}`,
+        priorite: "0.7",
         frequence: "yearly",
       })),
     ];

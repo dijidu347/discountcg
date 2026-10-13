@@ -57,6 +57,9 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             <MenuDemarchesBureau />
             <MenuPrixBureau />
+            <button onClick={() => navigate("/blog")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
+              Blog
+            </button>
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
             </button>
@@ -100,12 +103,20 @@ const Navbar = () => {
               </Button>
             </div>
 
-            <button onClick={() => {
+            <div className="flex gap-2">
+              <button onClick={() => {
+          setIsOpen(false);
+          navigate("/blog");
+        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
+                Blog
+              </button>
+              <button onClick={() => {
           setIsOpen(false);
           navigate("/recherche-suivi");
-        }} className="w-full rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
-              Suivre mon dossier
-            </button>
+        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
+                Suivi
+              </button>
+            </div>
 
             <MenuDemarchesMobile onNaviguer={() => setIsOpen(false)} />
 
