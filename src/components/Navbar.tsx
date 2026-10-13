@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AVIS_GROUPE, noteEnFrancais } from "@/data/avisGroupe";
+import { MenuDemarchesBureau, MenuDemarchesMobile } from "@/components/MenuDemarches";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -57,9 +58,7 @@ const Navbar = () => {
             <button onClick={() => navigate("/")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Accueil
             </button>
-            <button onClick={() => navigate("/carte-grise")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
-              Démarches
-            </button>
+            <MenuDemarchesBureau />
             <button onClick={() => navigate("/carte-grise-professionnel")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Professionnels
             </button>
@@ -112,12 +111,7 @@ const Navbar = () => {
         }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
               Accueil
             </button>
-            <button onClick={() => {
-          setIsOpen(false);
-          navigate("/carte-grise");
-        }} className="block w-full text-left text-foreground hover:text-primary transition-colors py-2">
-              Démarches
-            </button>
+            <MenuDemarchesMobile onNaviguer={() => setIsOpen(false)} />
             <button onClick={() => {
           setIsOpen(false);
           navigate("/carte-grise-professionnel");

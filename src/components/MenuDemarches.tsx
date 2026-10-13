@@ -44,7 +44,10 @@ export function MenuDemarchesBureau() {
 
       {ouvert && (
         <div
-          className="absolute left-1/2 top-full z-50 mt-1 w-[min(92vw,980px)] -translate-x-1/2 rounded-xl border border-border bg-background p-6 shadow-xl"
+          /* Centré sur la fenêtre, pas sur le bouton : l'onglet est à droite
+             de la barre, et un panneau de 980 px centré sur lui sortait de
+             l'écran. */
+          className="fixed left-1/2 top-16 z-50 mt-1 max-h-[calc(100vh-5.5rem)] w-[min(94vw,980px)] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-background p-6 shadow-xl"
           role="menu"
         >
           <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-4">
