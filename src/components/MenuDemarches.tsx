@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { MENU_DEMARCHES, type GroupeMenu } from "@/data/menuDemarches";
+import { MENU_DEMARCHES, lienDuMenu, type GroupeMenu } from "@/data/menuDemarches";
 
 export function MenuDemarchesBureau() {
   const [ouvert, setOuvert] = useState(false);
@@ -88,7 +88,7 @@ function Groupe({ groupe, onNaviguer, colonnes }: {
           return (
             <li key={e.chemin}>
               <Link
-                to={e.chemin}
+                to={lienDuMenu(e)}
                 onClick={onNaviguer}
                 className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-primary/5 hover:text-primary"
                 role="menuitem"
@@ -118,7 +118,7 @@ export function MenuDemarchesMobile({ onNaviguer }: { onNaviguer: () => void }) 
               return (
                 <li key={e.chemin}>
                   <Link
-                    to={e.chemin}
+                    to={lienDuMenu(e)}
                     onClick={onNaviguer}
                     className="flex items-center gap-2.5 py-1.5 text-sm text-foreground transition-colors hover:text-primary"
                   >

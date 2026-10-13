@@ -44,13 +44,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { EN_TETE_COMMANDE, nouvelIdCommande } from "@/lib/commandeParticulier";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet-async";
-import { DEMARCHES_AVEC_TAXE } from "@/lib/taxeCarteGrise";
-
-// Demarches reservees aux professionnels : la page oriente vers l'inscription pro.
-const RESERVEES_AUX_PROS = ["DA", "W_GARAGE"];
-
-// Demarches dont le prix comprend la taxe : elles passent par le simulateur.
-const CG_TYPES = [...DEMARCHES_AVEC_TAXE, "CG_DA", "CG_IMPORT"];
+import { destinationDeLaDemarche, CG_TYPES, RESERVEES_AUX_PROS } from "@/lib/demarrerDemarche";
 
 const DemarchePage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -67,70 +61,18 @@ const DemarchePage = () => {
   const reserveePro = demarche ? RESERVEES_AUX_PROS.includes(demarche.code) : false;
   const libelleBouton = reserveePro ? "Créer mon compte pro" : isCG ? "Simuler mon tarif" : "Commander maintenant";
 
+  // La décision vit dans src/lib/demarrerDemarche.ts : le menu du site y mène
+  // aussi, et les deux chemins doivent traiter pareil une démarche pro ou
+  // retirée du catalogue.
   const handleStartDemarche = async () => {
     if (!demarche) return;
-
-    // Démarche réservée aux pros → rediriger vers inscription
-    if (reserveePro) {
-      navigate('/register');
-      return;
-    }
-
-    if (isCG) {
-      navigate(`/simulateur?type=${demarche.code}`);
-      return;
-    }
-
     setStarting(true);
     try {
-      const { data: typeData } = await supabase
-        .from("guest_demarche_types")
-        .select("prix_base, actif")
-        .eq("code", demarche.code)
-        .maybeSingle();
-
-      // Demarche absente du catalogue particulier : un visiteur ne lit que les
-      // demarches actives, une demarche desactivee revient donc vide. On n'ouvre
-      // pas de commande (elle partirait a 0 EUR affiche), on oriente vers l'espace pro.
-      if (!typeData || typeData.actif === false) {
-        toast({
-          title: "Démarche réservée aux professionnels",
-          description: "Cette démarche s'effectue depuis un compte professionnel. Créez votre compte pour y accéder.",
-        });
-        navigate("/register");
-        return;
+      const destination = await destinationDeLaDemarche(demarche.code);
+      if ("message" in destination && destination.message) {
+        toast({ title: "Démarche réservée aux professionnels", description: destination.message });
       }
-
-      const prixHT = typeData.prix_base || 30;
-
-      const nouvelId = nouvelIdCommande();
-      const { data, error } = await supabase
-        .from("guest_orders")
-        .insert({
-
-          id: nouvelId,
-          tracking_number: "",
-          immatriculation: "",
-          email: "",
-          telephone: "",
-          nom: "",
-          prenom: "",
-          adresse: "",
-          code_postal: "",
-          ville: "",
-          montant_ht: 0,
-          montant_ttc: 0,
-          frais_dossier: prixHT,
-          status: "en_attente",
-          paye: false,
-          demarche_type: demarche.code,
-        }).setHeader(EN_TETE_COMMANDE, nouvelId)
-        .select("id")
-        .single();
-
-      if (error) throw error;
-
-      navigate(`/demarche-simple?orderId=${data.id}&type=${demarche.code}`);
+      navigate(destination.chemin);
     } catch (error) {
       console.error("Erreur création commande:", error);
       toast({
