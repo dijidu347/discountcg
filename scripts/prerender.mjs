@@ -367,6 +367,28 @@ async function principal() {
   // positions 9 à 13 — la seule famille où la visibilité est déjà acquise.
   // 2 032 de ces impressions portent sur le 846 A, 342 sur le quitus, alors
   // que le titre commençait par « Quitus fiscal ».
+  // Les comparatifs en cartes, comme à l'écran.
+  //
+  // C'étaient des <table> alors que chaque cellule est une phrase. Un tableau
+  // sert à parcourir des valeurs courtes ; il ne sert à rien quand il contient
+  // de la prose, et il forçait un défilement latéral sur téléphone. Le
+  // composant React rend désormais des cartes : le HTML servi fait de même,
+  // pour que le robot et le visiteur lisent la même structure et pas seulement
+  // les mêmes mots.
+  const cartesFaits = (faits) =>
+    `<ul>` +
+    faits
+      .map(
+        (f) =>
+          `<li><strong>${echappe(f.titre)}</strong><dl>` +
+          f.champs
+            .map(([libelle, valeur]) => `<dt>${echappe(libelle)}</dt><dd>${echappe(valeur)}</dd>`)
+            .join("") +
+          `</dl></li>`
+      )
+      .join("") +
+    `</ul>`;
+
   let reperesQuitus = "";
   try {
     const { SELON_L_ORIGINE, PARCOURS_IMPORT, REPERES_QUITUS } = await chargerTs(
@@ -377,14 +399,10 @@ async function principal() {
       `<h2>Quitus ou 846 A : d'où vient le véhicule décide</h2>` +
       `<p>C'est la confusion la plus répandue, et elle fait perdre des semaines : ` +
       `les deux documents n'ont ni le même objet, ni le même guichet.</p>` +
-      `<table><thead><tr><th>Le véhicule vient de</th><th>Le justificatif</th>` +
-      `<th>Délivré par</th><th>La TVA</th></tr></thead><tbody>` +
-      SELON_L_ORIGINE.map(
-        (c) =>
-          `<tr><th scope="row">${echappe(c.origine)}</th><td>${echappe(c.justificatif)}</td>` +
-          `<td>${echappe(c.delivrePar)}</td><td>${echappe(c.tva)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(SELON_L_ORIGINE.map((c) => ({
+        titre: c.origine,
+        champs: [["Le justificatif", c.justificatif], ["Délivré par", c.delivrePar], ["La TVA", c.tva]],
+      }))) +
       `<h2>Importer un véhicule, du justificatif à la carte grise</h2><ol>` +
       PARCOURS_IMPORT.map(
         (e) =>
@@ -406,14 +424,10 @@ async function principal() {
     const { CAS_CYCLO, REPERES_CYCLO } = await chargerTs("src/data/cycloReperes.ts", "cyclo");
     reperesCyclo =
       `<h2>Trois situations, et une seule qui bloque</h2>` +
-      `<table><thead><tr><th>Votre cyclomoteur</th><th>La pièce qui compte</th>` +
-      `<th>La difficulté</th></tr></thead><tbody>` +
-      CAS_CYCLO.map(
-        (c) =>
-          `<tr><th scope="row">${echappe(c.situation)}</th><td>${echappe(c.piecePrincipale)}</td>` +
-          `<td>${echappe(c.difficulte)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(CAS_CYCLO.map((c) => ({
+        titre: c.situation,
+        champs: [["La pièce qui compte", c.piecePrincipale], ["La difficulté", c.difficulte]],
+      }))) +
       REPERES_CYCLO.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
       ).join("");
@@ -433,14 +447,10 @@ async function principal() {
     );
     reperesDuplicata =
       `<h2>Perdue, volée ou abîmée : le premier geste n'est pas le même</h2>` +
-      `<table><thead><tr><th>Votre situation</th><th>Ce qu'il faut faire d'abord</th>` +
-      `<th>La pièce à joindre</th><th>Où l'obtenir</th></tr></thead><tbody>` +
-      CAS_DUPLICATA.map(
-        (c) =>
-          `<tr><th scope="row">${echappe(c.cas)}</th><td>${echappe(c.premierGeste)}</td>` +
-          `<td>${echappe(c.piece)}</td><td>${echappe(c.ou)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(CAS_DUPLICATA.map((c) => ({
+        titre: c.cas,
+        champs: [["Ce qu'il faut faire d'abord", c.premierGeste], ["La pièce à joindre", c.piece], ["Où l'obtenir", c.ou]],
+      }))) +
       REPERES_DUPLICATA.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
       ).join("");
@@ -460,14 +470,10 @@ async function principal() {
     );
     reperesAdresse =
       `<h2>Ce que vous recevez dépend de votre numéro, pas de votre déménagement</h2>` +
-      `<table><thead><tr><th>Votre situation</th><th>Ce que vous recevez</th>` +
-      `<th>Taxes</th><th>À prévoir</th></tr></thead><tbody>` +
-      CAS_ADRESSE.map(
-        (c) =>
-          `<tr><th scope="row">${echappe(c.situation)}</th><td>${echappe(c.recoit)}</td>` +
-          `<td>${echappe(c.taxes)}</td><td>${echappe(c.aPrevoir)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(CAS_ADRESSE.map((c) => ({
+        titre: c.situation,
+        champs: [["Ce que vous recevez", c.recoit], ["Taxes", c.taxes], ["À prévoir", c.aPrevoir]],
+      }))) +
       REPERES_ADRESSE.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
       ).join("") +
@@ -513,14 +519,10 @@ async function principal() {
     );
     reperesModification =
       `<h2>Ce qu'on vous demandera, selon la modification</h2>` +
-      `<table><thead><tr><th>Votre modification</th><th>La preuve exigée</th>` +
-      `<th>Délivrée par</th><th>Délai</th></tr></thead><tbody>` +
-      SELON_LA_MODIFICATION.map(
-        (l) =>
-          `<tr><th scope="row">${echappe(l.modification)}</th><td>${echappe(l.preuve)}</td>` +
-          `<td>${echappe(l.delivrePar)}</td><td>${echappe(l.delai)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(SELON_LA_MODIFICATION.map((l) => ({
+        titre: l.modification,
+        champs: [["La preuve exigée", l.preuve], ["Délivrée par", l.delivrePar], ["Délai", l.delai]],
+      }))) +
       REPERES_MODIFICATION.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
       ).join("");
@@ -543,14 +545,10 @@ async function principal() {
       `<h2>Ce que vous payez à chaque étape</h2>` +
       `<p>Importer un véhicule se fait en trois temps. Le montant total ne dépend pas du ` +
       `nombre d'étapes : la taxe régionale n'est due qu'une fois.</p>` +
-      `<table><thead><tr><th>Étape</th><th>Ce que vous payez</th>` +
-      `<th>Ce que vous obtenez</th></tr></thead><tbody>` +
-      ETAPES_IMPORTATION.map(
-        (e) =>
-          `<tr><th scope="row">${echappe(e.etape)}</th><td>${echappe(e.paye)}</td>` +
-          `<td>${echappe(e.obtient)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(ETAPES_IMPORTATION.map((e) => ({
+        titre: e.etape,
+        champs: [["Ce que vous payez", e.paye], ["Ce que vous obtenez", e.obtient]],
+      }))) +
       REPERES_IMPORT.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
       ).join("");
@@ -616,14 +614,10 @@ async function principal() {
       `<h2>Ce qu'il faut réclamer au vendeur, le jour de la vente</h2>` +
       `<p>Une demande de carte grise bloque rarement sur le formulaire. Elle bloque sur une ` +
       `pièce que personne n'a demandée au moment de la remise des clés.</p>` +
-      `<table><thead><tr><th>La pièce</th><th>Ce qu'elle doit porter</th>` +
-      `<th>Si elle manque</th></tr></thead><tbody>` +
-      A_RECLAMER_AU_VENDEUR.map(
-        (p) =>
-          `<tr><th scope="row">${echappe(p.piece)}</th><td>${echappe(p.precision)}</td>` +
-          `<td>${echappe(p.siElleManque)}</td></tr>`
-      ).join("") +
-      `</tbody></table>` +
+      cartesFaits(A_RECLAMER_AU_VENDEUR.map((p) => ({
+        titre: p.piece,
+        champs: [["Ce qu'elle doit porter", p.precision], ["Si elle manque", p.siElleManque]],
+      }))) +
       REPERES_CARTE_GRISE.map(
         (r) => `<h2>${echappe(r.titre)}</h2><p>${echappe(r.texte)}</p>`
       ).join("");
