@@ -1274,7 +1274,9 @@ async function principal() {
         g.guides
           .map(
             (x) =>
-              `<li><a href="${BASE}${x.chemin}">${echappe(x.libelle)}</a> &mdash; ${echappe(x.resume)}</li>`
+              `<li><a href="${BASE}${x.chemin}">${echappe(x.libelle)}</a> &mdash; ${echappe(x.resume)}` +
+              (x.delai ? ` (délai : ${echappe(x.delai)})` : "") +
+              `</li>`
           )
           .join("") +
         `</ul>`

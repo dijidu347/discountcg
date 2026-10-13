@@ -14,11 +14,15 @@ export interface Guide {
   libelle: string;
   chemin: string;
   resume: string;
+  /** Le délai de traitement, quand l'entrée est une démarche. */
+  delai?: string;
 }
 
 export interface GroupeGuides {
   titre: string;
   intro: string;
+  /** Sert à colorer le groupe ; voir src/pages/Guides.tsx. */
+  teinte: "bleu" | "ambre" | "vert" | "rose";
   guides: Guide[];
 }
 
@@ -26,12 +30,18 @@ export interface GroupeGuides {
 function parSlug(slug: string, libelle?: string): Guide {
   const d = demarchesConfig.find((x) => x.slug === slug);
   if (!d) throw new Error(`Guide introuvable : ${slug}`);
-  return { libelle: libelle || d.shortTitle, chemin: `/${d.slug}`, resume: d.description };
+  return {
+    libelle: libelle || d.shortTitle,
+    chemin: `/${d.slug}`,
+    resume: d.description,
+    delai: d.delai,
+  };
 }
 
 export const GUIDES: GroupeGuides[] = [
   {
     titre: "Acheter ou vendre un véhicule",
+    teinte: "bleu",
     intro:
       "Le vendeur déclare la cession, l'acheteur fait établir la carte grise à son nom dans le mois. Ces cinq pages couvrent la vente d'occasion de bout en bout.",
     guides: [
@@ -49,6 +59,7 @@ export const GUIDES: GroupeGuides[] = [
   },
   {
     titre: "Corriger ou mettre à jour une carte grise",
+    teinte: "vert",
     intro:
       "Déménagement, mariage, héritage, carte perdue : le certificat d'immatriculation doit refléter la situation réelle, sous peine d'amende au contrôle.",
     guides: [
@@ -62,6 +73,7 @@ export const GUIDES: GroupeGuides[] = [
   },
   {
     titre: "Immatriculer un véhicule",
+    teinte: "ambre",
     intro:
       "Véhicule neuf, importé, de collection ou deux-roues ancien : chaque cas a ses pièces et son ordre, et le quitus fiscal précède souvent tout le reste.",
     guides: [
@@ -76,6 +88,7 @@ export const GUIDES: GroupeGuides[] = [
   },
   {
     titre: "Pour les professionnels de l'automobile",
+    teinte: "rose",
     intro:
       "Garages, concessions, négociants et loueurs déposent leurs dossiers depuis un compte professionnel, sous notre habilitation n° 285046.",
     guides: [
