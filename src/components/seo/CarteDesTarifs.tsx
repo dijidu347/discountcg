@@ -20,7 +20,7 @@ export function CarteDesTarifs({ onChoisir }: { onChoisir?: (cle: string) => voi
     <figure className="m-0">
       <svg
         viewBox={VUE_CARTE}
-        className="w-full h-auto"
+        className="mx-auto block h-auto w-full max-w-xl"
         role="img"
         aria-label="Carte de France du tarif du cheval fiscal par région en 2026"
       >
@@ -98,7 +98,7 @@ export function CarteDesTarifs({ onChoisir }: { onChoisir?: (cle: string) => voi
 /** La liste complète, sous la carte : c'est elle qui fait la navigation. */
 export function ListeDesRegions() {
   return (
-    <div className="space-y-10">
+    <div className="space-y-7">
       {REGIONS_TARIFS.map((r) => (
         <section key={r.cle} id={`region-${r.cle}`} className="scroll-mt-24">
           <h3 className="flex flex-wrap items-baseline gap-3 text-lg font-bold text-foreground">
@@ -113,14 +113,15 @@ export function ListeDesRegions() {
               {r.departements.length} département{r.departements.length > 1 ? "s" : ""}
             </span>
           </h3>
-          <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3 lg:grid-cols-4">
+          <ul className="mt-3 flex flex-wrap gap-x-2 gap-y-1.5">
             {r.departements.map((d) => (
-              <li key={d.code} className="min-w-0">
+              <li key={d.code}>
                 <Link
                   to={d.chemin}
-                  className="block truncate text-sm text-foreground hover:text-primary hover:underline"
+                  className="inline-flex items-baseline gap-1.5 rounded-md bg-muted/60 px-2.5 py-1 text-sm text-foreground transition-colors hover:bg-primary/10 hover:text-primary"
                 >
-                  <span className="tabular-nums text-muted-foreground">{d.code}</span> {d.nom}
+                  <span className="tabular-nums text-xs text-muted-foreground">{d.code}</span>
+                  {d.nom}
                 </Link>
               </li>
             ))}
