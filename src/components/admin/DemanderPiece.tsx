@@ -98,6 +98,10 @@ export function DemanderPiece({
           type: "piece_demandee",
           to: emailGarage,
           data: {
+            // Sans lui, le courriel renvoie le garage vers /suivi/<référence>,
+            // la page des particuliers, où une référence de démarche n'existe
+            // pas : il ne trouve rien et renvoie sa pièce par courriel.
+            demarche_id: demarcheId,
             tracking_number: reference || demarcheId,
             nom: nomGarage || "",
             immatriculation: immatriculation || "",

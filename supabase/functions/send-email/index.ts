@@ -133,6 +133,18 @@ const guestReplyBlock = `
   </div>
 `;
 
+// Le pendant du précédent, pour qui a un espace : on coupe la réponse plutôt
+// que de l'inviter. Un garage qui répond à « noreply@ » reçoit un avis de
+// non-remise ; une pièce jointe envoyée par courriel, elle, n'arrive nulle part
+// et ne se rattache à rien. Le bouton du courrier est la seule route.
+const blocSansReponse = `
+  <p style="margin: 16px 0 0; color: #b45309; font-size: 14px;">
+    <strong>Ne répondez pas à cet e-mail</strong> : il part d'une adresse qui ne reçoit pas.
+    Un document envoyé en pièce jointe ne nous parviendrait pas — déposez-le avec le bouton
+    ci-dessus, il se rattache alors tout seul à votre dossier.
+  </p>
+`;
+
 const guestFooter = `
   <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
   <p style="color: #6b7280; font-size: 14px;">L'équipe DiscountCarteGrise</p>
@@ -270,7 +282,7 @@ const getEmailTemplate = (type: string, data: any) => {
               Déposer mon justificatif
             </a>
 
-            ${guestReplyBlock}
+            ${blocSansReponse}
             ${guestFooter}
           </div>
         `,
@@ -305,7 +317,13 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
-    case "piece_demandee":
+    // Même panne que « document_rejected » avant correction : ce courrier part
+    // à un GARAGE (DemanderPiece.tsx l'envoie à l'adresse du garage), et son
+    // bouton pointait vers /suivi/<référence>, la page des particuliers. Une
+    // référence de démarche n'y existe pas : le garage cliquait, ne trouvait
+    // rien, et renvoyait sa pièce en pièce jointe.
+    case "piece_demandee": {
+      const lienPiece = data.demarche_id ? `${baseUrl}/demarche/${data.demarche_id}` : trackingUrl;
       return {
         subject: `Il nous manque une pièce - ${data.tracking_number}`,
         html: `
@@ -321,15 +339,16 @@ const getEmailTemplate = (type: string, data: any) => {
 
             <p>Vos autres documents sont bien reçus, il n'y a rien à renvoyer. Un emplacement vous attend sur votre démarche pour déposer cette seule pièce.</p>
 
-            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
+            <a href="${lienPiece}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Déposer la pièce
             </a>
 
-            ${guestReplyBlock}
+            ${data.demarche_id ? blocSansReponse : guestReplyBlock}
             ${guestFooter}
           </div>
         `,
       };
+    }
 
     // Deux destinataires, deux courriers.
     //
@@ -562,7 +581,7 @@ const getEmailTemplate = (type: string, data: any) => {
               Déposer mon justificatif
             </a>
 
-            ${guestReplyBlock}
+            ${blocSansReponse}
             ${guestFooter}
           </div>
         `,
@@ -583,10 +602,13 @@ const getEmailTemplate = (type: string, data: any) => {
               </div>
             ` : ''}
 
-            <p>Si vous pensez qu'il s'agit d'une erreur, veuillez nous contacter.</p>
+            <p>Déposez des justificatifs conformes depuis votre espace : votre demande repart aussitôt en vérification.</p>
 
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="color: #6b7280; font-size: 14px;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
+            <a href="${baseUrl}/garage-settings?tab=verification" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
+              Déposer mes justificatifs
+            </a>
+
+            ${blocSansReponse}
           </div>
         `,
       };
@@ -1147,7 +1169,7 @@ const getEmailTemplate = (type: string, data: any) => {
             <a href="${data.lien}" style="display: inline-block; background-color: #0047AB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
               ${pro ? "Compléter ma démarche" : "Envoyer mes pièces"}
             </a>
-            ${guestReplyBlock}
+            ${data.audience === "pro" ? blocSansReponse : guestReplyBlock}
             ${guestFooter}
           </div>
         `,
@@ -1391,13 +1413,23 @@ const handler = async (req: Request): Promise<Response> => {
     // message sans que personne le sache. Le garage, lui, a un compte.
     const SANS_REPONSE = new Set([
       "new_message_notification",
+      // Les quatre courriers qui demandent quelque chose à un GARAGE. Tous
+      // portent un bouton vers l'endroit exact où déposer : laisser une adresse
+      // de réponse, c'est inviter à envoyer la pièce en pièce jointe, où elle
+      // ne se rattache à rien. Les garages ont un espace ; les particuliers,
+      // non — eux gardent leur réponse.
+      "kbis_a_renouveler",
+      "kbis_demande_demarche",
+      "account_rejected",
     ]);
 
     // « document_rejected » sert les deux publics : on tranche sur la donnée.
     // Un garage reçoit un lien vers sa démarche et aucune adresse de réponse ;
     // un particulier garde la sienne.
     const sansReponse = SANS_REPONSE.has(type) ||
-      (type === "document_rejected" && Boolean(data?.demarche_id));
+      // Ces deux-là servent les deux publics : on tranche sur la donnée.
+      ((type === "document_rejected" || type === "piece_demandee") && Boolean(data?.demarche_id)) ||
+      (type === "dossier_pieces_manquantes" && data?.audience === "pro");
 
     const { subject, html } = getEmailTemplate(type, data);
 
