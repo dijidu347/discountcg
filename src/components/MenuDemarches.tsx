@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { MENU_DEMARCHES } from "@/data/menuDemarches";
+import { MENU_DEMARCHES, type GroupeMenu } from "@/data/menuDemarches";
 
 export function MenuDemarchesBureau() {
   const [ouvert, setOuvert] = useState(false);
@@ -50,35 +50,56 @@ export function MenuDemarchesBureau() {
           className="fixed left-1/2 top-16 z-50 mt-1 max-h-[calc(100vh-5.5rem)] w-[min(94vw,980px)] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-background p-6 shadow-xl"
           role="menu"
         >
+          {/* Les trois groupes font 3, 6 et 12 entrées : une colonne par
+              groupe donnait une première colonne presque vide et une troisième
+              interminable. Les deux groupes courts s'empilent donc à gauche,
+              et le long s'étale sur les deux colonnes restantes. */}
           <div className="grid gap-x-8 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
-            {MENU_DEMARCHES.map((col) => (
-              <div key={col.titre}>
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  {col.titre} <span className="font-normal">({col.entrees.length})</span>
-                </p>
-                <ul className="space-y-0.5">
-                  {col.entrees.map((e) => {
-                    const Icone = e.icone;
-                    return (
-                      <li key={e.chemin}>
-                        <Link
-                          to={e.chemin}
-                          onClick={() => setOuvert(false)}
-                          className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-primary/5 hover:text-primary"
-                          role="menuitem"
-                        >
-                          <Icone className="h-4 w-4 shrink-0 text-primary" />
-                          {e.libelle}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+            <div className="space-y-6">
+              {MENU_DEMARCHES.filter((g) => !g.large).map((col) => (
+                <Groupe key={col.titre} groupe={col} onNaviguer={() => setOuvert(false)} />
+              ))}
+            </div>
+            {MENU_DEMARCHES.filter((g) => g.large).map((col) => (
+              <div key={col.titre} className="sm:col-span-1 lg:col-span-2">
+                <Groupe groupe={col} onNaviguer={() => setOuvert(false)} colonnes />
               </div>
             ))}
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function Groupe({ groupe, onNaviguer, colonnes }: {
+  groupe: GroupeMenu;
+  onNaviguer: () => void;
+  colonnes?: boolean;
+}) {
+  return (
+    <div>
+      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {groupe.titre} <span className="font-normal">({groupe.entrees.length})</span>
+      </p>
+      <ul className={colonnes ? "grid gap-x-8 gap-y-0.5 sm:grid-cols-2" : "space-y-0.5"}>
+        {groupe.entrees.map((e) => {
+          const Icone = e.icone;
+          return (
+            <li key={e.chemin}>
+              <Link
+                to={e.chemin}
+                onClick={onNaviguer}
+                className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm text-foreground hover:bg-primary/5 hover:text-primary"
+                role="menuitem"
+              >
+                <Icone className="h-4 w-4 shrink-0 text-primary" />
+                {e.libelle}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

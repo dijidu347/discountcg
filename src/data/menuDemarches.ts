@@ -38,6 +38,8 @@ export interface EntreeMenu {
 export interface GroupeMenu {
   titre: string;
   entrees: EntreeMenu[];
+  /** Groupe long : sa liste s'étale sur deux colonnes dans le panneau du bureau. */
+  large?: boolean;
 }
 
 export const MENU_DEMARCHES: GroupeMenu[] = [
@@ -62,6 +64,7 @@ export const MENU_DEMARCHES: GroupeMenu[] = [
   },
   {
     titre: "Autres démarches",
+    large: true,
     entrees: [
       { libelle: "Carte grise perdue ou volée", chemin: "/duplicata-carte-grise", icone: KeyRound },
       { libelle: "Déménagement", chemin: "/changement-adresse-carte-grise", icone: Home },
