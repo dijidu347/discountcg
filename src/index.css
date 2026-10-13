@@ -114,18 +114,24 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 
-  /* Le dégradé d'en-tête, sur toutes les pages du site.
+  /* Le fond dégradé, sur toutes les pages du site.
+     C'est celui du tableau de bord admin, repris tel quel : bleu de marque,
+     rouge de marque, puis le fond — en diagonale, et attaché à la fenêtre pour
+     couvrir la page entière quelle que soit sa longueur. Les cartes restent
+     blanches et opaques par-dessus : c'est le contraste entre les deux qui
+     donne le relief.
+
      Posé ici et non page par page : les trente-cinq pages publiques portent la
      même enveloppe `min-h-screen bg-background`, et une page ajoutée demain
-     l'aura sans qu'on y pense. La couleur de fond reste — c'est elle qui tient
-     sous le dégradé et dans le thème sombre ; le dégradé se peint par-dessus,
-     sans se répéter, et s'éteint au bout de trente rem. */
+     l'aura sans qu'on y pense. La couleur de fond reste dessous, c'est elle
+     qui tient dans le thème sombre. */
   .min-h-screen.bg-background {
     background-image: linear-gradient(
-      to bottom,
-      hsl(var(--primary) / 0.12),
-      hsl(var(--background)) 30rem
+      to bottom right,
+      hsl(var(--primary) / 0.05),
+      hsl(var(--france-red) / 0.05),
+      hsl(var(--background))
     );
-    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 }
