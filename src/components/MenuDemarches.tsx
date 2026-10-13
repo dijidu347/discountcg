@@ -12,7 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown } from "lucide-react";
-import { MENU_DEMARCHES, lienDuMenu, type GroupeMenu } from "@/data/menuDemarches";
+import { MENU_DEMARCHES, MENU_PRIX, lienDuMenu, type GroupeMenu } from "@/data/menuDemarches";
 
 export function MenuDemarchesBureau() {
   const [ouvert, setOuvert] = useState(false);
@@ -131,6 +131,88 @@ export function MenuDemarchesMobile({ onNaviguer }: { onNaviguer: () => void }) 
           </ul>
         </div>
       ))}
+    </div>
+  );
+}
+
+/** L'onglet « Prix » : deux pages, le simulateur et l'index départemental. */
+export function MenuPrixBureau() {
+  const [ouvert, setOuvert] = useState(false);
+  const fermeture = useRef<number>();
+
+  const garder = () => { window.clearTimeout(fermeture.current); setOuvert(true); };
+  const relacher = () => { fermeture.current = window.setTimeout(() => setOuvert(false), 120); };
+
+  useEffect(() => {
+    const auClavier = (e: KeyboardEvent) => e.key === "Escape" && setOuvert(false);
+    document.addEventListener("keydown", auClavier);
+    return () => document.removeEventListener("keydown", auClavier);
+  }, []);
+
+  return (
+    <div className="relative" onMouseEnter={garder} onMouseLeave={relacher}>
+      <button
+        onClick={() => setOuvert((v) => !v)}
+        aria-expanded={ouvert}
+        aria-haspopup="true"
+        className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-foreground transition-all duration-200 hover:bg-primary/10 hover:text-primary"
+      >
+        Prix
+        <ChevronDown className={`h-4 w-4 transition-transform ${ouvert ? "rotate-180" : ""}`} />
+      </button>
+
+      {ouvert && (
+        <div
+          className="absolute left-1/2 top-full z-50 mt-1 w-64 -translate-x-1/2 rounded-xl border border-border bg-background p-2 shadow-xl"
+          role="menu"
+        >
+          <ul>
+            {MENU_PRIX.map((e) => {
+              const Icone = e.icone;
+              return (
+                <li key={e.chemin}>
+                  <Link
+                    to={e.chemin}
+                    onClick={() => setOuvert(false)}
+                    className="flex items-center gap-2.5 rounded-md px-2 py-2 text-sm text-foreground hover:bg-primary/5 hover:text-primary"
+                    role="menuitem"
+                  >
+                    <Icone className="h-4 w-4 shrink-0 text-primary" />
+                    {e.libelle}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MenuPrixMobile({ onNaviguer }: { onNaviguer: () => void }) {
+  return (
+    <div>
+      <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Prix
+      </p>
+      <ul>
+        {MENU_PRIX.map((e) => {
+          const Icone = e.icone;
+          return (
+            <li key={e.chemin}>
+              <Link
+                to={e.chemin}
+                onClick={onNaviguer}
+                className="flex items-center gap-2.5 py-1.5 text-sm text-foreground transition-colors hover:text-primary"
+              >
+                <Icone className="h-4 w-4 shrink-0 text-primary" />
+                {e.libelle}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

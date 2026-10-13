@@ -33,6 +33,7 @@ const Simulateur = React.lazy(() => import("./pages/Simulateur"));
 const ResultatCarteGrise = React.lazy(() => import("./pages/ResultatCarteGrise"));
 const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
 const DemarrerDemarche = React.lazy(() => import("./pages/DemarrerDemarche"));
+const CommanderCarteGrise = React.lazy(() => import("./pages/CommanderCarteGrise"));
 const MajiConcepts = React.lazy(() => import("./pages/MajiConcepts"));
 const AdminDashboard = React.lazy(() => import("./pages/admin/AdminDashboard"));
 const AllDemarches = React.lazy(() => import("./pages/admin/AllDemarches"));
@@ -140,6 +141,7 @@ const App = () => (
           <Route path="/resultat-carte-grise" element={<ResultatCarteGrise />} />
           <Route path="/demarche-simple" element={<DemarcheSimple />} />
           <Route path="/demarrer/:code" element={<DemarrerDemarche />} />
+          <Route path="/commander-carte-grise" element={<CommanderCarteGrise />} />
         <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
         <Route path="/paiement/:orderId" element={<PaiementGuestOrder />} />
         <Route path="/merci/:trackingNumber" element={<MerciGuestOrder />} />

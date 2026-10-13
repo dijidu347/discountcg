@@ -32,8 +32,12 @@ export async function destinationDeLaDemarche(code: string): Promise<Destination
       : { chemin: "/register" };
   }
 
+  // Le prix comprend la taxe régionale : il faut la plaque et le département
+  // avant de pouvoir afficher une commande payable. On passe donc par une page
+  // de commande dépouillée, et non par `/simulateur`, qui est une page de prix
+  // suivie de quatre sections de contenu.
   if (CG_TYPES.includes(code)) {
-    return { chemin: `/simulateur?type=${code}` };
+    return { chemin: `/commander-carte-grise?type=${code}` };
   }
 
   const { data: typeData } = await supabase

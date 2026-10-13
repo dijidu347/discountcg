@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { AVIS_GROUPE, noteEnFrancais } from "@/data/avisGroupe";
-import { MenuDemarchesBureau, MenuDemarchesMobile } from "@/components/MenuDemarches";
+import { MenuDemarchesBureau, MenuDemarchesMobile, MenuPrixBureau, MenuPrixMobile } from "@/components/MenuDemarches";
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
@@ -56,9 +56,7 @@ const Navbar = () => {
           {/* Navigation - Desktop */}
           <div className="hidden md:flex items-center gap-4">
             <MenuDemarchesBureau />
-            <button onClick={() => navigate("/simulateur")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
-              Prix
-            </button>
+            <MenuPrixBureau />
             <button onClick={() => navigate("/recherche-suivi")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Suivi
             </button>
@@ -102,22 +100,16 @@ const Navbar = () => {
               </Button>
             </div>
 
-            <div className="flex gap-2">
-              <button onClick={() => {
-          setIsOpen(false);
-          navigate("/simulateur");
-        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
-                Prix
-              </button>
-              <button onClick={() => {
+            <button onClick={() => {
           setIsOpen(false);
           navigate("/recherche-suivi");
-        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
-                Suivi
-              </button>
-            </div>
+        }} className="w-full rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
+              Suivre mon dossier
+            </button>
 
             <MenuDemarchesMobile onNaviguer={() => setIsOpen(false)} />
+
+            <MenuPrixMobile onNaviguer={() => setIsOpen(false)} />
 
             {AVIS_GROUPE && (
               <a
