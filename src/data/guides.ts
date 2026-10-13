@@ -36,8 +36,8 @@ export const GUIDES: GroupeGuides[] = [
       "Le vendeur déclare la cession, l'acheteur fait établir la carte grise à son nom dans le mois. Ces cinq pages couvrent la vente d'occasion de bout en bout.",
     guides: [
       parSlug("carte-grise", "Changement de titulaire"),
-      parSlug("declaration-cession"),
-      parSlug("declaration-achat"),
+      parSlug("declaration-cession", "Déclaration de cession"),
+      parSlug("declaration-achat", "Déclaration d'achat"),
       parSlug("annuler-declaration-cession", "Annuler une cession ou un achat"),
       {
         libelle: "Certificat de non-gage",
@@ -69,7 +69,7 @@ export const GUIDES: GroupeGuides[] = [
       parSlug("quitus-fiscal", "Certificat 846 A, quitus fiscal"),
       parSlug("immatriculation-ww-provisoire", "Plaque WW provisoire"),
       parSlug("annulation-cpi-ww", "Annuler un CPI WW"),
-      parSlug("immatriculation-definitive"),
+      parSlug("immatriculation-definitive", "Immatriculation définitive"),
       parSlug("immatriculation-cyclomoteur", "Scooter, cyclomoteur"),
       parSlug("fiche-identification-vehicule", "Fiche d'identification"),
     ],

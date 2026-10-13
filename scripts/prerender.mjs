@@ -1306,8 +1306,34 @@ async function principal() {
           blocs: [
             `<p>Ce qui change vraiment pour votre carte grise. Chaque article cite le texte officiel sur lequel il s'appuie.</p>`,
             `<h2>Les articles</h2><ul>${listeArticles}</ul>`,
-            `<h2>Nos guides pratiques</h2>`,
+            `<p><a href="${BASE}/guides">Nos guides pratiques</a> : les pièces à fournir, les délais et les prix, démarche par démarche.</p>`,
+          ],
+        }),
+      })
+    );
+    ecrites++;
+
+    await ecrire(
+      "/guides",
+      appliquer(gabarit, {
+        titre: "Nos guides pratiques : toutes les démarches expliquées",
+        description:
+          "Les pièces à fournir, les délais et les prix, démarche par démarche : vente, déménagement, succession, duplicata, import, deux-roues, professionnels.",
+        canonical: `${BASE}/guides`,
+        schemas: [
+          {
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "Nos guides pratiques",
+            url: `${BASE}/guides`,
+          },
+        ],
+        html: corps({
+          h1: "Nos guides pratiques",
+          blocs: [
+            `<p>Les pièces à fournir, les délais et les prix, démarche par démarche.</p>`,
             listeGuides,
+            `<p><a href="${BASE}/blog">Le blog</a> publie l'actualité réglementaire de la carte grise.</p>`,
           ],
         }),
       })
@@ -1374,6 +1400,7 @@ async function principal() {
       })),
       // Le blog : l'index bouge à chaque parution, les articles plus jamais.
       { loc: "/blog", priorite: "0.8", frequence: "weekly" },
+      { loc: "/guides", priorite: "0.8", frequence: "monthly" },
       ...articlesBlog.map((a) => ({
         loc: `/blog/${a.slug}`,
         priorite: "0.7",

@@ -27,7 +27,7 @@ const Navbar = () => {
           </button>
 
           {/* Stats centrées - Desktop */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden xl:flex items-center gap-8">
             {/* La note est celle de l'atelier du groupe, pas de ce service : elle
                 est donc nommée, chiffrée et cliquable. Sans source vérifiable,
                 on n'affiche rien — voir src/data/avisGroupe.ts. */}
@@ -57,6 +57,9 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-4">
             <MenuDemarchesBureau />
             <MenuPrixBureau />
+            <button onClick={() => navigate("/guides")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
+              Guides
+            </button>
             <button onClick={() => navigate("/blog")} className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-primary/10 rounded-md transition-all duration-200">
               Blog
             </button>
@@ -104,6 +107,12 @@ const Navbar = () => {
             </div>
 
             <div className="flex gap-2">
+              <button onClick={() => {
+          setIsOpen(false);
+          navigate("/guides");
+        }} className="flex-1 rounded-md border border-border py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary">
+                Guides
+              </button>
               <button onClick={() => {
           setIsOpen(false);
           navigate("/blog");

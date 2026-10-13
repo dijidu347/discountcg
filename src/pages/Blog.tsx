@@ -1,9 +1,8 @@
 // `/blog` : l'actualité de la carte grise, et l'index des guides du site.
 //
-// Deux publics sur une page. En haut, les articles datés — ce qui change dans
-// la réglementation, vérifié à la source. En bas, les vingt-et-un guides du
-// site, rangés par sujet : depuis que le menu « Démarches » mène droit au
-// formulaire, c'est ici qu'on les retrouve en naviguant.
+// Des articles datés, et rien d'autre : ce qui change dans la réglementation,
+// vérifié à la source. Les guides du site ont leur propre onglet — ils ne sont
+// pas de l'actualité, et les mêler ici brouillait les deux.
 
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -11,7 +10,6 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ARTICLES_TRIES, COULEURS_CATEGORIE, dateEnFrancais, type Article } from "@/data/articles";
-import { GUIDES } from "@/data/guides";
 
 function Etiquette({ categorie }: { categorie: string }) {
   return (
@@ -120,37 +118,13 @@ export default function Blog() {
           </section>
         </div>
 
-        <section className="mt-16 border-t border-border pt-12">
-          <h2 className="text-2xl font-bold text-foreground">Nos guides pratiques</h2>
-          <p className="mt-2 max-w-2xl text-muted-foreground">
-            Les pièces à fournir, les délais et les prix, démarche par démarche.
-          </p>
-
-          <div className="mt-8 grid gap-10 md:grid-cols-2">
-            {GUIDES.map((groupe) => (
-              <div key={groupe.titre}>
-                <h3 className="text-lg font-bold text-foreground">{groupe.titre}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{groupe.intro}</p>
-                <ul className="mt-4 space-y-3">
-                  {groupe.guides.map((g) => (
-                    <li key={g.chemin}>
-                      <Link
-                        to={g.chemin}
-                        className="group block rounded-lg border border-border p-3 transition-colors hover:border-primary/40 hover:bg-primary/5"
-                      >
-                        <span className="flex items-center gap-1 font-semibold text-foreground group-hover:text-primary">
-                          {g.libelle}
-                          <ChevronRight className="h-4 w-4 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
-                        </span>
-                        <span className="mt-0.5 block text-sm text-muted-foreground">{g.resume}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
+        <p className="mt-14 border-t border-border pt-8 text-center text-muted-foreground">
+          Vous cherchez plutôt les pièces à fournir ou les délais d'une démarche ?{" "}
+          <Link to="/guides" className="font-semibold text-primary hover:underline">
+            Voir nos guides pratiques
+          </Link>
+          .
+        </p>
       </main>
 
       <Footer />

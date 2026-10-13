@@ -34,6 +34,7 @@ const ResultatCarteGrise = React.lazy(() => import("./pages/ResultatCarteGrise")
 const DemarcheSimple = React.lazy(() => import("./pages/DemarcheSimple"));
 const DemarrerDemarche = React.lazy(() => import("./pages/DemarrerDemarche"));
 const CommanderCarteGrise = React.lazy(() => import("./pages/CommanderCarteGrise"));
+const Guides = React.lazy(() => import("./pages/Guides"));
 const Blog = React.lazy(() => import("./pages/Blog"));
 const ArticleBlog = React.lazy(() => import("./pages/ArticleBlog"));
 const MajiConcepts = React.lazy(() => import("./pages/MajiConcepts"));
@@ -144,6 +145,7 @@ const App = () => (
           <Route path="/demarche-simple" element={<DemarcheSimple />} />
           <Route path="/demarrer/:code" element={<DemarrerDemarche />} />
           <Route path="/commander-carte-grise" element={<CommanderCarteGrise />} />
+          <Route path="/guides" element={<Guides />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<ArticleBlog />} />
         <Route path="/commander/:orderId" element={<CommanderSansCompte />} />
