@@ -17,7 +17,7 @@ import { SELON_L_HERITIER, PREUVES_QUALITE, REPERES_SUCCESSION } from "@/data/su
 
 export function ContenuSuccession() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <Euro className="w-7 h-7 text-primary" />
@@ -83,7 +83,7 @@ export function ContenuSuccession() {
         </div>
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_SUCCESSION.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

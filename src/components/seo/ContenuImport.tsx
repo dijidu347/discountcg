@@ -8,14 +8,14 @@
 // Un seul composant pour les deux pages, pour qu'elles ne divergent pas.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import { Route, Info, ChevronRight } from "lucide-react";
 import { ETAPES_IMPORTATION, REPERES_IMPORT } from "@/data/importReperes";
+import { FaitsEnCartes } from "@/components/seo/FaitsEnCartes";
 
 export function ContenuImport({ depuis }: { depuis: "ww" | "definitive" }) {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <Route className="w-7 h-7 text-primary" />
@@ -25,31 +25,13 @@ export function ContenuImport({ depuis }: { depuis: "ww" | "definitive" }) {
           Importer un véhicule se fait en trois temps. Le montant total ne dépend pas du nombre
           d'étapes : la taxe régionale n'est due qu'une fois.
         </p>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[250px]">Étape</TableHead>
-                  <TableHead className="min-w-[300px]">Ce que vous payez</TableHead>
-                  <TableHead className="min-w-[280px]">Ce que vous obtenez</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {ETAPES_IMPORTATION.map((e) => (
-                  <TableRow key={e.etape}>
-                    <TableCell className="font-medium align-top">{e.etape}</TableCell>
-                    <TableCell className="align-top">{e.paye}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{e.obtient}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <FaitsEnCartes colonnes={3} faits={ETAPES_IMPORTATION.map((e) => ({
+            titre: e.etape,
+            champs: [{ libelle: "Ce que vous payez", valeur: e.paye, fort: true }, { libelle: "Ce que vous obtenez", valeur: e.obtient }],
+          }))} />
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_IMPORT.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

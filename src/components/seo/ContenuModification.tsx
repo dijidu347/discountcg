@@ -5,45 +5,25 @@
 // était dispersée dans sept questions ; elle se range en tableau.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Wrench, Info } from "lucide-react";
 import { SELON_LA_MODIFICATION, REPERES_MODIFICATION } from "@/data/modificationReperes";
+import { FaitsEnCartes } from "@/components/seo/FaitsEnCartes";
 
 export function ContenuModification() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <Wrench className="w-7 h-7 text-primary" />
           Ce qu'on vous demandera, selon la modification
         </h2>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[280px]">Votre modification</TableHead>
-                  <TableHead className="min-w-[250px]">La preuve exigée</TableHead>
-                  <TableHead className="min-w-[220px]">Délivrée par</TableHead>
-                  <TableHead className="min-w-[140px]">Délai</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {SELON_LA_MODIFICATION.map((l) => (
-                  <TableRow key={l.modification}>
-                    <TableCell className="font-medium align-top">{l.modification}</TableCell>
-                    <TableCell className="align-top">{l.preuve}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{l.delivrePar}</TableCell>
-                    <TableCell className="align-top text-primary font-medium">{l.delai}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <FaitsEnCartes colonnes={3} faits={SELON_LA_MODIFICATION.map((l) => ({
+            titre: l.modification,
+            champs: [{ libelle: "La preuve exigée", valeur: l.preuve }, { libelle: "Délivrée par", valeur: l.delivrePar }, { libelle: "Délai", valeur: l.delai, fort: true }],
+          }))} />
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_MODIFICATION.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

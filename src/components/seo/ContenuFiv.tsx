@@ -13,7 +13,7 @@ import { CAS_FIV, NE_PAS_CONFONDRE, REPERES_FIV } from "@/data/fivReperes";
 
 export function ContenuFiv() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <ClipboardList className="w-7 h-7 text-primary" />
@@ -70,7 +70,7 @@ export function ContenuFiv() {
         </div>
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_FIV.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

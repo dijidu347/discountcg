@@ -7,46 +7,26 @@
 // part.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import { Home, Info, ChevronRight } from "lucide-react";
 import { CAS_ADRESSE, REPERES_ADRESSE } from "@/data/adresseReperes";
+import { FaitsEnCartes } from "@/components/seo/FaitsEnCartes";
 
 export function ContenuAdresse() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <Home className="w-7 h-7 text-primary" />
           Ce que vous recevez dépend de votre numéro, pas de votre déménagement
         </h2>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[260px]">Votre situation</TableHead>
-                  <TableHead className="min-w-[240px]">Ce que vous recevez</TableHead>
-                  <TableHead className="min-w-[90px]">Taxes</TableHead>
-                  <TableHead className="min-w-[230px]">À prévoir</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {CAS_ADRESSE.map((c) => (
-                  <TableRow key={c.situation}>
-                    <TableCell className="font-medium align-top">{c.situation}</TableCell>
-                    <TableCell className="align-top">{c.recoit}</TableCell>
-                    <TableCell className="align-top font-medium tabular-nums">{c.taxes}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{c.aPrevoir}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <FaitsEnCartes colonnes={3} faits={CAS_ADRESSE.map((c) => ({
+            titre: c.situation,
+            champs: [{ libelle: "Ce que vous recevez", valeur: c.recoit }, { libelle: "Taxes", valeur: c.taxes, fort: true }, { libelle: "À prévoir", valeur: c.aPrevoir }],
+          }))} />
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_ADRESSE.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

@@ -6,14 +6,14 @@
 // l'acheteur n'a pas réclamé au vendeur le jour de la vente.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "react-router-dom";
 import { KeyRound, Info, ChevronRight } from "lucide-react";
 import { A_RECLAMER_AU_VENDEUR, REPERES_CARTE_GRISE } from "@/data/carteGriseReperes";
+import { FaitsEnCartes } from "@/components/seo/FaitsEnCartes";
 
 export function ContenuCarteGrise() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <KeyRound className="w-7 h-7 text-primary" />
@@ -24,31 +24,13 @@ export function ContenuCarteGrise() {
           que personne n'a demandée au moment de la remise des clés — et qu'il faut aller rechercher
           des semaines plus tard, quand le vendeur ne répond plus.
         </p>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[230px]">La pièce</TableHead>
-                  <TableHead className="min-w-[320px]">Ce qu'elle doit porter</TableHead>
-                  <TableHead className="min-w-[300px]">Si elle manque</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {A_RECLAMER_AU_VENDEUR.map((p) => (
-                  <TableRow key={p.piece}>
-                    <TableCell className="font-medium align-top">{p.piece}</TableCell>
-                    <TableCell className="align-top">{p.precision}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{p.siElleManque}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <FaitsEnCartes colonnes={3} faits={A_RECLAMER_AU_VENDEUR.map((p) => ({
+            titre: p.piece,
+            champs: [{ libelle: "Ce qu'elle doit porter", valeur: p.precision }, { libelle: "Si elle manque", valeur: p.siElleManque, fort: true }],
+          }))} />
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_CARTE_GRISE.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

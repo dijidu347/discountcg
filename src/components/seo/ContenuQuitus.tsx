@@ -11,13 +11,13 @@
 // la page montre la suite du parcours, qui est, elle, de notre ressort.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Globe, Route, Info } from "lucide-react";
 import { SELON_L_ORIGINE, PARCOURS_IMPORT, REPERES_QUITUS } from "@/data/quitusReperes";
+import { FaitsEnCartes } from "@/components/seo/FaitsEnCartes";
 
 export function ContenuQuitus() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <Globe className="w-7 h-7 text-primary" />
@@ -27,30 +27,10 @@ export function ContenuQuitus() {
           C'est la confusion la plus répandue, et elle fait perdre des semaines : les deux documents
           n'ont ni le même objet, ni le même guichet.
         </p>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[250px]">Le véhicule vient de</TableHead>
-                  <TableHead className="min-w-[200px]">Le justificatif</TableHead>
-                  <TableHead className="min-w-[200px]">Délivré par</TableHead>
-                  <TableHead className="min-w-[220px]">La TVA</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {SELON_L_ORIGINE.map((c) => (
-                  <TableRow key={c.origine}>
-                    <TableCell className="font-medium align-top">{c.origine}</TableCell>
-                    <TableCell className="align-top text-primary font-medium">{c.justificatif}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{c.delivrePar}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{c.tva}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <FaitsEnCartes colonnes={3} faits={SELON_L_ORIGINE.map((c) => ({
+            titre: c.origine,
+            champs: [{ libelle: "Le justificatif", valeur: c.justificatif, fort: true }, { libelle: "Délivré par", valeur: c.delivrePar }, { libelle: "La TVA", valeur: c.tva }],
+          }))} />
       </section>
 
       <section>
@@ -75,7 +55,7 @@ export function ContenuQuitus() {
         </ol>
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_QUITUS.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

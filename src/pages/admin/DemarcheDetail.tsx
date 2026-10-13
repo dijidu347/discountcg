@@ -541,10 +541,16 @@ export default function DemarcheDetail() {
               to: garage.email,
               data: {
                 tracking_number: demarche.numero_demarche || demarche.id,
+                // Sa présence fait basculer le courrier en version garage :
+                // bouton vers la démarche, et aucune adresse de réponse.
+                demarche_id: demarche.id,
                 nom: garage.raison_sociale,
                 prenom: '',
                 rejectedDocuments: [{
-                  nom: docData?.type_document || 'Document',
+                  // Le garage recevait « doc_5 », le rang brut de la pièce en
+                  // base, qui ne lui dit rien. `documentLabels` porte le nom
+                  // réel — le même que celui affiché à l'écran.
+                  nom: documentLabels[docData?.type_document ?? ''] || docData?.type_document || 'Document',
                   raison: comment
                 }]
               }

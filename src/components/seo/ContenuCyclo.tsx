@@ -10,43 +10,25 @@
 // jamais été immatriculé n'y figure pas.
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bike, Info } from "lucide-react";
 import { CAS_CYCLO, REPERES_CYCLO } from "@/data/cycloReperes";
+import { FaitsEnCartes } from "@/components/seo/FaitsEnCartes";
 
 export function ContenuCyclo() {
   return (
-    <div className="container mx-auto px-4 py-12 border-t space-y-16">
+    <div className="container mx-auto max-w-5xl px-4 py-12 border-t space-y-16">
       <section>
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 flex items-center gap-3">
           <Bike className="w-7 h-7 text-primary" />
           Trois situations, et une seule qui bloque
         </h2>
-        <div className="border rounded-lg overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="min-w-[250px]">Votre cyclomoteur</TableHead>
-                  <TableHead className="min-w-[260px]">La pièce qui compte</TableHead>
-                  <TableHead className="min-w-[200px]">La difficulté</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {CAS_CYCLO.map((c) => (
-                  <TableRow key={c.situation}>
-                    <TableCell className="font-medium align-top">{c.situation}</TableCell>
-                    <TableCell className="align-top">{c.piecePrincipale}</TableCell>
-                    <TableCell className="align-top text-muted-foreground">{c.difficulte}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <FaitsEnCartes colonnes={3} faits={CAS_CYCLO.map((c) => ({
+            titre: c.situation,
+            champs: [{ libelle: "La pièce qui compte", valeur: c.piecePrincipale }, { libelle: "La difficulté", valeur: c.difficulte, fort: true }],
+          }))} />
       </section>
 
-      <section className="space-y-6">
+      <section className="grid items-start gap-4 md:grid-cols-2">
         {REPERES_CYCLO.map((r) => (
           <Card key={r.titre}>
             <CardHeader className="pb-3">

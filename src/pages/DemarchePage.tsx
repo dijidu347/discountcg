@@ -206,39 +206,83 @@ const DemarchePage = () => {
         </ol>
       </nav>
 
-      {/* Hero Section */}
+      {/* L'en-tête.
+
+          Il tenait dans une colonne de 768 pixels au milieu d'un conteneur
+          bien plus large : sur un écran de bureau, la moitié droite restait
+          vide et la page paraissait de travers.
+
+          Deux colonnes à partir du grand écran. Le texte garde sa largeur de
+          lecture — l'étirer sur 1 400 pixels donnerait des lignes de cent
+          cinquante caractères, illisibles — et la place rendue sert à un
+          résumé : le délai, le nombre de pièces, ce qu'on reçoit. Ce sont les
+          trois questions qu'on se pose avant de cliquer, et elles étaient
+          jusqu'ici dispersées plus bas dans la page. */}
       <section className="container mx-auto px-4 py-12 md:py-16">
-        <div className="max-w-3xl">
-          <div className="flex flex-wrap gap-2 mb-6">
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Shield className="h-3 w-3" />
-              Agréé par l'État
-            </Badge>
-            <Badge variant="secondary" className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Traitement {demarche.delai}
-            </Badge>
+        <div className="mx-auto grid max-w-5xl gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start lg:gap-14">
+          <div>
+            <div className="flex flex-wrap gap-2 mb-6">
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                Agréé par l'État
+              </Badge>
+              <Badge variant="secondary" className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Traitement {demarche.delai}
+              </Badge>
+            </div>
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight">
+              {demarche.h1}
+            </h1>
+            <p className="text-lg text-muted-foreground mb-8 max-w-2xl">{demarche.description}</p>
+            <div className="flex flex-col items-start gap-3">
+              <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
+                {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                {libelleBouton}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              {reserveePro && (
+                <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Réservé aux professionnels</Badge>
+              )}
+            </div>
           </div>
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight">
-            {demarche.h1}
-          </h1>
-          <p className="text-lg text-muted-foreground mb-8">{demarche.description}</p>
-          <div className="flex flex-col items-start gap-3">
-            <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
-              {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-              {libelleBouton}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            {reserveePro && (
-              <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Réservé aux professionnels</Badge>
-            )}
-          </div>
+
+          <aside className="rounded-xl border bg-card p-6 lg:sticky lg:top-24">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              En bref
+            </p>
+            <dl className="mt-4 space-y-4">
+              <div>
+                <dt className="text-sm text-muted-foreground">Délai de traitement</dt>
+                <dd className="text-lg font-semibold text-foreground">{demarche.delai}</dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Pièces à fournir</dt>
+                <dd className="text-lg font-semibold text-foreground">
+                  {demarche.documents.length}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">
+                    document{demarche.documents.length > 1 ? "s" : ""}
+                  </span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-sm text-muted-foreground">Comment ça se passe</dt>
+                <dd className="text-lg font-semibold text-foreground">
+                  {demarche.steps.length}
+                  <span className="ml-1 text-sm font-normal text-muted-foreground">étapes</span>
+                </dd>
+              </div>
+            </dl>
+            <p className="mt-5 border-t pt-4 text-sm text-muted-foreground">
+              Habilitation préfecture n° 285046 · agrément Trésor public n° 63198
+            </p>
+          </aside>
         </div>
       </section>
 
       {/* Long Description */}
       <section className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
             {demarche.title} : de quoi s'agit-il ?
           </h2>
@@ -293,7 +337,7 @@ const DemarchePage = () => {
       {/* SEO Content */}
       {demarche.seoContent && (
         <section className="container mx-auto px-4 py-12 border-t">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-5xl">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
               Tout savoir sur votre {demarche.shortTitle.toLowerCase()}
             </h2>
@@ -323,7 +367,7 @@ const DemarchePage = () => {
       {/* Documents Section */}
       <section className="bg-muted/50 py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-5xl">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
               Documents nécessaires
             </h2>
@@ -343,7 +387,7 @@ const DemarchePage = () => {
 
       {/* Steps Section */}
       <section className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
             Comment effectuer votre {demarche.shortTitle.toLowerCase()} en ligne ?
           </h2>
@@ -363,7 +407,7 @@ const DemarchePage = () => {
       {/* Prix Section */}
       <section className="bg-muted/50 py-12">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl">
+          <div className="mx-auto max-w-5xl">
             <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
               Tarif de votre {demarche.shortTitle.toLowerCase()}
             </h2>
@@ -403,7 +447,7 @@ const DemarchePage = () => {
 
       {/* Delai Section */}
       <section className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
             Délai de traitement
           </h2>
@@ -428,7 +472,7 @@ const DemarchePage = () => {
       {demarche.faqs.length > 0 && (
         <section className="bg-muted/50 py-12">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl">
+            <div className="mx-auto max-w-5xl">
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
                 Questions fréquentes — {demarche.title}
               </h2>
@@ -451,7 +495,7 @@ const DemarchePage = () => {
 
       {/* Avantages Section */}
       <section className="container mx-auto px-4 py-12">
-        <div className="max-w-3xl">
+        <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
             Pourquoi choisir Discount Carte Grise ?
           </h2>
@@ -498,7 +542,7 @@ const DemarchePage = () => {
 
       {/* Related Demarches */}
       <section className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl">
+        <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
             Autres démarches
           </h2>

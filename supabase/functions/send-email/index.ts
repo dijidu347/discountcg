@@ -331,15 +331,29 @@ const getEmailTemplate = (type: string, data: any) => {
         `,
       };
 
-    case "document_rejected":
+    // Deux destinataires, deux courriers.
+    //
+    // Un garage a un espace : son bouton doit le ramener SUR SA DÉMARCHE, et il
+    // ne doit pas pouvoir répondre. Un particulier n'a que le suivi public et
+    // son courriel — on lui garde la réponse.
+    //
+    // Jusqu'ici les deux recevaient le même : bouton « Accéder à mon suivi »
+    // vers /suivi/<numéro>, qui est la page des PARTICULIERS. Un numéro de
+    // démarche (DEM-2026-…) n'y existe pas : le garage cliquait, ne trouvait
+    // rien, et renvoyait son document en pièce jointe par courriel — ce qui
+    // est exactement ce qu'on observait. Le bloc « Répondez directement à ce
+    // mail » l'y invitait en prime.
+    case "document_rejected": {
+      const versGarage = Boolean(data.demarche_id);
+      const lien = versGarage ? `${baseUrl}/demarche/${data.demarche_id}` : trackingUrl;
       return {
         subject: `⚠️ Documents à fournir - ${data.tracking_number}`,
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #ef4444;">Documents à corriger</h1>
             <p>Bonjour ${data.prenom} ${data.nom},</p>
-            <p>Certains documents nécessitent votre attention pour la commande <strong>${data.tracking_number}</strong>.</p>
-            
+            <p>Certains documents nécessitent votre attention pour ${versGarage ? "la démarche" : "la commande"} <strong>${data.tracking_number}</strong>.</p>
+
             <div style="background-color: #fef2f2; border-left: 4px solid #ef4444; padding: 16px; margin: 20px 0;">
               <h3 style="margin-top: 0; color: #991b1b;">Documents concernés :</h3>
               <ul style="margin: 0; padding-left: 20px;">
@@ -347,21 +361,26 @@ const getEmailTemplate = (type: string, data: any) => {
                   <li style="margin: 8px 0;">
                     <strong>${doc.nom}:</strong> ${doc.raison}
                   </li>
-                `).join('') || '<li>Voir le détail sur votre espace de suivi</li>'}
+                `).join('') || '<li>Voir le détail sur votre espace</li>'}
               </ul>
             </div>
 
-            <p>Veuillez télécharger les documents corrigés via votre espace de suivi :</p>
-
-            <a href="${trackingUrl}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
-              Accéder à mon suivi
+            <a href="${lien}" style="display: inline-block; background-color: #3b82f6; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
+              ${versGarage ? "Corriger mes documents" : "Accéder à mon suivi"}
             </a>
 
-            ${guestReplyBlock}
+            ${versGarage ? `
+              <p style="margin: 16px 0 0; color: #b45309; font-size: 14px;">
+                <strong>Ne répondez pas à cet e-mail</strong> : il part d'une adresse qui ne reçoit pas.
+                Un document envoyé en pièce jointe ne nous parviendrait pas — déposez-le avec le bouton
+                ci-dessus, il se rattache alors tout seul à la bonne pièce de votre dossier.
+              </p>
+            ` : guestReplyBlock}
             ${guestFooter}
           </div>
         `,
       };
+    }
 
     case "completed":
       return {
@@ -1374,6 +1393,12 @@ const handler = async (req: Request): Promise<Response> => {
       "new_message_notification",
     ]);
 
+    // « document_rejected » sert les deux publics : on tranche sur la donnée.
+    // Un garage reçoit un lien vers sa démarche et aucune adresse de réponse ;
+    // un particulier garde la sienne.
+    const sansReponse = SANS_REPONSE.has(type) ||
+      (type === "document_rejected" && Boolean(data?.demarche_id));
+
     const { subject, html } = getEmailTemplate(type, data);
 
     // Préparer les pièces jointes si présentes
@@ -1384,7 +1409,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: customFrom || "DiscountCarteGrise <noreply@discountcartegrise.fr>",
-      reply_to: customFrom || SANS_REPONSE.has(type) ? undefined : "contact@discountcartegrise.fr",
+      reply_to: customFrom || sansReponse ? undefined : "contact@discountcartegrise.fr",
       to: to,
       cc: cc || undefined,
       subject: subject,
