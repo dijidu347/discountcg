@@ -44,6 +44,8 @@ export function NoteInterne({ demarcheId }: { demarcheId: string }) {
   const [chargement, setChargement] = useState(true);
   const [edition, setEdition] = useState(false);
   const [enregistrement, setEnregistrement] = useState(false);
+  // La suppression se confirme : une note effacée ne se retrouve nulle part.
+  const [confirmeSuppression, setConfirmeSuppression] = useState(false);
   const [contenu, setContenu] = useState("");
   const [auteur, setAuteur] = useState(() => {
     try { return localStorage.getItem(CLE_PRENOM) ?? ""; } catch { return ""; }
@@ -111,6 +113,7 @@ export function NoteInterne({ demarcheId }: { demarcheId: string }) {
     setNote(null);
     setContenu("");
     setEdition(false);
+    setConfirmeSuppression(false);
   };
 
   const signature = note
@@ -120,20 +123,33 @@ export function NoteInterne({ demarcheId }: { demarcheId: string }) {
     : null;
 
   return (
-    <Card className="border-amber-200 bg-amber-50/40 dark:border-amber-900 dark:bg-amber-950/20">
+    <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <StickyNote className="h-4 w-4 text-amber-600" />
           Note interne
         </CardTitle>
         {note && !edition && (
-          <div className="flex gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setEdition(true)}>
-              <Pencil className="h-3.5 w-3.5" />
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEdition(true)}>
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+              Modifier
             </Button>
-            <Button variant="ghost" size="sm" onClick={supprimer}>
-              <Trash2 className="h-3.5 w-3.5 text-destructive" />
-            </Button>
+            {confirmeSuppression ? (
+              <>
+                <Button variant="destructive" size="sm" onClick={supprimer}>
+                  Confirmer
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmeSuppression(false)}>
+                  Annuler
+                </Button>
+              </>
+            ) : (
+              <Button variant="ghost" size="sm" onClick={() => setConfirmeSuppression(true)}>
+                <Trash2 className="mr-1.5 h-3.5 w-3.5 text-destructive" />
+                Supprimer
+              </Button>
+            )}
           </div>
         )}
       </CardHeader>

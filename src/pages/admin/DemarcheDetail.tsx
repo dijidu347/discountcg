@@ -13,6 +13,7 @@ import { AlerteDossierGarage } from "@/components/admin/AlerteDossierGarage";
 import { ControleAutomatique } from "@/components/admin/ControleAutomatique";
 import { DemanderPiece } from "@/components/admin/DemanderPiece";
 import { NoteInterne } from "@/components/admin/NoteInterne";
+import { ClasserConversation } from "@/components/admin/ClasserConversation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1640,6 +1641,11 @@ export default function DemarcheDetail() {
                 numeroDemarche={demarche.numero_demarche}
               />
             )}
+
+            {/* Juste sous la conversation : « c'est lu, il n'y a rien à
+                répondre ». Sans ce bouton il fallait retourner dans Messages
+                pour classer, ou la laisser traîner. */}
+            <ClasserConversation demarcheId={id!} />
 
             {/* La note interne suit la conversation : on la relit en même temps
                 que ce qui s'est dit, et elle n'est visible que de nous. */}
