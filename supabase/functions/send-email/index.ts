@@ -548,7 +548,7 @@ const getEmailTemplate = (type: string, data: any) => {
               Accéder à mon espace
             </a>
 
-            ${guestReplyBlock}
+            ${blocSansReponseCourt}
             ${guestFooter}
           </div>
         `,
@@ -569,7 +569,7 @@ const getEmailTemplate = (type: string, data: any) => {
             <a href="${baseUrl}/dashboard" style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; margin: 16px 0;">
               Accéder à mon espace
             </a>
-            ${guestReplyBlock}
+            ${blocSansReponseCourt}
             ${guestFooter}
           </div>
         `,
@@ -1433,10 +1433,13 @@ const handler = async (req: Request): Promise<Response> => {
       "kbis_a_renouveler",
       "kbis_demande_demarche",
       "account_rejected",
-      // Celui-ci ne réclame pas de document mais une recharge : le risque
-      // n'est pas qu'une pièce se perde, c'est qu'un garage réponde par
-      // courriel au lieu de passer par l'onglet Messages.
+      // Ceux-ci ne réclament rien — ce sont de bonnes nouvelles. Mais ils
+      // partent à un garage, qui a une messagerie dans son espace : l'inviter
+      // à répondre par courriel, c'est ramener la conversation dans une boîte
+      // au lieu de son dossier.
       "solde_plaques_bas",
+      "account_verified",
+      "kbis_renouvele",
     ]);
 
     // « document_rejected » sert les deux publics : on tranche sur la donnée.
