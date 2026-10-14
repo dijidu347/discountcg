@@ -16,6 +16,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Check, Loader2, MailOpen, Undo2 } from "lucide-react";
+
+// Les deux actions de rangement portent le même habillage : gris clair, filet
+// fin, et le texte reste sombre au survol. En « ghost », le survol passait le
+// texte en clair sur fond clair — le libellé disparaissait sous le curseur.
+const BOUTON_RANGEMENT =
+  "border-border bg-muted/60 text-foreground hover:bg-muted hover:text-foreground";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 
 type Etat = "rien" | "attend" | "classee";
@@ -125,7 +131,13 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
             Ce message attend une réponse — il reste dans l'onglet Messages.
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="ghost" onClick={remettreNonLu} disabled={enCours}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={remettreNonLu}
+              disabled={enCours}
+              className={BOUTON_RANGEMENT}
+            >
               <MailOpen className="mr-2 h-3.5 w-3.5" />
               Marquer comme non lue
             </Button>
@@ -134,10 +146,7 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
               variant="outline"
               onClick={classer}
               disabled={enCours}
-              /* Gris clair, bordure un peu plus soutenue : c'est une action de
-                 rangement, pas l'action principale de l'écran. Le bleu la
-                 faisait passer pour le bouton à cliquer. */
-              className="border-muted-foreground/30 bg-muted text-foreground hover:bg-muted/80"
+              className={BOUTON_RANGEMENT}
             >
               {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-2 h-3.5 w-3.5" />}
               Pas besoin de réponse
