@@ -1,0 +1,24 @@
+# Construction du site chez l'hébergeur.
+#
+# `npm run build` enchaîne vite puis scripts/prerender.mjs : les deux doivent
+# tourner, sinon les 152 pages pré-rendues n'existent pas et les robots ne
+# voient qu'une coquille vide.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# Les fichiers à empreinte ne changent jamais pour un même nom : ils peuvent
+# rester en cache un an. Le HTML, lui, doit être revalidé à chaque visite,
+# sinon une publication reste invisible.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

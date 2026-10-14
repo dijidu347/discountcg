@@ -1,0 +1,16 @@
+# Repli des routes de l'application, pour un hébergeur statique.
+#
+# Le build écrit 152 fichiers HTML pré-rendus (un par route publique connue).
+# L'hébergeur sert d'abord le fichier qui existe : ces 152 pages partent donc
+# telles quelles, avec leur titre, leur texte et leurs données structurées.
+#
+# Cette règle n'attrape que le reste — les routes dont l'adresse contient une
+# valeur qu'on ne connaît pas à la construction : /demarche/<identifiant>,
+# /suivi/<numéro>, /paiement-client/<jeton>, /admin/… Elle doit rester EN
+# DERNIER : placée avant, elle masquerait les pages pré-rendues et le
+# référencement s'effondrerait.
+#
+# Et elle sert `_spa.html`, une coquille vide en noindex, et non `index.html` :
+# ce dernier porte le texte pré-rendu de l'accueil, qui s'afficherait alors
+# sous une adresse de démarche.
+/*    /_spa.html    200

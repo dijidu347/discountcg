@@ -28,11 +28,36 @@ import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { build as esbuild } from "esbuild";
+import { execSync } from "node:child_process";
 
 const RACINE = process.cwd();
 const DIST = path.join(RACINE, "dist");
 const BASE = "https://discountcartegrise.fr";
 const TEMP = path.join(RACINE, ".prerender-tmp");
+
+// Le commit servi, écrit dans chaque page.
+//
+// Jusqu'ici c'était Lovable qui injectait `data-commit-sha` au moment de
+// servir la page : c'est le seul signal fiable pour savoir si une publication
+// est réellement sortie, et il disparaîtrait en changeant d'hébergeur. On
+// l'écrit donc nous-mêmes, au moment de la construction. Les hébergeurs
+// statiques exposent le commit dans l'environnement ; en local, git le donne.
+const COMMIT =
+  process.env.COMMIT_REF ||            // Netlify
+  process.env.CF_PAGES_COMMIT_SHA ||   // Cloudflare Pages
+  process.env.VERCEL_GIT_COMMIT_SHA || // Vercel
+  process.env.GITHUB_SHA ||            // GitHub Actions
+  (() => {
+    try {
+      return execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+    } catch {
+      return "";
+    }
+  })();
+
+const marqueur = /^[0-9a-f]{40}$/.test(COMMIT)
+  ? `<script data-commit-sha="${COMMIT}"></script>`
+  : "";
 
 const echappe = (s) =>
   String(s ?? "")
@@ -158,6 +183,8 @@ function appliquer(gabarit, { titre, description, canonical, noindex, schemas, h
       noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large, max-snippet:-1"
     }">\n    <meta property="og:url" content="${echappe(canonical)}" />`
   );
+
+  if (marqueur) out = out.replace("</head>", `  ${marqueur}\n</head>`);
 
   const blocsSchema = (schemas ?? [])
     .map((s) => `<script type="application/ld+json">${jsonLd(s)}</script>`)
@@ -1375,6 +1402,27 @@ async function principal() {
     `  <meta http-equiv="refresh" content="0; url=/simulateur" />\n  </head>`
   );
   await ecrire("/prix-carte-grise", versSimulateur);
+  ecrites++;
+
+  // ── La coquille des routes dynamiques ────────────────────────────────────
+  //
+  // Un hébergeur statique sert un fichier quand il existe, et retombe sinon
+  // sur une page de repli. Si ce repli est `index.html`, c'est l'ACCUEIL
+  // pré-rendu qui s'affiche : un garage ouvrant /demarche/<identifiant> depuis
+  // un courriel verrait le texte de l'accueil pendant que React démarre, et un
+  // robot indexerait l'accueil sous cette adresse. Le repli pointe donc ici :
+  // une coquille sans texte, en noindex.
+  await ecrire(
+    "/_spa",
+    appliquer(gabarit, {
+      titre: "Discount Carte Grise",
+      description: "Service d'immatriculation habilité par l'État.",
+      canonical: `${BASE}/`,
+      noindex: true,
+      schemas: [],
+      html: "",
+    })
+  );
   ecrites++;
 
   console.log(`[prerender] ${ecrites} pages écrites.`);
