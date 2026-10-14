@@ -1220,8 +1220,6 @@ export default function DemarcheDetail() {
               </CardContent>
             </Card>
 
-            <NoteInterne demarcheId={id!} />
-
             <AlerteDossierGarage garage={garage} reference={demarche?.numero_demarche} />
 
             <ControleAutomatique demarcheId={id!} typeDemarche={demarche?.type} />
@@ -1734,6 +1732,10 @@ export default function DemarcheDetail() {
                 numeroDemarche={demarche.numero_demarche}
               />
             )}
+
+            {/* La note interne suit la conversation : on la relit en même temps
+                que ce qui s'est dit, et elle n'est visible que de nous. */}
+            <NoteInterne demarcheId={id!} />
 
             {/* Historique des notifications */}
             <Card>
