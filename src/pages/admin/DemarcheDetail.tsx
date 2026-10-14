@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Download, Send, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check, RefreshCw, Loader2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Download, CheckCircle, XCircle, Clock, Eye, Plus, Mail, Phone, Zap, FileCheck as FileCheckIcon, History, FileText, Image as ImageIcon, BellRing, BellOff, Copy, Check, RefreshCw, Loader2, AlertCircle } from "lucide-react";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 import { SITE_URL } from "@/lib/siteUrl";
 import { getSignedUrl, extractBucketFromUrl, extractPathFromUrl, downloadPrivateFileFromUrl, StorageBucket } from "@/lib/storage-utils";
@@ -200,8 +200,6 @@ export default function DemarcheDetail() {
   // Pièces retirées de la liste : encore nommées pour les dépôts anciens, mais
   // plus proposées à la réclamation.
   const [piecesMasquees, setPiecesMasquees] = useState<string[]>([]);
-  const [notificationMessage, setNotificationMessage] = useState("");
-  const [notificationType, setNotificationType] = useState("info");
   const [invalidDocDialog, setInvalidDocDialog] = useState<{
     open: boolean;
     docId: string | null;
@@ -777,58 +775,6 @@ export default function DemarcheDetail() {
     }
   };
 
-  const sendNotification = async () => {
-    if (!notificationMessage || !garage || !id) return;
-
-    try {
-      // Insert notification in database
-      const { error } = await supabase
-        .from('notifications')
-        .insert({
-          garage_id: garage.id,
-          demarche_id: id,
-          type: notificationType,
-          message: notificationMessage,
-          created_by: user?.id
-        });
-
-      if (error) throw error;
-
-      // Get subject based on notification type
-      const subjectMap: Record<string, string> = {
-        'info': `📬 Information - Démarche ${demarche?.numero_demarche || id}`,
-        'document_request': `📄 Documents requis - ${demarche?.immatriculation || 'Démarche'}`,
-        'document_ready': `✅ Documents disponibles - ${demarche?.immatriculation || 'Démarche'}`,
-        'review_request': `📝 Action requise - ${demarche?.immatriculation || 'Démarche'}`
-      };
-
-      // Send email notification
-      await supabase.functions.invoke('send-email', {
-        body: {
-          type: 'custom_notification',
-          to: garage.email,
-          data: {
-            customerName: garage.raison_sociale,
-            subject: subjectMap[notificationType] || subjectMap['info'],
-            message: notificationMessage
-          }
-        }
-      });
-
-      toast({
-        title: "Notification envoyée",
-        description: "Le garage a été notifié par email"
-      });
-      setNotificationMessage("");
-    } catch (err) {
-      console.error('Error sending notification:', err);
-      toast({
-        title: "Erreur",
-        description: "Impossible d'envoyer la notification",
-        variant: "destructive"
-      });
-    }
-  };
 
   const toggleAdminViewed = async () => {
     if (!id || !demarche) return;
@@ -1682,44 +1628,6 @@ export default function DemarcheDetail() {
                 </CardContent>
               </Card>
             )}
-
-            {/* Send Notification */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Envoyer une notification</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label>Type</Label>
-                  <Select value={notificationType} onValueChange={setNotificationType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="info">Information</SelectItem>
-                      <SelectItem value="document_request">Demande de document</SelectItem>
-                      <SelectItem value="document_ready">Document prêt</SelectItem>
-                      <SelectItem value="review_request">Demande d'avis</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Message</Label>
-                  <Textarea
-                    value={notificationMessage}
-                    onChange={(e) => setNotificationMessage(e.target.value)}
-                    placeholder="Écrivez votre message..."
-                    rows={4}
-                  />
-                </div>
-
-                <Button onClick={sendNotification} className="w-full" disabled={!notificationMessage}>
-                  <Send className="mr-2 h-4 w-4" />
-                  Envoyer
-                </Button>
-              </CardContent>
-            </Card>
 
             {/* Messagerie avec le garage */}
             {demarche && garage && (
