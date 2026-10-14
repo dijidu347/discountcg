@@ -21,7 +21,7 @@ import { Check, Loader2, MailOpen, Undo2 } from "lucide-react";
 // fin, et le texte reste sombre au survol. En « ghost », le survol passait le
 // texte en clair sur fond clair — le libellé disparaissait sous le curseur.
 const BOUTON_RANGEMENT =
-  "border-border bg-muted/60 text-foreground hover:bg-muted hover:text-foreground";
+  "shrink-0 whitespace-nowrap border-border bg-muted/60 text-foreground hover:bg-muted hover:text-foreground";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 
 type Etat = "rien" | "attend" | "classee";
@@ -124,13 +124,15 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
   if (etat === "rien") return null;
 
   return (
-    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+    <div className="mt-4 space-y-2 border-t border-border pt-3">
       {etat === "attend" ? (
         <>
           <p className="text-sm text-muted-foreground">
             Ce message attend une réponse — il reste dans l'onglet Messages.
           </p>
-          <div className="flex flex-wrap gap-2">
+          {/* `flex-nowrap` : la carte est étroite et les deux libellés sont
+              longs. Sans lui, le second bouton passait à la ligne. */}
+          <div className="flex flex-nowrap items-center gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -158,7 +160,7 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
           <p className="text-sm text-muted-foreground">
             Conversation classée le {formatDateTimeParis(classeeLe!)} — retirée des messages à traiter.
           </p>
-          <Button size="sm" variant="ghost" onClick={rouvrir} disabled={enCours}>
+          <Button size="sm" variant="outline" onClick={rouvrir} disabled={enCours} className={BOUTON_RANGEMENT}>
             {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Undo2 className="mr-2 h-3.5 w-3.5" />}
             Rouvrir
           </Button>
