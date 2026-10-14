@@ -20,8 +20,11 @@ import { Check, Loader2, MailOpen, Undo2 } from "lucide-react";
 // Les deux actions de rangement portent le même habillage : gris clair, filet
 // fin, et le texte reste sombre au survol. En « ghost », le survol passait le
 // texte en clair sur fond clair — le libellé disparaissait sous le curseur.
+// Compacts : la carte est étroite, et deux boutons de taille normale en
+// sortaient. `flex-wrap` reste en secours — mieux vaut qu'ils passent à la
+// ligne que de déborder du cadre.
 const BOUTON_RANGEMENT =
-  "shrink-0 whitespace-nowrap border-border bg-muted/60 text-foreground hover:bg-muted hover:text-foreground";
+  "h-8 px-2.5 text-xs border-border bg-muted/60 text-foreground hover:bg-muted hover:text-foreground";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 
 type Etat = "rien" | "attend" | "classee";
@@ -130,9 +133,7 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
           <p className="text-sm text-muted-foreground">
             Ce message attend une réponse — il reste dans l'onglet Messages.
           </p>
-          {/* `flex-nowrap` : la carte est étroite et les deux libellés sont
-              longs. Sans lui, le second bouton passait à la ligne. */}
-          <div className="flex flex-nowrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -140,8 +141,8 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
               disabled={enCours}
               className={BOUTON_RANGEMENT}
             >
-              <MailOpen className="mr-2 h-3.5 w-3.5" />
-              Marquer comme non lue
+              <MailOpen className="mr-1.5 h-3 w-3" />
+              Non lue
             </Button>
             <Button
               size="sm"
@@ -150,7 +151,7 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
               disabled={enCours}
               className={BOUTON_RANGEMENT}
             >
-              {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-2 h-3.5 w-3.5" />}
+              {enCours ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Check className="mr-1.5 h-3 w-3" />}
               Pas besoin de réponse
             </Button>
           </div>
@@ -161,7 +162,7 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
             Conversation classée le {formatDateTimeParis(classeeLe!)} — retirée des messages à traiter.
           </p>
           <Button size="sm" variant="outline" onClick={rouvrir} disabled={enCours} className={BOUTON_RANGEMENT}>
-            {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Undo2 className="mr-2 h-3.5 w-3.5" />}
+            {enCours ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" /> : <Undo2 className="mr-1.5 h-3 w-3" />}
             Rouvrir
           </Button>
         </>
