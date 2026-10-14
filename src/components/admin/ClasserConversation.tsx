@@ -129,7 +129,16 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
               <MailOpen className="mr-2 h-3.5 w-3.5" />
               Marquer comme non lue
             </Button>
-            <Button size="sm" variant="outline" onClick={classer} disabled={enCours}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={classer}
+              disabled={enCours}
+              /* Gris clair, bordure un peu plus soutenue : c'est une action de
+                 rangement, pas l'action principale de l'écran. Le bleu la
+                 faisait passer pour le bouton à cliquer. */
+              className="border-muted-foreground/30 bg-muted text-foreground hover:bg-muted/80"
+            >
               {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-2 h-3.5 w-3.5" />}
               Pas besoin de réponse
             </Button>
