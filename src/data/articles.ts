@@ -41,6 +41,77 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "malus-retroactif-occasion-nexiste-pas",
+    titre: "Non, il n'y a pas de malus rétroactif sur les voitures d'occasion",
+    chapo:
+      "Plusieurs sites du secteur l'annoncent depuis l'automne. Le texte en vigueur dit l'inverse : acheter une occasion déjà immatriculée en France ne déclenche aucun malus, et l'article qui définit le fait générateur le dit noir sur blanc.",
+    categorie: "Idées reçues",
+    date: "2026-10-14",
+    image: "/blog/malus-occasion.jpg",
+    imageCredit: "Photo : Unsplash",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Depuis l'automne, plusieurs sites d'immatriculation annoncent qu'à partir du 1er janvier 2026 un « malus rétroactif » frapperait la revente des véhicules qui n'avaient pas été taxés à leur première immatriculation. Nous sommes allés lire le texte qui fixe le moment où ces taxes sont dues, dans sa version applicable au 1er janvier 2026. Il ne contient rien de tel.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que dit le texte en vigueur",
+      },
+      {
+        type: "p",
+        texte:
+          "Les taxes à l'immatriculation — malus au CO2 et malus au poids — sont dues au moment que l'article L. 421-36 du code des impositions sur les biens et services appelle la « première immatriculation en France ». Cet article définit précisément ce que recouvre cette expression, et c'est là que tout se joue.",
+      },
+      {
+        type: "p",
+        texte:
+          "Deux situations seulement sont visées. La première immatriculation en France d'un véhicule, d'abord. Ensuite, et à deux conditions qui doivent être réunies toutes les deux : que le véhicule n'ait pas été soumis à ces taxes lors de sa première immatriculation, ou l'ait été pour un montant nul, et que la nouvelle immatriculation résulte de la première modification qui le rend taxable pour un montant non nul.",
+      },
+      {
+        type: "h2",
+        texte: "Une modification du véhicule, pas un changement de propriétaire",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est le point que les articles alarmistes passent sous silence. Le second cas suppose une modification du véhicule lui-même — typiquement un utilitaire transformé en véhicule de tourisme, qui devient taxable alors qu'il ne l'était pas. Vendre sa voiture ne modifie rien au véhicule.",
+      },
+      {
+        type: "p",
+        texte:
+          "Autrement dit : si vous achetez une occasion déjà immatriculée en France et que vous ne touchez pas à sa carrosserie ni à son genre, le changement de titulaire ne fait naître aucun malus. Vous payez la taxe régionale, la taxe fixe de 11 € et la redevance d'acheminement de 2,76 € — rien d'autre.",
+      },
+      {
+        type: "h2",
+        texte: "Les cas où un malus apparaît bien",
+      },
+      {
+        type: "liste",
+        items: [
+          "Un véhicule importé, jamais immatriculé en France : sa première immatriculation française est le fait générateur, le malus est dû.",
+          "Un véhicule transformé, qui devient taxable alors qu'il ne l'était pas : la taxe est due à l'immatriculation qui constate cette première modification.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Dans tous les autres cas, et singulièrement pour la revente ordinaire d'une voiture française, il n'y a pas de malus. Si un prestataire vous en annonce un sur un changement de titulaire classique, demandez-lui sur quel texte il s'appuie.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Article L. 421-36 du code des impositions sur les biens et services — Légifrance",
+        url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000051202756/2026-01-01",
+      },
+      {
+        libelle: "Code des impositions sur les biens et services — Légifrance",
+        url: "https://www.legifrance.gouv.fr/codes/texte_lc/LEGITEXT000044595989/",
+      },
+    ],
+  },
+  {
     slug: "habilitation-siv-deux-conventions-2026",
     titre: "Habilitation SIV : les garages signent désormais deux conventions",
     chapo:
