@@ -31,6 +31,10 @@ interface DemarcheChatProps {
   // Remplit la hauteur disponible au lieu des 300 px figes : utile sur la
   // page des messages, ou le chat occupe un volet entier.
   pleineHauteur?: boolean;
+  // Ce qui s'affiche sous la zone de saisie, DANS la même carte : le classement
+  // de la conversation sur la fiche de démarche. Un bloc séparé en dessous
+  // donnait l'impression de parler d'autre chose.
+  pied?: React.ReactNode;
 }
 
 export function DemarcheChat({
@@ -42,6 +46,7 @@ export function DemarcheChat({
   onMessageSent,
   pleineHauteur = false,
   numeroDemarche,
+  pied,
 }: DemarcheChatProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -290,6 +295,8 @@ export function DemarcheChat({
             <Send className="h-5 w-5" />
           </Button>
         </div>
+
+        {pied}
       </CardContent>
     </Card>
   );

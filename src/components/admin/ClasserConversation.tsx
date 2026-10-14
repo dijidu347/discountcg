@@ -97,7 +97,7 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
   if (etat === "rien") return null;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/40 px-4 py-3">
+    <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
       {etat === "attend" ? (
         <>
           <p className="text-sm text-muted-foreground">

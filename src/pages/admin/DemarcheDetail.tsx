@@ -1639,13 +1639,9 @@ export default function DemarcheDetail() {
                 garageName={garage.raison_sociale}
                 isAdmin={true}
                 numeroDemarche={demarche.numero_demarche}
+                pied={<ClasserConversation demarcheId={demarche.id} />}
               />
             )}
-
-            {/* Juste sous la conversation : « c'est lu, il n'y a rien à
-                répondre ». Sans ce bouton il fallait retourner dans Messages
-                pour classer, ou la laisser traîner. */}
-            <ClasserConversation demarcheId={id!} />
 
             {/* La note interne suit la conversation : on la relit en même temps
                 que ce qui s'est dit, et elle n'est visible que de nous. */}
