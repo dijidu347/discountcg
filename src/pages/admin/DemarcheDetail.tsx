@@ -12,6 +12,7 @@ import { ExpressBadge } from "@/components/admin/ExpressBadge";
 import { AlerteDossierGarage } from "@/components/admin/AlerteDossierGarage";
 import { ControleAutomatique } from "@/components/admin/ControleAutomatique";
 import { DemanderPiece } from "@/components/admin/DemanderPiece";
+import { NoteInterne } from "@/components/admin/NoteInterne";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1218,6 +1219,8 @@ export default function DemarcheDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            <NoteInterne demarcheId={id!} />
 
             <AlerteDossierGarage garage={garage} reference={demarche?.numero_demarche} />
 
