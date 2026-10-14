@@ -1152,7 +1152,11 @@ export default function AdminRevenus() {
           <TabsContent value="demarches">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <CardTitle className="text-lg">Démarches par mode de paiement</CardTitle>
+                <CardTitle className="text-lg">
+                  {demarcheChartData.length > 1
+                    ? `Nombre de démarches (${viewMode === "daily" ? "jour" : "mois"})`
+                    : "Démarches par mode de paiement"}
+                </CardTitle>
                 <Select value={demarcheTypeFilter} onValueChange={setDemarcheTypeFilter}>
                   <SelectTrigger className="w-[200px]">
                     <SelectValue placeholder="Filtrer par type" />
@@ -1170,6 +1174,27 @@ export default function AdminRevenus() {
                     histogramme empilé par jour : sur une seule journée — la vue
                     la plus consultée — il n'aurait qu'une barre. */}
                 <div className="h-[400px]">
+                  {demarcheChartData.length > 1 ? (
+                    /* L'histogramme empilé par jour : la forme d'origine, et
+                       celle que l'équipe lit tous les jours. Elle montre d'un
+                       coup d'œil les creux, les pics et la part des jetons. */
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={demarcheChartData}>
+                        <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                        <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
+                        <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                        <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                        <Legend />
+                        <Bar dataKey="cb" name="Paiement €" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="jetons" name="Jetons" fill="#8b5cf6" stackId="a" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="gratuit" name="Jetons gratuits" fill="#10b981" stackId="a" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    /* Sur une seule journée, l'histogramme n'aurait qu'une
+                       barre et la proportion ne se lirait pas : les bâtons
+                       horizontaux la donnent, avec le nombre au bout. */
+                    <>
                   {demarcheRepartition.length === 0 ? (
                     <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
                       Aucune démarche sur cette période.
@@ -1217,6 +1242,8 @@ export default function AdminRevenus() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
+                  )}
+                    </>
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground mt-3 text-center">
