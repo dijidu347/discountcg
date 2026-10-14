@@ -130,10 +130,9 @@ export function NoteInterne({ demarcheId }: { demarcheId: string }) {
           Note interne
         </CardTitle>
         {note && !edition && (
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setEdition(true)}>
-              <Pencil className="mr-1.5 h-3.5 w-3.5" />
-              Modifier
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" onClick={() => setEdition(true)} title="Modifier la note">
+              <Pencil className="h-3.5 w-3.5" />
             </Button>
             {confirmeSuppression ? (
               <>
@@ -145,9 +144,13 @@ export function NoteInterne({ demarcheId }: { demarcheId: string }) {
                 </Button>
               </>
             ) : (
-              <Button variant="ghost" size="sm" onClick={() => setConfirmeSuppression(true)}>
-                <Trash2 className="mr-1.5 h-3.5 w-3.5 text-destructive" />
-                Supprimer
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmeSuppression(true)}
+                title="Supprimer la note"
+              >
+                <Trash2 className="h-3.5 w-3.5 text-destructive" />
               </Button>
             )}
           </div>
