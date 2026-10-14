@@ -199,11 +199,12 @@ export function DocumentUpload({ demarcheId, documentType, label, customName, on
         .single();
 
       if (demarcheData) {
-        // Reset admin_viewed to bring attention to this demarche
-        await supabase
-          .from('demarches')
-          .update({ admin_viewed: false })
-          .eq('id', demarcheId);
+        // Le réveil de la démarche (admin_viewed à false, updated_at à now)
+        // n'est plus fait ici : il est posé en base, sur l'insertion dans
+        // `documents`. Cette ligne-ci ne couvrait que CE composant, alors que
+        // les pièces arrivent par plusieurs chemins — sur quatorze jours, 80
+        // des 127 pièces redéposées après un refus passaient à côté. Voir
+        // supabase/migrations/20261014120000_reveil_demarche_sur_nouvelle_piece.sql
 
         // Create notification for admin
         await supabase
