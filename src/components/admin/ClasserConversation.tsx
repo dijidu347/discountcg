@@ -15,7 +15,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Check, Loader2, Undo2 } from "lucide-react";
+import { Check, Loader2, MailOpen, Undo2 } from "lucide-react";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 
 type Etat = "rien" | "attend" | "classee";
@@ -78,6 +78,27 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
     charger();
   };
 
+  // Ouvrir la démarche marque le message lu : sans ce bouton, on ne peut plus
+  // le remettre dans « Non lues » sans passer par la page Messages. C'est
+  // exactement le geste de « je regarde, mais je traiterai plus tard ».
+  const remettreNonLu = async () => {
+    setEnCours(true);
+    const { error } = await supabase
+      .from("messages")
+      .update({ is_read: false })
+      .eq("demarche_id", demarcheId)
+      .neq("sender_type", "admin");
+    setEnCours(false);
+    if (error) {
+      toast({ title: "Impossible de marquer comme non lue", description: error.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: "Marquée comme non lue",
+      description: "Elle repasse en tête des messages. Rouvrir cette démarche la remarquera comme lue.",
+    });
+  };
+
   const rouvrir = async () => {
     setEnCours(true);
     const { error } = await supabase
@@ -103,10 +124,16 @@ export function ClasserConversation({ demarcheId }: { demarcheId: string }) {
           <p className="text-sm text-muted-foreground">
             Ce message attend une réponse — il reste dans l'onglet Messages.
           </p>
-          <Button size="sm" variant="outline" onClick={classer} disabled={enCours}>
-            {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-2 h-3.5 w-3.5" />}
-            Pas besoin de réponse
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="ghost" onClick={remettreNonLu} disabled={enCours}>
+              <MailOpen className="mr-2 h-3.5 w-3.5" />
+              Marquer comme non lue
+            </Button>
+            <Button size="sm" variant="outline" onClick={classer} disabled={enCours}>
+              {enCours ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" /> : <Check className="mr-2 h-3.5 w-3.5" />}
+              Pas besoin de réponse
+            </Button>
+          </div>
         </>
       ) : (
         <>
