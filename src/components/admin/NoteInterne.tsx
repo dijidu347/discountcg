@@ -1,13 +1,13 @@
-// L'encart « note interne » d'une démarche.
+// Les notes internes d'une démarche.
 //
-// Une seule note par démarche, qu'on modifie au lieu d'en empiler. C'est la
-// demande : savoir ce qui a été dit ou décidé sur CE dossier, pas en tenir un
-// journal. L'encart dit qui a écrit et quand — « Ajouté le… », puis
-// « Modifié le… » dès qu'on y revient.
+// Plusieurs notes, pas une seule : un dossier se suit sur plusieurs jours, et
+// écraser la précédente ferait perdre ce qui s'est passé entre-temps. Chacune
+// porte son auteur et sa date — « Ajouté le… », puis « Modifié le… » si on y
+// revient — et se modifie ou se supprime indépendamment.
 //
-// Elle n'est lisible que par les administrateurs : la table a ses propres
-// droits, et le garage ne la voit nulle part. C'est pour cela qu'elle n'est pas
-// une colonne de `demarches`, que le garage lit.
+// Elles ne sont lisibles que par les administrateurs : la table a ses propres
+// droits, et le garage ne les voit nulle part. C'est pour cela qu'elles ne sont
+// pas une colonne de `demarches`, que le garage lit.
 //
 // Le prénom est saisi puis retenu dans le navigateur, comme pour les notes de
 // prospection : plusieurs personnes partagent l'écran d'administration, et
@@ -20,10 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { StickyNote, Loader2, Pencil, Trash2 } from "lucide-react";
+import { StickyNote, Loader2, Pencil, Trash2, Plus } from "lucide-react";
 import { formatDateTimeParis } from "@/lib/dateFormat";
 
 interface Note {
+  id: string;
   contenu: string;
   auteur: string;
   created_at: string;
@@ -38,160 +39,213 @@ const CLE_PRENOM = "admin.prenom";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const table = () => (supabase.from.bind(supabase) as unknown as (n: string) => any)("notes_demarche");
 
+function signatureDe(n: Note): string {
+  return n.updated_at
+    ? `Modifié le ${formatDateTimeParis(n.updated_at)} par ${n.auteur}`
+    : `Ajouté le ${formatDateTimeParis(n.created_at)} par ${n.auteur}`;
+}
+
 export function NoteInterne({ demarcheId }: { demarcheId: string }) {
   const { toast } = useToast();
-  const [note, setNote] = useState<Note | null>(null);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [chargement, setChargement] = useState(true);
-  const [edition, setEdition] = useState(false);
-  const [enregistrement, setEnregistrement] = useState(false);
-  // La suppression se confirme : une note effacée ne se retrouve nulle part.
-  const [confirmeSuppression, setConfirmeSuppression] = useState(false);
-  const [contenu, setContenu] = useState("");
+  const [enCours, setEnCours] = useState(false);
+
   const [auteur, setAuteur] = useState(() => {
     try { return localStorage.getItem(CLE_PRENOM) ?? ""; } catch { return ""; }
   });
+  const [nouvelle, setNouvelle] = useState("");
+  const [ajout, setAjout] = useState(false);
+
+  const [edite, setEdite] = useState<string | null>(null);
+  const [brouillon, setBrouillon] = useState("");
+  const [confirmeSuppression, setConfirmeSuppression] = useState<string | null>(null);
 
   const charger = useCallback(async () => {
     const { data } = await table()
-      .select("contenu, auteur, created_at, updated_at")
+      .select("id, contenu, auteur, created_at, updated_at")
       .eq("demarche_id", demarcheId)
-      .maybeSingle();
-    setNote((data as Note) ?? null);
-    setContenu(data?.contenu ?? "");
+      .order("created_at", { ascending: false });
+    setNotes((data as Note[]) ?? []);
     setChargement(false);
   }, [demarcheId]);
 
   useEffect(() => {
     setChargement(true);
-    setEdition(false);
+    setAjout(false);
+    setEdite(null);
     charger();
   }, [charger]);
 
-  const enregistrer = async () => {
-    if (!contenu.trim()) {
+  const verifier = (texte: string) => {
+    if (!texte.trim()) {
       toast({ title: "Note vide", description: "Écrivez quelque chose avant d'enregistrer.", variant: "destructive" });
-      return;
+      return false;
     }
     if (!auteur.trim()) {
       toast({ title: "Nom manquant", description: "Indiquez qui écrit cette note.", variant: "destructive" });
-      return;
+      return false;
     }
-    setEnregistrement(true);
+    return true;
+  };
+
+  const ajouter = async () => {
+    if (!verifier(nouvelle)) return;
+    setEnCours(true);
     try { localStorage.setItem(CLE_PRENOM, auteur.trim()); } catch { /* navigation privée */ }
 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      setEnregistrement(false);
+      setEnCours(false);
       toast({ title: "Session expirée", description: "Reconnectez-vous pour enregistrer.", variant: "destructive" });
       return;
     }
 
-    // `upsert` sur la clé primaire : la première fois elle crée, ensuite elle
-    // remplace — et le déclencheur en base pose `updated_at` sans toucher à la
-    // date d'ajout.
-    const { error } = await table()
-      .upsert(
-        { demarche_id: demarcheId, contenu: contenu.trim(), auteur: auteur.trim(), auteur_id: user.id },
-        { onConflict: "demarche_id" },
-      );
-
-    setEnregistrement(false);
+    const { error } = await table().insert({
+      demarche_id: demarcheId,
+      contenu: nouvelle.trim(),
+      auteur: auteur.trim(),
+      auteur_id: user.id,
+    });
+    setEnCours(false);
     if (error) {
       toast({ title: "Note non enregistrée", description: error.message, variant: "destructive" });
       return;
     }
-    setEdition(false);
+    setNouvelle("");
+    setAjout(false);
     charger();
   };
 
-  const supprimer = async () => {
-    const { error } = await table().delete().eq("demarche_id", demarcheId);
+  const enregistrerEdition = async (id: string) => {
+    if (!verifier(brouillon)) return;
+    setEnCours(true);
+    try { localStorage.setItem(CLE_PRENOM, auteur.trim()); } catch { /* navigation privée */ }
+    const { error } = await table()
+      .update({ contenu: brouillon.trim(), auteur: auteur.trim() })
+      .eq("id", id);
+    setEnCours(false);
+    if (error) {
+      toast({ title: "Note non modifiée", description: error.message, variant: "destructive" });
+      return;
+    }
+    setEdite(null);
+    charger();
+  };
+
+  const supprimer = async (id: string) => {
+    const { error } = await table().delete().eq("id", id);
     if (error) {
       toast({ title: "Suppression impossible", description: error.message, variant: "destructive" });
       return;
     }
-    setNote(null);
-    setContenu("");
-    setEdition(false);
-    setConfirmeSuppression(false);
+    setConfirmeSuppression(null);
+    charger();
   };
 
-  const signature = note
-    ? note.updated_at
-      ? `Modifié le ${formatDateTimeParis(note.updated_at)} par ${note.auteur}`
-      : `Ajouté le ${formatDateTimeParis(note.created_at)} par ${note.auteur}`
-    : null;
+  const champAuteur = (
+    <Input
+      value={auteur}
+      onChange={(e) => setAuteur(e.target.value)}
+      placeholder="Votre prénom"
+      className="w-40"
+    />
+  );
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <StickyNote className="h-4 w-4 text-amber-600" />
-          Note interne
+          Notes internes
+          {notes.length > 0 && (
+            <span className="text-sm font-normal text-muted-foreground">({notes.length})</span>
+          )}
         </CardTitle>
-        {note && !edition && (
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="sm" onClick={() => setEdition(true)} title="Modifier la note">
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-            {confirmeSuppression ? (
-              <>
-                <Button variant="destructive" size="sm" onClick={supprimer}>
-                  Confirmer
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setConfirmeSuppression(false)}>
-                  Annuler
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setConfirmeSuppression(true)}
-                title="Supprimer la note"
-              >
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-              </Button>
-            )}
-          </div>
+        {!ajout && (
+          <Button variant="outline" size="sm" onClick={() => setAjout(true)}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" />
+            Ajouter
+          </Button>
         )}
       </CardHeader>
 
-      <CardContent className="space-y-3">
-        {chargement ? (
-          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-        ) : note && !edition ? (
-          <>
-            <p className="whitespace-pre-wrap text-sm text-foreground">{note.contenu}</p>
-            <p className="text-xs text-muted-foreground">{signature}</p>
-          </>
-        ) : (
-          <>
+      <CardContent className="space-y-4">
+        {(ajout || notes.length === 0) && (
+          <div className="space-y-2">
             <Textarea
-              value={contenu}
-              onChange={(e) => setContenu(e.target.value)}
+              value={nouvelle}
+              onChange={(e) => setNouvelle(e.target.value)}
               placeholder="Ce qui a été dit, décidé, ou ce qu'il faut savoir sur ce dossier. Visible par l'équipe uniquement."
-              rows={4}
+              rows={3}
             />
             <div className="flex flex-wrap items-center gap-2">
-              <Input
-                value={auteur}
-                onChange={(e) => setAuteur(e.target.value)}
-                placeholder="Votre prénom"
-                className="w-40"
-              />
-              <Button size="sm" onClick={enregistrer} disabled={enregistrement}>
-                {enregistrement && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+              {champAuteur}
+              <Button size="sm" onClick={ajouter} disabled={enCours}>
+                {enCours && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
                 Enregistrer
               </Button>
-              {note && (
-                <Button variant="ghost" size="sm" onClick={() => { setEdition(false); setContenu(note.contenu); }}>
+              {ajout && notes.length > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => { setAjout(false); setNouvelle(""); }}>
                   Annuler
                 </Button>
               )}
             </div>
-            {signature && <p className="text-xs text-muted-foreground">{signature}</p>}
-          </>
+          </div>
+        )}
+
+        {chargement ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+        ) : (
+          notes.map((n) => (
+            <div key={n.id} className="rounded-lg border border-border p-3">
+              {edite === n.id ? (
+                <div className="space-y-2">
+                  <Textarea value={brouillon} onChange={(e) => setBrouillon(e.target.value)} rows={3} />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {champAuteur}
+                    <Button size="sm" onClick={() => enregistrerEdition(n.id)} disabled={enCours}>
+                      {enCours && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                      Enregistrer
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => setEdite(null)}>Annuler</Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <p className="whitespace-pre-wrap text-sm text-foreground">{n.contenu}</p>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Modifier la note"
+                        onClick={() => { setEdite(n.id); setBrouillon(n.contenu); setConfirmeSuppression(null); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      {confirmeSuppression === n.id ? (
+                        <>
+                          <Button variant="destructive" size="sm" onClick={() => supprimer(n.id)}>Confirmer</Button>
+                          <Button variant="ghost" size="sm" onClick={() => setConfirmeSuppression(null)}>Annuler</Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          title="Supprimer la note"
+                          onClick={() => setConfirmeSuppression(n.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{signatureDe(n)}</p>
+                </>
+              )}
+            </div>
+          ))
         )}
       </CardContent>
     </Card>

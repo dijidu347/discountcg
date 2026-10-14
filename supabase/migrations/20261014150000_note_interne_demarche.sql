@@ -1,8 +1,9 @@
 -- L'encart « note interne » d'une démarche.
 --
--- Une seule note par démarche, qu'on modifie plutôt que d'en empiler : la
--- demande est de savoir ce qui a été dit ou décidé sur CE dossier, pas d'en
--- tenir un journal. D'où la clé primaire sur `demarche_id`.
+-- PLUSIEURS notes par démarche. J'avais d'abord posé une clé primaire sur
+-- `demarche_id`, donc une note unique qu'on écrase : un dossier se suit sur
+-- plusieurs jours, et écraser la précédente fait perdre ce qui s'est passé
+-- entre-temps. Chaque note a donc son identifiant, son auteur et sa date.
 --
 -- Elle n'est PAS une colonne de `demarches`, et c'est le point important : le
 -- garage lit cette table (politique « Garages can view their own demarches »),
@@ -15,7 +16,8 @@
 -- écraserait sinon à chaque enregistrement.
 
 create table if not exists public.notes_demarche (
-  demarche_id uuid primary key references public.demarches(id) on delete cascade,
+  id          uuid primary key default gen_random_uuid(),
+  demarche_id uuid not null references public.demarches(id) on delete cascade,
   contenu     text not null,
   auteur_id   uuid not null,
   auteur      text not null,
@@ -48,3 +50,6 @@ end; $$;
 drop trigger if exists notes_demarche_maj on public.notes_demarche;
 create trigger notes_demarche_maj before update on public.notes_demarche
   for each row execute function public.notes_demarche_touch();
+
+create index if not exists notes_demarche_par_demarche
+  on public.notes_demarche (demarche_id, created_at desc);
