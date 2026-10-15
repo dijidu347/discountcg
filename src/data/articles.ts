@@ -41,6 +41,75 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "controle-technique-2026-rappels-constructeur",
+    titre: "Contrôle technique : non, il ne passe pas tous les ans — mais un rappel non réparé cloue la voiture",
+    chapo:
+      "La périodicité n'a pas bougé : quatre ans, puis tous les deux ans. Ce qui a changé au 1er janvier 2026, c'est que le contrôleur regarde si votre véhicule fait l'objet d'un rappel grave — et un airbag Takata non remplacé vous interdit de rouler dès le lendemain.",
+    categorie: "Idées reçues",
+    date: "2026-10-15",
+    image: "/blog/controle-technique-rappel.jpg",
+    imageCredit: "Photo : Unsplash",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Depuis l'automne, plusieurs sites annoncent un contrôle technique annuel pour les voitures de plus de dix ans. Nous sommes allés lire la fiche officielle, vérifiée au 1er janvier 2026 : elle ne dit rien de tel. Et elle décrit en revanche un changement bien réel, dont on parle beaucoup moins, alors qu'il peut immobiliser un véhicule du jour au lendemain.",
+      },
+      {
+        type: "h2",
+        texte: "La périodicité n'a pas changé",
+      },
+      {
+        type: "p",
+        texte:
+          "Le premier contrôle se fait dans les six mois qui précèdent le quatrième anniversaire de la première mise en circulation. C'est à vous d'y penser : aucune convocation n'est envoyée. Ensuite, un contrôle favorable vaut deux ans. Une contre-visite favorable vaut elle aussi deux ans, comptés depuis le contrôle défavorable qui l'a provoquée.",
+      },
+      {
+        type: "p",
+        texte:
+          "L'âge du véhicule n'entre pas dans cette règle. Une voiture de douze ans suit exactement le même rythme qu'une voiture de cinq ans.",
+      },
+      {
+        type: "h2",
+        texte: "Ce qui a vraiment changé : les campagnes de rappel",
+      },
+      {
+        type: "p",
+        texte:
+          "Depuis le 1er janvier 2026, la campagne de rappel figure parmi les points vérifiés, au même titre que la plaque d'immatriculation ou le numéro de châssis. Le contrôleur consulte la base des constructeurs pour savoir si votre véhicule est concerné par un rappel que le constructeur a qualifié de grave.",
+      },
+      {
+        type: "p",
+        texte:
+          "Le cas le plus sévère est celui des véhicules classés « stop drive ». La fiche officielle le définit comme une mesure de rappel urgent prise par le constructeur en raison d'un danger potentiellement mortel, qui demande au propriétaire de cesser de rouler — typiquement un airbag Takata non remplacé. Si le véhicule n'a pas été réparé, une défaillance critique est identifiée, une contre-visite doit être réalisée, et le véhicule ne peut plus circuler dès le lendemain.",
+      },
+      {
+        type: "h2",
+        texte: "Ce qu'il faut faire avant d'y aller",
+      },
+      {
+        type: "liste",
+        items: [
+          "Vérifiez auprès de votre constructeur, avec votre numéro de châssis, si votre véhicule fait l'objet d'un rappel.",
+          "S'il est concerné, faites faire la réparation avant le contrôle plutôt qu'après : vous éviterez la contre-visite et l'immobilisation.",
+          "Ne découvrez pas un « stop drive » le jour du contrôle : vous repartiriez avec une interdiction de rouler dès le lendemain, et une contre-visite à passer.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Pour la vente, rien ne change non plus : un véhicule de plus de quatre ans doit présenter un contrôle technique de moins de six mois au moment de la cession — ou de moins de deux mois s'il s'agit d'une contre-visite.",
+      },
+    ],
+    sources: [
+      {
+        libelle:
+          "Contrôle technique d'une voiture (catégorie M1) — service-public.gouv.fr, vérifié le 1er janvier 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F2878",
+      },
+    ],
+  },
+  {
     slug: "malus-retroactif-occasion-nexiste-pas",
     titre: "Non, il n'y a pas de malus rétroactif sur les voitures d'occasion",
     chapo:
