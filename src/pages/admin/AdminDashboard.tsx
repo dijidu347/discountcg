@@ -127,7 +127,10 @@ export default function AdminDashboard() {
     // Load admin statistics
     const { data: garages } = await supabase
       .from('garages')
-      .select('id, verification_requested_at, is_verified, verification_admin_viewed, kbis_valide_jusqu_au');
+      // `compte_interne` se lit ici parce qu'on s'en sert plus bas : sans lui la
+      // colonne vaut toujours undefined, et le filtre qui écarte les comptes de
+      // la maison laissait tout passer.
+      .select('id, verification_requested_at, is_verified, verification_admin_viewed, kbis_valide_jusqu_au, compte_interne');
 
     // "À traiter" : count SQL exact, filtres appliqués CÔTÉ BASE via la source
     // unique de vérité partagée avec la page liste. Aucune ligne transférée,
@@ -224,8 +227,7 @@ export default function AdminDashboard() {
     // la tuile en montre 40 ; la pastille doit mener à ce qu'elle annonce.
     const dossiers = await chargerDossiers();
     const aVerifier = (garages || []).filter(
-      (g) => !(g as { compte_interne?: boolean }).compte_interne
-        && dossiers.get(g.id)?.etat === "a_verifier",
+      (g) => !g.compte_interne && dossiers.get(g.id)?.etat === "a_verifier",
     ).length;
 
     const coffreActive = coffreSubs || [];

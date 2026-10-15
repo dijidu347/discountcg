@@ -69,10 +69,18 @@ export async function chargerDossiers(): Promise<Map<string, DossierGarage>> {
   const codes = (requis || []).map((r) => r.code);
   const nomDe = new Map((requis || []).map((r) => [r.code, r.nom_document]));
 
-  const { data: pieces } = await supabase
+  // Seules les pièces obligatoires entrent dans ce calcul, et il faut le dire
+  // à la base : les demander toutes — mandats compris, qui ne sont plus exigés
+  // — portait la requête à 1 018 lignes, au-dessus du plafond de 1 000 de
+  // PostgREST. Les lignes au-delà disparaissaient sans un mot, et l'état de
+  // leurs garages devenait faux au hasard de l'ordre des lignes : un Kbis
+  // accepté escamoté, et son garage repassait « à vérifier ».
+  let requete = supabase
     .from("verification_documents")
     .select("garage_id, document_type, status, date_emission, created_at, lu_le")
     .in("status", ["pending", "approved", "rejected"]);
+  if (codes.length) requete = requete.in("document_type", codes);
+  const { data: pieces } = await requete;
 
   const parGarage = new Map<string, typeof pieces>();
   for (const p of pieces || []) {
@@ -198,11 +206,16 @@ export async function chargerDossierGarage(garageId: string): Promise<DossierGar
     .eq("actif", true)
     .eq("obligatoire", true);
 
-  const { data: lignes } = await supabase
+  // Même restriction que la liste, sans quoi les deux écrans ne diraient pas la
+  // même chose du même garage : un mandat déposé autrefois ne fait pas un dossier.
+  const codesExiges = (requis || []).map((r) => r.code);
+  let requeteGarage = supabase
     .from("verification_documents")
     .select("document_type, status, date_emission, created_at, lu_le")
     .eq("garage_id", garageId)
     .in("status", ["pending", "approved", "rejected"]);
+  if (codesExiges.length) requeteGarage = requeteGarage.in("document_type", codesExiges);
+  const { data: lignes } = await requeteGarage;
 
   if (!lignes || lignes.length === 0) return SANS_DOCUMENT;
 
