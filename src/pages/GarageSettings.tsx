@@ -100,6 +100,9 @@ export default function GarageSettings() {
     confirmPassword: ""
   });
   const [verificationDocs, setVerificationDocs] = useState<VerificationDocument[]>([]);
+  // Code de liaison VO Pilote : rendu une seule fois, jamais relu — seule son empreinte est gardée.
+  const [lien, setLien] = useState<{ code: string; expire: string } | null>(null);
+  const [lienBusy, setLienBusy] = useState(false);
   const [requiredDocs, setRequiredDocs] = useState<RequiredDocument[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -791,6 +794,51 @@ export default function GarageSettings() {
               garage={garage}
               onSaved={(patch) => setGarage((g: any) => (g ? { ...g, ...patch } : g))}
             />
+          </div>
+
+          <div id="vopilote" className="scroll-mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Relier mon compte VO Pilote</CardTitle>
+                <CardDescription>
+                  VO Pilote est le logiciel de gestion de stock de Discount Carte Grise. Si vous y tenez votre parc,
+                  reliez les deux comptes : vos démarches partiront de la fiche du véhicule, sans ressaisie.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Engendrez un code, puis collez-le dans VO Pilote, page « Mon garage ». Il vaut quinze minutes et ne sert qu'une fois.
+                </p>
+                {lien ? (
+                  <div className="rounded-lg border-2 border-primary/40 bg-primary/5 p-4">
+                    <p className="text-sm font-medium">Votre code de liaison</p>
+                    <p className="mt-1 font-mono text-3xl font-bold tracking-[0.3em]">{lien.code}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Valable jusqu'à {new Date(lien.expire).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}.
+                      Il ne sera plus affiché : s'il se perd, engendrez-en un autre.
+                    </p>
+                  </div>
+                ) : null}
+                <Button
+                  type="button"
+                  variant={lien ? "outline" : "default"}
+                  disabled={lienBusy}
+                  onClick={async () => {
+                    setLienBusy(true);
+                    const { data, error } = await supabase.rpc("creer_code_liaison_vopilote" as any);
+                    setLienBusy(false);
+                    if (error) {
+                      toast({ title: "Code non engendré", description: error.message, variant: "destructive" });
+                      return;
+                    }
+                    const ligne = Array.isArray(data) ? data[0] : data;
+                    setLien({ code: ligne.code, expire: ligne.expire_le });
+                  }}
+                >
+                  {lienBusy ? "Un instant…" : lien ? "Engendrer un nouveau code" : "Engendrer un code de liaison"}
+                </Button>
+              </CardContent>
+            </Card>
           </div>
 
           <div id="verification" className="scroll-mt-6">
