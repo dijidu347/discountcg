@@ -41,6 +41,78 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "zfe-toujours-en-vigueur-2026",
+    titre: "Les ZFE n'ont pas été supprimées : ce que dit vraiment la décision du Conseil constitutionnel",
+    chapo:
+      "Le Parlement avait voté leur suppression. Le Conseil constitutionnel, saisi le 21 avril 2026, l'a annulée un mois plus tard — mais sur la forme, pas sur le fond. Les zones à faibles émissions continuent donc de s'appliquer, et votre vignette Crit'Air reste nécessaire.",
+    categorie: "Idées reçues",
+    date: "2026-10-16",
+    image: "/blog/zfe-2026.jpg",
+    imageCredit: "Photo : Unsplash",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Beaucoup d'automobilistes ont retenu que les zones à faibles émissions étaient supprimées. C'est faux, et le malentendu est compréhensible : la suppression a bel et bien été votée, puis annulée un mois plus tard. Nous avons lu la décision.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que le Conseil constitutionnel a jugé",
+      },
+      {
+        type: "p",
+        texte:
+          "Dans sa décision n° 2026-903 DC du 21 mai 2026, le Conseil s'est prononcé sur la loi de simplification de la vie économique. Son article 37 abrogeait les articles L. 2213-4-1 et L. 2213-4-2 du code général des collectivités territoriales, c'est-à-dire la faculté ou l'obligation, pour certaines collectivités, de mettre en place une zone à faibles émissions.",
+      },
+      {
+        type: "p",
+        texte:
+          "Le Conseil a relevé que ces dispositions, introduites par amendement en première lecture, n'avaient « pas de lien, même indirect » avec le projet de loi initial — lequel portait sur les frais de clôture de comptes bancaires professionnels et sur la résiliation de contrats d'assurance. Il en conclut que l'article 37 « a été adopté selon une procédure contraire à la Constitution ».",
+      },
+      {
+        type: "h2",
+        texte: "Le point que presque personne ne relève",
+      },
+      {
+        type: "p",
+        texte:
+          "La décision précise, noir sur blanc, que le Conseil statue « sans préjuger de la conformité du contenu de ces dispositions aux autres exigences constitutionnelles ». Autrement dit : il n'a pas dit que supprimer les ZFE serait contraire à la Constitution. Il a dit que ce n'était pas la bonne loi pour le faire.",
+      },
+      {
+        type: "p",
+        texte:
+          "La conséquence est double. Les ZFE restent en vigueur aujourd'hui. Et rien n'interdit qu'une suppression revienne dans un texte où elle aurait sa place. Il faut donc suivre le sujet, sans croire qu'il est clos dans un sens ou dans l'autre.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que ça change pour vous",
+      },
+      {
+        type: "liste",
+        items: [
+          "La vignette Crit'Air reste nécessaire pour circuler dans une ZFE, et les règles d'accès dépendent de chaque collectivité.",
+          "Chaque ville fixe son propre calendrier et ses propres catégories autorisées : vérifiez celle qui vous concerne, pas une règle nationale qui n'existe pas.",
+          "Commandez votre vignette uniquement sur le site officiel du gouvernement. Bison Futé met explicitement en garde contre les intermédiaires et les sites frauduleux.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Ce dernier point mérite qu'on s'y arrête. Les faux sites de vignette Crit'Air fonctionnent exactement comme les faux sites de carte grise : une page qui ressemble à l'administration, un tarif gonflé, et un document qui n'arrive jamais ou qui ne vaut rien. La règle est la même dans les deux cas — vérifiez toujours à qui vous payez.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Décision n° 2026-903 DC du 21 mai 2026 — Conseil constitutionnel",
+        url: "https://www.conseil-constitutionnel.fr/decision/2026/2026903DC.htm",
+      },
+      {
+        libelle: "Zones à faibles émissions mobilité — Bison Futé (ministère chargé des transports)",
+        url: "https://www.bison-fute.gouv.fr/zones-a-faibles-emissions-mobilite.html",
+      },
+    ],
+  },
+  {
     slug: "controle-technique-2026-rappels-constructeur",
     titre: "Contrôle technique : non, il ne passe pas tous les ans — mais un rappel non réparé cloue la voiture",
     chapo:
