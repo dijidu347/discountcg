@@ -23,6 +23,7 @@ import {
   TYPE_ACHAT,
   TYPE_CESSION,
   type MajiSignaux,
+  MAJI_ACTIF,
 } from "@/lib/majiCiblage";
 import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 import { formatPrice } from "@/lib/utils";
@@ -411,13 +412,13 @@ export default function DemarcheDetail() {
         {/* MaJi Auto — MODULE 02 : bloc contextuel.
             Arrive au bon moment : le garage vient de clore une vente, le sujet est
             déjà dans sa tête. Masqué si son secteur est déjà attribué. */}
-        {majiPertinent && majiSignaux?.secteurLibre && (
+        {MAJI_ACTIF && majiPertinent && majiSignaux?.secteurLibre && (
           <MajiBlocContextuel
             type={demarche.type === TYPE_ACHAT ? "DA" : "DC"}
             onVerifier={() => setMajiOuvert(true)}
           />
         )}
-        {majiSignaux && (
+        {MAJI_ACTIF && majiSignaux && (
           <MajiCandidature
             open={majiOuvert}
             onOpenChange={setMajiOuvert}

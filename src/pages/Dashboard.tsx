@@ -22,7 +22,7 @@ import { useCoffreSubscription } from "@/hooks/useCoffreSubscription";
 // MaJi Auto — recrutement d'agents à partir des signaux d'activité du garage
 import { MajiTuileMiroir } from "@/components/maji/recrutement/MajiTuileMiroir";
 import { MajiCandidature } from "@/components/maji/recrutement/MajiCandidature";
-import { calculerSignaux, ciblerGarage, departementDepuisCodePostal } from "@/lib/majiCiblage";
+import { calculerSignaux, ciblerGarage, departementDepuisCodePostal, MAJI_ACTIF } from "@/lib/majiCiblage";
 
 export default function Dashboard() {
   const {
@@ -616,7 +616,7 @@ export default function Dashboard() {
         {/* MaJi Auto — MODULE 01 : la tuile miroir.
             Ne s'affiche que si le garage a un volume de vente réel à se voir opposer
             (≥ 5 cessions sur 90 j) ET que son secteur est encore libre. */}
-        {majiCiblage.afficherTuileMiroir && (
+        {MAJI_ACTIF && majiCiblage.afficherTuileMiroir && (
           <div className="mb-8">
             <MajiTuileMiroir
               cessions={majiCiblage.compteurMisEnAvant}
@@ -626,13 +626,13 @@ export default function Dashboard() {
         )}
 
         {/* MaJi Auto — MODULES 03 + 04 : secteur et candidature pré-remplie */}
-        <MajiCandidature
+        {MAJI_ACTIF && <MajiCandidature
           open={majiOuvert}
           onOpenChange={setMajiOuvert}
           garage={garage}
           signaux={majiSignaux}
           departement={majiDepartement}
-        />
+        />}
 
         {/* Coffre-fort Widget — visible uniquement pour abonnés actifs */}
         {coffreBeta && coffreActive && (

@@ -11,6 +11,21 @@
 import { departementsLabels } from "@/data/departementsTarifs";
 
 // ---------------------------------------------------------------------------
+// L'interrupteur du projet
+// ---------------------------------------------------------------------------
+// MaJi Auto est EN PAUSE depuis le 16 octobre 2026, à la demande de Sarah. Rien
+// n'est supprimé : les cinq modules, le ciblage et la page de concepts restent
+// en place, prêts à resservir. Seul l'affichage est coupé.
+//
+// Remettre à `true` suffit à tout rallumer. Les trois points de sortie — la
+// tuile du tableau de bord, le bloc contextuel après une cession, et le pied
+// des courriels de démarche terminée — lisent cette constante, et rien d'autre.
+//
+// La campagne `blast-maji-campaign` n'a jamais eu de tâche planifiée : elle ne
+// part qu'à la main. Elle refuse désormais de partir tant que ceci vaut `false`.
+export const MAJI_ACTIF = false;
+
+// ---------------------------------------------------------------------------
 // Secteurs déjà attribués
 // ---------------------------------------------------------------------------
 // Le réseau ne retient qu'UN agent par département. Cette liste est de la donnée

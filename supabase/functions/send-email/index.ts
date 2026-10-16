@@ -170,8 +170,15 @@ const guestFooter = `
  * Le libellé du bouton — « Vérifier mon secteur » — est volontairement neutre :
  * il reste honnête que le secteur soit libre ou déjà attribué, l'état réel étant
  * affiché à l'arrivée. Aucune promesse de rendez-vous, de mandat ni de revenu.
+ *
+ * EN PAUSE depuis le 16 octobre 2026 : le pied ne part plus. Le gabarit reste
+ * ici, intact ; remettre MAJI_ACTIF à true le rallume. Même interrupteur que
+ * dans src/lib/majiCiblage.ts — il est dupliqué parce qu'une fonction Deno ne
+ * peut pas importer le code du site, mais les deux doivent bouger ensemble.
  */
-const majiEmailFooter = (baseUrl: string) => `
+const MAJI_ACTIF = false;
+
+const majiEmailFooter = (baseUrl: string) => (!MAJI_ACTIF ? "" : `
   <div style="margin-top: 28px; padding: 16px 18px; border-radius: 8px; background-color: #F6F7F9; border: 1px solid #E7EAEF; border-top: 2px solid #003399;">
     <div style="font-weight: 650; color: #12161C; margin-bottom: 6px;">Vous vendez déjà des véhicules.</div>
     <div style="font-size: 14px; color: #5C6675; margin-bottom: 12px; max-width: 56ch;">
@@ -182,7 +189,7 @@ const majiEmailFooter = (baseUrl: string) => `
       Vérifier mon secteur
     </a>
   </div>
-`;
+`);
 
 // Une date lue en base vaut « 2026-06-29 » ; écrite telle quelle dans un mail,
 // un lecteur français la prend pour un 29 juin ou pour autre chose, et au mieux

@@ -5,6 +5,11 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// MaJi Auto est EN PAUSE depuis le 16 octobre 2026. Cette campagne n'a jamais
+// eu de tâche planifiée — elle ne part qu'à la main — mais rien n'empêchait un
+// appel par mégarde. Elle refuse désormais, et le dit.
+const MAJI_ACTIF = false;
+
 const ADMIN_TOKEN = Deno.env.get('INTERNAL_API_KEY')!;
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!;
 
@@ -164,6 +169,18 @@ const HTML_TEMPLATE = `<!DOCTYPE html>
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
+  if (!MAJI_ACTIF) {
+    return new Response(
+      JSON.stringify({
+        error: 'maji_en_pause',
+        message:
+          "Le projet MaJi Auto est en pause depuis le 16 octobre 2026. Remettre MAJI_ACTIF a true dans cette fonction et dans src/lib/majiCiblage.ts pour le rallumer.",
+      }),
+      { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
+  }
+
   try {
     const url = new URL(req.url);
     const token = url.searchParams.get('token') || req.headers.get('x-admin-token');
