@@ -1425,6 +1425,24 @@ async function principal() {
   );
   ecrites++;
 
+  // ── Le repli des routes dynamiques, version GitHub Pages ────────────────
+  //
+  // Netlify lit `public/_redirects` ; GitHub Pages ne le connaît pas et sert
+  // `404.html` pour toute adresse sans fichier. On y met donc la même coquille
+  // neutre : les 155 pages pré-rendues partent telles quelles, et seules les
+  // adresses à valeur variable — /demarche/<id>, /suivi/<n> — tombent ici.
+  //
+  // Le code HTTP est alors 404 et non 200. Sans conséquence : ces adresses sont
+  // en `noindex`, aucune n'est au sitemap, et l'application se monte malgré le
+  // code. Les deux fichiers coexistent, chaque hébergeur lisant le sien.
+  try {
+    const coquille = await readFile(path.join(DIST, "_spa.html"), "utf8");
+    await writeFile(path.join(DIST, "404.html"), coquille, "utf8");
+    ecrites++;
+  } catch (e) {
+    console.warn("[prerender] 404.html non écrit :", e?.message ?? e);
+  }
+
   console.log(`[prerender] ${ecrites} pages écrites.`);
 
   // Le sitemap est RÉÉCRIT à partir de ce qui vient d'être pré-rendu.
