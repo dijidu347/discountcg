@@ -17,7 +17,7 @@
 // montant, ancienneté — pour répondre sans aller le chercher ailleurs.
 
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Navbar from "@/components/Navbar";
 import { DemarcheChat } from "@/components/DemarcheChat";
@@ -122,8 +122,13 @@ export default function Messages() {
     toast({ title: titre, description });
   };
 
-  const ouvrirDossier = (c: Conversation) =>
-    navigate(c.source === "pro" ? `/admin/demarche/${c.cible_id}` : `/admin/guest-order/${c.cible_id}`);
+  // L'adresse du dossier, et non une fonction qui navigue : le bouton est un
+  // vrai lien, donc le clic droit propose « ouvrir dans un nouvel onglet », le
+  // Cmd-clic et le clic molette fonctionnent, et l'adresse s'affiche au survol.
+  // Avec un `onClick`, le navigateur ne voyait qu'un bouton et n'offrait que son
+  // menu générique — reculer, actualiser, imprimer.
+  const lienDossier = (c: Conversation) =>
+    c.source === "pro" ? `/admin/demarche/${c.cible_id}` : `/admin/guest-order/${c.cible_id}`;
 
   const classer = async (c: Conversation) => {
     setClassement(true);
@@ -336,9 +341,11 @@ export default function Messages() {
                       {choisie.contact_email ? ` · ${choisie.contact_email}` : ""}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => ouvrirDossier(choisie)}>
-                    Ouvrir le dossier
-                    <ExternalLink className="ml-2 h-4 w-4" />
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to={lienDossier(choisie)}>
+                      Ouvrir le dossier
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </Link>
                   </Button>
                 </div>
 
