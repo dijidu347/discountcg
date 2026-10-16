@@ -175,8 +175,17 @@ titre("3. Les pages");
 let shaEnLigne = null;
 for (const [chemin, nom] of PAGES) {
   const r = await page(chemin);
-  if (r.code === 200) {
-    ok(`${nom}`, `${chemin}  (${r.ms} ms)`);
+  // GitHub Pages n'a pas de règle de réécriture : une route qui n'existe pas
+  // en fichier est servie via 404.html, avec un vrai code 404. Le routeur de
+  // l'application prend le relais et la page s'affiche normalement — mais le
+  // code reste 404. C'est sans effet ici : les 133 URL du sitemap sont toutes
+  // pré-rendues, donc toutes en 200. Seules les routes non indexées, comme les
+  // redirections vers les formulaires, passent par ce chemin.
+  const servieParLeRouteur = r.code === 404 && r.corps.includes('id="root"');
+
+  if (r.code === 200 || servieParLeRouteur) {
+    if (servieParLeRouteur) ok(`${nom}`, `${chemin}  (servie par le routeur, ${r.ms} ms)`);
+    else ok(`${nom}`, `${chemin}  (${r.ms} ms)`);
     if (!shaEnLigne) {
       const m = r.corps.match(/data-commit-sha="([0-9a-f]{7,40})"/);
       if (m) shaEnLigne = m[1];
