@@ -1,5 +1,51 @@
-import { sendLovableEmail } from 'npm:@lovable.dev/email-js'
+import { Resend } from 'https://esm.sh/resend@2.0.0'
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2'
+
+// Les mails d'authentification — confirmation, lien magique, et surtout les
+// mots de passe oubliés des comptes garage — partaient par Lovable, via le
+// sous-domaine notify.discountcartegrise.fr délégué à leurs serveurs. Le site
+// a quitté Lovable le 16 octobre 2026 ; ces mails étaient la dernière chose à
+// en dépendre, et ils auraient cessé de partir le jour de la résiliation.
+//
+// Ils passent désormais par Resend, comme les dix autres fonctions d'envoi.
+const resend = new Resend(Deno.env.get('RESEND_API_KEY'))
+
+// Le SDK Resend ne lève pas d'exception : il renvoie { data, error }. La file,
+// elle, compte sur une exception pour réessayer ou basculer en DLQ — on la lui
+// fabrique, en reportant le code HTTP là où isRateLimited et isForbidden vont
+// le chercher.
+// Ce que la file garantit sur un message. Le reste du payload — run_id,
+// purpose, label, idempotency_key — servait à l'API de Lovable et n'a plus
+// de destinataire ici.
+interface MailEnFile {
+  to: string
+  from: string
+  subject: string
+  html: string
+  text?: string
+}
+
+async function envoyerParResend(payload: MailEnFile): Promise<void> {
+  // Les messages déjà en file au moment de la bascule portent encore
+  // l'ancien expéditeur, que Resend ne connaît pas. On le ramène au domaine
+  // racine plutôt que de les laisser tomber en DLQ.
+  const from = payload.from.replace('@notify.discountcartegrise.fr', '@discountcartegrise.fr')
+
+  const { error } = await resend.emails.send({
+    from,
+    to: payload.to,
+    subject: payload.subject,
+    html: payload.html,
+    text: payload.text,
+  })
+
+  if (error) {
+    const echec = new Error(error.message ?? "Resend a refusé l'envoi")
+    const code = (error as { statusCode?: number }).statusCode
+    if (code) (echec as Error & { status?: number }).status = code
+    throw echec
+  }
+}
 
 const MAX_RETRIES = 5
 const DEFAULT_BATCH_SIZE = 10
@@ -79,7 +125,7 @@ async function moveToDlq(
 }
 
 Deno.serve(async (req) => {
-  const apiKey = Deno.env.get('LOVABLE_API_KEY')
+  const apiKey = Deno.env.get('RESEND_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
@@ -249,26 +295,7 @@ Deno.serve(async (req) => {
       }
 
       try {
-        await sendLovableEmail(
-          {
-            run_id: payload.run_id,
-            to: payload.to,
-            from: payload.from,
-            sender_domain: payload.sender_domain,
-            subject: payload.subject,
-            html: payload.html,
-            text: payload.text,
-            purpose: payload.purpose,
-            label: payload.label,
-            idempotency_key: payload.idempotency_key,
-            unsubscribe_token: payload.unsubscribe_token,
-            message_id: payload.message_id,
-          },
-          // sendUrl is optional — when LOVABLE_SEND_URL is not set, the library
-          // falls back to the default Lovable API endpoint (https://api.lovable.dev).
-          // Set LOVABLE_SEND_URL as a Supabase secret to override (e.g. for local dev).
-          { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
-        )
+        await envoyerParResend(payload)
 
         // Log success
         await supabase.from('email_send_log').insert({
