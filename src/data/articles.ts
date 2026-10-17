@@ -41,6 +41,120 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "malus-au-poids-2026-seuil-1500-kg",
+    titre: "Malus au poids 2026 : le seuil descend à 1 500 kg, et non, les électriques n'y sont pas soumises",
+    chapo:
+      "Depuis le 1er janvier 2026, la taxe sur la masse en ordre de marche se déclenche dès 1 500 kg, contre 1 600 kg l'an dernier. Les véhicules 100 % électriques en restent exonérés, contrairement à ce qu'annoncent plusieurs sites.",
+    categorie: "Tarifs",
+    date: "2026-10-17",
+    image: "/blog/malus-au-poids-2026.jpg",
+    imageCredit: "Photo : Unsplash",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "La taxe sur la masse en ordre de marche — le « malus au poids » — se paie une fois, à l'immatriculation, et s'ajoute au prix de la carte grise. En 2024 et 2025, elle visait les véhicules de plus de 1,6 tonne. Depuis le 1er janvier 2026, le seuil est descendu de cent kilos : elle commence à 1 500 kg.",
+      },
+      {
+        type: "p",
+        texte:
+          "Cent kilos, sur le papier, ce n'est pas grand-chose. Dans les faits, c'est la différence entre une berline familiale épargnée et une berline familiale taxée : beaucoup de modèles courants pèsent entre 1 500 et 1 600 kg à vide.",
+      },
+      {
+        type: "h2",
+        texte: "Le barème, tranche par tranche",
+      },
+      {
+        type: "liste",
+        items: [
+          "Jusqu'à 1 499 kg : rien.",
+          "De 1 500 à 1 699 kg : 10 € par kilo.",
+          "De 1 700 à 1 799 kg : 15 € par kilo.",
+          "De 1 800 à 1 899 kg : 20 € par kilo.",
+          "De 1 900 à 1 999 kg : 25 € par kilo.",
+          "À partir de 2 000 kg : 30 € par kilo.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Le calcul se fait tranche par tranche, et non en appliquant un seul tarif à toute la masse. Pour un véhicule de 1 950 kg : 200 kg à 10 €, soit 2 000 €, puis 100 kg à 15 €, soit 1 500 €, puis 100 kg à 20 €, soit 2 000 €, puis 51 kg à 25 €, soit 1 275 €. Total : 6 775 €, à ajouter au prix du certificat d'immatriculation.",
+      },
+      {
+        type: "h2",
+        texte: "Non, les électriques ne sont pas concernées",
+      },
+      {
+        type: "p",
+        texte:
+          "Plusieurs sites ont écrit cette année que le malus au poids s'étendait désormais aux véhicules électriques. C'est faux. La fiche de service-public.gouv.fr est explicite : un véhicule dont la source d'énergie est exclusivement l'électricité est exonéré de la taxe sur la masse en ordre de marche. L'exonération se détermine à la date de première immatriculation.",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est le genre d'erreur qui circule vite parce qu'elle est plausible : le seuil a bien baissé, et les véhicules électriques sont bien lourds. Les deux faits sont vrais, la conclusion ne l'est pas.",
+      },
+      {
+        type: "h2",
+        texte: "Les hybrides ont droit à un abattement",
+      },
+      {
+        type: "liste",
+        items: [
+          "Hybride rechargeable dont l'autonomie électrique en ville dépasse 50 km : 200 kg retirés de la masse, dans la limite de 15 % de celle-ci.",
+          "Hybride non rechargeable à moteur électrique de 30 kW ou plus : 100 kg retirés.",
+          "Micro-hybride de moins de 30 kW : 100 kg retirés.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "L'abattement se soustrait avant d'appliquer le barème. Un hybride rechargeable de 1 650 kg redescend ainsi à 1 450 kg et sort de la taxe.",
+      },
+      {
+        type: "h2",
+        texte: "C'est l'année de première immatriculation qui compte",
+      },
+      {
+        type: "p",
+        texte:
+          "Le barème retenu est celui de l'année de première immatriculation du véhicule, et non celui de l'année de la commande ou de l'achat. Un véhicule commandé en 2025 mais immatriculé en 2026 relève donc du seuil de 1 500 kg. C'est un point à vérifier avant de signer, quand la livraison est annoncée à cheval sur deux années.",
+      },
+      {
+        type: "h2",
+        texte: "Qui en est exonéré",
+      },
+      {
+        type: "p",
+        texte:
+          "Au-delà des véhicules électriques : les véhicules accessibles en fauteuil roulant, et ceux acquis par une personne titulaire d'une carte mobilité inclusion portant la mention « invalidité » ou d'une carte d'invalidité militaire — dans la limite d'un véhicule par bénéficiaire. La règle vaut aussi lorsque c'est un enfant mineur ou à charge du foyer fiscal qui détient la carte. Les foyers ayant au moins trois enfants à charge bénéficient d'une réduction, qui se demande séparément.",
+      },
+      {
+        type: "h2",
+        texte: "Et le malus CO2 ?",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est une taxe distincte, qui se cumule avec celle-ci. Au 1er janvier 2026, son seuil de déclenchement est descendu de 5 g pour s'établir à 108 g de CO2 par kilomètre, et son montant maximal atteint 80 000 € à partir de 192 g. Un véhicule lourd et émetteur peut donc être frappé deux fois.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Taxe sur la masse en ordre de marche — service-public.gouv.fr",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F35950",
+      },
+      {
+        libelle: "Fiscalité environnementale relative aux véhicules — ministère de la Transition écologique",
+        url: "https://www.ecologie.gouv.fr/politiques-publiques/fiscalite-environnementale-relative-aux-vehicules",
+      },
+      {
+        libelle: "Réduction pour famille nombreuse — service-public.gouv.fr",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F35951",
+      },
+    ],
+  },
+  {
     slug: "zfe-toujours-en-vigueur-2026",
     titre: "Les ZFE n'ont pas été supprimées : ce que dit vraiment la décision du Conseil constitutionnel",
     chapo:
@@ -301,7 +415,7 @@ export const ARTICLES: Article[] = [
       {
         type: "p",
         texte:
-          "L'article 11 de l'arrêté laissait aux professionnels déjà habilités jusqu'au 1er août 2026 pour se mettre en conformité, et jusqu'au 1er octobre 2026 pour le seul critère des trois ans d'ancienneté. Passé ces dates, l'habilitation tombe.",
+          "L'article 11 de l'arrêté laissait aux professionnels déjà habilités jusqu'au 1er août 2026 pour se mettre en conformité. Son II repousse au 1er octobre 2026 le seul 4° du II des articles 18-2 et 18-4 : les trois ans d'ancienneté pour l'entreprise, et les deux cents opérations pour l'établissement. Passé ces dates, l'habilitation est retirée de plein droit — sans décision à notifier, sans recours à exercer.",
       },
       {
         type: "p",
