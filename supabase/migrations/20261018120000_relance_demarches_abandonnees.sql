@@ -20,6 +20,17 @@
 --
 -- Et rien d'antérieur à la mise en service : les 1 772 dossiers existants ne
 -- sont pas relancés. Pas de mail surprise à des garages venus il y a des mois.
+--
+-- UN SEUL MAIL PAR GARAGE, et c'est essentiel : en simulant sur trente jours,
+-- 159 démarches se répartissaient sur 42 garages seulement, dont un à lui seul
+-- en avait quarante. Une ligne par démarche lui aurait envoyé quarante
+-- courriers le même matin. On retient donc la plus récente, et on lui dit
+-- combien d'autres attendent.
+--
+-- Note : ces démarches portent is_draft = true. Le filtre « not is_draft » de
+-- la relance des dossiers en sommeil ne s'applique pas ici — là-bas le dossier
+-- est payé, donc plus un brouillon ; ici, le brouillon EST l'état cherché.
+-- Recopié sans réfléchir, ce filtre rendait zéro ligne.
 
 alter table public.demarches
   add column if not exists relances_abandon integer not null default 0,
@@ -29,7 +40,7 @@ drop function if exists public.demarches_abandonnees_a_relancer(timestamptz);
 create function public.demarches_abandonnees_a_relancer(p_mise_en_service timestamptz)
 returns table (
   dossier_id uuid, email text, nom text, reference text,
-  demarche text, immatriculation text, numero_relance integer
+  demarche text, immatriculation text, numero_relance integer, autres integer
 )
 language sql
 stable
@@ -47,27 +58,29 @@ as $$
       join garages g on g.id = d.garage_id
      where d.status::text = 'en_saisie'
        and not (d.paye or d.paid_with_tokens or d.client_paid or d.is_free_token)
-       and not d.is_draft
        and d.created_at > p_mise_en_service
        and d.created_at > now() - interval '30 days'
        and d.relances_abandon < 2
+  ),
+  eligibles as (
+    select * from candidats c
+     where ((c.immatriculation is not null and c.immatriculation <> '' and c.immatriculation <> 'TEMP')
+            or c.nb_pieces > 0)
+       and (
+            (c.relances_abandon = 0 and c.created_at < now() - interval '2 days')
+         or (c.relances_abandon = 1 and c.created_at < now() - interval '7 days'
+             and c.derniere_relance_abandon_at < now() - interval '4 days')
+       )
   )
-  select c.id,
-         c.email,
-         c.raison_sociale,
-         coalesce(c.numero_demarche, ''),
-         coalesce((select a.titre from actions_rapides a where a.code = c.t), c.t),
-         nullif(c.immatriculation, 'TEMP'),
-         c.relances_abandon + 1
-    from candidats c
-   where ((c.immatriculation is not null and c.immatriculation <> '' and c.immatriculation <> 'TEMP')
-          or c.nb_pieces > 0)
-     and (
-          (c.relances_abandon = 0 and c.created_at < now() - interval '2 days')
-       or (c.relances_abandon = 1 and c.created_at < now() - interval '7 days'
-           and c.derniere_relance_abandon_at < now() - interval '4 days')
-     )
-   order by c.created_at;
+  select distinct on (e.email)
+         e.id, e.email, e.raison_sociale,
+         coalesce(e.numero_demarche, ''),
+         coalesce((select a.titre from actions_rapides a where a.code = e.t), e.t),
+         nullif(e.immatriculation, 'TEMP'),
+         e.relances_abandon + 1,
+         (count(*) over (partition by e.email) - 1)::integer
+    from eligibles e
+   order by e.email, e.created_at desc;
 $$;
 
 revoke all on function public.demarches_abandonnees_a_relancer(timestamptz) from public, anon, authenticated;

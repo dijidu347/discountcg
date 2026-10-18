@@ -1131,6 +1131,7 @@ const getEmailTemplate = (type: string, data: any) => {
     // === RELANCE D'UNE COMMANDE PARTICULIER NON PAYÉE (J+1 puis J+3) ===
     case "guest_order_reminder": {
       const dernier = Number(data.numero_relance) >= 2;
+      const autres = Number(data.autres) || 0;
       const vehicule = data.immatriculation ? ` pour le véhicule <strong>${data.immatriculation}</strong>` : "";
       return {
         subject: dernier
@@ -1198,6 +1199,7 @@ const getEmailTemplate = (type: string, data: any) => {
     case "demarche_abandonnee": {
       const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
       const dernier = Number(data.numero_relance) >= 2;
+      const autres = Number(data.autres) || 0;
       const vehicule = data.immatriculation ? ` (${esc(data.immatriculation)})` : "";
       const ref = data.reference ? ` <strong>${esc(data.reference)}</strong>` : "";
       return {
@@ -1210,6 +1212,7 @@ const getEmailTemplate = (type: string, data: any) => {
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <p>Bonjour${data.nom ? ` ${esc(data.nom)}` : ""},</p>
             <p>Vous avez commencé une démarche <strong>${esc(data.demarche_label)}</strong>${vehicule}${ref} il y a quelques jours, et elle est restée en plan.</p>
+            ${autres > 0 ? `<p>${autres === 1 ? "Une autre démarche attend également de votre côté." : `${autres} autres démarches attendent également de votre côté.`} Vous les retrouvez toutes dans votre espace.</p>` : ""}
             <p><strong>Est-ce qu'un point vous bloque, ou avez-vous une question ?</strong> Une pièce dont vous n'êtes pas sûr, un champ qui coince, un doute sur le tarif : écrivez-nous depuis votre espace, on vous répond.</p>
             ${dernier
               ? `<p>C'est notre dernier message à ce sujet — on ne vous relancera plus. Votre démarche reste accessible dans votre espace aussi longtemps que vous le souhaitez.</p>`

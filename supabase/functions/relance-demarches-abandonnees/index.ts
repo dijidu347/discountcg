@@ -7,6 +7,12 @@
 // démarche antérieure à la mise en service : voir la migration pour le détail
 // des mesures qui ont fixé ces seuils.
 //
+// Un seul courrier par garage, et c'est essentiel : en simulant sur trente
+// jours, 159 démarches se répartissaient sur 42 garages, dont un seul en
+// avait quarante. Une ligne par démarche lui en aurait envoyé quarante le
+// même matin. On retient la plus récente et on lui dit combien d'autres
+// attendent.
+//
 // Le ton est celui d'un service, pas d'une relance commerciale : on demande
 // s'il y a une difficulté, on ne réclame pas un paiement.
 
@@ -35,6 +41,7 @@ type Dossier = {
   demarche: string | null;
   immatriculation: string | null;
   numero_relance: number;
+  autres: number;
 };
 
 serve(async (req) => {
@@ -84,6 +91,7 @@ serve(async (req) => {
           demarche_label: d.demarche || "",
           immatriculation: d.immatriculation || "",
           numero_relance: d.numero_relance,
+          autres: d.autres ?? 0,
           demarche_id: d.dossier_id,
           lien: `${SITE}/demarche/${d.dossier_id}`,
         },
