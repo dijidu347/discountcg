@@ -94,6 +94,10 @@ function Etiquette({ categorie }: { categorie: string }) {
 }
 
 function CarteArticle({ article, grande = false }: { article: Article; grande?: boolean }) {
+  const debut = grande
+    ? article.corps.find((b): b is { type: "p"; texte: string } => b.type === "p")?.texte
+    : undefined;
+
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-lg">
       <Link to={`/blog/${article.slug}`} className="block overflow-hidden">
@@ -102,7 +106,7 @@ function CarteArticle({ article, grande = false }: { article: Article; grande?: 
           alt=""
           loading="lazy"
           className={`w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-            grande ? "h-64 md:h-80" : "h-36"
+            grande ? "h-64 md:h-80" : "h-28"
           }`}
         />
       </Link>
@@ -119,6 +123,13 @@ function CarteArticle({ article, grande = false }: { article: Article; grande?: 
         <p className={`text-muted-foreground ${grande ? "text-base" : "text-sm line-clamp-2"}`}>
           {article.chapo}
         </p>
+        {/* La carte mise en avant a deux fois la hauteur d'une vignette mais le
+            même chapô : il restait un grand vide entre le texte et le lien.
+            Elle enchaîne donc sur le premier paragraphe de l'article, qui
+            remplit l'espace avec du vrai contenu plutôt qu'avec du blanc. */}
+        {grande && debut && (
+          <p className="line-clamp-5 text-base text-muted-foreground">{debut}</p>
+        )}
         <Link
           to={`/blog/${article.slug}`}
           className="mt-auto inline-flex items-center gap-1 pt-2 text-sm font-semibold text-primary"
@@ -140,8 +151,8 @@ export default function Blog() {
   const recents = suite.slice(0, 4);
   const reste = suite.slice(4);
 
-  // Neuf par page : trois rangées pleines sur grand écran.
-  const PAR_PAGE = 9;
+  // Seize par page : quatre par rangée, quatre rangées.
+  const PAR_PAGE = 16;
   const pages = Math.max(1, Math.ceil(reste.length / PAR_PAGE));
   const [page, setPage] = useState(1);
   const tousLesArticles = useRef<HTMLElement>(null);
@@ -224,7 +235,7 @@ export default function Blog() {
         {reste.length > 0 && (
           <section ref={tousLesArticles} className="mt-16 scroll-mt-24 border-t border-border pt-12">
             <h2 className="mb-6 text-xl font-bold text-foreground">Tous nos articles</h2>
-            <div className="grid items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid items-start gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {visibles.map((a) => (
                 <CarteArticle key={a.slug} article={a} />
               ))}
