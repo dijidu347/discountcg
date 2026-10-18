@@ -41,6 +41,133 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "fourriere-tarifs-octobre-2026",
+    titre: "Fourrière : l'enlèvement passe à 135 € depuis le 1er octobre 2026, et chaque jour d'attente se paie",
+    chapo:
+      "Un arrêté du 13 septembre 2026 relève les plafonds des frais de fourrière pour les voitures : 135 € l'enlèvement, 7,15 € la journée de garde. Le montant n'est pas le vrai risque : au-delà de dix ou quinze jours sans réaction, le véhicule est vendu ou détruit.",
+    categorie: "Tarifs",
+    date: "2026-10-18",
+    image: "/blog/fourriere-tarifs-octobre-2026.jpg",
+    imageCredit: "Photo : Kevin.B, Wikimedia Commons, licence CC BY-SA 4.0",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Les frais de fourrière ne sont pas libres : l'État fixe des montants maximaux, que la fourrière ne peut pas dépasser. Un arrêté du 13 septembre 2026, publié au Journal officiel du 22 septembre, les a relevés pour les voitures particulières. Les nouveaux plafonds s'appliquent depuis le 1er octobre 2026.",
+      },
+      {
+        type: "h2",
+        texte: "Le nouveau barème, hors Paris, Lyon, Marseille et Toulouse",
+      },
+      {
+        type: "liste",
+        items: [
+          "Enlèvement : 135 €, au lieu de 127,65 €.",
+          "Garde journalière : 7,15 €, au lieu de 6,75 €.",
+          "Immobilisation matérielle (pose d'un sabot) : 7,60 €.",
+          "Opérations préalables (dépanneuse sur place, véhicule pas encore enlevé) : 15,20 €.",
+          "Mise en vente : 100 €.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Les quatre plus grandes villes ont un barème à part. À Lyon, Marseille et Toulouse, l'enlèvement passe lui aussi à 135 €, mais la garde est plafonnée à 10 € par jour et la mise en vente à 61 €. À Paris, rien ne change : 150 € l'enlèvement, 29 € la journée de garde, 100 € la mise en vente.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que coûte une voiture récupérée le jour même",
+      },
+      {
+        type: "p",
+        texte:
+          "Service-public.gouv.fr compte l'enlèvement et une journée de garde pour un véhicule récupéré le jour même. Sur ce calcul, la facture maximale est de 142,15 € dans la plupart des communes (contre 134,40 € avant le 1er octobre), de 145 € à Lyon, Marseille et Toulouse, et de 179 € à Paris. S'ajoutent 7,60 € si un sabot a été posé. Chaque jour supplémentaire ajoute une journée de garde : 7,15 €, 10 € ou 29 € selon la ville.",
+      },
+      {
+        type: "p",
+        texte:
+          "Ces montants sont des plafonds. Une fourrière peut facturer moins, jamais plus. Si la note dépasse le barème de votre ville, demandez sur quel poste porte l'écart.",
+      },
+      {
+        type: "h2",
+        texte: "Le vrai danger, c'est le délai",
+      },
+      {
+        type: "p",
+        texte:
+          "Au-delà de trois jours, le véhicule est classé dans l'une de deux catégories. S'il est à remettre au service des Domaines, il est considéré comme abandonné quinze jours après la notification de mise en fourrière. S'il est classé à détruire, après estimation de sa valeur marchande, le délai tombe à dix jours. Passé ce délai, il est vendu ou envoyé en centre VHU pour destruction.",
+      },
+      {
+        type: "p",
+        texte:
+          "Si vous êtes absent plusieurs jours, la notification vous parvient par lettre recommandée avec accusé de réception, envoyée dans les cinq jours ouvrables qui suivent la mise en fourrière. Elle indique la fourrière, le motif, le classement du véhicule et le délai pour le retirer. Une lettre recommandée qui attend au bureau de poste fait donc courir un délai qui peut coûter la voiture.",
+      },
+      {
+        type: "h2",
+        texte: "Récupérer sa voiture : les bons réflexes",
+      },
+      {
+        type: "liste",
+        items: [
+          "Si la dépanneuse est là mais que l'enlèvement n'a pas commencé, vous pouvez repartir avec la voiture en réglant les 15,20 € d'opérations préalables. L'enlèvement commence dès que deux roues ont quitté le sol ou que le véhicule a commencé à être déplacé : il faut alors payer l'enlèvement, ou s'engager par écrit à le payer, et libérer la voie.",
+          "Le service en ligne de service-public.gouv.fr permet, avec le numéro d'immatriculation, de savoir si la voiture est en fourrière, de consulter le dossier et d'obtenir l'autorisation de sortie (la mainlevée) sans passer au commissariat. Toutes les fourrières n'y sont pas encore reliées, et l'enregistrement peut prendre du retard sur l'enlèvement : si la recherche échoue, recommencez plus tard ou adressez-vous au commissariat ou à la gendarmerie du lieu de stationnement.",
+          "Sans le service en ligne, la mainlevée se demande aux forces de l'ordre qui ont prescrit la mise en fourrière, sur présentation de l'attestation d'assurance, d'un permis de conduire valide et du certificat d'immatriculation s'il ne vous a pas été retiré.",
+          "Les frais se règlent ensuite au gardien de la fourrière, qui ne rend le véhicule qu'une fois payé.",
+        ],
+      },
+      {
+        type: "h2",
+        texte: "Vérifiez l'état de la voiture avant de partir",
+      },
+      {
+        type: "p",
+        texte:
+          "Avant l'enlèvement, une fiche descriptive du véhicule est établie, et vous pouvez en obtenir une copie. À la restitution, l'état de la voiture doit lui correspondre. Si elle a été abîmée pendant le chargement ou la garde, adressez une réclamation par lettre recommandée avec accusé de réception à l'autorité de fourrière — la commune ou la préfecture — avec la fiche descriptive et des photos. En cas de refus, le recours se porte devant le tribunal administratif du lieu de l'enlèvement.",
+      },
+      {
+        type: "h2",
+        texte: "Contester la mise en fourrière",
+      },
+      {
+        type: "p",
+        texte:
+          "La notification indique à qui adresser le recours : le procureur de la République ou le préfet du lieu de l'enlèvement. L'autorité confirme la mise en fourrière ou ordonne la mainlevée dans les cinq jours ouvrables. Pour obtenir l'annulation, il faut saisir en parallèle le tribunal judiciaire du lieu de l'enlèvement ; si le juge annule la procédure, les frais peuvent être remboursés par l'autorité de fourrière.",
+      },
+      {
+        type: "h2",
+        texte: "Un contrôle technique dépassé peut aussi y mener",
+      },
+      {
+        type: "p",
+        texte:
+          "La fourrière ne sanctionne pas que le stationnement gênant. Parmi les motifs recensés par service-public.gouv.fr figure le non-respect des obligations liées au contrôle technique. Une échéance oubliée ne se règle donc pas toujours par une amende : elle peut aussi finir sur un plateau.",
+      },
+      {
+        type: "h2",
+        texte: "Et l'an prochain ?",
+      },
+      {
+        type: "p",
+        texte:
+          "À partir de 2027, les plafonds seront revus chaque année en fonction du tarif d'enlèvement et de l'évolution du coût des carburants, de la main-d'œuvre, des assurances et des véhicules.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Fourrières : les nouveaux tarifs au 1er octobre 2026 — service-public.gouv.fr, 22 septembre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/actualites/A14227",
+      },
+      {
+        libelle: "Mise en fourrière du véhicule — service-public.gouv.fr, vérifié le 1er octobre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F12918",
+      },
+      {
+        libelle: "Arrêté du 13 septembre 2026 relatif aux tarifs maxima des frais de fourrière — Légifrance",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054877184",
+      },
+    ],
+  },
+  {
     slug: "malus-au-poids-2026-seuil-1500-kg",
     titre: "Malus au poids 2026 : le seuil descend à 1 500 kg, et non, les électriques n'y sont pas soumises",
     chapo:
