@@ -25,3 +25,6 @@ dist-ssr
 
 # Sources legales (gardees en local, jamais versionnees)
 legal-source/
+
+# Artefacts du CLI Supabase
+supabase/.temp/

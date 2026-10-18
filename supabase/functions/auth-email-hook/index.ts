@@ -36,15 +36,10 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-// « discountcg » était le nom du projet Lovable, pas celui de la marque —
-// et il s'affichait tel quel dans les mails.
-const SITE_NAME = "DiscountCarteGrise"
+const SITE_NAME = "discountcg"
+const SENDER_DOMAIN = "notify.discountcartegrise.fr"
 const ROOT_DOMAIN = "discountcartegrise.fr"
-
-// Ces mails partaient de notify.discountcartegrise.fr, un sous-domaine
-// délégué aux serveurs de Lovable. Le site les a quittés le 16 octobre 2026 ;
-// l'expéditeur revient au domaine racine, que Resend a déjà vérifié.
-const FROM_DOMAIN = ROOT_DOMAIN
+const FROM_DOMAIN = "notify.discountcartegrise.fr" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
@@ -264,6 +259,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       message_id: messageId,
       to: payload.data.email,
       from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+      sender_domain: SENDER_DOMAIN,
       subject: EMAIL_SUBJECTS[emailType] || 'Notification',
       html,
       text,
