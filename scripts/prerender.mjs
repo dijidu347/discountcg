@@ -1314,7 +1314,7 @@ async function principal() {
       appliquer(gabarit, {
         titre: "Le blog : l'actualité de la carte grise",
         description:
-          "Ce qui change vraiment pour la carte grise : réglementation, tarifs, obligations des professionnels. Chaque article cite le texte officiel sur lequel il s'appuie.",
+          "Ce qui change pour votre véhicule, et ce que ça vous coûte : réglementation, tarifs, malus, contrôle technique. Vérifié sur les textes officiels, jamais recopié ailleurs.",
         canonical: `${BASE}/blog`,
         schemas: [
           {
@@ -1333,7 +1333,7 @@ async function principal() {
         html: corps({
           h1: "Le blog Discount Carte Grise",
           blocs: [
-            `<p>Ce qui change vraiment pour votre carte grise. Chaque article cite le texte officiel sur lequel il s'appuie.</p>`,
+            `<p>Ce qui change pour votre véhicule, et ce que ça vous coûte. Vérifié sur les textes officiels, jamais recopié ailleurs.</p>`,
             `<h2>Les articles</h2><ul>${listeArticles}</ul>`,
             `<p><a href="${BASE}/guides">Nos guides pratiques</a> : les pièces à fournir, les délais et les prix, démarche par démarche.</p>`,
           ],
