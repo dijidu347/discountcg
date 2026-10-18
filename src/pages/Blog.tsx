@@ -4,12 +4,82 @@
 // vérifié à la source. Les guides du site ont leur propre onglet — ils ne sont
 // pas de l'actualité, et les mêler ici brouillait les deux.
 
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ARTICLES_TRIES, COULEURS_CATEGORIE, dateEnFrancais, type Article } from "@/data/articles";
+
+// La pagination de « Tous nos articles ».
+//
+// Elle ne s'affiche que s'il y a plus d'une page : sur sept articles, un
+// sélecteur à une seule page ne servirait qu'à occuper de la place. Le blog
+// publie deux fois par semaine, elle apparaîtra d'elle-même.
+//
+// Les pages lointaines sont remplacées par des points de suspension, sinon la
+// barre déborderait de l'écran au bout d'un an — c'est ce qu'on voit sur les
+// blogs qui ne l'ont pas prévu.
+function Pagination({ page, pages, onChange }: {
+  page: number;
+  pages: number;
+  onChange: (p: number) => void;
+}) {
+  if (pages <= 1) return null;
+
+  const numeros: (number | "…")[] = [];
+  for (let n = 1; n <= pages; n++) {
+    if (n === 1 || n === pages || Math.abs(n - page) <= 1) numeros.push(n);
+    else if (numeros[numeros.length - 1] !== "…") numeros.push("…");
+  }
+
+  const bouton = "flex h-9 min-w-9 items-center justify-center rounded-lg border border-border px-3 text-sm transition-colors";
+
+  return (
+    <nav aria-label="Pages d'articles" className="mt-10 flex flex-wrap items-center justify-center gap-2">
+      <button
+        type="button"
+        onClick={() => onChange(page - 1)}
+        disabled={page === 1}
+        aria-label="Page précédente"
+        className={`${bouton} bg-background text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40`}
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+
+      {numeros.map((n, i) =>
+        n === "…" ? (
+          <span key={`saut-${i}`} className="px-1 text-sm text-muted-foreground">…</span>
+        ) : (
+          <button
+            key={n}
+            type="button"
+            onClick={() => onChange(n)}
+            aria-current={n === page ? "page" : undefined}
+            className={`${bouton} ${
+              n === page
+                ? "border-primary bg-primary font-semibold text-primary-foreground"
+                : "bg-background text-foreground hover:bg-muted"
+            }`}
+          >
+            {n}
+          </button>
+        ),
+      )}
+
+      <button
+        type="button"
+        onClick={() => onChange(page + 1)}
+        disabled={page === pages}
+        aria-label="Page suivante"
+        className={`${bouton} bg-background text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40`}
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </nav>
+  );
+}
 
 function Etiquette({ categorie }: { categorie: string }) {
   return (
@@ -32,7 +102,7 @@ function CarteArticle({ article, grande = false }: { article: Article; grande?: 
           alt=""
           loading="lazy"
           className={`w-full object-cover transition-transform duration-300 group-hover:scale-105 ${
-            grande ? "h-64 md:h-80" : "h-44"
+            grande ? "h-64 md:h-80" : "h-36"
           }`}
         />
       </Link>
@@ -41,12 +111,12 @@ function CarteArticle({ article, grande = false }: { article: Article; grande?: 
           <time dateTime={article.date}>{dateEnFrancais(article.date)}</time>
           <Etiquette categorie={article.categorie} />
         </div>
-        <h3 className={`font-bold leading-snug text-foreground ${grande ? "text-2xl" : "text-base"}`}>
+        <h3 className={`text-balance font-bold leading-snug text-foreground ${grande ? "text-2xl" : "text-base line-clamp-3"}`}>
           <Link to={`/blog/${article.slug}`} className="hover:text-primary">
             {article.titre}
           </Link>
         </h3>
-        <p className={`text-muted-foreground ${grande ? "text-base" : "text-sm line-clamp-3"}`}>
+        <p className={`text-muted-foreground ${grande ? "text-base" : "text-sm line-clamp-2"}`}>
           {article.chapo}
         </p>
         <Link
@@ -70,6 +140,20 @@ export default function Blog() {
   const recents = suite.slice(0, 4);
   const reste = suite.slice(4);
 
+  // Neuf par page : trois rangées pleines sur grand écran.
+  const PAR_PAGE = 9;
+  const pages = Math.max(1, Math.ceil(reste.length / PAR_PAGE));
+  const [page, setPage] = useState(1);
+  const tousLesArticles = useRef<HTMLElement>(null);
+  const visibles = reste.slice((page - 1) * PAR_PAGE, page * PAR_PAGE);
+
+  // Changer de page sans remonter la liste laisserait le lecteur au milieu
+  // d'articles qui viennent d'être remplacés sous ses yeux.
+  const allerA = (p: number) => {
+    setPage(Math.min(Math.max(p, 1), pages));
+    tousLesArticles.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
@@ -92,12 +176,15 @@ export default function Blog() {
 
       <header className="border-b border-border bg-gradient-to-b from-primary/5 to-background py-12">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-extrabold text-foreground md:text-4xl">
+          {/* text-balance : sans lui, le navigateur remplit chaque ligne au
+              maximum puis laisse deux mots orphelins sur la dernière. Il
+              répartit les mots pour que les lignes aient la même longueur. */}
+          <h1 className="text-balance text-3xl font-extrabold text-foreground md:text-4xl">
             Le blog Discount Carte Grise
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-muted-foreground">
-            Ce qui change vraiment pour votre carte grise. Chaque article cite le texte
-            officiel sur lequel il s'appuie.
+          <p className="mx-auto mt-3 max-w-2xl text-balance text-muted-foreground">
+            Ce qui change pour votre véhicule, et ce que ça vous coûte.
+            Vérifié sur les textes officiels, jamais recopié ailleurs.
           </p>
         </div>
       </header>
@@ -108,16 +195,20 @@ export default function Blog() {
     petites cartes entre elles — et s'allongeait donc sur toute la
     hauteur des six articles de droite, avec un grand vide blanc et le
     « Lire la suite » largué tout en bas. */}
-        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-          <section>
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+          <section className="flex flex-col">
             <h2 className="mb-5 text-xl font-bold text-foreground">À la une</h2>
-            {une && <CarteArticle article={une} grande />}
+            {/* Le h-full de la carte vaut 100 % de la section, titre compris :
+                elle débordait donc de 48 px, la hauteur du « À la une ». Ce
+                conteneur lui donne l'espace restant, et les deux colonnes se
+                terminent exactement au même endroit. */}
+            <div className="flex-1">{une && <CarteArticle article={une} grande />}</div>
           </section>
 
-          <section>
+          <section className="flex flex-col">
             <h2 className="mb-5 text-xl font-bold text-foreground">Les plus récents</h2>
             {recents.length > 0 ? (
-              <div className="grid gap-5 sm:grid-cols-2">
+              <div className="grid flex-1 gap-5 sm:grid-cols-2 sm:grid-rows-2">
                 {recents.map((a) => (
                   <CarteArticle key={a.slug} article={a} />
                 ))}
@@ -131,13 +222,14 @@ export default function Blog() {
         </div>
 
         {reste.length > 0 && (
-          <section className="mt-16 border-t border-border pt-12">
+          <section ref={tousLesArticles} className="mt-16 scroll-mt-24 border-t border-border pt-12">
             <h2 className="mb-6 text-xl font-bold text-foreground">Tous nos articles</h2>
             <div className="grid items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              {reste.map((a) => (
+              {visibles.map((a) => (
                 <CarteArticle key={a.slug} article={a} />
               ))}
             </div>
+            <Pagination page={page} pages={pages} onChange={allerA} />
           </section>
         )}
 
