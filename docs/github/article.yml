@@ -1,23 +1,18 @@
 name: Article du blog
 
-# Pourquoi ce workflow existe : la rédaction tournait dans une tâche planifiée sur
-# le Mac de Sarah, donc elle ne s'exécutait que si la machine était allumée à
-# l'heure dite. Ici, c'est la minuterie de GitHub — ordinateur éteint, vacances,
-# connexion coupée, ça publie quand même.
-
 on:
-  # 06:13 UTC = 08:13 à Paris l'été, 07:13 l'hiver. GitHub ne connaît que l'UTC
-  # et ne gère pas le changement d'heure ; une heure d'écart est sans importance
-  # pour un article de blog.
+  # 06:13 UTC = 08:13 à Paris l'été, 07:13 l'hiver. GitHub ne connaît que
+  # l'UTC et ne gère pas le changement d'heure ; une heure d'écart est sans
+  # importance pour un article de blog.
   schedule:
     - cron: "13 6 * * 2,5"
   # Pour lancer un article à la demande, sans attendre mardi.
   workflow_dispatch:
 
 permissions:
-  contents: write   # écrire l'article et le pousser
-  id-token: write   # exigé par l'action Claude
-  actions: write    # relancer « Publier le site » à la fin
+  contents: write
+  id-token: write
+  actions: write
 
 concurrency:
   group: article-blog
@@ -63,9 +58,7 @@ jobs:
           APRES=$(git rev-parse origin/main)
           if [ "$APRES" != "${{ steps.avant.outputs.sha }}" ]; then
             echo "Nouveau commit : ${APRES:0:7}. Publication du site."
-            # GitHub ne déclenche pas un workflow sur un commit poussé par un
-            # autre workflow : sans cette ligne, l'article resterait invisible.
             gh workflow run pages.yml --ref main
           else
-            echo "Aucun nouveau commit — aucun sujet ne tenait la route. Rien à publier."
+            echo "Aucun nouveau commit — rien à publier."
           fi
