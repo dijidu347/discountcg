@@ -1,0 +1,71 @@
+name: Article du blog
+
+# Pourquoi ce workflow existe : la rédaction tournait dans une tâche planifiée sur
+# le Mac de Sarah, donc elle ne s'exécutait que si la machine était allumée à
+# l'heure dite. Ici, c'est la minuterie de GitHub — ordinateur éteint, vacances,
+# connexion coupée, ça publie quand même.
+
+on:
+  # 06:13 UTC = 08:13 à Paris l'été, 07:13 l'hiver. GitHub ne connaît que l'UTC
+  # et ne gère pas le changement d'heure ; une heure d'écart est sans importance
+  # pour un article de blog.
+  schedule:
+    - cron: "13 6 * * 2,5"
+  # Pour lancer un article à la demande, sans attendre mardi.
+  workflow_dispatch:
+
+permissions:
+  contents: write   # écrire l'article et le pousser
+  id-token: write   # exigé par l'action Claude
+  actions: write    # relancer « Publier le site » à la fin
+
+concurrency:
+  group: article-blog
+  cancel-in-progress: false
+
+jobs:
+  rediger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Identité des commits
+        run: |
+          git config user.name "Article automatique"
+          git config user.email "noreply@discountcartegrise.fr"
+
+      - name: Noter la version de départ
+        id: avant
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Rédiger et publier l'article
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: "/article-blog"
+          claude_args: |
+            --model claude-opus-5-5
+            --max-turns 100
+
+      - name: Mettre le site en ligne si un article est sorti
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git fetch -q origin main
+          APRES=$(git rev-parse origin/main)
+          if [ "$APRES" != "${{ steps.avant.outputs.sha }}" ]; then
+            echo "Nouveau commit : ${APRES:0:7}. Publication du site."
+            # GitHub ne déclenche pas un workflow sur un commit poussé par un
+            # autre workflow : sans cette ligne, l'article resterait invisible.
+            gh workflow run pages.yml --ref main
+          else
+            echo "Aucun nouveau commit — aucun sujet ne tenait la route. Rien à publier."
+          fi
