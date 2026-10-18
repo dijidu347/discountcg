@@ -96,7 +96,12 @@ export default function Blog() {
       </header>
 
       <main className="container mx-auto px-4 py-12">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        {/* items-start : sans lui, la grille étire les deux colonnes à la même
+    hauteur. La carte « À la une » porte h-full — utile pour aligner les
+    petites cartes entre elles — et s'allongeait donc sur toute la
+    hauteur des six articles de droite, avec un grand vide blanc et le
+    « Lire la suite » largué tout en bas. */}
+        <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
           <section>
             <h2 className="mb-5 text-xl font-bold text-foreground">À la une</h2>
             {une && <CarteArticle article={une} grande />}
