@@ -167,12 +167,12 @@ const PERIODES: { cle: string; texte: string }[] = [
 // déjà calculés dans demarcheChartData — ils n'étaient simplement plus affichés.
 function InfobulleDemarches({ active, payload, label }: {
   active?: boolean;
-  payload?: { payload: { cb: number; cbEuros: number; jetons: number; jetonEuros: number; gratuit: number } }[];
+  payload?: { payload: { cb: number; cbEuros: number; jetons: number; jetonEuros: number; gratuit: number; particuliers: number; particulierEuros: number } }[];
   label?: string;
 }) {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
-  const total = d.cb + d.jetons + d.gratuit;
+  const total = d.cb + d.jetons + d.gratuit + d.particuliers;
 
   return (
     <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-md">
@@ -184,6 +184,9 @@ function InfobulleDemarches({ active, payload, label }: {
         Jetons : {d.jetons}{d.jetonEuros > 0 && ` (${eur(d.jetonEuros)})`}
       </p>
       <p style={{ color: "#10b981" }}>Gratuits : {d.gratuit}</p>
+      <p style={{ color: "#f59e0b" }}>
+        Particuliers : {d.particuliers}{d.particulierEuros > 0 && ` (${eur(d.particulierEuros)})`}
+      </p>
       <div className="mt-1.5 border-t border-border pt-1.5 text-foreground">
         Total : {total}
       </div>
@@ -624,7 +627,7 @@ export default function AdminRevenus() {
       ? filteredDemarches
       : filteredDemarches.filter(d => d.type === demarcheTypeFilter);
 
-    const vide = () => ({ cb: 0, cbEuros: 0, jetons: 0, jetonEuros: 0, gratuit: 0, nonPaye: 0 });
+    const vide = () => ({ cb: 0, cbEuros: 0, jetons: 0, jetonEuros: 0, gratuit: 0, nonPaye: 0, particuliers: 0, particulierEuros: 0 });
     const parCle = new Map<string, ReturnType<typeof vide>>();
     filtered.forEach(d => {
       // Au jour de l'encaissement, comme le filtre qui a retenu cette démarche.
@@ -643,15 +646,33 @@ export default function AdminRevenus() {
       if (d.is_free_token) c.gratuit++;
       if (!d.paye && !d.paid_with_tokens && !d.is_free_token) c.nonPaye++;
     });
+
+    // Les commandes particulier manquaient au graphe, alors que la carte du
+    // haut les compte : la page affichait deux totaux différents pour la même
+    // période. Elles n'ont pas de type de démarche, donc elles ne peuvent
+    // apparaître que sur « Tous les types » — sinon on mélangerait un filtre
+    // qui ne s'applique qu'à une moitié des barres.
+    if (demarcheTypeFilter === "all") {
+      filteredGuestOrders.forEach(o => {
+        const k = cleDe(o.paid_at || o.created_at);
+        let c = parCle.get(k);
+        if (!c) { c = vide(); parCle.set(k, c); }
+        c.particuliers++;
+        c.particulierEuros += revenuParticulier(o);
+      });
+    }
+
     return intervalles.map(({ key, label }) => {
       const c = parCle.get(key) || vide();
       return {
         label, cb: c.cb, cbEuros: Math.round(c.cbEuros * 100) / 100, jetons: c.jetons, jetonEuros: Math.round(c.jetonEuros * 100) / 100,
-        gratuit: c.gratuit, nonPaye: c.nonPaye, count: c.cb + c.jetons + c.gratuit + c.nonPaye,
+        gratuit: c.gratuit, nonPaye: c.nonPaye,
+        particuliers: c.particuliers, particulierEuros: Math.round(c.particulierEuros * 100) / 100,
+        count: c.cb + c.jetons + c.gratuit + c.nonPaye + c.particuliers,
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredDemarches, intervalles, demarcheTypeFilter]);
+  }, [filteredDemarches, filteredGuestOrders, intervalles, demarcheTypeFilter]);
 
   // La même répartition, mais sur la période entière.
   //
@@ -1219,7 +1240,8 @@ export default function AdminRevenus() {
                         <Legend />
                         <Bar dataKey="cb" name="Paiement €" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
                         <Bar dataKey="jetons" name="Jetons" fill="#8b5cf6" stackId="a" radius={[0, 0, 0, 0]} />
-                        <Bar dataKey="gratuit" name="Jetons gratuits" fill="#10b981" stackId="a" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="gratuit" name="Jetons gratuits" fill="#10b981" stackId="a" radius={[0, 0, 0, 0]} />
+                        <Bar dataKey="particuliers" name="Particuliers" fill="#f59e0b" stackId="a" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
