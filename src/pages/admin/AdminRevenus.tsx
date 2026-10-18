@@ -173,6 +173,12 @@ function InfobulleDemarches({ active, payload, label }: {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   const total = d.cb + d.jetons + d.gratuit + d.particuliers;
+  // Ce que la journée a rapporté, et rien d'autre : les frais de service.
+  // Les trois montants sont déjà nets de taxe — pour une carte grise c'est le
+  // frais de dossier seul, et pour un particulier la marge, soit le TTC moins
+  // la taxe reversée. La taxe elle-même ne nous a jamais appartenu, elle n'a
+  // donc rien à faire dans un chiffre d'affaires.
+  const chiffreAffaires = d.cbEuros + d.jetonEuros + d.particulierEuros;
 
   return (
     <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-md">
@@ -187,8 +193,9 @@ function InfobulleDemarches({ active, payload, label }: {
       <p style={{ color: "#f59e0b" }}>
         Particuliers : {d.particuliers}{d.particulierEuros > 0 && ` (${eur(d.particulierEuros)})`}
       </p>
-      <div className="mt-1.5 border-t border-border pt-1.5 text-foreground">
-        Total : {total}
+      <div className="mt-1.5 space-y-0.5 border-t border-border pt-1.5 text-foreground">
+        <p>Total : {total} démarche{total > 1 ? "s" : ""}</p>
+        <p className="font-medium">Frais de service : {eur(chiffreAffaires)}</p>
       </div>
     </div>
   );
