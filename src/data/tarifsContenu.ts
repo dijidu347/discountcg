@@ -23,7 +23,7 @@ export const FAQ_SERVICE: Question[] = [
   { question: "Le simulateur donne-t-il le même prix que celui de l'ANTS ?", answer: "La taxe régionale, oui : les règles sont les mêmes. Notre simulateur y ajoute les frais de dossier, que le simulateur officiel ne chiffre pas, et lit les caractéristiques du véhicule depuis la plaque au lieu de vous les faire saisir." },
   { question: "Le simulateur est-il gratuit ?", answer: "Oui, et sans inscription. Le résultat s'affiche immédiatement, taxes comprises." },
   { question: "Les tarifs sont-ils à jour ?", answer: "Oui. Ce sont les tarifs 2026 votés par les conseils régionaux, et c'est la même table qui alimente le simulateur et le tableau ci-dessus." },
-  { question: "Quels frais de dossier appliquez-vous ?", answer: "Ils commencent à 30 €, parmi les plus bas du marché pour un service agréé par l'État. Ils s'ajoutent aux taxes, qui vont à l'État et aux collectivités." },
+  { question: "Quels frais de dossier appliquez-vous ?", answer: "30 € pour un particulier, 20 € pour un professionnel habilité. C'est un tarif fixe, pas un tarif d'appel : il ne change ni selon le véhicule, ni selon le département. Il s'ajoute aux taxes, qui vont à l'État et aux collectivités." },
 ];
 
 export const FAQ_TARIFS: Question[] = [
@@ -49,7 +49,7 @@ export const FAQ_TARIFS: Question[] = [
   },
   {
     question: "Le prix de la carte grise inclut-il les frais de service ?",
-    answer: "Non. Le prix officiel du certificat d'immatriculation ne comprend que les taxes reversées à l'État et aux collectivités. Passer par un service agréé ajoute des frais de dossier, qui couvrent la vérification des pièces, le traitement auprès de l'ANTS et l'envoi du titre. Chez Discount Carte Grise, ils commencent à 30 €.",
+    answer: "Non. Le prix officiel du certificat d'immatriculation ne comprend que les taxes reversées à l'État et aux collectivités. Passer par un service agréé ajoute des frais de dossier, qui couvrent la vérification des pièces, le traitement auprès de l'ANTS et l'envoi du titre. Chez Discount Carte Grise, ils sont de 30 € pour un particulier et 20 € pour un professionnel, sans supplément.",
   },
   {
     question: "Peut-on payer sa carte grise en plusieurs fois ?",

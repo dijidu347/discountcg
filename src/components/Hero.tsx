@@ -1,5 +1,6 @@
 import { Shield, Clock } from "lucide-react";
 import { SimulateurSection } from "@/components/SimulateurSection";
+import { FRAIS_CG_PARTICULIER, FRAIS_CG_PRO } from "@/data/tarifsFraisDossier";
 
 const Hero = () => {
   return <section className="relative pt-16 overflow-hidden">
@@ -22,7 +23,7 @@ const Hero = () => {
               </h1>
 
               <p className="text-lg md:text-xl mb-8 opacity-90">
-                Faites votre carte grise en ligne pas chère — service habilité par l'État, traitement sous 24h. Frais de dossier dès 30€.
+                Service habilité par l'État, traitement sous 24h. Frais de dossier de {FRAIS_CG_PARTICULIER} € pour un particulier, {FRAIS_CG_PRO} € pour un professionnel — fixes, sans supplément.
               </p>
 
               <div className="flex flex-wrap gap-4 justify-center md:justify-start">

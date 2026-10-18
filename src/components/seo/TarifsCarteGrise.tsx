@@ -659,7 +659,7 @@ export function TarifsCarteGrise() {
             </p>
             <p>
               Ce qui change d'un prestataire à l'autre, ce sont les <strong>frais de dossier</strong>,
-              qui s'ajoutent aux taxes. Les nôtres commencent à 30 €, et ils couvrent la vérification
+              qui s'ajoutent aux taxes. Les nôtres sont de 30 €, fixes, et ils couvrent la vérification
               des pièces, le dépôt auprès de l'ANTS et l'envoi du titre. Il n'y a que là qu'il y a
               une comparaison à faire — les taxes, elles, sont les mêmes partout.
             </p>

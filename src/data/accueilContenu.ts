@@ -36,7 +36,7 @@ export const FAQ_ACCUEIL: Question[] = [
   {
     question: "Combien coûte une carte grise, et qu'est-ce qui est à vous ?",
     answer:
-      "L'essentiel du prix est de la taxe, identique partout : la taxe régionale (puissance fiscale × tarif de votre département, de 30 € à Mayotte à 68,95 € en Île-de-France), 11 € de taxe fixe et 2,76 € de redevance d'acheminement. Notre part, les frais de dossier, commence à 30 € pour un particulier et 20 € pour un professionnel. C'est la seule part qui se compare d'un prestataire à l'autre.",
+      "L'essentiel du prix est de la taxe, identique partout : la taxe régionale (puissance fiscale × tarif de votre département, de 30 € à Mayotte à 68,95 € en Île-de-France), 11 € de taxe fixe et 2,76 € de redevance d'acheminement. Notre part, les frais de dossier, est fixe : 30 € pour un particulier, 20 € pour un professionnel. C'est la seule part qui se compare d'un prestataire à l'autre.",
   },
   {
     question: "Le paiement en ligne est-il sécurisé ?",

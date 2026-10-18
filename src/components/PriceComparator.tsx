@@ -1,12 +1,13 @@
 import { Check, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FRAIS_CG_PARTICULIER } from "@/data/tarifsFraisDossier";
 
 const competitors = [
   {
     name: "Discount Carte Grise",
     isUs: true,
     features: {
-      price: "30€",
+      price: `${FRAIS_CG_PARTICULIER} €`,
       processing: "24h",
       support: "Personnalisé",
       garantie: "Dossier vérifié avant envoi",

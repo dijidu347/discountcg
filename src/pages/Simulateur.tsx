@@ -82,7 +82,7 @@ export default function Simulateur() {
             </div>
             <div className="text-center p-6 bg-card rounded-xl border border-border">
               <CheckCircle className="w-8 h-8 text-primary mx-auto mb-3" />
-              <h3 className="font-semibold mb-2">Frais dès 30€</h3>
+              <h3 className="font-semibold mb-2">Frais de dossier fixes</h3>
               <p className="text-sm text-muted-foreground">Frais de dossier parmi les plus bas du marché</p>
             </div>
           </div>
@@ -99,7 +99,7 @@ export default function Simulateur() {
             Prêt à faire votre carte grise en ligne ?
           </h2>
           <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
-            Service agréé par l'État, traitement sous 24h, frais de dossier dès 30€.
+            Service agréé par l'État, traitement sous 24h, frais de dossier fixes de 30 € pour un particulier.
           </p>
           <Link
             to="/carte-grise"

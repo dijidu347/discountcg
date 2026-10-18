@@ -38,7 +38,10 @@ import {
 const BASE = "https://discountcartegrise.fr";
 
 /** Frais de dossier annoncés pour un changement de titulaire. */
-export const FRAIS_DOSSIER_CG = 30;
+// Réexporté depuis la source unique, pour que les pages départements ne
+// puissent plus annoncer un tarif différent du reste du site.
+export { FRAIS_CG_PARTICULIER as FRAIS_DOSSIER_CG } from "./tarifsFraisDossier";
+import { FRAIS_CG_PARTICULIER as FRAIS_DOSSIER_CG } from "./tarifsFraisDossier";
 
 /**
  * De 3 à 15 CV : la fourchette où se trouve la quasi-totalité du parc

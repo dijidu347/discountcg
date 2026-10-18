@@ -27,11 +27,11 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   "/": {
     title: "Carte grise en ligne | Discount Carte Grise",
     description:
-      "Faites votre carte grise en ligne au meilleur prix. Service agréé par l'État, traitement sous 24h, dès 30 euros. Simulez et commandez maintenant.",
+      "Faites votre carte grise en ligne au meilleur prix. Service agréé par l'État, traitement sous 24h, 30 € de frais de dossier fixes. Simulez et commandez maintenant.",
     canonical: `${BASE}/`,
     h1: "Carte grise en ligne rapide, sécurisée et pas chère",
     intro: [
-      "Faites votre carte grise en ligne pas chère — service habilité par l'État, traitement sous 24h. Frais de dossier dès 30 €.",
+      "Faites votre carte grise en ligne pas chère — service habilité par l'État, traitement sous 24h. Frais de dossier fixes : 30 €.",
       "Changement de titulaire, déclaration de cession, déclaration d'achat, duplicata, changement d'adresse : toutes les démarches d'immatriculation se font ici, sans guichet et sans rendez-vous.",
       "DISCOUNT AUTO / PAREBRISE est habilité par la préfecture pour l'accès au Système d'Immatriculation des Véhicules (n° 285046) et agréé par le Trésor public pour la perception des taxes (n° 63198). Ce site est un service commercial privé, indépendant des administrations publiques.",
     ],
