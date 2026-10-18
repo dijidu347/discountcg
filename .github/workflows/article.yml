@@ -45,11 +45,12 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: "/article-blog"
+          prompt: "Lis le fichier .claude/skills/article-blog/SKILL.md et applique-le à la lettre, de bout en bout."
           claude_args: |
             --model claude-opus-5-5
             --max-turns 100
             --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebSearch"
+          show_full_output: true
 
       - name: Mettre le site en ligne si un article est sorti
         env:
