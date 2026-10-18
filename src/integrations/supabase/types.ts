@@ -1785,6 +1785,44 @@ export type Database = {
           },
         ]
       }
+      notes_demarche: {
+        Row: {
+          auteur: string
+          auteur_id: string
+          contenu: string
+          created_at: string
+          demarche_id: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          auteur: string
+          auteur_id: string
+          contenu: string
+          created_at?: string
+          demarche_id: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          auteur?: string
+          auteur_id?: string
+          contenu?: string
+          created_at?: string
+          demarche_id?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_demarche_demarche_id_fkey"
+            columns: ["demarche_id"]
+            isOneToOne: false
+            referencedRelation: "demarches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notes_prospection: {
         Row: {
           auteur_email: string | null
@@ -2653,6 +2691,44 @@ export type Database = {
           },
         ]
       }
+      vopilote_link_codes: {
+        Row: {
+          code_hash: string
+          cree_le: string
+          expire_le: string
+          garage_id: string
+          id: string
+          utilise_le: string | null
+          utilise_par: string | null
+        }
+        Insert: {
+          code_hash: string
+          cree_le?: string
+          expire_le: string
+          garage_id: string
+          id?: string
+          utilise_le?: string | null
+          utilise_par?: string | null
+        }
+        Update: {
+          code_hash?: string
+          cree_le?: string
+          expire_le?: string
+          garage_id?: string
+          id?: string
+          utilise_le?: string | null
+          utilise_par?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vopilote_link_codes_garage_id_fkey"
+            columns: ["garage_id"]
+            isOneToOne: false
+            referencedRelation: "garages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2711,6 +2787,13 @@ export type Database = {
       crediter_solde_jetons: {
         Args: { p_garage_id: string; p_montant: number }
         Returns: number
+      }
+      creer_code_liaison_vopilote: {
+        Args: never
+        Returns: {
+          code: string
+          expire_le: string
+        }[]
       }
       definir_prospecteur: { Args: { p_email: string }; Returns: string }
       delete_email: {
@@ -2945,6 +3028,16 @@ export type Database = {
       taxe_etat_pro: { Args: { p_type: string }; Returns: number }
       type_sous_controle: { Args: { p_type: string }; Returns: boolean }
       validite_kbis: { Args: { p_garage: string }; Returns: string }
+      verifier_code_liaison_vopilote: {
+        Args: { _code: string }
+        Returns: {
+          garage_id: string
+          raison_sociale: string
+          siret: string
+          verifie: boolean
+          ville: string
+        }[]
+      }
       verifier_non_gage: { Args: { p_demarche_id: string }; Returns: string }
     }
     Enums: {
