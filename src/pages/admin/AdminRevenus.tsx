@@ -159,6 +159,38 @@ const PERIODES: { cle: string; texte: string }[] = [
 // Choix de la période : raccourcis à gauche, calendrier toujours affiché à
 // droite. Une période précise ne s'applique qu'une fois ses deux dates
 // choisies, pour ne pas recalculer toute la page au premier clic.
+// L'infobulle de l'histogramme des démarches.
+//
+// Celle de la librairie ne sait dire qu'un nom et un nombre : « Paiement € : 12 ».
+// Or la question qu'on se pose en survolant une barre, c'est combien ça a
+// rapporté ce jour-là, et combien de démarches en tout. Les deux chiffres sont
+// déjà calculés dans demarcheChartData — ils n'étaient simplement plus affichés.
+function InfobulleDemarches({ active, payload, label }: {
+  active?: boolean;
+  payload?: { payload: { cb: number; cbEuros: number; jetons: number; jetonEuros: number; gratuit: number } }[];
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  const total = d.cb + d.jetons + d.gratuit;
+
+  return (
+    <div className="rounded-lg border border-border bg-background px-3 py-2 text-sm shadow-md">
+      <p className="mb-1 font-medium text-foreground">{label}</p>
+      <p style={{ color: "#3b82f6" }}>
+        Paiement € : {d.cb}{d.cbEuros > 0 && ` (${eur(d.cbEuros)})`}
+      </p>
+      <p style={{ color: "#8b5cf6" }}>
+        Jetons : {d.jetons}{d.jetonEuros > 0 && ` (${eur(d.jetonEuros)})`}
+      </p>
+      <p style={{ color: "#10b981" }}>Gratuits : {d.gratuit}</p>
+      <div className="mt-1.5 border-t border-border pt-1.5 text-foreground">
+        Total : {total}
+      </div>
+    </div>
+  );
+}
+
 function SelecteurPeriode({ period, plage, onRaccourci, onPlage }: {
   period: string;
   plage: { from?: Date; to?: Date };
@@ -1183,7 +1215,7 @@ export default function AdminRevenus() {
                         <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                         <XAxis dataKey="label" tick={{ fontSize: 12 }} interval="preserveStartEnd" />
                         <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
-                        <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                        <Tooltip content={<InfobulleDemarches />} />
                         <Legend />
                         <Bar dataKey="cb" name="Paiement €" fill="#3b82f6" stackId="a" radius={[0, 0, 0, 0]} />
                         <Bar dataKey="jetons" name="Jetons" fill="#8b5cf6" stackId="a" radius={[0, 0, 0, 0]} />
