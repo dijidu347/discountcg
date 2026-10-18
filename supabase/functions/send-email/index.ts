@@ -1195,6 +1195,35 @@ const getEmailTemplate = (type: string, data: any) => {
       };
     }
 
+    case "demarche_abandonnee": {
+      const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] as string));
+      const dernier = Number(data.numero_relance) >= 2;
+      const vehicule = data.immatriculation ? ` (${esc(data.immatriculation)})` : "";
+      const ref = data.reference ? ` <strong>${esc(data.reference)}</strong>` : "";
+      return {
+        // Pas de « relance » ni de « rappel » dans l'objet : la démarche n'est
+        // pas due, elle est seulement restée en plan. On propose de l'aide.
+        subject: dernier
+          ? `${String(data.demarche_label || "Votre démarche")}${data.immatriculation ? ` ${String(data.immatriculation)}` : ""} : on vous laisse la main`
+          : `Votre ${String(data.demarche_label || "démarche").toLowerCase()}${data.immatriculation ? ` ${String(data.immatriculation)}` : ""} : besoin d'un coup de main ?`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <p>Bonjour${data.nom ? ` ${esc(data.nom)}` : ""},</p>
+            <p>Vous avez commencé une démarche <strong>${esc(data.demarche_label)}</strong>${vehicule}${ref} il y a quelques jours, et elle est restée en plan.</p>
+            <p><strong>Est-ce qu'un point vous bloque, ou avez-vous une question ?</strong> Une pièce dont vous n'êtes pas sûr, un champ qui coince, un doute sur le tarif : écrivez-nous depuis votre espace, on vous répond.</p>
+            ${dernier
+              ? `<p>C'est notre dernier message à ce sujet — on ne vous relancera plus. Votre démarche reste accessible dans votre espace aussi longtemps que vous le souhaitez.</p>`
+              : `<p>Si vous n'en avez plus besoin, ignorez simplement ce message : rien n'est facturé tant que la démarche n'est pas validée.</p>`}
+            <a href="${data.lien}" style="display: inline-block; background-color: #0047AB; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; margin: 16px 0; font-weight: bold;">
+              Reprendre ma démarche
+            </a>
+            ${blocSansReponse}
+            ${guestFooter}
+          </div>
+        `,
+      };
+    }
+
     // === GUEST ORDER - NEW TEMPLATES ===
     case "guest_order_submitted":
       return {
@@ -1437,6 +1466,7 @@ const handler = async (req: Request): Promise<Response> => {
       // de réponse, c'est inviter à envoyer la pièce en pièce jointe, où elle
       // ne se rattache à rien. Les garages ont un espace ; les particuliers,
       // non — eux gardent leur réponse.
+      "demarche_abandonnee",
       "kbis_a_renouveler",
       "kbis_demande_demarche",
       "account_rejected",
