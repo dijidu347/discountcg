@@ -1,4 +1,10 @@
 import { getVehicleAge } from "./getVehicleAge";
+// Les deux taxes d'État étaient réécrites en dur ici — 11 € une fois,
+// 2,76 € vingt-six fois — alors qu'elles sont déjà définies pour la
+// comptabilité, dans lib/taxeEtat.ts. Le jour où l'État les change, le
+// simulateur et les relevés auraient annoncé des montants différents,
+// sans que rien ne le signale. Une seule source, désormais.
+import { TAXE_FIXE, REDEVANCE_ACHEMINEMENT } from "@/lib/taxeEtat";
 
 export interface PriceCalculation {
   prixCV: number;
@@ -50,39 +56,39 @@ interface Bareme {
 }
 
 const BAREMES: Record<string, Bareme> = {
-  VP: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76 },
-  CTTE: { moins10: 1, plus10: 0.5, y2: 34, y5: 2.76 },
-  VASP: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76, selonPtac: true },
-  TM: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76 },
-  QM: { moins10: 1, plus10: 0.5, y2: 0, y5: 2.76 },
+  VP: { moins10: 1, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  CTTE: { moins10: 1, plus10: 0.5, y2: 34, y5: REDEVANCE_ACHEMINEMENT },
+  VASP: { moins10: 1, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT, selonPtac: true },
+  TM: { moins10: 1, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  QM: { moins10: 1, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
 
   // Motos : demi-tarif quel que soit l'âge.
-  MTL: { moins10: 0.5, plus10: 0.5, y2: 0, y5: 2.76 },
-  MTT1: { moins10: 0.5, plus10: 0.5, y2: 0, y5: 2.76 },
-  MTT2: { moins10: 0.5, plus10: 0.5, y2: 0, y5: 2.76 },
+  MTL: { moins10: 0.5, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  MTT1: { moins10: 0.5, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  MTT2: { moins10: 0.5, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
 
   // Poids lourds : demi-tarif, et une taxe transport qui dépend du PTAC
   // (camion 127, 189 ou 285 € ; tracteur routier 34 ou 285 €).
-  CAM: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76, selonPtac: true },
-  TRR: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76, selonPtac: true },
-  TCP: { moins10: 0.5, plus10: 0.5, y2: 285, y5: 2.76 },
+  CAM: { moins10: 0.5, plus10: 0.5, y2: 285, y5: REDEVANCE_ACHEMINEMENT, selonPtac: true },
+  TRR: { moins10: 0.5, plus10: 0.5, y2: 285, y5: REDEVANCE_ACHEMINEMENT, selonPtac: true },
+  TCP: { moins10: 0.5, plus10: 0.5, y2: 285, y5: REDEVANCE_ACHEMINEMENT },
 
   // Exonérés de taxe régionale. Le cyclomoteur l'est aussi de l'acheminement :
   // aucun titre ne lui est expédié.
   CL: { moins10: 0, plus10: 0, y2: 0, y5: 0 },
   CYCL: { moins10: 0, plus10: 0, y2: 0, y5: 0 },
-  TRA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  MAGA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  REM: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  SREM: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  SRAT: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  SRTC: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  RETC: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  SRSP: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  RESP: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  REA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  SREA: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
-  MIAR: { moins10: 0, plus10: 0, y2: 0, y5: 2.76 },
+  TRA: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  MAGA: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  REM: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  SREM: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  SRAT: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  SRTC: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  RETC: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  SRSP: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  RESP: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  REA: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  SREA: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
+  MIAR: { moins10: 0, plus10: 0, y2: 0, y5: REDEVANCE_ACHEMINEMENT },
 };
 
 // Les tranches de PTAC du barème, en kilogrammes (case F.2 de la carte grise).
@@ -94,15 +100,15 @@ function baremeSelonPtac(genre: string, ptacKg: number): Bareme | null {
 
   if (genre === "CAM") {
     const y2 = tonnes <= 6 ? 127 : tonnes <= 11 ? 189 : 285;
-    return { moins10: 0.5, plus10: 0.5, y2, y5: 2.76 };
+    return { moins10: 0.5, plus10: 0.5, y2, y5: REDEVANCE_ACHEMINEMENT };
   }
   if (genre === "TRR") {
-    return { moins10: 0.5, plus10: 0.5, y2: tonnes <= 3.5 ? 34 : 285, y5: 2.76 };
+    return { moins10: 0.5, plus10: 0.5, y2: tonnes <= 3.5 ? 34 : 285, y5: REDEVANCE_ACHEMINEMENT };
   }
   if (genre === "VASP") {
     // Au-delà de 3,5 t, le VASP passe au demi-tarif.
     const coef = tonnes < 3.5 ? 1 : 0.5;
-    return { moins10: coef, plus10: 0.5, y2: 0, y5: 2.76 };
+    return { moins10: coef, plus10: 0.5, y2: 0, y5: REDEVANCE_ACHEMINEMENT };
   }
   return null;
 }
@@ -128,7 +134,9 @@ export const calculatePrice = (
   }
 
   const anciennete = getVehicleAge(dateMiseEnCirculation);
-  const fraisGestion = 11;
+  // « fraisGestion » est un héritage trompeur : c'est la taxe fixe Y4 du
+  // certificat, reversée à l'État, et non une marge du site.
+  const fraisGestion = TAXE_FIXE;
 
   const genreUpper = genre ? genre.toUpperCase() : "";
   const bareme = BAREMES[genreUpper];
