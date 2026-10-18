@@ -61,7 +61,14 @@ function CarteArticle({ article, grande = false }: { article: Article; grande?: 
 }
 
 export default function Blog() {
-  const [une, ...autres] = ARTICLES_TRIES;
+  // Le haut de page tient cinq articles : un en grand, quatre en vignettes.
+  // Tout le reste descend dans « Tous nos articles ». Avant, les six autres
+  // s'entassaient dans la colonne de droite, qui s'allongeait à chaque
+  // publication — au rythme de deux par semaine, la page devenait vite
+  // illisible.
+  const [une, ...suite] = ARTICLES_TRIES;
+  const recents = suite.slice(0, 4);
+  const reste = suite.slice(4);
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,9 +116,9 @@ export default function Blog() {
 
           <section>
             <h2 className="mb-5 text-xl font-bold text-foreground">Les plus récents</h2>
-            {autres.length > 0 ? (
+            {recents.length > 0 ? (
               <div className="grid gap-5 sm:grid-cols-2">
-                {autres.map((a) => (
+                {recents.map((a) => (
                   <CarteArticle key={a.slug} article={a} />
                 ))}
               </div>
@@ -122,6 +129,17 @@ export default function Blog() {
             )}
           </section>
         </div>
+
+        {reste.length > 0 && (
+          <section className="mt-16 border-t border-border pt-12">
+            <h2 className="mb-6 text-xl font-bold text-foreground">Tous nos articles</h2>
+            <div className="grid items-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {reste.map((a) => (
+                <CarteArticle key={a.slug} article={a} />
+              ))}
+            </div>
+          </section>
+        )}
 
         <p className="mt-14 border-t border-border pt-8 text-center text-muted-foreground">
           Vous cherchez plutôt les pièces à fournir ou les délais d'une démarche ?{" "}
