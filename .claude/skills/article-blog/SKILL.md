@@ -79,15 +79,16 @@ qui lui coûte ? » Si non, change de sujet.
    `grep -o '<title>[^<]*' dist/blog/<slug>/index.html`. S'il n'y est pas, le pré-rendu ne l'a
    pas pris — regarde `scripts/prerender.mjs` avant de publier quoi que ce soit.
 
-9. Commit et push sur `main`. **C'est tout** : le workflow `.github/workflows/pages.yml`
-   construit et publie à chaque push, en deux à trois minutes. N'appelle jamais `deploy_project` :
-   il publierait sur discountcg.lovable.app, qui n'est plus le vrai site depuis le 16 octobre 2026.
+9. Commit et push sur `main`. **Arrête-toi là.** La publication est lancée par le workflow
+   lui-même, juste après toi : GitHub ne déclenche pas un workflow sur un commit poussé par un
+   autre workflow, donc `pages.yml` est relancé explicitement une fois ton travail terminé.
+   N'appelle jamais `deploy_project` : il publierait sur discountcg.lovable.app, qui n'est plus
+   le vrai site depuis le 16 octobre 2026.
 
-10. Attends la publication, puis vérifie en ligne :
-    `node scripts/verifier-site.mjs` doit finir par « Tout est bon. » et montrer ton commit.
-    Puis `curl -s https://discountcartegrise.fr/blog/<slug> | grep -o '<title>[^<]*'`.
+   Ne cherche pas à vérifier le site en ligne : au moment où tu finis, il sert encore la version
+   d'avant. Ta preuve, c'est le contrôle du point 8 sur `dist/`.
 
-11. Termine en écrivant, dans le journal d'exécution : le titre, les sources sur lesquelles il
+10. Termine en écrivant, dans le journal d'exécution : le titre, les sources sur lesquelles il
     s'appuie, et ce que tu as corrigé sur le site s'il y avait une contradiction.
 
 ## Rien de vérifié, rien de publié
