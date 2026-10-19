@@ -26,7 +26,11 @@ export default function ArticleBlog() {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>{`${article.titre} | Discount Carte Grise`}</title>
+        {/* Sans le suffixe de marque, comme le pré-rendu : il coûte 23
+            caractères, et un article vise quelqu'un qui cherche son sujet, pas
+            un prestataire. Les deux doivent dire la même chose — sinon React
+            rétablit le suffixe à l'affichage et Google le voit quand même. */}
+        <title>{article.titre}</title>
         <meta name="description" content={article.chapo} />
         <link rel="canonical" href={`${BASE}/blog/${article.slug}`} />
         <script type="application/ld+json">

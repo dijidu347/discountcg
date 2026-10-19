@@ -149,8 +149,17 @@ ${pied}
 </div>`;
 }
 
-function appliquer(gabarit, { titre, description, canonical, noindex, schemas, html }) {
-  const titreComplet = titre.includes("Discount Carte Grise")
+function appliquer(gabarit, { titre, description, canonical, noindex, schemas, html, sansMarque }) {
+  // « | Discount Carte Grise » coûte 23 caractères, et Google coupe un titre
+  // vers la même longueur qu'une description. Sur une page démarche, la marque
+  // rassure : celui qui cherche « carte grise en ligne » compare des
+  // prestataires. Sur un article de blog, elle mange la fin du titre au profit
+  // d'une information que le lecteur n'a pas demandée — il cherche « malus au
+  // poids 2026 », pas un prestataire.
+  //
+  // Le relevé du 12 octobre 2026 donne 92 % de clics de marque : ceux qui nous
+  // connaissent nous trouvent déjà. Les articles visent les autres.
+  const titreComplet = sansMarque || titre.includes("Discount Carte Grise")
     ? titre
     : `${titre} | Discount Carte Grise`;
 
@@ -1272,6 +1281,7 @@ async function principal() {
         route,
         appliquer(gabarit, {
           titre: a.titre,
+          sansMarque: true,
           description: pourGoogle(a.chapo),
           canonical: `${BASE}${route}`,
           schemas: [
