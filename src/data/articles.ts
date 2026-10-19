@@ -41,6 +41,106 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "permis-validite-15-ans-directive-europeenne",
+    titre: "Permis de conduire : non, ce ne sera pas quinze ans — en France ce sera dix, et pas avant fin 2029",
+    chapo:
+      "La directive européenne du 22 octobre 2025 met fin au permis valable à vie. Elle fixe quinze ans, mais autorise dix quand le permis sert de pièce d'identité — ce qui est le cas en France.",
+    categorie: "Réglementation",
+    date: "2026-10-19",
+    image: "/blog/permis-15-ans-directive-2025-2205.jpg",
+    imageCredit: "Photo : Unsplash",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "La directive (UE) 2025/2205 du 22 octobre 2025 harmonise les règles du permis de conduire dans toute l'Union. Elle a été largement reprise depuis, avec deux approximations qui reviennent partout : un renouvellement « tous les quinze ans », et une application « dès 2028 ». Le texte dit autre chose.",
+      },
+      {
+        type: "h2",
+        texte: "Quinze ans dans la directive, dix ans en France",
+      },
+      {
+        type: "p",
+        texte:
+          "La directive fixe une validité administrative de quinze ans pour les permis AM, A1, A2, A, B1, B et BE, et de cinq ans pour les catégories lourdes C, CE, C1, C1E, D, DE, D1 et D1E. Mais elle ajoute aussitôt que les États « devraient être autorisés à appliquer une période de validité de dix ans au lieu de quinze ans si le permis de conduire est également utilisé comme document d'identification personnel ».",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est précisément le cas en France, où le permis vaut pièce d'identité. Service-public.gouv.fr le confirme : la durée y sera de dix ans. Les articles qui annoncent quinze ans décrivent le plafond européen, pas la règle française.",
+      },
+      {
+        type: "p",
+        texte:
+          "Attention au sens de ce renouvellement : il porte sur la validité du titre, pas sur le droit de conduire. Vous ne repassez ni le code ni la conduite. C'est le même principe que la carte d'identité, qui se renouvelle sans qu'on redevienne français.",
+      },
+      {
+        type: "h2",
+        texte: "Rien ne change avant le 26 novembre 2029",
+      },
+      {
+        type: "p",
+        texte:
+          "L'article 29 de la directive est explicite, et c'est la deuxième approximation à corriger :",
+      },
+      {
+        type: "liste",
+        items: [
+          "Les États doivent adopter et publier leurs textes au plus tard le 26 novembre 2028.",
+          "Ils n'appliquent ces dispositions qu'à partir du 26 novembre 2029.",
+          "Au plus tard le 19 janvier 2033, tous les permis physiques en circulation doivent être conformes.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Autrement dit, 2028 est la date à laquelle la France doit avoir écrit sa loi, pas celle à laquelle vous serez concerné. Et votre permis actuel reste valable jusqu'en 2033 au plus tard, selon ce que prévoiront les textes français de transposition.",
+      },
+      {
+        type: "h2",
+        texte: "Une visite médicale, ou peut-être pas",
+      },
+      {
+        type: "p",
+        texte:
+          "La directive prévoit une évaluation de l'aptitude avant la délivrance et avant chaque renouvellement. Mais elle laisse aux États la possibilité de remplacer la visite médicale par un formulaire d'auto-évaluation ou par un autre système conçu au niveau national. La France n'a pas tranché : c'est le point à surveiller dans la loi de transposition, car c'est lui qui déterminera si le renouvellement est une formalité en ligne ou un rendez-vous chez le médecin.",
+      },
+      {
+        type: "p",
+        texte:
+          "Les États peuvent par ailleurs raccourcir la durée de validité pour les conducteurs de 65 ans et plus, afin d'espacer moins les contrôles. Là encore, rien n'est décidé côté français.",
+      },
+      {
+        type: "h2",
+        texte: "Une suspension prononcée à l'étranger vous suivra",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est le changement le moins commenté et le plus concret. Une décision de retrait, de suspension ou de restriction prise dans un autre pays de l'Union sera transmise à l'État qui a délivré le permis. Aujourd'hui, une suspension prononcée en Espagne ou en Italie s'arrête souvent à la frontière. Demain, elle remontera jusqu'à votre dossier français.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que vous avez à faire aujourd'hui",
+      },
+      {
+        type: "p",
+        texte:
+          "Rien. Aucune démarche n'est ouverte, aucun renouvellement n'est à demander, et aucun service ne peut légitimement vous en vendre un. Si vous recevez un courrier ou un message vous proposant de « mettre votre permis en conformité », c'est une arnaque : les textes français n'existent pas encore.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Directive (UE) 2025/2205 du 22 octobre 2025 — EUR-Lex",
+        url: "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=OJ:L_202502205",
+      },
+      {
+        libelle: "Réforme européenne : bientôt la fin du permis de conduire à vie — service-public.gouv.fr",
+        url: "https://www.service-public.gouv.fr/particuliers/actualites/A18566",
+      },
+    ],
+  },
+  {
     slug: "fourriere-tarifs-octobre-2026",
     titre: "Fourrière : l'enlèvement passe à 135 € depuis le 1er octobre 2026, et chaque jour d'attente se paie",
     chapo:
