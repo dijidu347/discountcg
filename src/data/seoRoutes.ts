@@ -27,7 +27,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   "/": {
     title: "Carte grise en ligne | Discount Carte Grise",
     description:
-      "Faites votre carte grise en ligne au meilleur prix. Service agréé par l'État, traitement sous 24h, 30 € de frais de dossier fixes. Simulez et commandez maintenant.",
+      "Carte grise en ligne au meilleur prix. Service agréé par l'État, traité sous 24 h, 30 € de frais de dossier fixes. Simulez et commandez.",
     canonical: `${BASE}/`,
     h1: "Carte grise en ligne rapide, sécurisée et pas chère",
     intro: [
@@ -66,7 +66,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   "/certificat-de-non-gage": {
     title: "Certificat de non-gage gratuit",
     description:
-      "Le certificat de non-gage est gratuit auprès du ministère de l'Intérieur et s'obtient en deux minutes. Ses six rubriques expliquées, sa durée de validité, et les démarches qui l'exigent.",
+      "Gratuit auprès du ministère de l'Intérieur, obtenu en deux minutes. Ses six rubriques, sa durée de validité, et les démarches qui l'exigent.",
     canonical: `${BASE}/certificat-de-non-gage`,
     h1: "Certificat de situation administrative, dit « non-gage »",
     intro: [
@@ -95,7 +95,7 @@ export const ROUTES_SEO: Record<string, RouteSeo> = {
   "/habilitation-siv": {
     title: "Habilitation SIV : les conditions",
     description:
-      "Comment obtenir l'habilitation au SIV : les deux conditions cumulatives, les pièces, la pré-demande ANTS et ce qu'elle engage une fois obtenue. Et quand il vaut mieux passer par un habilité.",
+      "Habilitation au SIV : les deux conditions cumulatives, les pièces, la pré-demande ANTS, et quand il vaut mieux passer par un professionnel habilité.",
     canonical: `${BASE}/habilitation-siv`,
     h1: "Habilitation SIV : conditions, procédure et obligations",
     intro: [

@@ -1227,6 +1227,20 @@ async function principal() {
     ecrites++;
   }
 
+  // Le chapô d'un article fait deux phrases : c'est la bonne longueur sur une
+  // carte, mais Google coupe une description vers 160 caractères et c'est la
+  // fin qui tombe. On garde donc la première phrase quand elle suffit à se
+  // tenir seule, et on ne tronque au mot près qu'en dernier recours — jamais
+  // au milieu d'un mot.
+  const pourGoogle = (texte, max = 158) => {
+    const t = String(texte || "").trim();
+    if (t.length <= max) return t;
+    const premiere = t.match(/^[^.!?]*[.!?]/)?.[0]?.trim();
+    if (premiere && premiere.length >= 80 && premiere.length <= max) return premiere;
+    const coupe = t.slice(0, max - 1);
+    return coupe.slice(0, coupe.lastIndexOf(" ")).replace(/[,;:]$/, "") + "…";
+  };
+
   // ── Le blog ───────────────────────────────────────────────────────────────
   //
   // L'index et un fichier par article. Le texte vient de src/data/articles.ts,
@@ -1258,14 +1272,14 @@ async function principal() {
         route,
         appliquer(gabarit, {
           titre: a.titre,
-          description: a.chapo,
+          description: pourGoogle(a.chapo),
           canonical: `${BASE}${route}`,
           schemas: [
             {
               "@context": "https://schema.org",
               "@type": "NewsArticle",
               headline: a.titre,
-              description: a.chapo,
+              description: pourGoogle(a.chapo),
               datePublished: a.date,
               image: `${BASE}${a.image}`,
               mainEntityOfPage: `${BASE}${route}`,
@@ -1314,7 +1328,7 @@ async function principal() {
       appliquer(gabarit, {
         titre: "Le blog : l'actualité de la carte grise",
         description:
-          "Ce qui change pour votre véhicule, et ce que ça vous coûte : réglementation, tarifs, malus, contrôle technique. Vérifié sur les textes officiels, jamais recopié ailleurs.",
+          "Ce qui change pour votre véhicule, et ce que ça vous coûte. Vérifié sur les textes officiels, jamais recopié ailleurs.",
         canonical: `${BASE}/blog`,
         schemas: [
           {

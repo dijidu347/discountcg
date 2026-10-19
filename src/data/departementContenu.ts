@@ -289,9 +289,16 @@ export function contenuDepartement(dep: Departement): ContenuDepartement {
       : `Le tarif est voté par ${region.votant} et ne vaut que pour ce territoire.`;
 
   const title = `Carte grise ${dep.nom} (${dep.code}) : prix ${new Date().getFullYear()}`;
-  const description = `Le cheval fiscal coûte ${eur(
-    tarif,
-  )} ${dep.dans}. Prix d'une carte grise à ${dep.chefLieu} et dans tout le département : calcul détaillé, taxes et démarche en ligne traitée sous 24 h.`;
+  // Google coupe une description vers 160 caractères, et c'est la fin qui
+  // tombe — donc l'appel à l'action. L'ancienne version en faisait 180 pour
+  // l'Yonne, et jusqu'à 200 pour les départements au nom long : les 101 pages
+  // perdaient leur dernière phrase dans les résultats de recherche.
+  //
+  // On construit donc la version complète, et on retombe sur une version
+  // courte si elle déborde, plutôt que de couper au milieu d'un mot.
+  const complete = `Le cheval fiscal coûte ${eur(tarif)} ${dep.dans}. Calculez le prix exact de votre carte grise à ${dep.chefLieu}, taxes comprises. Démarche en ligne sous 24 h.`;
+  const courte = `Le cheval fiscal coûte ${eur(tarif)} ${dep.dans}. Calculez le prix exact de votre carte grise, taxes comprises. Démarche en ligne sous 24 h.`;
+  const description = complete.length <= 158 ? complete : courte;
 
   return {
     departement: dep,
