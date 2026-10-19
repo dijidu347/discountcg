@@ -1211,7 +1211,7 @@ const getEmailTemplate = (type: string, data: any) => {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <p>Bonjour${data.nom ? ` ${esc(data.nom)}` : ""},</p>
-            <p>Vous avez commencé une démarche <strong>${esc(data.demarche_label)}</strong>${vehicule}${ref} il y a quelques jours, et elle est restée en plan.</p>
+            <p>Vous avez commencé une démarche <strong>${esc(data.demarche_label)}</strong>${vehicule}${ref} il y a quelques jours, et elle n'est pas encore terminée.</p>
             ${autres > 0 ? `<p>${autres === 1 ? "Une autre démarche attend également de votre côté." : `${autres} autres démarches attendent également de votre côté.`} Vous les retrouvez toutes dans votre espace.</p>` : ""}
             <p><strong>Est-ce qu'un point vous bloque, ou avez-vous une question ?</strong> Une pièce dont vous n'êtes pas sûr, un champ qui coince, un doute sur le tarif : écrivez-nous depuis votre espace, on vous répond.</p>
             ${dernier
