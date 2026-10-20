@@ -37,9 +37,118 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
   "Professionnels": "bg-amber-100 text-amber-800",
   "Tarifs": "bg-emerald-100 text-emerald-800",
   "Idées reçues": "bg-rose-100 text-rose-800",
+  "Aides": "bg-sky-100 text-sky-800",
 };
 
 export const ARTICLES: Article[] = [
+  {
+    slug: "aide-grands-rouleurs-octobre-2026",
+    titre: "Aide « grands rouleurs » : 100 € d'octobre à décembre, et bien plus de foyers éligibles qu'au printemps",
+    chapo:
+      "L'aide carburant est reconduite pour la fin de l'année 2026, et le plafond de revenus est relevé à 22 770 € par part. Si vous l'avez déjà touchée, vous n'avez rien à faire ; sinon, le formulaire ouvre le mardi 27 octobre sur impots.gouv.fr.",
+    categorie: "Aides",
+    date: "2026-10-20",
+    image: "/blog/aide-grands-rouleurs-octobre-2026.jpg",
+    imageCredit: "Photo : Santeri Viinamäki, Wikimedia Commons, licence CC BY-SA 4.0",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "L'indemnité carburant destinée aux travailleurs « grands rouleurs » devait s'arrêter le 30 septembre. Un décret du 15 octobre 2026 la renouvelle pour octobre, novembre et décembre : 100 € pour ces trois mois, soit l'équivalent de 40 centimes par litre selon l'administration fiscale, contre 20 centimes sur la période d'avril à septembre.",
+      },
+      {
+        type: "h2",
+        texte: "Vous l'avez déjà reçue : ne faites rien",
+      },
+      {
+        type: "p",
+        texte:
+          "Si vous avez perçu l'aide pour la période d'avril à septembre, les 100 € d'octobre à décembre vous sont versés automatiquement, à partir du 16 octobre. L'administration fiscale chiffre ces bénéficiaires à 1,6 million. Aucune démarche n'est à faire, et il est inutile de repasser par le simulateur.",
+      },
+      {
+        type: "h2",
+        texte: "Vous ne l'avez jamais reçue : le plafond a changé",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est le changement qui compte. Le revenu fiscal de référence par part de votre foyer, au titre de 2024, doit être inférieur ou égal à 22 770 €, contre 16 880 € pour la période précédente. Le nombre de personnes potentiellement concernées passe de 3 à 5,5 millions. Si vous aviez été refusé au printemps pour vos revenus, refaites le calcul.",
+      },
+      {
+        type: "p",
+        texte:
+          "Pour donner un ordre de grandeur, l'administration cite des salaires nets mensuels jusqu'à 2 050 € pour une personne seule, 4 070 € pour un couple sans enfant, 5 087 € avec un enfant et 6 100 € avec deux enfants. Ce sont des exemples : la règle reste le revenu fiscal de référence par part, inscrit en première page de votre avis d'impôt 2025 sur les revenus de 2024.",
+      },
+      {
+        type: "h2",
+        texte: "Les autres conditions, qui n'ont pas bougé",
+      },
+      {
+        type: "liste",
+        items: [
+          "Être domicilié fiscalement en France et avoir eu au moins 16 ans au 31 décembre 2024, c'est-à-dire être né avant le 1er janvier 2009.",
+          "Avoir déclaré pour 2024 des revenus d'activité : salaires (hors chômage et préretraite), bénéfices industriels et commerciaux, non commerciaux ou agricoles.",
+          "Ne pas avoir été redevable de l'impôt sur la fortune immobilière au titre de 2024.",
+          "Utiliser son véhicule pour travailler et parcourir soit au moins 15 km entre son domicile et son lieu de travail (30 km aller-retour), soit au moins 8 000 km par an pour son activité professionnelle, trajets domicile-travail compris.",
+        ],
+      },
+      {
+        type: "h2",
+        texte: "Le véhicule : thermique ou hybride non rechargeable",
+      },
+      {
+        type: "p",
+        texte:
+          "L'aide vise un véhicule à deux, trois ou quatre roues, à moteur thermique ou hybride non rechargeable, assuré à la date de la demande. Les véhicules électriques, à hydrogène et hybrides rechargeables en sont exclus, tout comme les quadricycles lourds, les véhicules agricoles, les poids lourds et les véhicules de fonction ou de service pris en charge par l'employeur. Un véhicule classé « endommagé » au sens du code de la route (articles L. 327-1 à L. 327-6) ne donne pas droit à l'aide.",
+      },
+      {
+        type: "p",
+        texte:
+          "Point à ne pas négliger dans un foyer qui partage une voiture : l'aide d'octobre à décembre ne peut être accordée qu'une seule fois pour un même véhicule. Deux conjoints qui vont travailler avec la même voiture ne toucheront pas deux fois 100 €.",
+      },
+      {
+        type: "h2",
+        texte: "Comment faire la demande",
+      },
+      {
+        type: "liste",
+        items: [
+          "Dès maintenant, vérifiez votre éligibilité avec le simulateur d'impots.gouv.fr.",
+          "À partir du 27 octobre, faites la demande en ligne, depuis votre espace Finances publiques sur impots.gouv.fr.",
+          "Préparez votre numéro fiscal, le numéro d'immatriculation du véhicule et le numéro de sa carte grise. Vous certifiez vous-même remplir les conditions de distance.",
+          "Le versement intervient dans les dix jours qui suivent la demande.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "La demande se fait uniquement par ce formulaire de l'espace Finances publiques. Un message qui vous invite à « réclamer votre aide carburant » sur un autre site ou à régler des frais pour l'obtenir n'en vient pas.",
+      },
+      {
+        type: "p",
+        texte:
+          "À ce jour, les pages officielles ne donnent pas de date de clôture pour cette deuxième période. Mieux vaut déposer la demande dès l'ouverture que d'attendre une échéance qui n'est pas encore annoncée.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Extension de l'aide de 100 € pour les travailleurs « grands rouleurs » — impots.gouv.fr, modifié le 15 octobre 2026",
+        url: "https://www.impots.gouv.fr/actualite/extension-de-laide-de-100-eu-pour-les-travailleurs-grands-rouleurs",
+      },
+      {
+        libelle: "Simulateur de l'aide carburant « grands rouleurs » — impots.gouv.fr",
+        url: "https://www.impots.gouv.fr/simulateur-aide-carburant-grands-rouleurs",
+      },
+      {
+        libelle: "Aide « grands rouleurs » : ce qui change d'octobre à décembre 2026 — service-public.gouv.fr, mis à jour le 16 octobre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/actualites/A18903",
+      },
+      {
+        libelle: "Décret n° 2026-959 du 15 octobre 2026 relatif à une indemnité carburant — Légifrance",
+        url: "https://www.legifrance.gouv.fr/eli/decret/2026/10/15/ECOE2626788D/jo/texte",
+      },
+    ],
+  },
   {
     slug: "permis-validite-15-ans-directive-europeenne",
     titre: "Permis de conduire : non, ce ne sera pas quinze ans — en France ce sera dix, et pas avant fin 2029",
