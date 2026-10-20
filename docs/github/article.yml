@@ -13,6 +13,11 @@ on:
     - cron: "13 6 * * 2,5"
     - cron: "13 9 * * 2,5"
     - cron: "13 13 * * 2,5"
+    # ESSAI DU 20/10/2026 — à retirer dès le résultat connu. Vérifie si
+    # GitHub honore une programmation, après le saut de ce matin. Un
+    # article du jour existe déjà : le garde-fou arrêtera l'exécution à
+    # la première étape, donc l'essai ne produit rien.
+    - cron: "57 17 * * *"
   # Pour lancer un article à la demande, sans attendre mardi.
   workflow_dispatch:
 
