@@ -4,8 +4,15 @@ on:
   # 06:13 UTC = 08:13 à Paris l'été, 07:13 l'hiver. GitHub ne connaît que
   # l'UTC et ne gère pas le changement d'heure ; une heure d'écart est sans
   # importance pour un article de blog.
+  # Trois rendez-vous, pas un seul. GitHub sert les tâches programmées des
+  # dépôts gratuits en dernier : il les retarde souvent, et il lui arrive de
+  # les sauter. Le 20 octobre 2026, celle de 8 h 13 n'est jamais partie.
+  # Trois chances valent mieux qu'une, et l'étape ci-dessous garantit qu'un
+  # seul article sort malgré tout.
   schedule:
     - cron: "13 6 * * 2,5"
+    - cron: "13 9 * * 2,5"
+    - cron: "13 13 * * 2,5"
   # Pour lancer un article à la demande, sans attendre mardi.
   workflow_dispatch:
 
@@ -37,20 +44,39 @@ jobs:
           git config user.name "Article automatique"
           git config user.email "noreply@discountcartegrise.fr"
 
+      # Avec trois rendez-vous, deux pourraient aboutir le même jour. On
+      # s'arrête net si un article porte déjà la date du jour — c'est le seul
+      # garde-fou qui rende un déclenchement manqué inoffensif ET un
+      # déclenchement en double inoffensif.
+      - name: Un article est-il déjà paru aujourd'hui ?
+        id: deja
+        run: |
+          if grep -q "date: \"$(date +%Y-%m-%d)\"" src/data/articles.ts; then
+            echo "paru=oui" >> "$GITHUB_OUTPUT"
+            echo "Un article porte déjà la date du jour. Rien à faire."
+          else
+            echo "paru=non" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Noter la version de départ
+        if: steps.deja.outputs.paru == 'non'
         id: avant
         run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Rédiger et publier l'article
+        if: steps.deja.outputs.paru == 'non'
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          prompt: "/article-blog"
+          prompt: "Lis le fichier .claude/skills/article-blog/SKILL.md et applique-le à la lettre, de bout en bout."
           claude_args: |
             --model claude-opus-5-5
             --max-turns 100
+            --allowedTools "Bash,Read,Write,Edit,Glob,Grep,WebSearch"
+          show_full_output: true
 
       - name: Mettre le site en ligne si un article est sorti
+        if: steps.deja.outputs.paru == 'non'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
