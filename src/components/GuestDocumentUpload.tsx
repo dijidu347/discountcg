@@ -29,9 +29,6 @@ interface GuestDocumentUploadProps {
   isBlocked?: boolean;
   blockedMessage?: string;
   rectoOnly?: boolean;
-  trackingNumber?: string;
-  clientName?: string;
-  orderIdForNotif?: string;
 }
 
 export function GuestDocumentUpload({
@@ -43,9 +40,6 @@ export function GuestDocumentUpload({
   isBlocked = false,
   blockedMessage,
   rectoOnly = false,
-  trackingNumber,
-  clientName,
-  orderIdForNotif
 }: GuestDocumentUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
@@ -189,24 +183,18 @@ export function GuestDocumentUpload({
         description: `${documentType} (${side}) a été téléchargé avec succès`
       });
 
-      // Notify admin of document reupload
-      if (trackingNumber) {
-        try {
-          await supabase.functions.invoke('send-email', {
-            body: {
-              type: 'admin_guest_document_reupload',
-              to: 'contact@discountcartegrise.fr',
-              data: {
-                client_name: clientName || '',
-                tracking_number: trackingNumber,
-                document_type: documentType,
-                side: side,
-                order_id: orderIdForNotif || '',
-              }
-            }
-          });
-        } catch (e) { console.error('Admin reupload notif failed:', e); }
-      }
+      // Un courrier partait ici à chaque FICHIER déposé — un document
+      // recto-verso en déclenchait deux. Mesuré le 20 octobre 2026 : 169 en
+      // soixante jours, dont douze pour une seule commande.
+      //
+      // Et il s'intitulait « Document re-envoyé » alors qu'aucun de ces 169
+      // dépôts ne remplaçait une pièce refusée : il annonçait un premier
+      // dépôt à chaque fois. Les commandes apparaissent déjà dans l'admin ;
+      // ces courriers n'ajoutaient rien et disaient quelque chose de faux.
+      //
+      // À ne pas réintroduire ici si le besoin revient : six endroits du code
+      // écrivent dans guest_order_documents, et une règle posée dans ce seul
+      // composant n'en couvrirait qu'un. Sa place serait en base.
 
       // Refetch from parent in background - no need to wait
       if (onUploadComplete) {

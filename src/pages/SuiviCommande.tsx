@@ -962,9 +962,6 @@ const SuiviCommande = () => {
                               existingFiles={[]}
                               isBlocked={isBlocked}
                               blockedMessage={`Veuillez payer ${order.resubmission_payment_amount || 10} € pour pouvoir renvoyer ce document.`}
-                              trackingNumber={order.tracking_number}
-                              clientName={`${order.prenom} ${order.nom}`}
-                              orderIdForNotif={order.id}
                               onUploadComplete={() => {
                                 setReuploadedDocs(prev => new Set([...prev, docType]));
                                 loadDocuments();
@@ -1094,8 +1091,6 @@ const SuiviCommande = () => {
                         }))}
                         onUploadComplete={() => { loadDocuments(); loadOrder(); }}
                         rectoOnly={true}
-                        trackingNumber={order.tracking_number}
-                        clientName={`${order.prenom || ''} ${order.nom || ''}`}
                       />
                       {filesForDoc.length === 0 && (
                         <Button variant="ghost" size="icon" onClick={() => setAdditionalDocs(prev => prev.filter(d => d !== docName))} className="absolute top-2 right-2 h-6 w-6">
