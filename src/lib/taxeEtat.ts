@@ -67,6 +67,27 @@ export function taxeEtat(type: string | null | undefined): number | null {
 
 // true quand la démarche supporte une taxe dont on ignore le montant : son
 // revenu est alors surévalué, et il faut le dire plutôt que de le masquer.
-export function taxeInconnue(type: string | null | undefined): boolean {
-  return taxeEtat(type) === null;
+//
+// Mais le type ne suffit pas à conclure. Le 21 octobre 2026, l'écran signalait
+// DEM-2026-08981 comme « revenu majoré » : une immatriculation définitive, donc
+// un type à taxe variable. Or le garage avait payé 59,00 € pour 59,00 € de
+// frais de dossier — à l'euro près. Rien n'avait été encaissé pour l'État, et
+// il n'y avait donc rien à déduire.
+//
+// On regarde donc ce qui a RÉELLEMENT été encaissé. Une taxe n'est inconnue
+// que si le paiement dépasse les frais de dossier sans qu'aucun montant de
+// taxe ne soit mémorisé : là seulement, le surplus est de la taxe comptée à
+// tort en revenu. Avertir sur le seul type faisait douter d'un chiffre juste,
+// ce qui coûte autant qu'un chiffre faux.
+export function taxeInconnue(
+  type: string | null | undefined,
+  encaisse?: number | null,
+  fraisDossier?: number | null,
+  taxeMemorisee?: number | null,
+): boolean {
+  if (taxeEtat(type) !== null) return false;
+  if (Number(taxeMemorisee ?? 0) > 0) return false;
+  // Sans les montants, on garde l'ancien comportement : prudent par défaut.
+  if (encaisse == null || fraisDossier == null) return true;
+  return Number(encaisse) - Number(fraisDossier) > 0.009;
 }

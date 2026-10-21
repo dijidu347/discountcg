@@ -528,7 +528,14 @@ export default function AdminRevenus() {
   );
   const taxesParticuliers = filteredGuestOrders.reduce((s, o) => s + Number(o.montant_ht || 0), 0);
   const totalTaxesEtat = taxesCartesGrises + taxesProForfaitaires + taxesParticuliers;
-  const demarchesTaxeInconnue = filteredPaiements.filter((p) => taxeInconnue(p.demarches?.type)).length;
+  const demarchesTaxeInconnue = filteredPaiements.filter((p) =>
+    taxeInconnue(
+      p.demarches?.type,
+      Number(p.montant),
+      Number(p.demarches?.frais_dossier ?? 0),
+      Number(p.demarches?.prix_carte_grise ?? 0),
+    ),
+  ).length;
   const totalRevenue = totalServiceFees + totalTokenRevenue + totalParticuliers;
   // Commissions bancaires sur les encaissements de la periode : Stripe au
   // centime, Sogecommerce selon la grille et la carte utilisee.
