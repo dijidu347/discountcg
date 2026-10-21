@@ -101,15 +101,34 @@ export async function garagesAvecKbisADater(
       .map((d) => d.garage_id),
   );
 
-  // Les comptes de la maison ne sont soumis a aucune verification : les
-  // compter ici reviendrait a se reclamer des papiers a soi-meme.
-  // types.ts est genere depuis la base et ne connait pas encore la colonne.
+  // Deux exclusions, et la seconde a sa raison d'être.
+  //
+  // Les comptes de la maison ne sont soumis à aucune vérification : les
+  // compter ici reviendrait à se réclamer des papiers à soi-même.
+  //
+  // Et surtout, les garages PAS ENCORE VÉRIFIÉS n'ont rien à faire dans cette
+  // file. Chez eux, le Kbis est une pièce parmi celles du dossier d'entrée :
+  // il sera lu quand on examinera le dossier, dans « Complet, à vérifier ».
+  // Les faire apparaître ici découpait le même travail en deux endroits et
+  // réclamait une date avant même d'avoir décidé si le garage était accepté.
+  // Cette file ne sert que pour un garage DÉJÀ vérifié qui redépose son Kbis :
+  // là, tout le reste est en règle et la date est le seul geste qui manque.
+  //
+  // Mesuré le 21 octobre 2026 : le bandeau annonçait deux garages, dont aucun
+  // n'était vérifié. Il montrait exactement la population qu'il ne devait pas
+  // montrer.
+  //
+  // types.ts est généré depuis la base et ne connaît pas encore compte_interne.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: internes } = await (supabase as any)
+  const { data: comptes } = await (supabase as any)
     .from("garages")
-    .select("id")
-    .eq("compte_interne", true);
-  const aIgnorer = new Set(((internes || []) as { id: string }[]).map((g) => g.id));
+    .select("id, compte_interne, is_verified")
+    .in("id", candidats);
+  const aIgnorer = new Set(
+    ((comptes || []) as { id: string; compte_interne: boolean | null; is_verified: boolean | null }[])
+      .filter((g) => g.compte_interne === true || g.is_verified !== true)
+      .map((g) => g.id),
+  );
 
   const parGarage = new Map<string, AttenteKbis>();
   for (const d of enAttente) {

@@ -108,13 +108,26 @@ export default function KbisADater() {
         .map((d) => d.garage_id),
     );
 
-    const toutes: Ligne[] = enAttente.map((d) => ({
+    // Un garage pas encore vérifié n'a rien à faire ici : son Kbis est une
+    // pièce parmi celles de son dossier d'entrée, et il sera lu quand on
+    // examinera ce dossier, dans « Complet, à vérifier ». L'afficher ici
+    // découpait le même travail en deux endroits.
+    //
+    // Cette file ne sert qu'à un garage DÉJÀ vérifié qui redépose son Kbis :
+    // tout le reste est en règle, et la date est le seul geste qui manque.
+    //
+    // La règle vit aussi dans lib/kbisADater.ts, qui alimente le bandeau et la
+    // tuile. Les deux doivent dire la même chose — sinon le bandeau annonce
+    // zéro pendant que cette page en affiche deux.
+    const toutes: Ligne[] = enAttente
+      .filter((d) => nomDuGarage.get(d.garage_id)?.is_verified === true)
+      .map((d) => ({
       ...d,
       garage: nomDuGarage.get(d.garage_id)?.raison_sociale || "Garage inconnu",
       garageEmail: nomDuGarage.get(d.garage_id)?.email ?? null,
       garageVerifie: !!nomDuGarage.get(d.garage_id)?.is_verified,
       doublon: avecKbisValable.has(d.garage_id),
-    }));
+      }));
 
     // Les vraies dates à saisir d'abord : ce sont les seules qui bloquent un
     // garage. Les doublons se nettoient ensuite, d'un bouton.
