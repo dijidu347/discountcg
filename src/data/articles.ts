@@ -42,6 +42,126 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "pneus-hiver-chaines-novembre-2026",
+    titre: "Pneus hiver ou chaînes dès le 1er novembre : en montagne, un pneu seulement « M+S » ne suffit plus",
+    chapo:
+      "Du 1er novembre 2026 au 31 mars 2027, certaines communes de montagne imposent des pneus hiver ou des chaînes à bord. Depuis le 1er novembre 2024, seuls les pneus portant le symbole de la montagne à trois pics comptent : beaucoup de pneus « neige » et « quatre saisons » ne dispensent plus d'avoir des chaînes.",
+    categorie: "Réglementation",
+    date: "2026-10-23",
+    image: "/blog/pneus-hiver-chaines-novembre-2026.jpg",
+    imageCredit: "Photo : Florian Pépellin, Wikimedia Commons, licence CC BY-SA 4.0",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "C'est la sixième saison d'application de la loi Montagne sur les équipements hivernaux. Du 1er novembre 2026 au 31 mars 2027, dans les communes de montagne désignées par les préfets, votre voiture doit soit avoir quatre pneus hiver, soit transporter des chaînes ou des chaussettes à neige. La règle n'a pas changé cette année, mais une partie de ceux qui se croient en règle ne le sont plus depuis deux hivers.",
+      },
+      {
+        type: "h2",
+        texte: "Le piège : le marquage « M+S » seul ne vaut plus pneu hiver",
+      },
+      {
+        type: "p",
+        texte:
+          "Le décret du 16 octobre 2020 prévoyait deux temps. Jusqu'au 31 octobre 2024, un pneu marqué « M+S », « M.S » ou « M&S » suffisait. Depuis le 1er novembre 2024, un pneu n'est considéré comme pneu hiver que s'il porte à la fois l'un de ces marquages et le « symbole alpin », une montagne à trois pics contenant un flocon de neige, appelé 3PMSF.",
+      },
+      {
+        type: "p",
+        texte:
+          "Regardez donc le flanc de vos pneus avant de partir. Si vous n'y trouvez que « M+S », vos pneus restent autorisés, mais vous êtes traité comme si vous rouliez en pneus été : il vous faut des chaînes ou des chaussettes à bord. Il en va de même des pneus vendus comme « quatre saisons » ou « all season » : la Sécurité routière rappelle qu'ils n'ont pas de définition réglementaire et ne comptent comme pneus hiver que s'ils portent le symbole 3PMSF.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que vous devez avoir, au choix",
+      },
+      {
+        type: "liste",
+        items: [
+          "Soit quatre pneus hiver marqués 3PMSF, montés sur au moins deux roues de chaque essieu. Deux pneus hiver à l'avant seulement ne suffisent pas.",
+          "Soit des chaînes métalliques ou des chaussettes à neige textiles permettant d'équiper au moins deux roues motrices, rangées dans le véhicule et prêtes à servir. La Sécurité routière conseille les chaînes pour un usage fréquent, les chaussettes pour un usage occasionnel.",
+          "Les véhicules équipés de pneus à clous sont dispensés de ces obligations.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Les chaînes ou chaussettes doivent rester à bord même en l'absence de neige : l'obligation porte sur leur détention dès que votre trajet traverse une zone concernée. Vérifiez qu'elles correspondent à la taille de vos roues et à l'espace entre la roue et la carrosserie, et entraînez-vous à les poser chez vous plutôt que la première fois sur un bas-côté enneigé.",
+      },
+      {
+        type: "h2",
+        texte: "Qui est concerné, et où",
+      },
+      {
+        type: "p",
+        texte:
+          "Tous les véhicules à quatre roues et plus : voitures, utilitaires, camping-cars, autocars, bus et poids lourds. Les voitures sans permis ne sont pas concernées. Les poids lourds qui tractent une remorque ou une semi-remorque doivent avoir des chaînes dans tous les cas, même s'ils roulent en pneus hiver.",
+      },
+      {
+        type: "p",
+        texte:
+          "L'obligation ne couvre pas un département entier par défaut, ni toute la montagne. Dans les massifs des Alpes, de Corse, du Massif central, du Jura, des Pyrénées et des Vosges, chaque préfet fixe par arrêté la liste des communes concernées, et peut exclure certaines routes. La Sécurité routière publie ces arrêtés et la liste des communes : consultez-les pour votre destination et pour les communes que vous traversez.",
+      },
+      {
+        type: "p",
+        texte:
+          "Sur la route, des panneaux marquent l'entrée et la sortie de chaque zone, avec un panonceau qui rappelle la période du 1er novembre au 31 mars. Cette signalisation est nécessaire pour que l'obligation vous soit opposable.",
+      },
+      {
+        type: "h2",
+        texte: "Le panneau « chaînes obligatoires », lui, s'applique toute l'année",
+      },
+      {
+        type: "p",
+        texte:
+          "Ne confondez pas ces zones avec le panneau rond bleu qui montre un pneu entouré d'une chaîne, le panneau B26. Celui-ci impose de rouler avec les chaînes montées, et non simplement de les avoir dans le coffre, sur route enneigée, y compris en dehors de la période hivernale. Un véhicule équipé conformément à la loi Montagne, pneus 3PMSF ou chaînes à bord, est réputé satisfaire à ce panneau, sauf si un panonceau précise que seules les chaînes sont admises.",
+      },
+      {
+        type: "p",
+        texte:
+          "Enfin, ces règles ne limitent pas les pouvoirs du préfet ou du gestionnaire de la route : par fort enneigement, une route peut être fermée ou réservée à certains véhicules, quel que soit votre équipement.",
+      },
+      {
+        type: "h2",
+        texte: "Et l'amende ?",
+      },
+      {
+        type: "p",
+        texte:
+          "Beaucoup d'articles annoncent un montant précis. Le décret de 2020 n'en fixe aucun, et ni service-public.gouv.fr ni la Sécurité routière n'en mentionnent dans leurs pages sur ces équipements. Nous ne reprenons donc pas de chiffre. Le risque le plus sûr est ailleurs : rester bloqué dans une montée enneigée, et bloquer avec vous tout un axe, c'est précisément ce que la mesure cherche à éviter.",
+      },
+      {
+        type: "h2",
+        texte: "Avant de partir en montagne cet hiver",
+      },
+      {
+        type: "liste",
+        items: [
+          "Cherchez le symbole de la montagne à trois pics sur le flanc de vos quatre pneus. S'il n'y est pas, achetez des chaînes ou des chaussettes adaptées à la dimension inscrite sur vos pneus.",
+          "Consultez sur securite-routiere.gouv.fr l'arrêté du département où vous allez et la liste des communes concernées.",
+          "Rangez les chaînes dans le coffre dès le 1er novembre et faites un essai de pose à l'avance.",
+        ],
+      },
+    ],
+    sources: [
+      {
+        libelle: "Pneus hiver, chaînes : quelles sont vos obligations jusqu'au 31 mars 2027 ? — service-public.gouv.fr, publié le 20 octobre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/actualites/A14389",
+      },
+      {
+        libelle: "Nouveaux équipements hivernaux — Sécurité routière, ministère de l'Intérieur",
+        url: "https://www.securite-routiere.gouv.fr/chacun-son-mode-de-deplacement/dangers-de-la-route-en-voiture/equipement-de-la-voiture/nouveaux",
+      },
+      {
+        libelle: "Équipements hivernaux : départements et communes, arrêtés préfectoraux — Sécurité routière",
+        url: "https://www.securite-routiere.gouv.fr/equipements-hivernaux-departements-et-communes",
+      },
+      {
+        libelle: "Décret n° 2020-1264 du 16 octobre 2020 relatif à l'obligation d'équipement de certains véhicules en période hivernale — Légifrance",
+        url: "https://www.legifrance.gouv.fr/eli/decret/2020/10/16/INTS2027076D/jo/texte",
+      },
+    ],
+  },
+  {
     slug: "aide-grands-rouleurs-octobre-2026",
     titre: "Aide « grands rouleurs » : 100 € d'octobre à décembre, et bien plus de foyers éligibles qu'au printemps",
     chapo:
