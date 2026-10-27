@@ -42,6 +42,105 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "telephone-volant-suspension-permis-prefet",
+    titre: "Téléphone en main au volant : le préfet peut suspendre votre permis jusqu'à six mois, sans attendre le juge",
+    chapo:
+      "Le 29 septembre 2026, le ministère de l'Intérieur a demandé à tous les préfets de suspendre le permis des conducteurs pris le téléphone à la main. Une vingtaine de départements le faisaient déjà ; aucune autre infraction n'est nécessaire, et il n'existe pas de permis blanc.",
+    categorie: "Réglementation",
+    date: "2026-10-27",
+    image: "/blog/telephone-volant-suspension-permis-prefet.jpg",
+    imageCredit: "Photo : Ed Brown, Wikimedia Commons, licence CC BY-SA 2.5",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Beaucoup de conducteurs pensent qu'un téléphone tenu en main coûte une amende et trois points, et rien de plus tant que le juge ne s'en mêle pas. C'est de moins en moins vrai. Le Code de la route permet au préfet de suspendre lui-même le permis de conduire de tout conducteur tenant un téléphone dans sa main, pendant six mois au plus. Jusqu'ici, les préfets d'une vingtaine de départements seulement avaient signalé y recourir, parmi lesquels les Landes, le Lot-et-Garonne, le Pas-de-Calais, la Charente-Maritime et l'Yonne. Le 29 septembre 2026, le ministère de l'Intérieur a adressé une instruction à l'ensemble des préfets pour leur demander d'utiliser cette possibilité.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que vous risquez désormais",
+      },
+      {
+        type: "liste",
+        items: [
+          "Une amende forfaitaire de 135 €.",
+          "Un retrait de 3 points sur votre permis.",
+          "Une suspension administrative décidée par le préfet, jusqu'à 6 mois, sans attendre de jugement.",
+          "Une éventuelle suspension judiciaire, si l'affaire va devant un juge.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Il n'est pas nécessaire d'avoir commis en même temps un excès de vitesse ou une autre infraction : le seul fait de tenir son téléphone en main suffit pour que le préfet puisse suspendre le permis. L'interdiction vise aussi, depuis le 1er juillet 2015, le fait de conduire en portant à l'oreille des écouteurs, une oreillette ou un casque.",
+      },
+      {
+        type: "h2",
+        texte: "Comment la suspension tombe",
+      },
+      {
+        type: "p",
+        texte:
+          "Dans le cas le plus courant, vous repartez du contrôle avec votre permis : les forces de l'ordre ne le retirent pas sur le bord de la route. Elles transmettent le procès-verbal au préfet, qui décide de la suspension et vous la notifie par lettre recommandée avec accusé de réception. La procédure est contradictoire : vous pouvez présenter vos observations. C'est la préfecture qui fixe la durée, notamment selon les circonstances de l'infraction. Une fois la décision notifiée, vous devez remettre votre permis aux services préfectoraux. Refuser de le restituer, ou conduire malgré la suspension, expose à 2 ans de prison et 4 500 € d'amende.",
+      },
+      {
+        type: "p",
+        texte:
+          "Le scénario est plus brutal si le téléphone en main s'accompagne d'une autre infraction, par exemple une ligne continue franchie, un feu ou un stop grillé, une distance de sécurité non respectée, un excès de vitesse ou un refus de priorité à un piéton. Les forces de l'ordre peuvent alors retenir votre permis sur place, et le préfet a 72 heures pour prononcer la suspension. Si un accident a blessé ou tué quelqu'un et que vous êtes soupçonné d'avoir tenu votre téléphone, le permis peut aussi être retenu, et la suspension peut alors atteindre un an.",
+      },
+      {
+        type: "h2",
+        texte: "Pas de permis blanc, et un contrôle médical à payer",
+      },
+      {
+        type: "p",
+        texte:
+          "Une suspension administrative ne peut pas être aménagée : il n'existe pas de « permis blanc » pour aller travailler. Si elle dépasse un mois, vous ne récupérez votre permis qu'après avoir été reconnu apte par un contrôle médical, à passer chez un médecin agréé par le préfet, qui ne peut pas être votre médecin traitant. Il coûte 36 €, ou 50 € devant la commission médicale, et l'Assurance maladie ne le rembourse pas. Pour une suspension de six mois ou plus, il faut en plus un examen psychotechnique, autour de 100 €. Le permis se redemande ensuite en ligne sur le site de l'ANTS. Pour une suspension d'un mois ou moins, il se récupère simplement à la préfecture.",
+      },
+      {
+        type: "p",
+        texte:
+          "Si un juge prononce une suspension avant la fin de la suspension administrative, la sienne remplace automatiquement celle du préfet : les deux ne se cumulent pas. Pour les conducteurs professionnels chargés du transport de personnes, la durée maximale de la suspension administrative est doublée et passe à un an.",
+      },
+      {
+        type: "h2",
+        texte: "Contester la décision",
+      },
+      {
+        type: "p",
+        texte:
+          "Les voies de recours figurent sur la décision de suspension. Vous pouvez former un recours administratif auprès du préfet et un recours contentieux devant le juge administratif.",
+      },
+      {
+        type: "h2",
+        texte: "Le geste qui évite tout cela",
+      },
+      {
+        type: "p",
+        texte:
+          "Rangez le téléphone avant de démarrer, ou laissez-le hors de portée de main pendant le trajet. Une suspension, même courte, coûte bien plus que l'amende : des semaines sans voiture, un contrôle médical à payer, et pour beaucoup une vraie difficulté à se rendre au travail.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Le téléphone au volant peut entraîner la suspension administrative du permis de conduire — service-public.gouv.fr, publié le 8 octobre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/actualites/A19086",
+      },
+      {
+        libelle: "Suspension administrative du permis de conduire — service-public.gouv.fr, vérifié le 12 octobre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F14836",
+      },
+      {
+        libelle: "Article R412-6-1 du Code de la route — Légifrance",
+        url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000041910422",
+      },
+      {
+        libelle: "Articles L224-1 à L224-18 du Code de la route — Légifrance",
+        url: "https://www.legifrance.gouv.fr/codes/section_lc/LEGITEXT000006074228/LEGISCTA000006159516",
+      },
+    ],
+  },
+  {
     slug: "pneus-hiver-chaines-novembre-2026",
     titre: "Pneus hiver ou chaînes dès le 1er novembre : en montagne, un pneu seulement « M+S » ne suffit plus",
     chapo:
