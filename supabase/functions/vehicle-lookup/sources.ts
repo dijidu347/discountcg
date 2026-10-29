@@ -21,12 +21,24 @@ export type Issue =
   | { sorte: "inconnu" }
   | { sorte: "panne"; detail: string };
 
+/**
+ * Ce qu'on demande à une source : une plaque, ou un VIN.
+ *
+ * Le VIN ne dépend d'aucun pays. C'est la seule clé qui identifie un véhicule importé, dont la
+ * plaque étrangère n'est dans aucun fichier auquel nous ayons accès.
+ */
+export type Recherche = { plaque: string; vin?: undefined } | { vin: string; plaque?: undefined };
+
 export type Source = {
   nom: string;
   /** Une source sans identifiant configuré est simplement absente de la liste. */
   configuree: boolean;
-  interroger: (plaque: string) => Promise<Issue>;
+  interroger: (quoi: Recherche) => Promise<Issue>;
 };
+
+/** `plaque=` ou `vin=` : la même API, deux clés d'entrée. */
+const critere = (quoi: Recherche) =>
+  quoi.vin ? `vin=${encodeURIComponent(quoi.vin)}` : `plaque=${encodeURIComponent(quoi.plaque ?? "")}`;
 
 const MS_AVANT_ABANDON = 12_000;
 
@@ -89,10 +101,10 @@ export function sourcesDisponibles(): Source[] {
     {
       nom: "auto-ways",
       configuree: !!jetonDirect,
-      interroger: (plaque) =>
+      interroger: (quoi) =>
         interrogerOuPanne(() =>
           recuperer(
-            `https://app.auto-ways.net/api/v1/fr?plaque=${encodeURIComponent(plaque)}` +
+            `https://app.auto-ways.net/api/v1/fr?${critere(quoi)}` +
               `&token=${encodeURIComponent(jetonDirect ?? "")}`,
           )
         ),
@@ -100,14 +112,17 @@ export function sourcesDisponibles(): Source[] {
     {
       nom: "rapidapi",
       configuree: !!cleRapidapi,
-      interroger: (plaque) =>
-        interrogerOuPanne(() =>
-          recuperer(`https://${HOTE_RAPIDAPI}/?plaque=${encodeURIComponent(plaque)}`, {
-            plaque,
-            "x-rapidapi-host": HOTE_RAPIDAPI,
-            "x-rapidapi-key": cleRapidapi ?? "",
-          })
-        ),
+      // Le revendeur n'expose que la plaque : sur un VIN, il passe la main sans être appelé.
+      interroger: (quoi) =>
+        quoi.vin
+          ? Promise.resolve<Issue>({ sorte: "panne", detail: "source sans recherche par VIN" })
+          : interrogerOuPanne(() =>
+            recuperer(`https://${HOTE_RAPIDAPI}/?plaque=${encodeURIComponent(quoi.plaque ?? "")}`, {
+              plaque: quoi.plaque ?? "",
+              "x-rapidapi-host": HOTE_RAPIDAPI,
+              "x-rapidapi-key": cleRapidapi ?? "",
+            })
+          ),
     },
   ];
 

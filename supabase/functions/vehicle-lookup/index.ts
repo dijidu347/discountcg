@@ -201,7 +201,18 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const plate = body?.plate;
+    // Un VIN remplace la plaque : c'est la seule entrée qui marche sur un véhicule importé,
+    // dont la plaque étrangère n'est dans aucun fichier auquel nous ayons accès. Dix-sept
+    // caractères, sans I ni O ni Q — la norme les exclut pour qu'on ne les lise pas pour 1 et 0.
+    const vinBrut = typeof body?.vin === 'string' ? body.vin.replace(/[-\s]/g, '').toUpperCase() : '';
+    const vin = /^[A-HJ-NPR-Z0-9]{17}$/.test(vinBrut) ? vinBrut : '';
+    if (vinBrut && !vin) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'VIN invalide : 17 caractères, sans I, O ni Q.' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    const plate = vin ? vin : body?.plate;
     const force = body?.force === true;
     // Jamais pour un client : un appel explicitement marqué « diagnostic »
     // reçoit la raison brute de chaque refus, ce qui permet de distinguer de
@@ -219,7 +230,7 @@ serve(async (req) => {
     // Normalisation: majuscules, sans tirets ni espaces
     const cleanPlate = plate.replace(/[-\s]/g, '').toUpperCase();
 
-    if (cleanPlate.length < 5 || cleanPlate.length > 10) {
+    if (!vin && (cleanPlate.length < 5 || cleanPlate.length > 10)) {
       console.error('Invalid plate format');
       return new Response(
         JSON.stringify({ success: false, error: 'Format de plaque invalide' }),
@@ -296,7 +307,7 @@ serve(async (req) => {
     const pannes: string[] = [];
 
     for (const source of sources) {
-      const issue = await source.interroger(cleanPlate);
+      const issue = await source.interroger(vin ? { vin } : { plaque: cleanPlate });
 
       if (issue.sorte === 'panne') {
         console.error(`vehicle-lookup ${cleanPlate} source=${source.nom} panne: ${issue.detail}`);
