@@ -38,9 +38,126 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
   "Tarifs": "bg-emerald-100 text-emerald-800",
   "Idées reçues": "bg-rose-100 text-rose-800",
   "Aides": "bg-sky-100 text-sky-800",
+  "Arnaques": "bg-violet-100 text-violet-800",
 };
 
 export const ARTICLES: Article[] = [
+  {
+    slug: "faux-sms-amende-antai",
+    titre: "Faux SMS d'amende : l'ANTAI n'en envoie jamais, même quand le message cite votre vraie plaque",
+    chapo:
+      "L'ANTAI le dit sans détour : elle n'envoie jamais de SMS. Ses avis électroniques arrivent par e-mail depuis une seule adresse, et ses vrais liens mènent à un seul site ; tout le reste est une tentative de vol de vos données.",
+    categorie: "Arnaques",
+    date: "2026-10-30",
+    image: "/blog/faux-sms-amende-antai.jpg",
+    imageCredit: "Photo : Santeri Viinamäki, Wikimedia Commons, licence CC BY-SA 4.0",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "« Amende impayée », « dernier rappel avant majoration », un lien et un montant modeste à régler tout de suite : ces messages circulent depuis des mois, par SMS, par e-mail et même par courrier papier. L'Agence nationale de traitement automatisé des infractions (ANTAI), qui envoie les vrais avis de contravention, prévient que leur but est de collecter vos données personnelles ou vos coordonnées bancaires sur de faux sites administratifs. Un détail ne doit pas vous rassurer : un message qui cite le numéro d'immatriculation de votre voiture n'est pas pour autant authentique. Votre plaque est lisible par toute personne qui croise votre véhicule.",
+      },
+      {
+        type: "h2",
+        texte: "La règle qui tranche : pas de SMS",
+      },
+      {
+        type: "p",
+        texte:
+          "L'ANTAI n'envoie jamais de SMS. Un SMS qui vous réclame le paiement d'une amende, ou vous invite à la contester via un lien, est donc faux, quel que soit son contenu. Ne cliquez pas, et ne communiquez aucune information, en particulier bancaire. Plus largement, aucune administration ne vous demande vos coordonnées bancaires ou vos mots de passe par message ou par téléphone.",
+      },
+      {
+        type: "h2",
+        texte: "Les e-mails, eux, peuvent être vrais",
+      },
+      {
+        type: "p",
+        texte:
+          "C'est là que beaucoup se trompent dans l'autre sens. Depuis 2018, l'ANTAI envoie des avis de contravention électroniques par e-mail. Vous pouvez en recevoir un dans trois cas : l'adresse e-mail est associée à la carte grise de votre véhicule dans le système d'immatriculation tenu par l'ANTS ; un loueur, votre conjoint ou la personne qui vous a prêté son véhicule vous a désigné comme conducteur en donnant votre adresse ; ou vous l'avez communiquée vous-même à l'agent qui vous a verbalisé. Avant toute démarche, l'ANTAI demande de vérifier :",
+      },
+      {
+        type: "liste",
+        items: [
+          "l'expéditeur : l'adresse doit être exactement nepasrepondre_noreply@antai.gouv.fr ;",
+          "les logos officiels, Marianne et ANTAI ;",
+          "le destinataire : le message doit être à votre nom, ou à celui de votre société ;",
+          "le lien : le bouton « Accéder au dossier d'infraction » doit vous mener sur une adresse qui commence par https://usagers.antai.gouv.fr/.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Si vous ne consultez pas votre dossier électronique dans les 7 jours, ou si vous refusez la dématérialisation, l'avis vous est envoyé sur papier par la poste. Ignorer un e-mail douteux ne vous fait donc pas perdre la trace d'une vraie amende.",
+      },
+      {
+        type: "h2",
+        texte: "Les faux courriers et les QR codes",
+      },
+      {
+        type: "p",
+        texte:
+          "Le papier n'est pas une garantie non plus. L'ANTAI signale de faux avis de contravention et de fausses lettres de rappel qui renvoient vers des sites frauduleux. Ceux-ci demandent votre numéro fiscal, votre numéro de permis de conduire, votre carte d'identité ou votre passeport, voire un certificat de cession ou de destruction de véhicule. Que le lien soit écrit ou caché dans un QR code, vérifiez dans la barre d'adresse du navigateur que vous êtes bien sur l'un de ces trois sites officiels ; sinon, fermez la page :",
+      },
+      {
+        type: "liste",
+        items: [
+          "www.amendes.gouv.fr pour payer une amende ;",
+          "www.stationnement.gouv.fr pour payer un forfait post-stationnement ;",
+          "www.antai.gouv.fr pour consulter ou contester une amende.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Le plus sûr reste de ne jamais suivre le lien reçu : tapez vous-même l'adresse du site officiel et saisissez le numéro qui figure sur l'avis. Le paiement est aussi possible par téléphone au 0806 20 30 40, numéro non surtaxé.",
+      },
+      {
+        type: "h2",
+        texte: "Signaler, et réagir si vous avez déjà payé",
+      },
+      {
+        type: "p",
+        texte:
+          "Transférez le SMS frauduleux au 33700, la plateforme de signalement des spams par SMS et appels, et signalez le faux site sur www.internet-signalement.gouv.fr. Si vous avez saisi vos coordonnées bancaires ou constaté un débit suspect, faites immédiatement opposition auprès de votre banque. Conservez le message reçu comme preuve, et déposez plainte au commissariat ou à la gendarmerie si des débits frauduleux apparaissent ou si vos informations servent à usurper votre identité.",
+      },
+      {
+        type: "h2",
+        texte: "Si l'on vous attribue une infraction que vous n'avez pas commise",
+      },
+      {
+        type: "p",
+        texte:
+          "Il arrive qu'une personne soit désignée comme conducteur d'un véhicule au moment d'une infraction routière qu'elle n'a pas commise. L'ANTAI décrit la marche à suivre en trois étapes : obtenir de la trésorerie amendes à l'origine de la poursuite un bordereau de votre situation ; porter plainte au commissariat ou à la gendarmerie et en garder une copie ; puis écrire en recommandé avec accusé de réception à l'officier du ministère public, en joignant la plainte, le bordereau et une pièce d'identité. Si le bordereau vient de la Trésorerie du contrôle automatisé, l'adresse est : Officier du Ministère Public, Service fraude, CS 41101, 35911 Rennes Cedex 9.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que vous pouvez faire dès aujourd'hui",
+      },
+      {
+        type: "p",
+        texte:
+          "Pour vous adresser ses avis, l'ANTAI s'appuie notamment sur l'adresse e-mail et l'adresse postale enregistrées sur votre carte grise. Elle rappelle qu'en cas de déménagement, d'achat ou de vente d'un véhicule, le fichier des immatriculations doit obligatoirement être mis à jour. Une adresse à jour, c'est l'assurance de recevoir le vrai avis à temps, et donc de pouvoir écarter sans hésiter tout message qui ne lui ressemble pas.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Attention aux SMS, courriels et sites frauduleux ! — ANTAI, consulté le 30 octobre 2026",
+        url: "https://www.antai.gouv.fr/actualites/attention-aux-sms-courriels-et-sites-frauduleux",
+      },
+      {
+        libelle: "Vous avez reçu un courriel de l'ANTAI ? — ANTAI, publié le 22 juillet 2026",
+        url: "https://www.antai.gouv.fr/actualites/vous-avez-recu-un-courriel-de-lantai",
+      },
+      {
+        libelle: "Désignation frauduleuse : si vous êtes victime, comment signaler votre situation — ANTAI",
+        url: "https://www.antai.gouv.fr/particulier/designation-frauduleuse-si-vous-etes-victime-comment-signaler-votre-situation",
+      },
+      {
+        libelle: "Que faire en cas de phishing ou hameçonnage ? — Cybermalveillance.gouv.fr",
+        url: "https://www.cybermalveillance.gouv.fr/tous-nos-contenus/fiches-reflexes/hameconnage-phishing",
+      },
+    ],
+  },
   {
     slug: "telephone-volant-suspension-permis-prefet",
     titre: "Téléphone en main au volant : le préfet peut suspendre votre permis jusqu'à six mois, sans attendre le juge",
