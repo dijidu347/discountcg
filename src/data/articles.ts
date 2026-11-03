@@ -43,6 +43,103 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "voiture-electrique-liste-aidee-24-novembre-2026",
+    titre: "Voiture électrique : la liste des versions aidées change le 24 novembre, et la date de votre bon de commande compte",
+    chapo:
+      "Le 24 novembre 2026, une nouvelle liste officielle remplace entièrement l'ancienne. Y figurer est l'une des conditions pour qu'une voiture électrique ouvre droit au « coup de pouce » et au leasing social. Une version qui en sort reste aidée si vous l'avez commandée avant cette date et qu'elle est facturée au plus tard le 6 février 2027.",
+    categorie: "Aides",
+    date: "2026-11-03",
+    image: "/blog/voiture-electrique-liste-aidee-24-novembre-2026.jpg",
+    imageCredit: "Photo : Håkan Dahlström, Wikimedia Commons, licence CC BY 2.0",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Depuis le 1er juillet 2025, les ménages qui achètent ou louent une voiture électrique neuve peuvent toucher le « coup de pouce Véhicules particuliers électriques ». Ce sont les fournisseurs d'énergie et d'autres entreprises signataires d'une charte qui versent la prime, au titre des certificats d'économies d'énergie. Elle dépend d'une condition que l'acheteur ne voit pas : la version exacte de la voiture doit figurer sur une liste fixée par arrêté, celle des voitures qui atteignent le score environnemental minimal. Deux arrêtés du 22 octobre 2026, publiés au Journal officiel du 23 octobre, changent la façon de calculer ce score et réécrivent la liste.",
+      },
+      {
+        type: "h2",
+        texte: "Ce qui change, et à quelles dates",
+      },
+      {
+        type: "liste",
+        items: [
+          "Depuis le 24 octobre 2026, une nouvelle méthode de calcul du score environnemental s'applique. Jusqu'au 23 novembre 2026 inclus, l'ancienne méthode reste applicable lorsqu'elle est plus avantageuse.",
+          "Le 24 novembre 2026, la liste des versions éligibles est remplacée dans son intégralité. Elle compte 1 241 versions de 30 marques, selon notre décompte du texte publié au Journal officiel.",
+          "Une version qui figurait sur l'ancienne liste n'est donc pas forcément sur la nouvelle. Le texte prévoit une protection pour les commandes déjà passées, détaillée plus bas.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Selon l'arrêté, la liste est notamment l'une des conditions d'éligibilité au coup de pouce et au leasing social. Elle compte aussi pour certaines dispositions fiscales.",
+      },
+      {
+        type: "h2",
+        texte: "Pourquoi certaines voitures sortent de la liste",
+      },
+      {
+        type: "p",
+        texte:
+          "Le score environnemental mesure l'empreinte carbone liée à la production et à l'acheminement de la voiture. Le calcul distingue désormais trois catégories. La première regroupe les versions qui ont au moins sept places, ou un coffre d'au moins 700 litres, ou une autonomie électrique d'au moins 380 km. La deuxième réunit les autres versions qui ont au moins cinq places, un coffre d'au moins 200 litres et une autonomie d'au moins 250 km. Toutes les autres forment la troisième.",
+      },
+      {
+        type: "p",
+        texte:
+          "Pour la première catégorie, les valeurs de référence restent celles d'avant : 21 000 et 12 000 kg équivalent CO2. Pour la deuxième, celle des voitures d'au moins cinq places qui n'entrent pas dans la première, elles descendent à 19 300 et 10 300 kg. À fabrication identique, une version de cette catégorie obtient donc un score plus faible qu'avant. Une voiture qui franchissait le seuil de justesse peut ne plus le franchir.",
+      },
+      {
+        type: "h2",
+        texte: "La règle qui protège les commandes déjà passées",
+      },
+      {
+        type: "p",
+        texte:
+          "L'ancienne liste reste applicable, si elle vous est plus favorable, à deux conditions. Vous avez commandé la voiture, ou signé le contrat de location, avant le 24 novembre 2026. Et la voiture est facturée, ou le premier loyer versé, au plus tard le 6 février 2027. Ce second point est le piège : ce n'est pas vous qui maîtrisez le délai de livraison. Une voiture commandée le 20 novembre mais facturée en mars 2027 perd la protection, et avec elle l'aide si sa version a quitté la liste.",
+      },
+      {
+        type: "h2",
+        texte: "Les autres conditions du coup de pouce",
+      },
+      {
+        type: "p",
+        texte:
+          "Le score environnemental n'est pas la seule exigence. D'après le ministère de la Transition écologique, le coup de pouce vise les ménages qui achètent ou louent une voiture particulière neuve (catégorie M1). Son coût d'acquisition doit être de 47 000 € TTC au plus, batterie comprise si elle est achetée ou louée à part, et sa masse en ordre de marche inférieure à 2 400 kg. Le montant de la prime varie selon les revenus du foyer. Il est plus élevé quand la voiture et sa batterie sont produites dans l'Espace économique européen, sur des sites inscrits sur la liste publiée par l'ADEME. La prime ne se cumule pas avec les autres aides financées par les certificats d'économies d'énergie, dont la location sociale de voitures électriques.",
+      },
+      {
+        type: "h2",
+        texte: "Avant de signer : trois vérifications",
+      },
+      {
+        type: "liste",
+        items: [
+          "La version exacte : la liste désigne chaque voiture par sa marque, son modèle et son type, variante, version (TVV). Deux finitions d'un même modèle peuvent avoir des codes différents. Demandez au vendeur le TVV de la voiture commandée et vérifiez qu'il figure sur la liste. La condition s'apprécie au moment où l'opération est achevée, sous réserve de la règle de transition décrite plus haut.",
+          "La date : si votre version ne figure plus sur la liste du 24 novembre, signez le bon de commande au plus tard le 23 novembre 2026. Faites inscrire noir sur blanc une date de facturation, ou de premier loyer, au plus tard le 6 février 2027.",
+          "La prime elle-même : chaque signataire fixe ses montants et ses modalités. La liste des offres publiée par le ministère, mise à jour le 13 octobre 2026, recense les entreprises autorisées. Faites confirmer l'éligibilité par écrit avant de signer, plutôt que de compter sur une remise annoncée oralement en concession.",
+        ],
+      },
+      {
+        type: "p",
+        texte:
+          "Une fois la voiture livrée, il reste la carte grise. Pour une électrique, elle n'est plus gratuite partout : depuis le 1er mai 2025, l'exonération de taxe régionale dépend de chaque région.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Arrêté du 22 octobre 2026 modifiant l'arrêté du 14 décembre 2023 fixant la liste des versions de voitures particulières électriques ayant atteint le score environnemental minimal — Journal officiel du 23 octobre 2026, NOR TECR2628100A",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055009148",
+      },
+      {
+        libelle: "Arrêté du 22 octobre 2026 modifiant l'arrêté du 7 octobre 2023 relatif à la méthodologie de calcul du score environnemental — Journal officiel du 23 octobre 2026, NOR TECR2628101A",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055009166",
+      },
+      {
+        libelle: "Coup de pouce « Véhicules particuliers électriques » — ministère de la Transition écologique, mis à jour le 13 octobre 2026",
+        url: "https://www.ecologie.gouv.fr/politiques-publiques/coup-pouce-vehicules-particuliers-electriques",
+      },
+    ],
+  },
+  {
     slug: "faux-sms-amende-antai",
     titre: "Faux SMS d'amende : l'ANTAI n'en envoie jamais, même quand le message cite votre vraie plaque",
     chapo:
