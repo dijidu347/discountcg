@@ -26,7 +26,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   FileText, Repeat, ShoppingCart, Car, KeyRound, Home, HeartCrack, Users,
-  Bike, Sparkles, Wrench, Globe, Truck, ClipboardList, Undo2, XCircle
+  Bike, Sparkles, Wrench, Globe, Truck, ClipboardList, Undo2
 } from "lucide-react";
 
 /** Un lien simple de la barre : les deux pages de prix. */
@@ -77,7 +77,6 @@ export const MENU_DEMARCHES: GroupeMenu[] = [
       { libelle: "Plaque W Garage", chemin: "/premiere-demande-w-garage", icone: Truck, code: "W_GARAGE" },
       { libelle: "Plaque WW provisoire", chemin: "/immatriculation-ww-provisoire", icone: Globe, code: "CPI_WW" },
       { libelle: "Annuler une cession ou un achat", chemin: "/annuler-declaration-cession", icone: Undo2, code: "ANNULER_DC_DA" },
-      { libelle: "Annuler un CPI WW", chemin: "/annulation-cpi-ww", icone: XCircle, code: "ANNULATION_CPI_WW" },
     ],
   },
   {

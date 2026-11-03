@@ -16,6 +16,19 @@ export interface DemarcheConfig {
   seoContent: string;
   faqs: { question: string; answer: string }[];
   keywords: string[];
+  /**
+   * La page reste en ligne, mais la démarche ne se commande plus.
+   *
+   * Cas de l'annulation de CPI WW, retirée le 3 novembre 2026 : en huit mois,
+   * 145 démarches ouvertes pour 7 réglées et 327 € encaissés. Les visiteurs
+   * cherchaient la marche à suivre, pas un prestataire.
+   *
+   * La page, elle, est la deuxième du site en trafic — 115 clics pour 1 070
+   * impressions en position 3,6, le meilleur taux de clic hors marque. La
+   * supprimer coûterait ce trafic sans rien rapporter : on retire le bouton
+   * et on renvoie vers ce qui se commande vraiment.
+   */
+  sansCommande?: boolean;
 }
 
 export const demarchesConfig: DemarcheConfig[] = [
@@ -837,6 +850,7 @@ export const demarchesConfig: DemarcheConfig[] = [
   },
   {
     code: "ANNULATION_CPI_WW",
+    sansCommande: true,
     slug: "annulation-cpi-ww",
     title: "Annulation d'un CPI WW",
     shortTitle: "annulation CPI WW",

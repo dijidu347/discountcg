@@ -183,16 +183,37 @@ const DemarchePage = () => {
               {demarche.h1}
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-2xl">{demarche.description}</p>
-            <div className="flex flex-col items-start gap-3">
-              <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
-                {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                {libelleBouton}
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-              {reserveePro && (
-                <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Réservé aux professionnels</Badge>
-              )}
-            </div>
+            {/* Une démarche retirée garde sa page : elle informe, elle ne vend
+                plus. Laisser le bouton mènerait à un formulaire dont le type
+                n'est plus actif en base — une impasse silencieuse. */}
+            {demarche.sansCommande ? (
+              <div className="max-w-2xl rounded-lg border border-border bg-muted/40 p-4">
+                <p className="text-sm text-foreground">
+                  Nous ne traitons plus cette démarche. Cette page reste en ligne parce
+                  qu'elle répond à la question : vous y trouverez la marche à suivre et les
+                  pièces à réunir.
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Pour une immatriculation provisoire, un changement de titulaire ou une
+                  déclaration de cession,{" "}
+                  <Link to="/" className="font-medium text-primary hover:underline">
+                    voir nos démarches
+                  </Link>
+                  .
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-start gap-3">
+                <Button size="lg" className="text-base" onClick={handleStartDemarche} disabled={starting}>
+                  {starting && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                  {libelleBouton}
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+                {reserveePro && (
+                  <Badge className="bg-amber-100 text-amber-800 border border-amber-300">Réservé aux professionnels</Badge>
+                )}
+              </div>
+            )}
           </div>
 
           <aside className="rounded-xl border bg-card p-6 lg:sticky lg:top-24">
