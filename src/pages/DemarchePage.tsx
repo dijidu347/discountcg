@@ -174,10 +174,12 @@ const DemarchePage = () => {
                 <Shield className="h-3 w-3" />
                 Agréé par l'État
               </Badge>
+              {!demarche.sansCommande && (
               <Badge variant="secondary" className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 Traitement {demarche.delai}
               </Badge>
+              )}
             </div>
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 leading-tight">
               {demarche.h1}
@@ -221,10 +223,12 @@ const DemarchePage = () => {
               En bref
             </p>
             <dl className="mt-4 space-y-4">
-              <div>
-                <dt className="text-sm text-muted-foreground">Délai de traitement</dt>
-                <dd className="text-lg font-semibold text-foreground">{demarche.delai}</dd>
-              </div>
+              {!demarche.sansCommande && (
+                <div>
+                  <dt className="text-sm text-muted-foreground">Délai de traitement</dt>
+                  <dd className="text-lg font-semibold text-foreground">{demarche.delai}</dd>
+                </div>
+              )}
               <div>
                 <dt className="text-sm text-muted-foreground">Pièces à fournir</dt>
                 <dd className="text-lg font-semibold text-foreground">
@@ -234,6 +238,7 @@ const DemarchePage = () => {
                   </span>
                 </dd>
               </div>
+              {!demarche.sansCommande && (
               <div>
                 <dt className="text-sm text-muted-foreground">Comment ça se passe</dt>
                 <dd className="text-lg font-semibold text-foreground">
@@ -241,6 +246,7 @@ const DemarchePage = () => {
                   <span className="ml-1 text-sm font-normal text-muted-foreground">étapes</span>
                 </dd>
               </div>
+              )}
             </dl>
             <p className="mt-5 border-t pt-4 text-sm text-muted-foreground">
               Habilitation préfecture n° 285046 · agrément Trésor public n° 63198
@@ -356,6 +362,7 @@ const DemarchePage = () => {
       </section>
 
       {/* Steps Section */}
+      {!demarche.sansCommande && (
       <section className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
@@ -373,8 +380,10 @@ const DemarchePage = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Prix Section */}
+      {!demarche.sansCommande && (
       <section className="bg-muted/50 py-12">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-5xl">
@@ -414,8 +423,10 @@ const DemarchePage = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* Delai Section */}
+      {!demarche.sansCommande && (
       <section className="container mx-auto px-4 py-12">
         <div className="mx-auto max-w-5xl">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6">
@@ -437,6 +448,7 @@ const DemarchePage = () => {
           </Card>
         </div>
       </section>
+      )}
 
       {/* FAQ Section */}
       {demarche.faqs.length > 0 && (
@@ -533,6 +545,7 @@ const DemarchePage = () => {
       </section>
 
       {/* Final CTA */}
+      {!demarche.sansCommande && (
       <section className="bg-primary py-16">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-2xl md:text-3xl font-bold text-primary-foreground mb-4">
@@ -549,8 +562,10 @@ const DemarchePage = () => {
           </Button>
         </div>
       </section>
+      )}
 
       {/* Bouton flottant Commander */}
+      {!demarche.sansCommande && (
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 md:hidden">
         <Button
           size="lg"
@@ -563,6 +578,7 @@ const DemarchePage = () => {
           <ArrowRight className="ml-2 h-5 w-5" />
         </Button>
       </div>
+      )}
 
       <Footer />
     </div>
