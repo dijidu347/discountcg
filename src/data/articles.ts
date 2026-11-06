@@ -43,6 +43,146 @@ export const COULEURS_CATEGORIE: Record<string, string> = {
 
 export const ARTICLES: Article[] = [
   {
+    slug: "loa-voiture-rachat-anticipe-20-novembre-2026",
+    titre: "LOA auto : à partir du 20 novembre, vous pourrez racheter la voiture avant la fin du contrat — si vous signez après cette date",
+    chapo:
+      "Non, la location avec option d'achat ne « devient » pas un crédit le 20 novembre 2026 : la loi l'y assimile déjà. Ce qui change, c'est surtout un droit nouveau, celui de racheter la voiture à tout moment avec un prix plafonné, réservé aux contrats conclus à partir de cette date.",
+    categorie: "Réglementation",
+    date: "2026-11-06",
+    image: "/blog/loa-voiture-rachat-anticipe-20-novembre-2026.jpg",
+    imageCredit: "Photo : Velvet, Wikimedia Commons, licence CC BY-SA 4.0",
+    corps: [
+      {
+        type: "p",
+        texte:
+          "Le 20 novembre 2026 entre en vigueur la réforme du crédit à la consommation, qui transpose la directive européenne (UE) 2023/2225. Elle repose sur l'ordonnance du 3 septembre 2025 et sur des décrets publiés en 2026. Plusieurs sites présentent la date comme celle où la LOA « devient un vrai crédit ». C'est inexact : l'article L. 312-2 du code de la consommation assimile déjà la location avec option d'achat à une opération de crédit. Le rapport remis au Président de la République avec l'ordonnance le dit lui-même : la LOA est « déjà soumise à la quasi-totalité des normes du crédit à la consommation ». Les changements qui restent sont, eux, bien réels pour qui finance une voiture de cette façon.",
+      },
+      {
+        type: "h2",
+        texte: "Le changement qui compte : racheter la voiture avant le terme",
+      },
+      {
+        type: "p",
+        texte:
+          "Jusqu'ici, l'article L. 312-35 du code de la consommation écartait pour la LOA la règle du remboursement anticipé. Racheter la voiture avant la fin du contrat supposait donc l'accord du bailleur, comme le rappelle la fiche de service-public.gouv.fr consacrée au rachat d'un véhicule en leasing. À partir du 20 novembre 2026, le nouvel article L. 312-35 donne au locataire le droit d'acquérir le bien loué par anticipation, « à tout moment et à son initiative ».",
+      },
+      {
+        type: "p",
+        texte:
+          "Le prix est plafonné. Le bailleur ne peut pas exiger plus que la somme du prix de levée d'option prévu au contrat et des loyers restant à échoir, diminuée d'au moins la moitié des intérêts restant dus. Aucun autre intérêt ni aucuns autres frais ne peuvent être facturés pour ce rachat anticipé.",
+      },
+      {
+        type: "p",
+        texte:
+          "Un exemple chiffré, purement illustratif : il vous reste dix loyers de 350 €, l'option d'achat finale est de 12 000 € et 600 € d'intérêts restent dus. Le bailleur peut vous demander au plus 12 000 + 3 500 − 300, soit 15 200 €.",
+      },
+      {
+        type: "h2",
+        texte: "Les contrats déjà signés n'en profitent pas",
+      },
+      {
+        type: "p",
+        texte:
+          "L'ordonnance est claire : les contrats de crédit en cours au 20 novembre 2026 restent régis par les règles antérieures. Une LOA signée le 19 novembre ne donnera donc pas droit au rachat anticipé plafonné, même dans trois ans. Si vous êtes sur le point de signer et que la possibilité de racheter la voiture en cours de route compte pour vous, attendre quelques jours peut valoir la peine. Le décret du 19 février 2026, qui fixe le contenu des documents remis, a été complété le 21 juillet 2026 : pour ses propres règles, les offres émises avant le 20 novembre sont traitées comme des contrats en cours. Demandez donc une offre émise à partir de cette date.",
+      },
+      {
+        type: "h2",
+        texte: "Ce que la publicité et le contrat devront afficher",
+      },
+      {
+        type: "liste",
+        items: [
+          "La publicité : toute publicité pour un crédit à la consommation doit porter la mention « Attention ! Un crédit coûte de l'argent et doit être remboursé ». Celle qui annonce un taux ou des chiffres liés au coût doit aussi indiquer, sur un exemple représentatif, le taux débiteur et le taux annuel effectif global (TAEG). Jusqu'ici, la LOA était dispensée de ces deux taux ; l'exception disparaît.",
+          "Le TAEG d'une LOA : le décret fixe désormais sa méthode de calcul. Il compare le prix de vente de la voiture, diminué le cas échéant du premier loyer, à tout ce que vous versez, levée d'option comprise. Vous pourrez ainsi comparer une LOA à un crédit classique sur un même critère.",
+          "Le contrat : il doit indiquer le montant total des loyers TTC et le coût total de l'opération si vous achetez la voiture au terme, en euros ou en pourcentage du prix au comptant. Il doit aussi préciser les conditions du rachat anticipé et le mode de calcul de la somme que le bailleur peut réclamer.",
+          "Une mention protectrice : le contrat doit reproduire la phrase « Tout engagement préalable de payer au comptant le vendeur en cas de refus du bailleur d'accorder le crédit est nul de plein droit. » Si un vendeur vous fait promettre de payer comptant au cas où la LOA serait refusée, cet engagement ne vaut rien.",
+        ],
+      },
+      {
+        type: "h2",
+        texte: "Se rétracter quand on a déjà la voiture",
+      },
+      {
+        type: "p",
+        texte:
+          "Le délai de rétractation reste de quatorze jours calendaires. Si l'offre de contrat ou les informations obligatoires ne vous ont pas été remises, il s'étend jusqu'à douze mois et quatorze jours après la conclusion du contrat. Si l'on ne vous a pas informé de votre droit de rétractation, il n'expire pas. Un nouvel article L. 312-26-1 règle le cas propre à la LOA : si la voiture vous a déjà été livrée et que vous vous rétractez, vous devez au bailleur un montant correspondant à l'usage que vous en avez fait jusqu'à votre notification, proportionné à sa valeur marchande. Le bailleur n'a droit à aucune autre indemnité, sauf, le cas échéant, le remboursement des frais non récupérables qu'il a payés à une administration publique.",
+      },
+      {
+        type: "h2",
+        texte: "Le taux d'usure : pas encore de chiffre officiel",
+      },
+      {
+        type: "p",
+        texte:
+          "Selon le rapport au Président de la République, la réforme se traduira « en particulier par l'instauration d'un taux d'usure pour la location avec option d'achat », c'est-à-dire un plafond que le TAEG ne pourra pas dépasser. Des chiffres circulent déjà. Nous ne les reprenons pas : au 6 novembre 2026, nous n'avons trouvé au Journal officiel aucun avis fixant ce seuil pour la LOA. Le dernier avis sur l'usure, du 25 septembre 2026, publié au Journal officiel du 26 septembre, ne comporte pas de catégorie propre à la LOA.",
+      },
+      {
+        type: "h2",
+        texte: "Ce qui ne change pas",
+      },
+      {
+        type: "p",
+        texte:
+          "La location longue durée sans option d'achat (LLD) n'est pas concernée : l'article L. 312-2 n'assimile à un crédit que la location-vente et la location avec option d'achat. Pendant toute la durée de la LOA, le propriétaire de la voiture reste l'organisme financier.",
+      },
+      {
+        type: "h2",
+        texte: "Après le rachat : la carte grise à votre nom dans le mois",
+      },
+      {
+        type: "p",
+        texte:
+          "Que vous leviez l'option au terme ou par anticipation, vous devenez propriétaire : c'est un changement de titulaire. Service-public.gouv.fr rappelle que vous avez un mois pour faire la démarche, sous peine d'une amende pouvant aller jusqu'à 750 € (en général une amende forfaitaire de 135 €). Il vous faut la déclaration de cession (cerfa n° 15776) signée par l'organisme financier et par vous, ainsi que le code de cession qu'il vous remet pour faire la démarche en ligne. Si la voiture a plus de quatre ans, il faut aussi un contrôle technique de moins de six mois.",
+      },
+    ],
+    sources: [
+      {
+        libelle: "Ordonnance n° 2025-880 du 3 septembre 2025 relative au crédit à la consommation — Journal officiel du 4 septembre 2025 (articles 8, 9, 30, 37 et entrée en vigueur)",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000052184230",
+      },
+      {
+        libelle: "Rapport au Président de la République relatif à l'ordonnance n° 2025-880 du 3 septembre 2025 — Journal officiel du 4 septembre 2025",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000052184220",
+      },
+      {
+        libelle: "Ordonnance n° 2025-1154 du 2 décembre 2025 relative au crédit à la consommation — Journal officiel du 3 décembre 2025",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000052982995",
+      },
+      {
+        libelle: "Décret n° 2026-105 du 19 février 2026 relatif au crédit à la consommation (articles 7, 11 et 30)",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053509843",
+      },
+      {
+        libelle: "Décret n° 2026-643 du 21 juillet 2026 portant modification du décret n° 2026-105 du 19 février 2026",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054450870",
+      },
+      {
+        libelle: "Code de la consommation, article L. 312-2 (assimilation de la LOA à une opération de crédit)",
+        url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032226208",
+      },
+      {
+        libelle: "Code de la consommation, article L. 312-35, version en vigueur à compter du 20 novembre 2026",
+        url: "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000052191640",
+      },
+      {
+        libelle: "Avis du 25 septembre 2026 relatif à l'application des articles L. 314-6 du code de la consommation et L. 313-5-1 du code monétaire et financier concernant l'usure — Journal officiel du 26 septembre 2026",
+        url: "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054903528",
+      },
+      {
+        libelle: "20 novembre : de nouvelles règles pour le crédit à la consommation — service-public.gouv.fr, mis à jour le 27 octobre 2026",
+        url: "https://www.service-public.gouv.fr/particuliers/actualites/A18451",
+      },
+      {
+        libelle: "Carte grise : quelle démarche quand on rachète le véhicule avant la fin du leasing ? — service-public.gouv.fr, vérifié le 30 avril 2025",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F32233",
+      },
+      {
+        libelle: "Véhicule en leasing : comment signaler un changement sur la carte grise ? — service-public.gouv.fr, vérifié le 29 avril 2025",
+        url: "https://www.service-public.gouv.fr/particuliers/vosdroits/F33425",
+      },
+    ],
+  },
+  {
     slug: "voiture-electrique-liste-aidee-24-novembre-2026",
     titre: "Voiture électrique : la liste des versions aidées change le 24 novembre, et la date de votre bon de commande compte",
     chapo:
