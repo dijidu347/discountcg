@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Zap } from "lucide-react";
+import { Clock, Zap } from "lucide-react";
 import {
   isExpressEligible,
   getExpressSurcharge,
-  isExpressAvailable,
+  dansLesHorairesDeBureau,
   EXPRESS_LABEL,
   EXPRESS_DESCRIPTION,
+  EXPRESS_HORS_HORAIRES,
 } from "@/lib/expressOption";
 
 interface ExpressOptionCardProps {
@@ -17,27 +18,22 @@ interface ExpressOptionCardProps {
 }
 
 export const ExpressOptionCard = ({ demarcheType, checked, onCheckedChange }: ExpressOptionCardProps) => {
-  // Disponibilité horaire (Europe/Paris), purement PRÉSENTATIONNELLE : hors
-  // créneau l'option disparaît de la page. Ce composant ne modifie JAMAIS
-  // l'état express de lui-même (pas d'auto-décochage), pour ne jamais écrire en
-  // base ni changer le prix d'une commande déjà payable.
-  // Réévaluée périodiquement pour retirer l'option si la page franchit la fin
-  // du créneau. Hooks appelés AVANT tout return conditionnel (Rules of Hooks).
-  const [available, setAvailable] = useState(() => isExpressAvailable());
+  // L'option est proposée en permanence. Seule la PROMESSE change : « traité
+  // en 2h » est faux à 23h un samedi, et le dire autrement vaut mieux que de
+  // masquer l'option — une commande du dimanche soir est parfaitement légitime.
+  //
+  // Ce composant ne modifie JAMAIS l'état express de lui-même : il n'écrit rien
+  // en base et ne change jamais le prix d'une commande déjà payable.
+  //
+  // Réévalué toutes les trente secondes, pour qu'une page restée ouverte à
+  // 17h29 dise la vérité à 17h31. Hooks avant tout return conditionnel.
+  const [ouvert, setOuvert] = useState(() => dansLesHorairesDeBureau());
   useEffect(() => {
-    const id = setInterval(() => setAvailable(isExpressAvailable()), 30_000);
+    const id = setInterval(() => setOuvert(dansLesHorairesDeBureau()), 30_000);
     return () => clearInterval(id);
   }, []);
 
   if (!isExpressEligible(demarcheType)) return null;
-
-  // Hors créneau, on retire purement et simplement l'option : une case grisée
-  // n'apprend rien au client et encombre la page.
-  //
-  // Sauf si elle est déjà cochée : le client l'a prise pendant le créneau, elle
-  // est comptée dans son prix. La faire disparaître lui ferait payer une ligne
-  // invisible, sans moyen de revenir dessus.
-  if (!available && !checked) return null;
 
   return (
     <div
@@ -58,9 +54,17 @@ export const ExpressOptionCard = ({ demarcheType, checked, onCheckedChange }: Ex
           {EXPRESS_LABEL}
           <span className="ml-auto text-orange-500 font-semibold whitespace-nowrap">+{getExpressSurcharge(demarcheType)}&nbsp;€</span>
         </Label>
-        <p className="text-sm text-muted-foreground mt-1">
-          {EXPRESS_DESCRIPTION}
-        </p>
+        {/* La promesse change avec l'heure. « Traité en 2h » est faux à 23h un
+            samedi : on annonce alors la priorité à la réouverture, plutôt que
+            de masquer l'option — une commande du dimanche soir est légitime. */}
+        {ouvert ? (
+          <p className="text-sm text-muted-foreground mt-1">{EXPRESS_DESCRIPTION}</p>
+        ) : (
+          <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
+            <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span>{EXPRESS_HORS_HORAIRES}</span>
+          </p>
+        )}
       </div>
     </div>
   );

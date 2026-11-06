@@ -27,33 +27,51 @@ export function getExpressSurcharge(type: string | null | undefined): number {
 }
 
 // ---------------------------------------------------------------------------
-// Disponibilité horaire de l'option "Dossier Prioritaire".
-// Règle métier : ouvert lundi, mardi, mercredi, vendredi (JEUDI fermé, ainsi
-// que samedi/dimanche), de 9h00 à 17h00 (16h59 accepté, 17h00 non).
-// Hors créneau, l'option n'est pas grisée : elle disparaît de la page.
-// Fuseau Europe/Paris IMPÉRATIF (gère l'heure d'été/hiver via Intl), on ne se
-// fie PAS à l'heure locale du navigateur.
+// Horaires de bureau.
+//
+// L'option « Dossier Prioritaire » est désormais proposée EN PERMANENCE : une
+// commande passée un dimanche soir est légitime, et la faire disparaître de la
+// page privait le client d'un service qu'il voulait prendre.
+//
+// Ce qui change hors horaires, c'est la PROMESSE. « Traité en 2h » est faux à
+// 23h un samedi : la démarche sera traitée en priorité, mais à la réouverture.
+// On le dit, plutôt que de laisser croire ou de masquer l'option.
+//
+// Horaires : du lundi au vendredi, de 8h00 à 17h30. 17h29 est dedans, 17h30
+// non. Fuseau Europe/Paris IMPÉRATIF (Intl gère l'heure d'été et d'hiver) : on
+// ne se fie PAS à l'heure locale du navigateur, qui peut être n'importe où.
 // ---------------------------------------------------------------------------
 
-// Jours ouverts, en codes courts en-US renvoyés par Intl (weekday: 'short').
-const EXPRESS_OPEN_WEEKDAYS = ["Mon", "Tue", "Wed", "Fri"];
+/** Ce qu'on affiche hors horaires, à la place de la promesse de 2 heures. */
+export const EXPRESS_HORS_HORAIRES =
+  "Votre démarche sera traitée en priorité à la réouverture de nos services, aux horaires de bureau.";
 
-export function isExpressAvailable(now: Date = new Date()): boolean {
-  // Extraction du jour de la semaine et de l'heure DANS le fuseau Europe/Paris.
-  // Intl.DateTimeFormat applique automatiquement l'heure d'été/hiver de Paris.
+const JOURS_OUVRES = ["Mon", "Tue", "Wed", "Thu", "Fri"];
+const OUVERTURE_MIN = 8 * 60;        // 08h00
+const FERMETURE_MIN = 17 * 60 + 30;  // 17h30, exclue
+
+/**
+ * Sommes-nous dans les horaires de bureau ?
+ *
+ * Ne commande plus l'affichage de l'option — seulement le message qui
+ * l'accompagne.
+ */
+export function dansLesHorairesDeBureau(now: Date = new Date()): boolean {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "Europe/Paris",
     weekday: "short",
     hour: "2-digit",
+    minute: "2-digit",
     hour12: false,
   }).formatToParts(now);
 
-  const weekday = parts.find((p) => p.type === "weekday")?.value;
-  const rawHour = Number(parts.find((p) => p.type === "hour")?.value);
-  // Certains moteurs renvoient "24" à minuit avec hour12:false → normalisé à 0.
-  const hour = rawHour === 24 ? 0 : rawHour;
+  const jour = parts.find((p) => p.type === "weekday")?.value;
+  const brut = Number(parts.find((p) => p.type === "hour")?.value);
+  const minute = Number(parts.find((p) => p.type === "minute")?.value);
+  // Certains moteurs renvoient « 24 » à minuit avec hour12:false.
+  const heure = brut === 24 ? 0 : brut;
 
-  if (!weekday || !EXPRESS_OPEN_WEEKDAYS.includes(weekday)) return false;
-  // 9h00 inclus → hour >= 9 ; 17h00 exclu (16h59 ok) → hour < 17.
-  return hour >= 9 && hour < 17;
+  if (!jour || !JOURS_OUVRES.includes(jour)) return false;
+  const minutes = heure * 60 + minute;
+  return minutes >= OUVERTURE_MIN && minutes < FERMETURE_MIN;
 }
