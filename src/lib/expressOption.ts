@@ -40,6 +40,10 @@ export function getExpressSurcharge(type: string | null | undefined): number {
 // Horaires : du lundi au vendredi, de 8h00 à 17h30. 17h29 est dedans, 17h30
 // non. Fuseau Europe/Paris IMPÉRATIF (Intl gère l'heure d'été et d'hiver) : on
 // ne se fie PAS à l'heure locale du navigateur, qui peut être n'importe où.
+//
+// JEUDI COMPRIS. L'ancienne règle fermait le jeudi toute la journée ; Sarah a
+// confirmé le 6 novembre 2026 que c'est bien un jour ouvré. Ne pas « rétablir »
+// cette fermeture en croyant corriger un oubli.
 // ---------------------------------------------------------------------------
 
 /** Ce qu'on affiche hors horaires, à la place de la promesse de 2 heures. */
